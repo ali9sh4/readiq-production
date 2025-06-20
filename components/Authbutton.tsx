@@ -44,7 +44,7 @@ export const AuthButton = () => {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator/>
                     <DropdownMenuItem asChild>
-                        <Link href ="/account">حسابي</Link>
+                        <Link href ="/">حسابي</Link>
                     </DropdownMenuItem>
                     
                     {!!auth.CustomClaims?.admin && (
@@ -61,6 +61,9 @@ export const AuthButton = () => {
 
 
                     )}
+                       <DropdownMenuItem asChild>
+                        <Link href="/course-upload">إضافة دورة جديدة</Link >
+                    </DropdownMenuItem>
                     
                      <DropdownMenuItem onClick={() => auth.logOut()}>
                         تسجيل الخروج

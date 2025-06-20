@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AuthProvider } from "@/context/authContext";
 import { AuthButton } from "@/components/Authbutton";
 import './globals.css';
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,6 +60,7 @@ export default function RootLayout({
           
           <main className="min-h-screen">
             {children}
+            <Toaster richColors closeButton   />
           </main>
         </AuthProvider>
       </body>
