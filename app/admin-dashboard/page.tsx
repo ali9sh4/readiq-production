@@ -14,39 +14,14 @@ import { Breadcrumbs } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, XCircle, Clock, Eye } from "lucide-react";
 import { approveCourse } from "./action";
-
-// Define proper types for Firestore timestamp
-type FirestoreTimestamp = {
-  toDate: () => Date;
-  seconds: number;
-  nanoseconds: number;
-};
-
-interface Course {
-  isApproved?: boolean;
-  isRejected?: boolean;
-  id: string;
-  title: string;
-  subtitle?: string;
-  category: string;
-  price: number;
-  description: string;
-  level: "beginner" | "intermediate" | "advanced" | "all_levels";
-  language: "arabic" | "english" | "french" | "spanish";
-  duration: number;
-  learningPoints?: string[];
-  requirements?: string[];
-  image?: string;
-  createdAt: FirestoreTimestamp | Date | null;
-  createdBy?: string;
-}
+import { Course, FirestoreTimestamp } from "@/types/types";
 
 export default function AdminDashboard() {
   const { user, isLoading } = useAuth();
   const [pendingCourses, setPendingCourses] = useState<Course[]>([]);
   const [approvedCourses, setApprovedCourses] = useState<Course[]>([]);
   const [rejectedCourses, setRejectedCourses] = useState<Course[]>([]);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
     "pending" | "approved" | "rejected"
   >("pending");
@@ -72,7 +47,6 @@ export default function AdminDashboard() {
           ...doc.data(),
         })) as Course[];
 
-        // Since you don't have status, treat all as pending for now
         const pending = courses.filter(
           (course) => !course.isApproved && !course.isRejected
         );
@@ -85,9 +59,8 @@ export default function AdminDashboard() {
       },
       (error) => {
         console.error("Error fetching courses:", error);
-      }
+      } // ✅ Fixed: removed the extra closing brace
     );
-
     return () => {
       unsubscribe();
     };
@@ -182,8 +155,6 @@ export default function AdminDashboard() {
         <h1 className="text-3xl font-bold text-gray-800">
           لوحة التحكم الإدارية
         </h1>
-
-       
       </div>
 
       {/* Statistics Cards */}
@@ -380,7 +351,7 @@ export default function AdminDashboard() {
                 <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
                   <Button
                     onClick={async () => {
-                      setActionLoading(true);
+                      setActionLoading(course.id);
                       try {
                         const token = await user.getIdToken();
                         const result = await approveCourse(
@@ -398,10 +369,10 @@ export default function AdminDashboard() {
                         console.error("Error:", error);
                         alert("حدث خطأ أثناء الموافقة على الدورة");
                       } finally {
-                        setActionLoading(false);
+                        setActionLoading(null); // ✅ Clear loading
                       }
                     }}
-                    disabled={actionLoading}
+                    disabled={actionLoading === course.id} // ✅ Only disable this specific button
                     className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
                   >
                     <CheckCircle className="h-4 w-4 ml-2" />
@@ -410,7 +381,7 @@ export default function AdminDashboard() {
 
                   <Button
                     onClick={async () => {
-                      setActionLoading(true);
+                      setActionLoading(course.id);
                       try {
                         const token = await user.getIdToken();
                         const result = await approveCourse(
@@ -428,10 +399,10 @@ export default function AdminDashboard() {
                         console.error("Error:", error);
                         alert("حدث خطأ أثناء رفض الدورة");
                       } finally {
-                        setActionLoading(false);
+                        setActionLoading(null); // ✅ Clear loading
                       }
                     }}
-                    disabled={actionLoading}
+                    disabled={actionLoading === course.id} // ✅ Only disable this specific button
                     variant="destructive"
                     className="disabled:opacity-50"
                   >

@@ -26,6 +26,19 @@ const serviceAccount=
          export const auth = getAuth(app);
          export const storage = getStorage(app);
          export const db = getFirestore(app);
+
+         export const getTotalPages =  async(firestoreQuery:FirebaseFirestore.Query<
+            FirebaseFirestore.DocumentData,
+            FirebaseFirestore.DocumentData
+            >,pageSize:number)=>{
+                const queryCount = firestoreQuery.count();
+                const querySnapshot = await queryCount.get();
+                const countdata = querySnapshot.data();
+                const total = countdata.count;
+                const totalPages = Math.ceil(total/pageSize);
+                return totalPages;
+
+         }
          
 
       

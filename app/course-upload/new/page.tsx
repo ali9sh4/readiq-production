@@ -1,7 +1,8 @@
 import { Breadcrumbs } from "@/components/ui/breadcrumb";
 import NewPropertyForm from "./new-property-form";
 
-export default function CourseUpload() {
+export default async function  CourseUpload()  {
+
   // ← PascalCase component name
   return (
     <div className="container mx-auto px-4 py-8">
