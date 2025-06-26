@@ -39,6 +39,7 @@ export interface CourseResponse {
 
 export interface GetCourseOptions {
   filters?: {
+    userId?:string;
     category?: string;
     level?: "beginner" | "intermediate" | "advanced" | "all_levels";
     language?: "arabic" | "english" | "french" | "spanish";

@@ -120,9 +120,6 @@ export default function CoursesCardList({
     <>
       {/* Enhanced header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          ادارة الدورات
-        </h1>
         <p className="text-gray-600">
           {isAdminView
             ? `إجمالي الدورات: ${data.courses.length} دورة`

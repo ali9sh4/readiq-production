@@ -1,6 +1,6 @@
 "use server";
 
-import { auth, db } from "@/firebase/service";
+import { adminAuth, db } from "@/firebase/service";
 
 export const approveCourse = async (
   courseId: string,
@@ -8,8 +8,8 @@ export const approveCourse = async (
   token: string
 ) => {
   try {
-    const verifyAuthToken = await auth.verifyIdToken(token);
-    
+    const verifyAuthToken = await adminAuth.verifyIdToken(token);
+
     if (!verifyAuthToken.admin) {
       return {
         error: true,
@@ -18,20 +18,21 @@ export const approveCourse = async (
     }
 
     // Update course with approval status
-    await db.collection("courses").doc(courseId).update({
-      isApproved: approve,
-      isRejected: !approve, // Track rejection explicitly
-      approvedAt: approve ? new Date() : null,
-      rejectedAt: approve ? null : new Date(),
-      approvedBy: verifyAuthToken.uid,
-      updatedAt: new Date(),
-    });
+    await db
+      .collection("courses")
+      .doc(courseId)
+      .update({
+        isApproved: approve,
+        isRejected: !approve, // Track rejection explicitly
+        approvedAt: approve ? new Date() : null,
+        rejectedAt: approve ? null : new Date(),
+        approvedBy: verifyAuthToken.uid,
+        updatedAt: new Date(),
+      });
 
     return {
       success: true,
-      message: approve 
-        ? "تم اعتماد الدورة بنجاح" 
-        : "تم رفض الدورة بنجاح",
+      message: approve ? "تم اعتماد الدورة بنجاح" : "تم رفض الدورة بنجاح",
     };
   } catch (error) {
     console.error("Error in approveCourse:", error);
@@ -49,8 +50,8 @@ export const rejectCourse = async (
   rejectionReason?: string
 ) => {
   try {
-    const verifyAuthToken = await auth.verifyIdToken(token);
-    
+    const verifyAuthToken = await adminAuth.verifyIdToken(token);
+
     if (!verifyAuthToken.admin) {
       return {
         error: true,
@@ -59,14 +60,17 @@ export const rejectCourse = async (
     }
 
     // Update course with rejection
-    await db.collection("courses").doc(courseId).update({
-      isApproved: false,
-      isRejected: true,
-      rejectedAt: new Date(),
-      rejectedBy: verifyAuthToken.uid,
-      rejectionReason: rejectionReason || "لم يتم تحديد سبب الرفض",
-      updatedAt: new Date(),
-    });
+    await db
+      .collection("courses")
+      .doc(courseId)
+      .update({
+        isApproved: false,
+        isRejected: true,
+        rejectedAt: new Date(),
+        rejectedBy: verifyAuthToken.uid,
+        rejectionReason: rejectionReason || "لم يتم تحديد سبب الرفض",
+        updatedAt: new Date(),
+      });
 
     return {
       success: true,
@@ -82,13 +86,10 @@ export const rejectCourse = async (
 };
 
 // Reset course status (useful if you want to "undo" an approval/rejection)
-export const resetCourseStatus = async (
-  courseId: string,
-  token: string
-) => {
+export const resetCourseStatus = async (courseId: string, token: string) => {
   try {
-    const verifyAuthToken = await auth.verifyIdToken(token);
-    
+    const verifyAuthToken = await adminAuth.verifyIdToken(token);
+
     if (!verifyAuthToken.admin) {
       return {
         error: true,
@@ -124,8 +125,8 @@ export const resetCourseStatus = async (
 // Get course statistics for admin dashboard
 export const getCourseStats = async (token: string) => {
   try {
-    const verifyAuthToken = await auth.verifyIdToken(token);
-    
+    const verifyAuthToken = await adminAuth.verifyIdToken(token);
+
     if (!verifyAuthToken.admin) {
       return {
         error: true,
@@ -135,13 +136,13 @@ export const getCourseStats = async (token: string) => {
 
     // Get all courses
     const coursesSnapshot = await db.collection("courses").get();
-    const courses = coursesSnapshot.docs.map(doc => doc.data());
+    const courses = coursesSnapshot.docs.map((doc) => doc.data());
 
     const stats = {
       total: courses.length,
-      pending: courses.filter(c => !c.isApproved && !c.isRejected).length,
-      approved: courses.filter(c => c.isApproved === true).length,
-      rejected: courses.filter(c => c.isRejected === true).length,
+      pending: courses.filter((c) => !c.isApproved && !c.isRejected).length,
+      approved: courses.filter((c) => c.isApproved === true).length,
+      rejected: courses.filter((c) => c.isRejected === true).length,
     };
 
     return {

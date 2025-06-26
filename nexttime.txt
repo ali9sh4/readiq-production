@@ -1,4 +1,4 @@
-building the view for the coursed creator 
-approving the view and telling the course creator about the result ... but viewing the course to him any way
+building the view for the coursed creator /// done  
+approving functionality // 
 then completing the course to make the course createor able to uoload the image and the video to the platfornm
- 
+

@@ -1,6 +1,6 @@
 "use server";
 
-import { auth, db } from "@/firebase/service";
+import { adminAuth, db } from "@/firebase/service";
 import { CourseDataSchema } from "@/validation/propertySchema";
 import z from "zod";
 
@@ -8,7 +8,7 @@ export const SaveNewProperty = async (
   data: z.infer<typeof CourseDataSchema> & { token: string }
 ) => {
   const { token, ...CourseData } = data;
-  const verifiedToken = await auth.verifyIdToken(token);
+  const verifiedToken = await adminAuth.verifyIdToken(token);
 
   if (!verifiedToken) {
     return {

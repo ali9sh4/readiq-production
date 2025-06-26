@@ -63,6 +63,7 @@ export default function RootLayout({
             <Toaster richColors closeButton   />
           </main>
         </AuthProvider>
+        
       </body>
     </html>
   );

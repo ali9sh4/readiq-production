@@ -1,34 +1,50 @@
 import { getCourses } from "@/data/courses";
-import { CourseResponse } from "@/types/types";
+import { cookies } from "next/headers";
 import CoursesCardList from "./CoursesCardList.tsx  ";
+import { getCurrentUser } from "@/data/auth-server";
 import LoadMoreButton from "./loadMoreButoon";
-
+import { CourseResponse } from "@/types/types";
 type CourseLevel = "beginner" | "intermediate" | "advanced" | "all_levels";
 
-export default async function PublicCoursesCardList({
-  
+export default async function InstructorCourse({
   searchParams = {},
 }: {
-  
   searchParams?: {
     cursor?: string;
     category?: string;
     level?: string;
   };
 }) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("firebaseAuthToken")?.value;
+  console.log("🔍 Token found:", !!token); // Check if token exists // ✅ Correct cookie name
+
+  let currentUserId: string | undefined = undefined;
+  if (token) {
+     console.log("🔍 Attempting to get current user...");
+    const userResult = await getCurrentUser({ token });
+      console.log("🔍 User result:", userResult); // See what's returned
+   if (userResult.success) {
+      currentUserId = userResult.user?.uid;
+      console.log("🔍 Current user ID:", currentUserId);
+    } else {
+      console.log("❌ Failed to get user:", userResult.message);
+    }
+  }
+
   const data: CourseResponse = await getCourses({
     pagination: {
       lastDocId: searchParams.cursor || undefined,
-      pageSize: 8, // ✅ Proper pagination size for public
+      pageSize: 8,
     },
     filters: {
       category: searchParams.category || undefined,
       level: (searchParams.level as CourseLevel) || undefined,
-      // ✅ Optional: Add userId filter if needed
+      userId: currentUserId || undefined, // ✅ Filter by current user
     },
   });
 
-  // ✅ Handle errors
+  // ✅ Add error handling
   if (!data.success || data.error) {
     return (
       <div className="flex items-center justify-center p-8 text-xl font-medium text-red-600 bg-red-50 rounded-lg shadow-sm border border-red-200">
@@ -39,15 +55,14 @@ export default async function PublicCoursesCardList({
 
   return (
     <>
-      <CoursesCardList data={data} />
-
-      {/* ✅ Only show LoadMoreButton if there are more courses */}
+      <CoursesCardList data={data} isAdminView={true} />{" "}
+      {/* ✅ Add isAdminView */}
       {data.hasMore && (
         <div className="mt-8">
           <LoadMoreButton
             nextCursor={data.nextCursor || ""}
             hasMore={data.hasMore}
-            currentParams={searchParams} // ✅ Pass current params
+            currentParams={searchParams}
           />
         </div>
       )}

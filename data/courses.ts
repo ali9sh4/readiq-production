@@ -3,14 +3,19 @@ import { Course, CourseResponse, GetCourseOptions } from "@/types/types";
 import "server-only";
 
 export const getCourses = async (
-  options?: GetCourseOptions
+  options?: GetCourseOptions 
 ): Promise<CourseResponse> => {
   try {
     const pageSize = options?.pagination?.pageSize || 8;
     const lastDocId = options?.pagination?.lastDocId;
-    const { category, level, language } = options?.filters || {};
+    const { category, level, language,userId } = options?.filters || {};
 
     let CoursesQuery = db.collection("courses").orderBy("updatedAt", "desc");
+
+    if (userId) {
+      CoursesQuery = CoursesQuery.where("createdBy","==", userId)
+      
+    }
 
     if (category) {
       CoursesQuery = CoursesQuery.where("category", "==", category);

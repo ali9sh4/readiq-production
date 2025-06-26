@@ -23,7 +23,7 @@ const serviceAccount=
          storageBucket: "readiq-1f109.firebasestorage.app"
      }) : getApp();
          //export initilaized services
-         export const auth = getAuth(app);
+         export const adminAuth = getAuth(app);
          export const storage = getStorage(app);
          export const db = getFirestore(app);
 
