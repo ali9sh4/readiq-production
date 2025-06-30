@@ -44,46 +44,6 @@ export const approveCourse = async (
 };
 
 // Separate reject function for clarity (optional - you can use approveCourse with false)
-export const rejectCourse = async (
-  courseId: string,
-  token: string,
-  rejectionReason?: string
-) => {
-  try {
-    const verifyAuthToken = await adminAuth.verifyIdToken(token);
-
-    if (!verifyAuthToken.admin) {
-      return {
-        error: true,
-        message: "غير مخول لك رفض الدورات",
-      };
-    }
-
-    // Update course with rejection
-    await db
-      .collection("courses")
-      .doc(courseId)
-      .update({
-        isApproved: false,
-        isRejected: true,
-        rejectedAt: new Date(),
-        rejectedBy: verifyAuthToken.uid,
-        rejectionReason: rejectionReason || "لم يتم تحديد سبب الرفض",
-        updatedAt: new Date(),
-      });
-
-    return {
-      success: true,
-      message: "تم رفض الدورة بنجاح",
-    };
-  } catch (error) {
-    console.error("Error in rejectCourse:", error);
-    return {
-      error: true,
-      message: "حدث خطأ أثناء رفض الدورة",
-    };
-  }
-};
 
 // Reset course status (useful if you want to "undo" an approval/rejection)
 export const resetCourseStatus = async (courseId: string, token: string) => {

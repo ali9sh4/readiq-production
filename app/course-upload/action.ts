@@ -1,4 +1,4 @@
-"use server";
+  "use server";
 
 import { adminAuth, db } from "@/firebase/service";
 import { CourseDataSchema } from "@/validation/propertySchema";

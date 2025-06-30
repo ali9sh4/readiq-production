@@ -369,10 +369,10 @@ export default function AdminDashboard() {
                         console.error("Error:", error);
                         alert("حدث خطأ أثناء الموافقة على الدورة");
                       } finally {
-                        setActionLoading(null); // ✅ Clear loading
+                        setActionLoading(null);
                       }
                     }}
-                    disabled={actionLoading === course.id} // ✅ Only disable this specific button
+                    disabled={actionLoading === course.id}
                     className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
                   >
                     <CheckCircle className="h-4 w-4 ml-2" />
@@ -399,16 +399,17 @@ export default function AdminDashboard() {
                         console.error("Error:", error);
                         alert("حدث خطأ أثناء رفض الدورة");
                       } finally {
-                        setActionLoading(null); // ✅ Clear loading
+                        setActionLoading(null);
                       }
                     }}
-                    disabled={actionLoading === course.id} // ✅ Only disable this specific button
+                    disabled={actionLoading === course.id}
                     variant="destructive"
                     className="disabled:opacity-50"
                   >
                     <XCircle className="h-4 w-4 ml-2" />
                     رفض الدورة
                   </Button>
+
                   <Button variant="outline" className="mr-auto">
                     <Eye className="h-4 w-4 ml-2" />
                     عرض التفاصيل
@@ -416,8 +417,78 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {activeTab !== "pending" && (
-                <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
+              {activeTab === "approved" && (
+                <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+                  <Button
+                    onClick={async () => {
+                      setActionLoading(course.id);
+                      try {
+                        const token = await user.getIdToken();
+                        const result = await approveCourse(
+                          course.id,
+                          false,
+                          token
+                        );
+
+                        if (result.error) {
+                          alert(result.message);
+                        } else {
+                          console.log("Course rejected successfully");
+                        }
+                      } catch (error) {
+                        console.error("Error:", error);
+                        alert("حدث خطأ أثناء رفض الدورة");
+                      } finally {
+                        setActionLoading(null);
+                      }
+                    }}
+                    disabled={actionLoading === course.id}
+                    variant="destructive"
+                    className="disabled:opacity-50"
+                  >
+                    <XCircle className="h-4 w-4 ml-2" />
+                    رفض الدورة
+                  </Button>
+
+                  <Button variant="outline">
+                    <Eye className="h-4 w-4 ml-2" />
+                    عرض التفاصيل
+                  </Button>
+                </div>
+              )}
+
+              {activeTab === "rejected" && (
+                <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+                  <Button
+                    onClick={async () => {
+                      setActionLoading(course.id);
+                      try {
+                        const token = await user.getIdToken();
+                        const result = await approveCourse(
+                          course.id,
+                          true,
+                          token
+                        );
+
+                        if (result.error) {
+                          alert(result.message);
+                        } else {
+                          console.log("Course approved successfully");
+                        }
+                      } catch (error) {
+                        console.error("Error:", error);
+                        alert("حدث خطأ أثناء الموافقة على الدورة");
+                      } finally {
+                        setActionLoading(null);
+                      }
+                    }}
+                    disabled={actionLoading === course.id}
+                    className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+                  >
+                    <CheckCircle className="h-4 w-4 ml-2" />
+                    اعتماد الدورة
+                  </Button>
+
                   <Button variant="outline">
                     <Eye className="h-4 w-4 ml-2" />
                     عرض التفاصيل

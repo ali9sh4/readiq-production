@@ -27,7 +27,6 @@ export interface Course {
   createdBy?: string;
 }
 
-
 export interface CourseResponse {
   success: boolean;
   courses: Course[];
@@ -39,10 +38,12 @@ export interface CourseResponse {
 
 export interface GetCourseOptions {
   filters?: {
-    userId?:string;
     category?: string;
     level?: "beginner" | "intermediate" | "advanced" | "all_levels";
     language?: "arabic" | "english" | "french" | "spanish";
+    isApproved?: boolean;
+    isRejected?: boolean;
+    userId?: string; 
   };
   pagination?: {
     pageSize?: number;

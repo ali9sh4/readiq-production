@@ -2,7 +2,7 @@ import { getCourses } from "@/data/courses";
 import { cookies } from "next/headers";
 import CoursesCardList from "./CoursesCardList.tsx  ";
 import { getCurrentUser } from "@/data/auth-server";
-import LoadMoreButton from "./loadMoreButoon";
+import NextBackButton from "./loadMoreButoon";
 import { CourseResponse } from "@/types/types";
 type CourseLevel = "beginner" | "intermediate" | "advanced" | "all_levels";
 
@@ -21,10 +21,10 @@ export default async function InstructorCourse({
 
   let currentUserId: string | undefined = undefined;
   if (token) {
-     console.log("🔍 Attempting to get current user...");
+    console.log("🔍 Attempting to get current user...");
     const userResult = await getCurrentUser({ token });
-      console.log("🔍 User result:", userResult); // See what's returned
-   if (userResult.success) {
+    console.log("🔍 User result:", userResult); // See what's returned
+    if (userResult.success) {
       currentUserId = userResult.user?.uid;
       console.log("🔍 Current user ID:", currentUserId);
     } else {
@@ -40,7 +40,7 @@ export default async function InstructorCourse({
     filters: {
       category: searchParams.category || undefined,
       level: (searchParams.level as CourseLevel) || undefined,
-      userId: currentUserId || undefined, // ✅ Filter by current user
+      userId: currentUserId || undefined,
     },
   });
 
@@ -59,7 +59,7 @@ export default async function InstructorCourse({
       {/* ✅ Add isAdminView */}
       {data.hasMore && (
         <div className="mt-8">
-          <LoadMoreButton
+          <NextBackButton
             nextCursor={data.nextCursor || ""}
             hasMore={data.hasMore}
             currentParams={searchParams}

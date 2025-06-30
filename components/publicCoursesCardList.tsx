@@ -1,29 +1,32 @@
 import { getCourses } from "@/data/courses";
 import { CourseResponse } from "@/types/types";
+import NextBackButton from "./loadMoreButoon";
 import CoursesCardList from "./CoursesCardList.tsx  ";
-import LoadMoreButton from "./loadMoreButoon";
 
 type CourseLevel = "beginner" | "intermediate" | "advanced" | "all_levels";
 
 export default async function PublicCoursesCardList({
-  
-  searchParams = {},
+  searchParams,
 }: {
-  
-  searchParams?: {
+  searchParams?: Promise<{
     cursor?: string;
     category?: string;
     level?: string;
-  };
+  }>;
 }) {
+  // ✅ Await searchParams before accessing properties
+  const params = await searchParams;
+
   const data: CourseResponse = await getCourses({
     pagination: {
-      lastDocId: searchParams.cursor || undefined,
+      lastDocId: params?.cursor || undefined,
       pageSize: 8, // ✅ Proper pagination size for public
     },
     filters: {
-      category: searchParams.category || undefined,
-      level: (searchParams.level as CourseLevel) || undefined,
+      category: params?.category || undefined,
+      level: (params?.level as CourseLevel) || undefined,
+      isApproved: true,
+      isRejected: false,
       // ✅ Optional: Add userId filter if needed
     },
   });
@@ -42,15 +45,14 @@ export default async function PublicCoursesCardList({
       <CoursesCardList data={data} />
 
       {/* ✅ Only show LoadMoreButton if there are more courses */}
-      {data.hasMore && (
-        <div className="mt-8">
-          <LoadMoreButton
-            nextCursor={data.nextCursor || ""}
-            hasMore={data.hasMore}
-            currentParams={searchParams} // ✅ Pass current params
-          />
-        </div>
-      )}
+
+      <div className="mt-8">
+        <NextBackButton
+          nextCursor={data.nextCursor || ""}
+          hasMore={data.hasMore}
+          currentParams={params || {}} // ✅ Pass current params
+        />
+      </div>
     </>
   );
 }
