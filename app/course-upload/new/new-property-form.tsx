@@ -28,7 +28,7 @@ export default function NewPropertyForm() {
             return;
         }
         
-        toast.success("تم حفظ الدورة بنجاح!", {
+        toast.success   ("تم حفظ الدورة بنجاح!", {
             description: "يمكنك الآن إدارة الدورة من لوحة التحكم.",
         });
         

@@ -5,7 +5,7 @@ export type FirestoreTimestamp = {
   nanoseconds: number;
 };
 
-export interface Course {
+export interface  Course {
   rating: number;
   studentsCount: number;
   instructor: string;

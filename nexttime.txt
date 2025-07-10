@@ -1,6 +1,8 @@
 building the view for the coursed creator /// done  
 approving functionality // done
 on the course card list activate the edit button ! 
-i am providing inavlid id .. solve this probelm fast 
+i am providing inavlid id .. solve this probelm fast // done 
+upload image course section // 
+
 
 

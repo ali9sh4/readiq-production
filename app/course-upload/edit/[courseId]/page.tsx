@@ -1,6 +1,6 @@
 import { Breadcrumbs } from "@/components/ui/breadcrumb";
 import { fetchCourseDetails } from "@/data/courses";
-import NewPropertyForm from "../../new/new-property-form";
+import EditCourseForm from "../edit-course-form";
 
 export default async function EditCoursePage({
   params,
@@ -10,14 +10,13 @@ export default async function EditCoursePage({
   try {
     // ✅ Use the actual courseId from params
     const Course = await fetchCourseDetails(params.courseId);
-    console.log("Course Details:", Course);
+    if (!Course) {
+      throw new Error("Course not found");
+    }
+    
 
     return (
       <div className="container mx-auto px-4 py-8">
-        <div>
-          <h1>{Course?.id}</h1>
-          <h1>{Course?.title}</h1>
-        </div>
         <Breadcrumbs
           items={[
             {
@@ -32,7 +31,20 @@ export default async function EditCoursePage({
         <h1 className="text-3xl font-bold mt-6 mb-4">تعديل الدورة</h1>
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          <NewPropertyForm />
+          <EditCourseForm
+            id={params.courseId}
+            title={Course.title}
+            subtitle={Course?.subtitle}
+            category={Course?.category}
+            price={Course?.price}
+            description={Course?.description}
+            level={Course?.level}
+            language={Course?.language}
+            duration={Course?.duration}
+            requirements={Course?.requirements}
+            learningPoints={Course?.learningPoints}
+            
+          />
         </div>
       </div>
     );

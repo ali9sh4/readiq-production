@@ -362,23 +362,6 @@ export default function CoursesCardList({
           );
         })}
       </div>
-
-      {/* Enhanced pagination info */}
-      {isAdminView && data.hasMore && (
-        <div className="text-center mt-8">
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100 shadow-sm">
-            <div className="flex items-center justify-center gap-3 mb-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse delay-75"></div>
-              <div className="w-2 h-2 bg-blue-300 rounded-full animate-pulse delay-150"></div>
-            </div>
-            <p className="text-sm text-blue-700 font-medium">
-              يوجد المزيد من الدورات. استخدم أدوات التصفية أو البحث لعرض دورات
-              أخرى.
-            </p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

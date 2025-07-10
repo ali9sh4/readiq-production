@@ -1,7 +1,9 @@
-export default function LoginPage() {
-    return (
-        <div>
-            <h1>Register Page</h1>
-        </div>
-    )
+import ContWithGoogleButton from "@/components/ContWithGoogleButton";
+
+export default function SignUpPage() {
+  return (
+    <div>
+      <ContWithGoogleButton />
+    </div>
+  );
 }

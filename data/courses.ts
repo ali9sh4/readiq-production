@@ -1,6 +1,81 @@
 import { db, getTotalPages } from "@/firebase/service";
 import { Course, CourseResponse, GetCourseOptions } from "@/types/types";
+import { CourseDataSchema } from "@/validation/propertySchema";
 import "server-only";
+import z from "zod";
+import * as admin from "firebase-admin";
+
+const courseRepository = {
+  query() {
+    return db.collection("courses");
+  },
+  async update(
+    id: string,
+    data: z.infer<typeof CourseDataSchema>
+  ): Promise<void> {
+    try {
+      await db
+        .collection("courses")
+        .doc(id)
+        .update({
+          ...data,
+        });
+    } catch (error) {
+      console.error("Error updating course:", error);
+      throw new Error("Failed to update course");
+    }
+  },
+  async getById(id: string): Promise<Course | null> {
+    try {
+      if (!id || typeof id !== "string" || id.trim() === "") {
+        console.error("Invalid course ID provided:", id);
+        return null;
+      }
+      const doc = await db.collection("courses").doc(id.trim()).get();
+      if (!doc.exists) {
+        console.warn("Course not found for ID:", id);
+        return null;
+      }
+      const docData = doc.data();
+      if (!docData) {
+        console.warn("Course document has no data for ID:", id);
+        return null;
+      }
+      const { id: dataFieldId, ...cleanData } = docData;
+      if (dataFieldId && dataFieldId !== doc.id) {
+        console.warn(`ID conflict detected for course "${cleanData.title}"`);
+      }
+
+      const course: Course = {
+        id: doc.id,
+        ...cleanData,
+      } as Course;
+
+      return course;
+    } catch (error) {
+      console.error("Database error getting course:", error);
+      throw new Error("Failed to retrieve course from database");
+    }
+  },
+  async getCursor(
+    lastDoc: string | null
+  ): Promise<admin.firestore.DocumentSnapshot | null> {
+    try {
+      if (!lastDoc) {
+        return null;
+      }
+      const doc = await db.collection("courses").doc(lastDoc).get();
+      if (!doc.exists) {
+        console.warn("Cursor document does not exist:", lastDoc);
+        return null;
+      }
+      return doc;
+    } catch (error) {
+      console.error("Error getting cursor document:", error);
+      throw new Error("Failed to retrieve cursor document");
+    }
+  },
+};
 
 export const getCourses = async (
   options?: GetCourseOptions
@@ -11,7 +86,7 @@ export const getCourses = async (
     const { category, level, language, userId, isApproved, isRejected } =
       options?.filters || {};
 
-    let CoursesQuery = db.collection("courses").orderBy("updatedAt", "desc");
+    let CoursesQuery = courseRepository.query().orderBy("updatedAt", "desc");
 
     if (userId) {
       CoursesQuery = CoursesQuery.where("createdBy", "==", userId);
@@ -33,7 +108,6 @@ export const getCourses = async (
       CoursesQuery = CoursesQuery.where("language", "==", language);
     }
 
-    // ✅ Safe cursor pagination
     if (lastDocId) {
       try {
         const lastDoc = await db.collection("courses").doc(lastDocId).get();
@@ -44,47 +118,39 @@ export const getCourses = async (
         }
       } catch (cursorError) {
         console.warn("Invalid cursor, ignoring:", cursorError);
-        // Continue without cursor
       }
     }
 
     const totalPages = await getTotalPages(CoursesQuery, pageSize);
     const CoursesSnapShot = await CoursesQuery.limit(pageSize + 1).get();
 
-    // ✅ FIXED: Properly handle potential ID conflicts
-    const courses: Course[] = CoursesSnapShot.docs
+    const coursesList: Course[] = CoursesSnapShot.docs
       .slice(0, pageSize)
       .map((doc) => {
         const docData = doc.data();
-
-        // ✅ Remove any 'id' field from document data to prevent conflicts
         const { id: dataFieldId, ...cleanData } = docData;
 
-        // 🔍 Debug log to see if there are ID conflicts
         if (dataFieldId && dataFieldId !== doc.id) {
-          console.warn(
-            `⚠️ ID conflict detected for course "${docData.title}":`,
-            {
-              firestoreId: doc.id,
-              dataFieldId: dataFieldId,
-              using: doc.id,
-            }
-          );
+          console.warn(`ID conflict detected for course "${docData.title}":`, {
+            firestoreId: doc.id,
+            dataFieldId: dataFieldId,
+            using: doc.id,
+          });
         }
 
         return {
-          id: doc.id, // ✅ Always use Firestore document ID
-          ...cleanData, // ✅ Spread everything except the conflicting 'id'
+          id: doc.id,
+          ...cleanData,
         } as Course;
       });
 
     const hasMore = CoursesSnapShot.docs.length > pageSize;
     const nextCursor =
-      courses.length > 0 ? courses[courses.length - 1].id : null;
+      coursesList.length > 0 ? coursesList[coursesList.length - 1].id : null;
 
     return {
       success: true,
-      courses,
+      courses: coursesList,
       hasMore,
       nextCursor,
       totalPages,
@@ -101,66 +167,39 @@ export const getCourses = async (
   }
 };
 
-// ✅ FIXED: Handle potential ID conflicts in single course fetch
+export const updateCourseAction = async (
+  courseId: string,
+  data: z.infer<typeof CourseDataSchema>
+) => {
+  try {
+    await courseRepository.update(courseId, data);
+    return {
+      success: true,
+      message: "Course updated successfully",
+      courseId: courseId,
+    };
+  } catch (error) {
+    console.error("Error updating course:", error);
+    return {
+      success: false,
+      message: "Failed to update course",
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+};
+
 export const fetchCourseDetails = async (
-  courseId: string
+  id: string
 ): Promise<Course | null> => {
   try {
-    // ✅ Validate courseId
-    if (!courseId || typeof courseId !== "string" || courseId.trim() === "") {
-      console.error(
-        "❌ Invalid courseId provided to fetchCourseDetails:",
-        courseId
-      );
-      return null;
-    }
-
-    const courseSnapshot = await db
-      .collection("courses")
-      .doc(courseId.trim())
-      .get();
-
-    // ✅ Check if document exists
-    if (!courseSnapshot.exists) {
-      console.warn("⚠️ Course not found:", courseId);
-      return null;
-    }
-
-    const docData = courseSnapshot.data();
-
-    if (!docData) {
-      console.warn("⚠️ Course document has no data:", courseId);
-      return null;
-    }
-
-    // ✅ Remove any 'id' field from document data to prevent conflicts
-    const { id: dataFieldId, ...cleanData } = docData;
-
-    // 🔍 Debug log to see if there are ID conflicts
-    if (dataFieldId && dataFieldId !== courseSnapshot.id) {
-      console.warn(
-        `⚠️ ID conflict detected in fetchCourseDetails for "${docData.title}":`,
-        {
-          firestoreId: courseSnapshot.id,
-          dataFieldId: dataFieldId,
-          using: courseSnapshot.id,
-        }
-      );
-    }
-
-    const course: Course = {
-      id: courseSnapshot.id, // ✅ Always use Firestore document ID
-      ...cleanData, // ✅ Spread everything except the conflicting 'id'
-    } as Course;
-
-    return course;
+    const course = await courseRepository.getById(id);
+    return course as Course | null;
   } catch (error) {
-    console.error("❌ Error in fetchCourseDetails:", error);
+    console.error("Error getting course:", error);
     return null;
   }
 };
 
-// ✅ BONUS: Add a function to clean up existing courses with ID conflicts
 export const debugCourseIds = async () => {
   try {
     const snapshot = await db.collection("courses").limit(10).get();
@@ -178,9 +217,7 @@ export const debugCourseIds = async () => {
       .filter((course) => course.hasConflict);
 
     if (conflicts.length > 0) {
-      console.warn("🚨 Found courses with ID conflicts:", conflicts);
-    } else {
-      console.log("✅ No ID conflicts found in courses");
+      console.warn("Found courses with ID conflicts:", conflicts);
     }
 
     return conflicts;
@@ -190,7 +227,6 @@ export const debugCourseIds = async () => {
   }
 };
 
-// ✅ BONUS: Function to fix a specific course ID conflict
 export const fixCourseIdConflict = async (courseId: string) => {
   try {
     const courseRef = db.collection("courses").doc(courseId);
@@ -203,12 +239,11 @@ export const fixCourseIdConflict = async (courseId: string) => {
     const docData = courseDoc.data();
 
     if (docData?.id && docData.id !== courseId) {
-      // Remove the conflicting 'id' field from document data
       const { id: conflictingId, ...cleanData } = docData;
 
       await courseRef.update(cleanData);
 
-      console.log(`✅ Fixed ID conflict for course ${courseId}:`, {
+      console.log(`Fixed ID conflict for course ${courseId}:`, {
         removed: conflictingId,
         firestoreId: courseId,
       });
@@ -216,7 +251,7 @@ export const fixCourseIdConflict = async (courseId: string) => {
       return true;
     }
 
-    return false; // No conflict found
+    return false;
   } catch (error) {
     console.error(`Error fixing course ID conflict for ${courseId}:`, error);
     throw error;
