@@ -8,6 +8,14 @@ import { useAuth } from "@/context/authContext";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { PlusCircleIcon } from "lucide-react";
+import {
+  deleteObject,
+  ref,
+  uploadBytesResumable,
+  UploadTask,
+} from "firebase/storage";
+import { storage } from "@/firebase/client";
+import { SaveImages } from "./action";
 
 type Props = {
   id: string; // ✅ Required since we're editing
@@ -22,6 +30,7 @@ type Props = {
   requirements?: string[];
   learningPoints?: string[];
   label?: string;
+  images?: string[];
 };
 
 export default function EditCourseForm({
@@ -36,6 +45,7 @@ export default function EditCourseForm({
   duration = 0,
   requirements = [],
   learningPoints = [],
+  images = [],
 }: Props) {
   const auth = useAuth();
   const router = useRouter();
@@ -52,9 +62,10 @@ export default function EditCourseForm({
         });
         return;
       }
+      const { images: newImages = [], ...rest } = data;
 
       const response = await UpdateCourse({
-        ...data,
+        ...rest,
         id: id, // ✅ Required id from props
         token: token,
       });
@@ -65,6 +76,35 @@ export default function EditCourseForm({
         });
         return;
       }
+
+      const storageTask: (UploadTask | Promise<void>)[] = [];
+      const imagesToDelete = images.filter(
+        (image) => !newImages.find((newImage) => image === newImage.url)
+      );
+      imagesToDelete.forEach((image) =>
+        storageTask.push(deleteObject(ref(storage, image)))
+      );
+      // these paths is the array of images in the firebase database
+      // and it is reference to our uploaded images in the firebase storage
+      const paths: string[] = [];
+      newImages.forEach((image, index) => {
+        if (image.file) {
+          const path = `courses/${response.courseId}-${index}/${Date.now()}-${
+            image.file?.name
+          }`;
+          paths.push(path);
+          const storageRef = ref(storage, path);
+          storageTask.push(uploadBytesResumable(storageRef, image.file));
+        } else {
+        }
+      });
+      Promise.all(storageTask);
+      await SaveImages(
+        {courseId: id , images:paths},
+        token
+
+      )
+
 
       // ✅ Success handling
       toast.success("تم تعديل الدورة بنجاح!", {
@@ -100,6 +140,10 @@ export default function EditCourseForm({
           duration,
           requirements,
           learningPoints,
+          images: images.map((image) => ({
+            id: image, // Assuming images are just URLs or IDs
+            url: image, // Adjust based on your actual image structure
+          })),
         }}
       />
     </div>

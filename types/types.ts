@@ -5,7 +5,7 @@ export type FirestoreTimestamp = {
   nanoseconds: number;
 };
 
-export interface  Course {
+export interface Course {
   rating: number;
   studentsCount: number;
   instructor: string;
@@ -22,7 +22,7 @@ export interface  Course {
   duration: number;
   learningPoints?: string[];
   requirements?: string[];
-  image?: string;
+  images?: string[];
   createdAt: FirestoreTimestamp | Date | null;
   createdBy?: string;
 }
@@ -43,7 +43,7 @@ export interface GetCourseOptions {
     language?: "arabic" | "english" | "french" | "spanish";
     isApproved?: boolean;
     isRejected?: boolean;
-    userId?: string; 
+    userId?: string;
   };
   pagination?: {
     pageSize?: number;

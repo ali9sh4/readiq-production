@@ -43,6 +43,7 @@ export default async function EditCoursePage({
             duration={Course?.duration}
             requirements={Course?.requirements}
             learningPoints={Course?.learningPoints}
+            images={Course?.images}
             
           />
         </div>

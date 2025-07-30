@@ -3,6 +3,7 @@
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -21,9 +22,12 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Input } from "./input";
+import MultiImageUploader, { ImageUpload } from "../muti_image_uploader";
 
 type Props = {
-  handleSubmit?: (data: z.infer<typeof CourseDataSchema> & {id?:string}) => void;
+  handleSubmit?: (
+    data: z.infer<typeof CourseDataSchema> & { id?: string }
+  ) => void;
   submitButtonLabel: React.ReactNode;
   defaultValues?: z.infer<typeof CourseDataSchema>;
 };
@@ -45,7 +49,8 @@ export default function CourseForm({
       duration: 0,
       learningPoints: ["", "", "", ""],
       requirements: ["", ""],
-      image: "",
+      images: [],
+      files: [],
     },
     ...defaultValues,
   };
@@ -340,34 +345,39 @@ export default function CourseForm({
             </div>
             <div className="lg:col-span-3">
               <h3 className="text-base font-semibold text-gray-800 mb-3">
-                صورة الدورة
+                صورة غلاف الدورة {/* Changed from "صور الدورة" */}
               </h3>
-              <div className="border-2 border-dashed border-gray-200 rounded-lg p-6 text-center hover:border-blue-300 hover:bg-blue-50/30 transition-all duration-200 cursor-pointer group">
-                <div className="space-y-2">
-                  <div className="mx-auto w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-                    <svg
-                      className="w-5 h-5 text-gray-500 group-hover:text-blue-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                      />
-                    </svg>
-                  </div>
-                  <div className="text-gray-600">
-                    <p className="text-sm font-medium">
-                      اسحب وأفلت الصورة هنا، أو اضغط للاختيار
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      PNG, JPG, GIF حتى 10MB
-                    </p>
-                  </div>
-                </div>
+              <div className="mt-2">
+                <FormField
+                  control={form.control}
+                  name="images"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormDescription className="text-sm text-gray-600 mb-3">
+                        📸 اختر صورة واحدة عالية الجودة لتكون غلاف الدورة (يُفضل
+                        1280×720 بكسل)
+                      </FormDescription>
+                      <FormControl>
+                        <MultiImageUploader
+                          onImagesChange={(images: ImageUpload[]) => {
+                            form.setValue("images", images);
+                          }}
+                          images={field.value || []}
+                          maxImages={1} // Limit to 1 image for cover
+                          urlFormatter={(image) => {
+                            if (!image.file) {
+                              return `https://firebasestorage.googleapis.com/v0/b/readiq-1f109.firebasestorage.app/o/${encodeURIComponent(
+                                image.url
+                              )}?alt=media`;
+                            }
+                            return image.url;
+                          }} // Assuming image has a url property
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
           </fieldset>
@@ -390,3 +400,32 @@ export default function CourseForm({
     </div>
   );
 }
+
+/*
+this this the code for the file upload section
+ <FormField
+                  control={form.control}
+                  name="files" // or "images" - whatever your form field is called
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-semibold text-gray-800">
+                        تحميل الملفات للدوره
+                      </FormLabel>
+                      <FormControl>
+                        <MultiFileUploader
+                          files={field.value || []} // Pass current form value
+                          onFilesChange={field.onChange} // Connect to form onChange
+                          maxFiles={10}
+                          maxFileSize={50 * 1024 * 1024} // 50MB
+                          accept=".pdf,.txt,.jpg,.jpeg,.png,.webp"
+                          disabled={field.disabled}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        يمكنك تحميل حتى 10 ملفات، بحد أقصى 50 ميجابايت لكل ملف
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+*/

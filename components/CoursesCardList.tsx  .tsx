@@ -200,7 +200,7 @@ export default function CoursesCardList({
               <div className="relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl">
                 <img
                   src={
-                    course.image ||
+                    course.images ||
                     `https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=500&h=280&fit=crop&auto=format`
                   }
                   alt={course.title}

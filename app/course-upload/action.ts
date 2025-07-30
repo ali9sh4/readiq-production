@@ -38,5 +38,37 @@ export const SaveNewProperty = async (
     courseId: courseRef.id,
   };
 };
+export const SaveImages = async (
+  {
+    courseId,
+    images,
+  }: {
+    courseId: string;
+    images: string[];
+  },
+  token: string
+) => {
+  const verifiedToken = await adminAuth.verifyIdToken(token);
+  if (!verifiedToken) {
+    return {
+      error: true,
+      message: "Please log in again.",
+    };
+  }
+  const schema = z.object({
+    courseId: z.string(),
+    images: z.array(z.string()),
+  });
+  const validation = schema.safeParse({ courseId, images });
+  if (!validation.success) {
+    return {
+      error: true,
+      message: validation.error.issues[0]?.message ?? "Invalid data provided.",
+    };
+  }
+  await db.collection("courses").doc(courseId).update({
+    images,
+  });
+};
 
-//in the future you need to use v9 (modular) SDK you import it from firebase/firestore,
+//in the future you need to use v9 (modular) SDK you import it from firebase/firestone

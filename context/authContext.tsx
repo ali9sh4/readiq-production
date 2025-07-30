@@ -115,6 +115,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
   const logOut = async () => {
+    const confirmLogout = window.confirm("Are you sure you want to log out?");
+    if (!confirmLogout) {
+      return;
+    }
     try {
       await auth.signOut();
       setUser(null);
