@@ -1,0 +1,178 @@
+// lib/file-security.ts
+import crypto from "crypto";
+import path from "path";
+
+// Allowed file types for course materials
+const ALLOWED_MIME_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  "video/mp4",
+  "video/webm",
+  "audio/mpeg",
+  "audio/wav",
+  "application/zip",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+] as const;
+
+const ALLOWED_EXTENSIONS = [
+  ".pdf",
+  ".doc",
+  ".docx",
+  ".ppt",
+  ".pptx",
+  ".mp4",
+  ".webm",
+  ".mp3",
+  ".wav",
+  ".zip",
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+] as const;
+
+// Security constants
+const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+const MAX_FILENAME_LENGTH = 255;
+
+export interface  FileValidationResult {
+  isValid: boolean;
+  error?: string;
+  sanitizedName?: string;
+}
+
+export interface FileMetadata {
+  originalName: string;
+  sanitizedName: string;
+  size: number;
+  mimeType: string;
+  extension: string;
+  hash: string;
+}
+
+/**
+ * Comprehensive file validation
+ */
+export function validateFile(file: File): FileValidationResult {
+  try {
+    // Check file size
+    if (file.size > MAX_FILE_SIZE) {
+      return {
+        isValid: false,
+        error: `File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit`,
+      };
+    }
+
+    if (file.size === 0) {
+      return {
+        isValid: false,
+        error: "File is empty",
+      };
+    }
+
+    // Validate MIME type
+    if (!ALLOWED_MIME_TYPES.includes(file.type as any)) {
+      return {
+        isValid: false,
+        error: `File type ${file.type} is not allowed`,
+      };
+    }
+
+    // Validate file extension
+    const extension = path.extname(file.name).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(extension as any)) {
+      return {
+        isValid: false,
+        error: `File extension ${extension} is not allowed`,
+      };
+    }
+
+    // Validate filename length
+    if (file.name.length > MAX_FILENAME_LENGTH) {
+      return {
+        isValid: false,
+        error: "Filename is too long",
+      };
+    }
+
+    // Sanitize filename
+    const sanitizedName = sanitizeFilename(file.name);
+
+    return {
+      isValid: true,
+      sanitizedName,
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+
+      isValid: false,
+      error: "File validation failed",
+
+    };
+  }
+}
+
+/**
+ * Sanitize filename to prevent security issues
+ */
+export function sanitizeFilename(filename: string): string {
+  // Remove dangerous characters
+  const sanitized = filename
+    .replace(/[^a-zA-Z0-9._-]/g, "_") // Replace special chars with underscore
+    .replace(/_{2,}/g, "_") // Replace multiple underscores with single
+    .replace(/^[._-]|[._-]$/g, "") // Remove leading/trailing dots, underscores, hyphens
+    .toLowerCase();
+
+  // Ensure filename isn't empty
+  if (!sanitized) {
+    return `file_${Date.now()}`;
+  }
+
+  return sanitized;
+}
+
+/**
+ * Generate secure filename with timestamp and hash
+ */
+export function generateSecureFilename(originalName: string): string {
+  const sanitized = sanitizeFilename(originalName);
+  const extension = path.extname(sanitized);
+  const nameWithoutExt = path.basename(sanitized, extension);
+  const timestamp = Date.now();
+  const randomHash = crypto.randomBytes(8).toString("hex");
+
+  return `courses/${timestamp}-${randomHash}-${nameWithoutExt}${extension}`;
+}
+
+/**
+ * Generate file hash for integrity checking
+ */
+export async function generateFileHash(buffer: Buffer): Promise<string> {
+  return crypto.createHash("sha256").update(buffer).digest("hex");
+}
+
+/**
+ * Create file metadata object
+ */
+export async function createFileMetadata(
+  file: File,
+  buffer: Buffer
+): Promise<FileMetadata> {
+  const hash = await generateFileHash(buffer);
+  const sanitizedName = generateSecureFilename(file.name);
+
+  return {
+    originalName: file.name,
+    sanitizedName,
+    size: file.size,
+    mimeType: file.type,
+    extension: path.extname(file.name).toLowerCase(),
+    hash,
+  };
+}

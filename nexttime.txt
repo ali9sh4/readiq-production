@@ -4,7 +4,8 @@ on the course card list activate the edit button !
 i am providing inavlid id .. solve this probelm fast // done 
 upload image course section // 
 after course ..firebase rule protection // important \
-uplaod images to other backend // 
+uplaod images to other backend // done 
+summary after every step with big letters // and the next page // 
 
 
 

@@ -57,7 +57,7 @@ export default function NewPropertyForm() {
       description: "يمكنك الآن إدارة الدورة من لوحة التحكم.",
     });
 
-    router.push("/course-upload"); // ✅ Now this will work
+    router.replace(`/course-upload/${response.courseId}/files`); // ✅ Now this will work
 
     console.log({ response });
   };

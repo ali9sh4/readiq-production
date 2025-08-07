@@ -5,7 +5,8 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import { CourseResponse } from "@/types/types";
+import Image from "next/image";
+import { Course, CourseResponse } from "@/types/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -23,6 +24,23 @@ import {
   BookOpen,
   TrendingUp,
 } from "lucide-react";
+
+// Type for ImageUpload objects (from form)
+type ImageUpload = {
+  id: string;
+  url: string;
+  file?: File;
+};
+
+// Type guard to check if it's an ImageUpload object
+const isImageUpload = (image: unknown): image is ImageUpload => {
+  return (
+    typeof image === "object" &&
+    image !== null &&
+    "url" in image &&
+    typeof (image as ImageUpload).url === "string"
+  );
+};
 
 // Utility functions
 const formatPrice = (price: number): string => {
@@ -104,6 +122,63 @@ export default function CoursesCardList({
   data,
   isAdminView = false,
 }: CoursesCardListProps) {
+  // Enhanced function to get the first image URL with proper typing
+  const getFirstImageUrl = (course: Course): string => {
+    console.log("Course images:", course.images);
+
+    if (!course.images || course.images.length === 0) {
+      console.log("No images found, using placeholder");
+      return "/images/course-placeholder.jpg";
+    }
+
+    const firstImage = course.images[0];
+    console.log("First image:", firstImage, "Type:", typeof firstImage);
+
+    // Since Course interface defines images as string[], we know it should be a string
+    // But let's handle both cases for form data compatibility
+
+    // Handle if it's an ImageUpload object (from form - shouldn't happen with Course type, but just in case)
+    if (isImageUpload(firstImage)) {
+      const imageUrl = firstImage.url;
+      console.log("Processing object image URL:", imageUrl);
+
+      // If it's already a full URL, return as is
+      if (imageUrl.startsWith("http")) {
+        console.log("Returning full URL:", imageUrl);
+        return imageUrl;
+      }
+
+      // Format Firebase storage URL
+      const formattedUrl = `https://firebasestorage.googleapis.com/v0/b/readiq-1f109.firebasestorage.app/o/${encodeURIComponent(
+        imageUrl
+      )}?alt=media`;
+      console.log("Returning formatted URL:", formattedUrl);
+      return formattedUrl;
+    }
+
+    // Handle if it's a string (expected from Course interface)
+    if (typeof firstImage === "string") {
+      console.log("Processing string image URL:", firstImage);
+
+      // If it's already a full URL, return as is
+      if (firstImage.startsWith("http")) {
+        console.log("Returning string full URL:", firstImage);
+        return firstImage;
+      }
+
+      // Format Firebase storage URL
+      const formattedUrl = `https://firebasestorage.googleapis.com/v0/b/readiq-1f109.firebasestorage.app/o/${encodeURIComponent(
+        firstImage
+      )}?alt=media`;
+      console.log("Returning formatted string URL:", formattedUrl);
+      return formattedUrl;
+    }
+
+    // Fallback
+    console.log("No valid image found, using placeholder");
+    return "/images/course-placeholder.jpg";
+  };
+
   // Error handling with enhanced design
   if (!data.success || data.error) {
     return (
@@ -185,7 +260,6 @@ export default function CoursesCardList({
       {/* Enhanced grid with better responsive design */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
         {data.courses.map((course) => {
-          // ✅ Use static fallback values
           const rating = course.rating || 4.2;
           const studentsCount = course.studentsCount || 1250;
           const instructor =
@@ -197,14 +271,13 @@ export default function CoursesCardList({
               className="group cursor-pointer transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-3 border-0 shadow-xl overflow-hidden bg-white rounded-2xl backdrop-blur-sm"
             >
               {/* Enhanced Course Image with better overlay */}
-              <div className="relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl">
-                <img
-                  src={
-                    course.images ||
-                    `https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=500&h=280&fit=crop&auto=format`
-                  }
-                  alt={course.title}
-                  className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-700"
+              <div className="relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl h-48">
+                <Image
+                  src={getFirstImageUrl(course)}
+                  fill
+                  alt={course.title || "Course image"}
+                  className="object-cover"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 />
 
                 {/* Gradient overlay */}
