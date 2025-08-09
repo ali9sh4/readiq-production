@@ -113,7 +113,7 @@ export default function SmartCourseUploader({
     const newSelectedFiles: SelectedFile[] = [];
     const errorMessages: string[] = [];
 
-    // Check total limit
+    // Check total limitz   
     const totalFiles =
       selectedFiles.length + uploadedFiles.length + files.length;
     if (totalFiles > maxFiles) {
