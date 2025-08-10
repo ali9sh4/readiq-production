@@ -19,138 +19,149 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Sparkles, Zap, Clock } from "lucide-react";
-import { Input } from "./ui/input";
+import { Input } from "@/components/ui/input";
 import { QuickCourseSchema } from "@/validation/propertySchema";
 import z from "zod";
-type input = z.input<typeof QuickCourseSchema>;
-type output = z.output<typeof QuickCourseSchema>;
+
+type InputT = z.input<typeof QuickCourseSchema>;
+type OutputT = z.output<typeof QuickCourseSchema>;
 
 type Props = {
-  handleSubmit?: (data: output) => void;
+  handleSubmit?: (data: OutputT) => void;
   submitButtonLabel: React.ReactNode;
-  defaultValues?: Partial<input>;
 };
 
 export default function QuickCourseForm({
   handleSubmit,
   submitButtonLabel,
-  defaultValues,
 }: Props) {
-  const combinedDefaultValues: z.input<typeof QuickCourseSchema> = {
-    ...{
+  const form = useForm<InputT>({
+    resolver: zodResolver(QuickCourseSchema),
+    mode: "onChange",
+    defaultValues: {
       title: "",
-      category: "",
+      category: undefined,
+      level: undefined,
       price: 0,
       description: "",
-      level: "beginner",
-    },
-    ...defaultValues,
-  };
-  const form = useForm<z.input<typeof QuickCourseSchema>>({
-    resolver: zodResolver(QuickCourseSchema),
-    defaultValues: combinedDefaultValues,
+    } as Partial<InputT>,
   });
-  const onSubmit: SubmitHandler<input> = (data) => {
-    handleSubmit?.(QuickCourseSchema.parse(data)); // Output
+
+  const onSubmit: SubmitHandler<InputT> = (data) => {
+    handleSubmit?.(QuickCourseSchema.parse(data));
   };
+
+  // Simple char counter for description
+  const desc = form.watch("description") ?? "";
+  const DESC_MAX = 180;
 
   return (
     <div
       dir="rtl"
       lang="ar"
-      className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50"
+      className="min-h-screen bg-gradient-to-b from-white to-indigo-50/40"
     >
-      {/* Hero Section */}
-      <div className="max-w-3xl mx-auto pt-12 px-6">
-        {/* Quick Create Badge */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-6">
-            <Zap className="w-4 h-4" />
+      {/* Container */}
+      <div className="mx-auto w-full max-w-3xl px-5 pt-10 pb-16">
+        {/* Header */}
+        <header className="text-center mb-8">
+          <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 text-blue-700 px-4 py-2 text-base font-semibold shadow-sm">
+            <Zap className="size-5" />
             <span>إنشاء سريع</span>
           </div>
 
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">
-            ابدأ دورتك في{" "}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+          <h1 className="mt-5 text-4xl sm:text-5xl font-extrabold tracking-tight text-gray-900">
+            ابدأ دورتك في
+            <span className="mx-2 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               30 ثانية
             </span>
           </h1>
 
-          <p className="text-xl text-gray-600 mb-2">
+          <p className="mt-3 text-lg sm:text-xl text-gray-600">
             فقط 5 معلومات أساسية للبدء 🚀
           </p>
-
-          <p className="text-gray-500 text-sm">
-            يمكنك إضافة التفاصيل الأخرى لاحقاً من لوحة التحكم
+          <p className="mt-1 text-sm sm:text-base text-gray-500">
+            يمكنك إضافة التفاصيل لاحقًا من لوحة التحكم
           </p>
-        </div>
+        </header>
 
-        {/* Benefits Cards */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <Clock className="w-5 h-5 text-blue-600 mb-2" />
-            <p className="text-sm font-medium">سريع</p>
-            <p className="text-xs text-gray-500">30 ثانية فقط</p>
+        {/* Benefits (kept minimal to reduce distraction) */}
+        <section
+          aria-label="مزايا الإنشاء السريع"
+          className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8"
+        >
+          <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <Clock className="size-5 text-blue-600 mb-1" />
+            <p className="text-base font-semibold">سريع</p>
+            <p className="text-sm text-gray-500">30 ثانية فقط</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <Sparkles className="w-5 h-5 text-green-600 mb-2" />
-            <p className="text-sm font-medium">بسيط</p>
-            <p className="text-xs text-gray-500">5 حقول فقط</p>
+          <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <Sparkles className="size-5 text-emerald-600 mb-1" />
+            <p className="text-base font-semibold">بسيط</p>
+            <p className="text-sm text-gray-500">5 حقول فقط</p>
           </div>
-          <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-            <Zap className="w-5 h-5 text-purple-600 mb-2" />
-            <p className="text-sm font-medium">مرن</p>
-            <p className="text-xs text-gray-500">أكمل لاحقاً</p>
+          <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+            <Zap className="size-5 text-purple-600 mb-1" />
+            <p className="text-base font-semibold">مرن</p>
+            <p className="text-sm text-gray-500">أكمل لاحقًا</p>
           </div>
-        </div>
+        </section>
 
-        {/* Main Form Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+        {/* Form Card */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-lg p-6 sm:p-8">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-              <fieldset disabled={form.formState.isSubmitting}>
-                {/* 1. Course Title */}
+            <form
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-6"
+              noValidate
+            >
+              <fieldset
+                disabled={form.formState.isSubmitting}
+                className="space-y-6"
+              >
+                {/* Title */}
                 <FormField
                   control={form.control}
                   name="title"
                   render={({ field }) => (
-                    <FormItem className="mb-5">
-                      <FormLabel className="text-sm font-semibold text-gray-800">
+                    <FormItem>
+                      <FormLabel className="text-base font-bold text-gray-900">
                         1. عنوان الدورة <span className="text-red-500">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
                           {...field}
+                          autoComplete="off"
                           placeholder="مثال: تعلم البرمجة من الصفر"
-                          className="h-12 border-gray-200 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                          className="h-12 text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500"
+                          aria-required
                         />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-sm" />
                     </FormItem>
                   )}
                 />
 
-                {/* 2 & 3. Category and Level - Same Row */}
-                <div className="grid grid-cols-2 gap-4 mb-5">
-                  {/* 2. Category */}
+                {/* Category & Level */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="category"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-semibold text-gray-800">
+                        <FormLabel className="text-base font-bold text-gray-900">
                           2. التصنيف <span className="text-red-500">*</span>
                         </FormLabel>
                         <FormControl>
                           <Select
-                            value={field.value ?? ""} // ✅ controlled
+                            value={field.value ?? ""}
                             onValueChange={field.onChange}
                             dir="rtl"
                           >
-                            <SelectTrigger className="h-12 border-gray-200 focus:ring-2 focus:ring-blue-500/20">
+                            <SelectTrigger className="h-12 text-base border-gray-300 focus:ring-2 focus:ring-blue-500/30">
                               <SelectValue placeholder="اختر التصنيف" />
                             </SelectTrigger>
-                            <SelectContent align="end">
+                            <SelectContent align="end" className="text-base">
                               <SelectItem value="programming">
                                 البرمجة
                               </SelectItem>
@@ -168,30 +179,29 @@ export default function QuickCourseForm({
                             </SelectContent>
                           </Select>
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-sm" />
                       </FormItem>
                     )}
                   />
 
-                  {/* 3. Level */}
                   <FormField
                     control={form.control}
                     name="level"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-semibold text-gray-800">
+                        <FormLabel className="text-base font-bold text-gray-900">
                           3. المستوى
                         </FormLabel>
                         <FormControl>
                           <Select
+                            value={field.value ?? ""}
                             onValueChange={field.onChange}
-                            defaultValue={field.value}
                             dir="rtl"
                           >
-                            <SelectTrigger className="h-12 border-gray-200 focus:ring-2 focus:ring-blue-500/20">
+                            <SelectTrigger className="h-12 text-base border-gray-300 focus:ring-2 focus:ring-blue-500/30">
                               <SelectValue placeholder="اختر المستوى" />
                             </SelectTrigger>
-                            <SelectContent align="end">
+                            <SelectContent align="end" className="text-base">
                               <SelectItem value="all_levels">
                                 جميع المستويات
                               </SelectItem>
@@ -203,70 +213,90 @@ export default function QuickCourseForm({
                             </SelectContent>
                           </Select>
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-sm" />
                       </FormItem>
                     )}
                   />
                 </div>
 
-                {/* 4. Price */}
+                {/* Price */}
                 <FormField
                   control={form.control}
                   name="price"
                   render={({ field }) => (
-                    <FormItem className="mb-5">
-                      <FormLabel className="text-sm font-semibold text-gray-800">
+                    <FormItem>
+                      <FormLabel className="text-base font-bold text-gray-900">
                         4. السعر (دولار)
-                        <span className="text-gray-400 text-xs mr-2">
-                          يمكنك تغييره لاحقاً
+                        <span className="ms-2 text-sm text-gray-500">
+                          يمكنك تغييره لاحقًا
                         </span>
                       </FormLabel>
                       <FormControl>
                         <Input
-                          {...field}
+                          inputMode="decimal"
                           type="number"
                           placeholder="0 للدورة المجانية"
-                          className="h-12 border-gray-200 focus:ring-2 focus:ring-blue-500/20"
+                          className="h-12 text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500"
+                          value={
+                            Number.isFinite(field.value as unknown as number)
+                              ? (field.value as number)
+                              : 0
+                          }
                           onChange={(e) => {
                             const n = Number(e.target.value);
                             field.onChange(Number.isFinite(n) ? n : 0);
                           }}
                         />
                       </FormControl>
-                      <FormMessage />
+                      <FormMessage className="text-sm" />
                     </FormItem>
                   )}
                 />
 
-                {/* 5. Description (Optional) */}
+                {/* Description */}
                 <FormField
                   control={form.control}
                   name="description"
                   render={({ field }) => (
-                    <FormItem className="mb-6">
-                      <FormLabel className="text-sm font-semibold text-gray-800">
-                        5. وصف مختصر
-                        <span className="text-gray-400 text-xs mr-2">
-                          (اختياري)
-                        </span>
+                    <FormItem>
+                      <FormLabel className="text-base font-bold text-gray-900">
+                        5. وصف مختصر{" "}
+                        <span className="text-gray-500 text-sm">(اختياري)</span>
                       </FormLabel>
                       <FormControl>
                         <textarea
                           {...field}
-                          placeholder="اكتب وصف مختصر للدورة..."
-                          rows={3}
-                          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
+                          rows={4}
+                          maxLength={DESC_MAX}
+                          placeholder="اكتب وصفًا مختصرًا للدورة…"
+                          className="w-full rounded-lg border border-gray-300 px-4 py-3 text-base shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500 resize-y min-h-[120px]"
+                          aria-describedby="desc-help desc-count"
                         />
                       </FormControl>
-                      <FormMessage />
+                      <div className="flex items-center justify-between text-sm">
+                        <span id="desc-help" className="text-gray-500">
+                          يفضل 1–2 جمل واضحة.
+                        </span>
+                        <span
+                          id="desc-count"
+                          className={`tabular-nums ${
+                            desc.length > DESC_MAX - 10
+                              ? "text-amber-600"
+                              : "text-gray-400"
+                          }`}
+                        >
+                          {desc.length}/{DESC_MAX}
+                        </span>
+                      </div>
+                      <FormMessage className="text-sm" />
                     </FormItem>
                   )}
                 />
 
-                {/* Submit Button */}
+                {/* Submit */}
                 <Button
                   type="submit"
-                  className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium transition-all"
+                  className="w-full h-12 text-base font-semibold rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                   disabled={form.formState.isSubmitting}
                 >
                   {submitButtonLabel}
@@ -276,30 +306,30 @@ export default function QuickCourseForm({
           </Form>
         </div>
 
-        {/* What's Next Section */}
-        <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100">
-          <h3 className="font-semibold text-blue-900 mb-3">
+        {/* Next steps */}
+        <section className="mt-8 rounded-2xl border border-blue-100 bg-blue-50/70 p-5">
+          <h3 className="text-lg font-bold text-blue-900 mb-3">
             ماذا بعد الإنشاء؟ 🎯
           </h3>
-          <div className="space-y-2 text-sm text-blue-800">
-            <div className="flex items-start gap-2">
-              <span className="text-blue-600 mt-0.5">✓</span>
-              <span>ستنتقل إلى لوحة تحكم الدورة</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-blue-600 mt-0.5">✓</span>
-              <span>يمكنك إضافة الفيديوهات والملفات</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-blue-600 mt-0.5">✓</span>
-              <span>أكمل باقي التفاصيل في أي وقت</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <span className="text-blue-600 mt-0.5">✓</span>
-              <span>الحفظ التلقائي يحفظ كل تعديلاتك</span>
-            </div>
-          </div>
-        </div>
+          <ul className="space-y-2 text-base text-blue-900/90">
+            <li className="flex items-start gap-2">
+              <span className="text-blue-700 mt-1">✓</span>
+              <span>الانتقال تلقائيًا إلى لوحة تحكم الدورة</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-700 mt-1">✓</span>
+              <span>إضافة الفيديوهات والملفات بسهولة</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-700 mt-1">✓</span>
+              <span>إكمال بقية التفاصيل في أي وقت</span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-blue-700 mt-1">✓</span>
+              <span>الحفظ التلقائي يضمن عدم فقدان التعديلات</span>
+            </li>
+          </ul>
+        </section>
       </div>
     </div>
   );

@@ -2,7 +2,10 @@
 "use server";
 
 import { adminAuth, db } from "@/firebase/service";
-import { CourseDataSchema } from "@/validation/propertySchema";
+import {
+  CourseDataSchema,
+  QuickCourseSchema,
+} from "@/validation/propertySchema";
 import z from "zod";
 
 // Types
@@ -67,6 +70,60 @@ export const SaveNewProperty = async (
 
     // Validate data
     const validation = CourseDataSchema.safeParse(CourseData);
+    if (!validation.success) {
+      return {
+        error: true,
+        message:
+          validation.error.issues[0].message ?? "البيانات المرسلة غير صحيحة.",
+      };
+    }
+
+    // Prepare course data
+    const courseToSave = {
+      ...CourseData,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdBy: verifiedToken.uid,
+      isApproved: false,
+      isRejected: false,
+      status: "draft", // Initial status
+      hasFiles: false,
+      filesCount: 0,
+    };
+
+    // Save to Firestore using v8 Admin SDK syntax
+    const courseRef = await db.collection("courses").add(courseToSave);
+
+    return {
+      success: true,
+      courseId: courseRef.id,
+      message: "تم إنشاء الدورة بنجاح",
+    };
+  } catch (error) {
+    console.error("Error saving course:", error);
+    return {
+      error: true,
+      message: "حدث خطأ أثناء حفظ الدورة",
+    };
+  }
+};
+export const SaveQuickCourseCreation = async (
+  data: z.infer<typeof QuickCourseSchema> & { token: string }
+) => {
+  try {
+    const { token, ...CourseData } = data;
+
+    // Verify token
+    const verifiedToken = await adminAuth.verifyIdToken(token);
+    if (!verifiedToken) {
+      return {
+        error: true,
+        message: "يرجى تسجيل الدخول مرة أخرى.",
+      };
+    }
+
+    // Validate data
+    const validation = QuickCourseSchema.safeParse(CourseData);
     if (!validation.success) {
       return {
         error: true,
