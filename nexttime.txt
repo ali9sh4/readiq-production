@@ -1,12 +1,17 @@
 building the view for the coursed creator /// done  
 approving functionality // done
 on the course card list activate the edit button ! 
-i am providing inavlid id .. solve this probelm fast // done 
+i am providing inavlid id .. solve this probe   lm fast // done 
 upload image course section // 
 after course ..firebase rule protection // important \
 uplaod images to other backend // done 
 summary after every step with big letters // and the next page // 
-
+dashboard // build it by your self 
+fileUploaderIntegration //// this is the next  
+video uploading ///
+actions//uploads Actions // url 
+then view the files that you uploaded 
+make it easy easy ..easy ..
 
 
 

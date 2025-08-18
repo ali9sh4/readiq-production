@@ -1,6 +1,7 @@
 import { Breadcrumbs } from "@/components/ui/breadcrumb";
 import { fetchCourseDetails } from "@/data/courses";
 import EditCourseForm from "../edit-course-form";
+import CourseDashboard from "@/components/CourseDashboard";
 
 export default async function EditCoursePage({
   params,
@@ -8,12 +9,26 @@ export default async function EditCoursePage({
   params: { courseId: string };
 }) {
   try {
+    const { courseId } = await params;
     // ✅ Use the actual courseId from params
-    const Course = await fetchCourseDetails(params.courseId);
+    const Course = await fetchCourseDetails(courseId);
     if (!Course) {
       throw new Error("Course not found");
     }
-    
+    function cleanCourseData(course: any) {
+      return {
+        ...course,
+        createdAt:
+          course.createdAt?.toDate?.() instanceof Date
+            ? course.createdAt.toDate()
+            : course.createdAt,
+        updatedAt:
+          course.updatedAt?.toDate?.() instanceof Date
+            ? course.updatedAt.toDate()
+            : course.updatedAt,
+      };
+    }
+    const CleanCourse = cleanCourseData(Course);
 
     return (
       <div className="container mx-auto px-4 py-8">
@@ -31,21 +46,7 @@ export default async function EditCoursePage({
         <h1 className="text-3xl font-bold mt-6 mb-4">تعديل الدورة</h1>
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          <EditCourseForm
-            id={params.courseId}
-            title={Course.title}
-            subtitle={Course?.subtitle}
-            category={Course?.category}
-            price={Course?.price}
-            description={Course?.description}
-            level={Course?.level}
-            language={Course?.language}
-            duration={Course?.duration}
-            requirements={Course?.requirements}
-            learningPoints={Course?.learningPoints}
-            images={Course?.images}
-            
-          />
+          <CourseDashboard courseData={CleanCourse} />
         </div>
       </div>
     );
@@ -67,3 +68,22 @@ export default async function EditCoursePage({
     );
   }
 }
+
+/*
+the old way 
+<EditCourseForm
+            id={params.courseId}
+            title={Course.title}
+            subtitle={Course?.subtitle}
+            category={Course?.category}
+            price={Course?.price}
+            description={Course?.description}
+            level={Course?.level}
+            language={Course?.language}
+            duration={Course?.duration}
+            requirements={Course?.requirements}
+            learningPoints={Course?.learningPoints}
+            images={Course?.images}
+          />
+
+*/

@@ -12,6 +12,8 @@ import {
   Trash2,
 } from "lucide-react";
 import { uploadCourseFile } from "@/app/actions/upload_actions";
+import { saveCourseFiles } from "@/app/course-upload/action";
+import { useAuth } from "@/context/authContext";
 
 interface SelectedFile {
   file: File;
@@ -31,6 +33,7 @@ interface Props {
   maxFiles?: number;
   maxFileSize?: number;
   disabled?: boolean;
+  id: string;
 }
 
 export default function SmartCourseUploader({
@@ -38,7 +41,9 @@ export default function SmartCourseUploader({
   maxFiles = 5,
   maxFileSize = 50 * 1024 * 1024, // 50MB
   disabled = false,
+  id: courseId,
 }: Props) {
+  const auth = useAuth();
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -113,7 +118,7 @@ export default function SmartCourseUploader({
     const newSelectedFiles: SelectedFile[] = [];
     const errorMessages: string[] = [];
 
-    // Check total limitz   
+    // Check total limitz
     const totalFiles =
       selectedFiles.length + uploadedFiles.length + files.length;
     if (totalFiles > maxFiles) {
@@ -130,7 +135,7 @@ export default function SmartCourseUploader({
       } else {
         newSelectedFiles.push({
           file,
-          id: `${Date.now()}-${Math.random().toString(36).substring(2)}`,
+          id: `${Date.now()}-${Math.random().toString(36).substring(2)}`, // Unique ID for UI
         });
       }
     });
@@ -165,16 +170,24 @@ export default function SmartCourseUploader({
       return;
     }
 
+    // Check auth first
+    if (!auth?.user) {
+      setError("يرجى تسجيل الدخول أولاً");
+      return;
+    }
+
     setUploading(true);
     setError("");
     const newUploadedFiles: UploadedFile[] = [];
     const failedFiles: string[] = [];
 
     try {
+      // STEP 1: Upload all files to R2 first
       for (const selectedFile of selectedFiles) {
         try {
           const formData = new FormData();
           formData.append("file", selectedFile.file);
+          formData.append("courseId", courseId);
 
           const result = await uploadCourseFile(formData);
 
@@ -190,25 +203,48 @@ export default function SmartCourseUploader({
             failedFiles.push(`${selectedFile.file.name}: ${result.error}`);
           }
         } catch (error) {
+          console.error(
+            "Upload error for file:",
+            selectedFile.file.name,
+            error
+          );
           failedFiles.push(`${selectedFile.file.name}: خطأ في الرفع`);
         }
       }
 
-      // Update uploaded files
+      // STEP 2: After ALL uploads succeed, save to database ONCE
       if (newUploadedFiles.length > 0) {
-        setUploadedFiles((prev) => {
-          const updated = [...prev, ...newUploadedFiles];
-          if (onUploadComplete) {
-            onUploadComplete(updated);
-          }
-          return updated;
-        });
+        try {
+          const token = await auth.user.getIdToken();
 
-        // Clear selected files that were uploaded successfully
-        setSelectedFiles([]);
+          const saveResult = await saveCourseFiles({
+            courseId,
+            files: newUploadedFiles,
+            token,
+          });
+
+          if (saveResult.success) {
+            // Update UI state only after successful database save
+            setUploadedFiles((prev) => {
+              const updated = [...prev, ...newUploadedFiles];
+              if (onUploadComplete) {
+                onUploadComplete(updated);
+              }
+              return updated;
+            });
+
+            // Clear selected files
+            setSelectedFiles([]);
+          } else {
+            setError("فشل في حفظ الملفات في قاعدة البيانات");
+          }
+        } catch (error) {
+          console.error("Database save error:", error);
+          setError("فشل في حفظ الملفات في قاعدة البيانات");
+        }
       }
 
-      // Show errors for failed files
+      // Show errors for failed uploads
       if (failedFiles.length > 0) {
         setError(`فشل رفع:\n${failedFiles.join("\n")}`);
       }
@@ -441,7 +477,7 @@ export default function SmartCourseUploader({
         <div className="text-center py-8 text-gray-500">
           <File className="w-16 h-16 mx-auto mb-3 text-gray-300" />
           <p className="text-lg font-medium mb-1">لا توجد ملفات</p>
-          <p className="text-sm">اختر الملفات أولاً، ثم اضغط "رفع"</p>
+          <p className="text-sm">اختر الملفات أولاً، ثم اضغط رفع</p>
         </div>
       )}
 

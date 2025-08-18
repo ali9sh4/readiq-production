@@ -2,6 +2,7 @@
 "use server";
 
 import { adminAuth, db } from "@/firebase/service";
+import { Course } from "@/types/types";
 import {
   CourseDataSchema,
   QuickCourseSchema,
@@ -222,11 +223,7 @@ export async function saveCourseFiles({
   courseId,
   files,
   token,
-}: SaveCourseFilesParams): Promise<{
-  success: boolean;
-  message?: string;
-  error?: boolean;
-}> {
+}: SaveCourseFilesParams) {
   try {
     // Verify token
     const verifiedToken = await adminAuth.verifyIdToken(token);
@@ -333,7 +330,7 @@ export async function getCourseFiles(courseId: string): Promise<{
 // Get course by ID (v8 Admin SDK)
 export async function getCourseById(courseId: string): Promise<{
   success: boolean;
-  course?: any;
+  course?: Course;
   error?: boolean;
   message?: string;
 }> {
@@ -361,6 +358,17 @@ export async function getCourseById(courseId: string): Promise<{
       course: {
         id: courseDoc.id,
         ...courseDoc.data(),
+        rating: 0,
+        studentsCount: 0,
+        instructor: "",
+        title: "",
+        category: "",
+        price: 0,
+        description: "",
+        level: "beginner",
+        language: "arabic",
+        duration: 0,
+        createdAt: null,
       },
     };
   } catch (error) {

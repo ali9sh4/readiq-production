@@ -1,14 +1,14 @@
 // app/actions/upload-actions.ts
-'use server';
+"use server";
 
-import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
-import { 
-  validateFile, 
-  createFileMetadata, 
-  FileMetadata 
-} from '@/lib/R2/file-security';
-import { R2_BUCKET_NAME, r2Client } from '@/lib/R2/r2_client';
+import {
+  validateFile,
+  createFileMetadata,
+  FileMetadata,
+} from "@/lib/R2/file-security";
+import { R2_BUCKET_NAME, r2Client } from "@/lib/R2/r2_client";
 
 export interface UploadResult {
   success: boolean;
@@ -24,15 +24,24 @@ export interface UploadResult {
 /**
  * Secure file upload server action
  */
-export async function uploadCourseFile(formData: FormData): Promise<UploadResult> {
+export async function uploadCourseFile(
+  formData: FormData
+): Promise<UploadResult> {
   try {
     // Extract file from form data
-    const file = formData.get('file') as File;
-    
+    const file = formData.get("file") as File;
+    const courseId = formData.get("courseId") as string;
+    if (!courseId) {
+      return {
+        success: false,
+        error: "Course ID is required",
+      };
+    }
+
     if (!file) {
       return {
         success: false,
-        error: 'No file provided'
+        error: "No file provided",
       };
     }
 
@@ -41,7 +50,7 @@ export async function uploadCourseFile(formData: FormData): Promise<UploadResult
     if (!validation.isValid) {
       return {
         success: false,
-        error: validation.error
+        error: validation.error,
       };
     }
 
@@ -63,10 +72,11 @@ export async function uploadCourseFile(formData: FormData): Promise<UploadResult
         originalName: metadata.originalName,
         uploadedAt: new Date().toISOString(),
         fileHash: metadata.hash,
-        uploader: 'course-system', // You can add user info here
+        uploader: "course-system", // You can add user info here
+        courseId: courseId, // Associate with course ID
       },
       // Security headers
-      ServerSideEncryption: 'AES256',
+      ServerSideEncryption: "AES256",
     });
 
     await r2Client.send(uploadCommand);
@@ -78,7 +88,7 @@ export async function uploadCourseFile(formData: FormData): Promise<UploadResult
     console.log(`File uploaded successfully: ${metadata.sanitizedName}`, {
       originalName: file.name,
       size: file.size,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
 
     return {
@@ -87,17 +97,16 @@ export async function uploadCourseFile(formData: FormData): Promise<UploadResult
         filename: metadata.sanitizedName,
         url: fileUrl,
         size: file.size,
-        metadata
-      }
+        metadata,
+      },
     };
-
   } catch (error) {
-    console.error('Upload failed:', error);
-    
+    console.error("Upload failed:", error);
+
     // Don't expose internal errors to client
     return {
       success: false,
-      error: 'Upload failed. Please try again.'
+      error: "Upload failed. Please try again.",
     };
   }
 }
@@ -105,18 +114,24 @@ export async function uploadCourseFile(formData: FormData): Promise<UploadResult
 /**
  * Delete course file server action
  */
-export async function deleteCourseFile(filename: string): Promise<UploadResult> {
+export async function deleteCourseFile(
+  filename: string
+): Promise<UploadResult> {
   try {
     // Validate filename to prevent path traversal
-    if (!filename || filename.includes('..') || !filename.startsWith('courses/')) {
+    if (
+      !filename ||
+      filename.includes("..") ||
+      !filename.startsWith("courses/")
+    ) {
       return {
         success: false,
-        error: 'Invalid filename'
+        error: "Invalid filename",
       };
     }
 
-    const { DeleteObjectCommand } = await import('@aws-sdk/client-s3');
-    
+    const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
+
     const deleteCommand = new DeleteObjectCommand({
       Bucket: R2_BUCKET_NAME,
       Key: filename,
@@ -129,13 +144,12 @@ export async function deleteCourseFile(filename: string): Promise<UploadResult> 
     return {
       success: true,
     };
-
   } catch (error) {
-    console.error('Delete failed:', error);
-    
+    console.error("Delete failed:", error);
+
     return {
       success: false,
-      error: 'Delete failed. Please try again.'
+      error: "Delete failed. Please try again.",
     };
   }
 }
