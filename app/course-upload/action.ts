@@ -12,7 +12,6 @@ import z from "zod";
 // Types
 interface UploadedFile {
   filename: string;
-  url: string;
   size: number;
   originalName: string;
 }
@@ -20,13 +19,12 @@ interface UploadedFile {
 interface SaveCourseFilesParams {
   courseId: string;
   files: UploadedFile[];
-  token: string;
+  token?: string;
 }
 
 interface CourseFile {
   id: string;
   filename: string;
-  url: string;
   size: number;
   originalName: string;
   uploadedAt: string;
@@ -218,7 +216,7 @@ export const SaveImages = async (
   }
 };
 
-// Save course files to R2 and update database (v8 Admin SDK)
+// Fixed saveCourseFiles function
 export async function saveCourseFiles({
   courseId,
   files,
@@ -226,6 +224,14 @@ export async function saveCourseFiles({
 }: SaveCourseFilesParams) {
   try {
     // Verify token
+    if (!token) {
+      return {
+        success: false,
+        error: true,
+        message: "يرجى تسجيل الدخول مرة أخرى.",
+      };
+    }
+
     const verifiedToken = await adminAuth.verifyIdToken(token);
     if (!verifiedToken) {
       return {
@@ -244,25 +250,47 @@ export async function saveCourseFiles({
       };
     }
 
-    // Prepare files data for database
+    // ✅ Get existing course data first
+    const courseDoc = await db.collection("courses").doc(courseId).get();
+
+    if (!courseDoc.exists) {
+      return {
+        success: false,
+        error: true,
+        message: "الدورة غير موجودة",
+      };
+    }
+
+    const courseData = courseDoc.data();
+    const existingFiles = courseData?.files || [];
+
+    // ✅ Find the next available order number
+    const maxOrder =
+      existingFiles.length > 0
+        ? Math.max(...existingFiles.map((f: any) => f.order || 0))
+        : 0;
+
+    // Prepare new files data for database
     const filesData: CourseFile[] = files.map((file, index) => ({
-      id: `file_${index + 1}`,
+      id: `file_${maxOrder + index + 1}`, // ✅ Ensure unique IDs
       filename: file.filename,
-      url: file.url,
       size: file.size,
       originalName: file.originalName,
       uploadedAt: new Date().toISOString(),
-      order: index + 1,
+      order: maxOrder + index + 1, // ✅ Continue order sequence
       type: getFileType(file.originalName),
     }));
 
-    // Update the course document using v8 Admin SDK syntax
+    // ✅ Combine existing files with new files
+    const allFiles = [...existingFiles, ...filesData];
+
+    // Update the course document
     await db.collection("courses").doc(courseId).update({
-      files: filesData,
+      files: allFiles, // ✅ Keep all files (existing + new)
       hasFiles: true,
-      filesCount: files.length,
+      filesCount: allFiles.length, // ✅ Total count of all files
       updatedAt: new Date(),
-      status: "complete", // Mark course as complete
+      status: "complete",
     });
 
     return {
@@ -289,6 +317,7 @@ export async function getCourseFiles(courseId: string): Promise<{
 }> {
   try {
     if (!courseId) {
+      
       return {
         success: false,
         error: true,
@@ -308,13 +337,23 @@ export async function getCourseFiles(courseId: string): Promise<{
     }
 
     const courseData = courseDoc.data();
+    const convertTimestamps = (obj: any) => {
+      if (obj?.toDate) return obj.toDate().toISOString();
+      return obj;
+    };
 
     return {
       success: true,
-      files: courseData?.files || [],
+      files:
+        courseData?.files?.map((file: any) => ({
+          ...file,
+          uploadedAt: convertTimestamps(file.uploadedAt),
+        })) || [],
       courseData: {
         id: courseDoc.id,
         ...courseData,
+        createdAt: convertTimestamps(courseData?.createdAt),
+        updatedAt: convertTimestamps(courseData?.updatedAt),
       },
     };
   } catch (error) {

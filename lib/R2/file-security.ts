@@ -1,4 +1,5 @@
-// lib/file-security.ts
+// Updated lib/file-security.ts
+
 import crypto from "crypto";
 import path from "path";
 
@@ -40,7 +41,7 @@ const ALLOWED_EXTENSIONS = [
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const MAX_FILENAME_LENGTH = 255;
 
-export interface  FileValidationResult {
+export interface FileValidationResult {
   isValid: boolean;
   error?: string;
   sanitizedName?: string;
@@ -110,10 +111,8 @@ export function validateFile(file: File): FileValidationResult {
   } catch (error) {
     console.error(error);
     return {
-
       isValid: false,
       error: "File validation failed",
-
     };
   }
 }
@@ -139,15 +138,20 @@ export function sanitizeFilename(filename: string): string {
 
 /**
  * Generate secure filename with timestamp and hash
+ * ✅ UPDATED: Now includes courseId for folder structure
  */
-export function generateSecureFilename(originalName: string): string {
+export function generateSecureFilename(
+  originalName: string,
+  courseId: string
+): string {
   const sanitized = sanitizeFilename(originalName);
   const extension = path.extname(sanitized);
   const nameWithoutExt = path.basename(sanitized, extension);
   const timestamp = Date.now();
   const randomHash = crypto.randomBytes(8).toString("hex");
 
-  return `courses/${timestamp}-${randomHash}-${nameWithoutExt}${extension}`;
+  // ✅ NEW: Create course-specific folder structure
+  return `courses/${courseId}/${timestamp}-${randomHash}-${nameWithoutExt}${extension}`;
 }
 
 /**
@@ -159,13 +163,15 @@ export async function generateFileHash(buffer: Buffer): Promise<string> {
 
 /**
  * Create file metadata object
+ * ✅ UPDATED: Pass courseId to generateSecureFilename
  */
 export async function createFileMetadata(
   file: File,
-  buffer: Buffer
+  buffer: Buffer,
+  courseId: string
 ): Promise<FileMetadata> {
   const hash = await generateFileHash(buffer);
-  const sanitizedName = generateSecureFilename(file.name);
+  const sanitizedName = generateSecureFilename(file.name, courseId); // ✅ Pass courseId
 
   return {
     originalName: file.name,
@@ -175,4 +181,28 @@ export async function createFileMetadata(
     extension: path.extname(file.name).toLowerCase(),
     hash,
   };
+}
+
+// ✅ NEW: Additional utility functions for folder-based operations
+
+/**
+ * Extract courseId from a filename path
+ */
+export function extractCourseIdFromFilename(filename: string): string | null {
+  const match = filename.match(/^courses\/([^\/]+)\//);
+  return match ? match[1] : null;
+}
+
+/**
+ * Check if filename follows new folder structure
+ */
+export function isNewStructureFilename(filename: string): boolean {
+  return filename.startsWith("courses/") && filename.split("/").length === 3;
+}
+
+/**
+ * Check if filename follows old flat structure
+ */
+export function isOldStructureFilename(filename: string): boolean {
+  return /^\d+/.test(filename) && !filename.includes("/");
 }

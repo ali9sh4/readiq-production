@@ -247,23 +247,50 @@ export async function saveCourseFiles({
       };
     }
 
+    // ✅ Get current course data to preserve existing files
+    const courseDoc = await db.collection("courses").doc(courseId).get();
+
+    if (!courseDoc.exists) {
+      return {
+        success: false,
+        error: true,
+        message: "الدورة غير موجودة",
+      };
+    }
+
+    const courseData = courseDoc.data();
+    const existingFiles = courseData?.files || [];
+
+    // ✅ Generate unique IDs for new files (avoid conflicts)
+    const currentHighestId =
+      existingFiles.length > 0
+        ? Math.max(
+            ...existingFiles.map((f: { id: string }) =>
+              parseInt(f.id.replace("file_", "") || "0")
+            )
+          )
+        : 0;
+
     // Prepare files data for database
-    const filesData: CourseFile[] = files.map((file, index) => ({
-      id: `file_${index + 1}`,
+    const newFilesData: CourseFile[] = files.map((file, index) => ({
+      id: `file_${currentHighestId + index + 1}`, // ✅ Unique ID
       filename: file.filename,
       url: file.url,
       size: file.size,
       originalName: file.originalName,
       uploadedAt: new Date().toISOString(),
-      order: index + 1,
+      order: existingFiles.length + index + 1, // ✅ Preserve order
       type: getFileType(file.originalName),
     }));
 
+    // ✅ Combine existing files with new files
+    const allFiles = [...existingFiles, ...newFilesData];
+
     // Update the course document using v8 Admin SDK syntax
     await db.collection("courses").doc(courseId).update({
-      files: filesData,
+      files: allFiles, // ✅ This preserves existing files and adds new ones
       hasFiles: true,
-      filesCount: files.length,
+      filesCount: allFiles.length, // ✅ Total count of all files
       updatedAt: new Date(),
       status: "complete", // Mark course as complete
     });

@@ -1,7 +1,8 @@
 // app/actions/upload-actions.ts
 "use server";
 
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import {
   validateFile,
@@ -9,13 +10,13 @@ import {
   FileMetadata,
 } from "@/lib/R2/file-security";
 import { R2_BUCKET_NAME, r2Client } from "@/lib/R2/r2_client";
+import { adminAuth, db } from "@/firebase/service";
 
 export interface UploadResult {
   success: boolean;
   error?: string;
   data?: {
     filename: string;
-    url: string;
     size: number;
     metadata: FileMetadata;
   };
@@ -59,7 +60,7 @@ export async function uploadCourseFile(
     const buffer = Buffer.from(arrayBuffer);
 
     // Create file metadata
-    const metadata = await createFileMetadata(file, buffer);
+    const metadata = await createFileMetadata(file, buffer, courseId);
 
     // Upload to R2
     const uploadCommand = new PutObjectCommand({
@@ -80,10 +81,6 @@ export async function uploadCourseFile(
     });
 
     await r2Client.send(uploadCommand);
-
-    // Generate public URL (if bucket is public) or signed URL
-    const fileUrl = `${process.env.R2_ENDPOINT}/${R2_BUCKET_NAME}/${metadata.sanitizedName}`;
-
     // Log successful upload (for audit trail)
     console.log(`File uploaded successfully: ${metadata.sanitizedName}`, {
       originalName: file.name,
@@ -95,7 +92,6 @@ export async function uploadCourseFile(
       success: true,
       data: {
         filename: metadata.sanitizedName,
-        url: fileUrl,
         size: file.size,
         metadata,
       },
@@ -152,4 +148,154 @@ export async function deleteCourseFile(
       error: "Delete failed. Please try again.",
     };
   }
+}
+export async function getFileSignedUrl({
+  filename,
+  courseId,
+  token,
+  expiresIn = 3600, // 1 hour default
+  isDownload = false,
+}: {
+  filename: string;
+  courseId: string; // ✅ Required for ownership check
+  token: string; // ✅ Required for authentication
+  expiresIn?: number;
+  isDownload?: boolean; // ✅ For download vs view
+}): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    // ✅ 1. Verify user authentication
+    if (!token) {
+      return {
+        success: false,
+        error: "Authentication required",
+      };
+    }
+
+    const verifiedToken = await adminAuth.verifyIdToken(token);
+    if (!verifiedToken) {
+      return {
+        success: false,
+        error: "Invalid authentication",
+      };
+    }
+
+    // ✅ 2. Verify course ownership/access
+    const courseDoc = await db.collection("courses").doc(courseId).get();
+
+    if (!courseDoc.exists) {
+      return {
+        success: false,
+        error: "Course not found",
+      };
+    }
+
+    const courseData = courseDoc.data();
+
+    // Check if user owns the course OR has access (you can expand this logic)
+    const hasAccess =
+      courseData?.createdBy === verifiedToken.uid ||
+      courseData?.students?.includes(verifiedToken.uid) ||
+      courseData?.instructors?.includes(verifiedToken.uid);
+
+    if (!hasAccess) {
+      return {
+        success: false,
+        error: "Access denied to this course",
+      };
+    }
+
+    // ✅ 3. Verify file belongs to this course
+    const fileExists = courseData?.files?.some(
+      (file: any) => file.filename === filename
+    );
+
+    if (!fileExists) {
+      return {
+        success: false,
+        error: "File not found in this course",
+      };
+    }
+
+    // ✅ 4. Validate filename security
+    if (!filename || filename.includes("..")) {
+      return {
+        success: false,
+        error: "Invalid filename",
+      };
+    }
+
+    // ✅ 5. Generate signed URL
+    const getObjectCommand = new GetObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: filename,
+      ResponseContentDisposition: isDownload
+        ? `attachment; filename="${filename.split("/").pop()}"`
+        : undefined, // For download vs inline view
+    });
+
+    const signedUrl = await getSignedUrl(r2Client, getObjectCommand, {
+      expiresIn,
+    });
+
+    // ✅ 6. Log access for audit trail
+    console.log(`File accessed: ${filename}`, {
+      userId: verifiedToken.uid,
+      courseId,
+      action: isDownload ? "download" : "view",
+      timestamp: new Date().toISOString(),
+    });
+
+    return {
+      success: true,
+      url: signedUrl,
+    };
+  } catch (error) {
+    console.error("Failed to generate signed URL:", error);
+    return {
+      success: false,
+      error: "Failed to generate access URL",
+    };
+  }
+}
+
+/**
+ * Convenience function for viewing files
+ */
+export async function viewCourseFile({
+  filename,
+  courseId,
+  token,
+}: {
+  filename: string;
+  courseId: string;
+  token: string;
+}) {
+  return getFileSignedUrl({
+    filename,
+    courseId,
+    token,
+    expiresIn: 3600, // 1 hour for viewing
+    isDownload: false,
+  });
+}
+
+/**
+ * Convenience function for downloading files
+ */
+export async function downloadCourseFile({
+  filename,
+  courseId,
+  token,
+}: {
+  filename: string;
+  courseId: string;
+  token: string;
+}) {
+  return getFileSignedUrl({
+    filename,
+    courseId,
+    token,
+    expiresIn: 300, // 5 minutes for download
+    isDownload: true,
+  });
 }
