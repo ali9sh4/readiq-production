@@ -157,12 +157,17 @@ export default function SmartCourseUploader({
 }: Props) {
   // ===== STATE =====
   const auth = useAuth();
+
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]); // Current session
   const [previousFiles, setPreviousFiles] = useState<CourseFile[]>([]); // ✅ Previous uploads from DB
   const [uploading, setUploading] = useState(false);
   const [loadingPreviousFiles, setLoadingPreviousFiles] = useState(false); // ✅ Loading state
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState<{
+    upload?: string;
+    load?: string;
+    file?: string;
+  }>({});
   const [viewingFiles, setViewingFiles] = useState<Set<string>>(new Set());
   const [showUploadedFiles, setShowUploadedFiles] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -184,13 +189,16 @@ export default function SmartCourseUploader({
     "image/webp",
     "text/plain",
   ];
+  const hasError = () => {
+    return error.upload || error.file || error.load;
+  };
 
   // ✅ LOAD PREVIOUS FILES FROM DATABASE
   const loadPreviousFiles = async () => {
     if (!auth?.user || !courseId) return;
 
     setLoadingPreviousFiles(true);
-    setError("");
+    setError({});
 
     try {
       const result = await getCourseFiles(courseId);
@@ -206,16 +214,26 @@ export default function SmartCourseUploader({
         console.error("Failed to load previous files:", result.message);
         // Don't show error for empty courses - it's normal
         if (result.message && !result.message.includes("غير موجودة")) {
-          setError(`فشل في تحميل الملفات السابقة: ${result.message}`);
+          setError({
+            load: "فشل في تحميل الملفات السابقة. يرجى المحاولة مرة أخرى.",
+          });
         }
       }
     } catch (error) {
       console.error("Error loading previous files:", error);
-      setError("حدث خطأ أثناء تحميل الملفات السابقة");
+      setError({
+        load: "حدث خطأ أثناء تحميل الملفات السابقة. يرجى المحاولة مرة أخرى.",
+      });
     } finally {
       setLoadingPreviousFiles(false);
     }
   };
+
+  useEffect(() => {
+    return () => {
+      setViewingFiles(new Set());
+    };
+  }, []);
 
   // ✅ LOAD FILES ON COMPONENT MOUNT
   useEffect(() => {
@@ -276,7 +294,7 @@ export default function SmartCourseUploader({
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
 
-    setError("");
+    setError({});
     const newSelectedFiles: SelectedFile[] = [];
     const errorMessages: string[] = [];
 
@@ -285,9 +303,9 @@ export default function SmartCourseUploader({
     const totalFiles = selectedFiles.length + totalExistingFiles + files.length;
 
     if (totalFiles > maxFiles) {
-      setError(
-        `لا يمكن اختيار أكثر من ${maxFiles} ملفات إجمالي (يوجد حالياً ${totalExistingFiles} ملف)`
-      );
+      setError({
+        upload: `تجاوز الحد الأقصى للملفات المسموحة (${maxFiles} ملفات)`,
+      });
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
@@ -306,7 +324,9 @@ export default function SmartCourseUploader({
     });
 
     if (errorMessages.length > 0) {
-      setError(errorMessages.join("\n"));
+      setError({
+        upload: errorMessages.join("\n"),
+      });
     }
 
     if (newSelectedFiles.length > 0) {
@@ -320,28 +340,31 @@ export default function SmartCourseUploader({
 
   const removeSelectedFile = (id: string) => {
     setSelectedFiles((prev) => prev.filter((f) => f.id !== id));
-    setError("");
   };
 
   const clearSelectedFiles = () => {
     setSelectedFiles([]);
-    setError("");
+    setError({});
   };
 
   // ===== UPLOAD HANDLERS =====
   const uploadFiles = async () => {
     if (selectedFiles.length === 0) {
-      setError("لا توجد ملفات مختارة للرفع");
+      setError({
+        upload: "لا توجد ملفات للرفع",
+      });
       return;
     }
 
     if (!auth?.user) {
-      setError("يرجى تسجيل الدخول أولاً");
+      setError({
+        upload: "يرجى تسجيل الدخول لرفع الملفات",
+      });
       return;
     }
 
     setUploading(true);
-    setError("");
+    setError({});
     const newUploadedFiles: UploadedFile[] = [];
     const failedFiles: string[] = [];
 
@@ -395,19 +418,27 @@ export default function SmartCourseUploader({
 
             setShowUploadedFiles(true);
           } else {
-            setError("فشل في حفظ الملفات في قاعدة البيانات");
+            setError({
+              file: `فشل في حفظ الملفات في قاعدة البيانات: ${saveResult.message}`,
+            });
           }
         } catch (error) {
           console.error("Database save error:", error);
-          setError("فشل في حفظ الملفات في قاعدة البيانات");
+          setError({
+            file: "حدث خطأ أثناء حفظ الملفات في قاعدة البيانات",
+          });
         }
       }
 
       if (failedFiles.length > 0) {
-        setError(`فشل رفع:\n${failedFiles.join("\n")}`);
+        setError({
+          file: `فشل في رفع بعض الملفات:\n${failedFiles.join("\n")}`,
+        });
       }
     } catch (error) {
-      setError("حدث خطأ عام أثناء الرفع");
+      setError({
+        upload: "حدث خطأ أثناء رفع الملفات",
+      });
       console.error("Upload error:", error);
     } finally {
       setUploading(false);
@@ -417,7 +448,9 @@ export default function SmartCourseUploader({
   // ===== FILE ACCESS HANDLERS =====
   const viewFile = async (filename: string, originalName: string) => {
     if (!auth?.user) {
-      setError("يرجى تسجيل الدخول للوصول للملفات");
+      setError({
+        file: "يرجى تسجيل الدخول لعرض الملفات",
+      });
       return;
     }
 
@@ -435,11 +468,15 @@ export default function SmartCourseUploader({
       if (result.success && result.url) {
         window.open(result.url, "_blank");
       } else {
-        setError(`فشل في فتح الملف: ${result.error}`);
+        setError({
+          file: `فشل في فتح الملف: ${result.error}`,
+        });
       }
     } catch (error) {
       console.error("Error accessing file:", error);
-      setError(`حدث خطأ أثناء فتح الملف: ${originalName}`);
+      setError({
+        file: `حدث خطأ أثناء فتح الملف: ${originalName}`,
+      });
     } finally {
       setViewingFiles((prev) => {
         const newSet = new Set(prev);
@@ -451,7 +488,9 @@ export default function SmartCourseUploader({
 
   const downloadFile = async (filename: string, originalName: string) => {
     if (!auth?.user) {
-      setError("يرجى تسجيل الدخول لتحميل الملفات");
+      setError({
+        file: "يرجى تسجيل الدخول لتحميل الملفات",
+      });
       return;
     }
 
@@ -475,11 +514,15 @@ export default function SmartCourseUploader({
         link.click();
         document.body.removeChild(link);
       } else {
-        setError(`فشل في تحميل الملف: ${result.error}`);
+        setError({
+          file: `فشل في تحميل الملف: ${result.error}`,
+        });
       }
     } catch (error) {
       console.error("Error downloading file:", error);
-      setError(`حدث خطأ أثناء تحميل الملف: ${originalName}`);
+      setError({
+        file: `حدث خطأ أثناء تحميل الملف: ${originalName}`,
+      });
     } finally {
       setViewingFiles((prev) => {
         const newSet = new Set(prev);
@@ -503,7 +546,7 @@ export default function SmartCourseUploader({
   const clearAllFiles = () => {
     setSelectedFiles([]);
     setUploadedFiles([]);
-    setError("");
+    setError({});
     setShowUploadedFiles(false);
     if (onUploadComplete) {
       onUploadComplete([]);
@@ -532,7 +575,7 @@ export default function SmartCourseUploader({
           {/* ✅ Refresh Button */}
           <button
             onClick={loadPreviousFiles}
-            disabled={loadingPreviousFiles || uploading || disabled }
+            disabled={loadingPreviousFiles || uploading || disabled}
             className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
             title="تحديث الملفات"
           >
@@ -617,18 +660,18 @@ export default function SmartCourseUploader({
       </div>
 
       {/* ===== ERROR MESSAGE ===== */}
-      {error && (
+      {hasError() && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <h4 className="font-medium text-red-800 mb-1">حدث خطأ</h4>
               <pre className="text-red-700 text-sm whitespace-pre-wrap">
-                {error}
+                {error.upload || error.load || error.file}
               </pre>
             </div>
             <button
-              onClick={() => setError("")}
+              onClick={() => setError({})}
               className="text-red-600 hover:text-red-800 p-1"
             >
               <X className="w-5 h-5" />

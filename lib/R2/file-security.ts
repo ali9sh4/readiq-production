@@ -125,8 +125,7 @@ export function sanitizeFilename(filename: string): string {
   const sanitized = filename
     .replace(/[^a-zA-Z0-9._-]/g, "_") // Replace special chars with underscore
     .replace(/_{2,}/g, "_") // Replace multiple underscores with single
-    .replace(/^[._-]|[._-]$/g, "") // Remove leading/trailing dots, underscores, hyphens
-    .toLowerCase();
+    .replace(/^[._-]|[._-]$/g, ""); // Remove leading/trailing dots, underscores, hyphens
 
   // Ensure filename isn't empty
   if (!sanitized) {
@@ -144,14 +143,12 @@ export function generateSecureFilename(
   originalName: string,
   courseId: string
 ): string {
-  const sanitized = sanitizeFilename(originalName);
-  const extension = path.extname(sanitized);
-  const nameWithoutExt = path.basename(sanitized, extension);
+  const extension = path.extname(originalName); // Keep original extension
   const timestamp = Date.now();
   const randomHash = crypto.randomBytes(8).toString("hex");
 
-  // ✅ NEW: Create course-specific folder structure
-  return `courses/${courseId}/${timestamp}-${randomHash}-${nameWithoutExt}${extension}`;
+  // Pure timestamp + hash approach - no filename confusion
+  return `courses/${courseId}/${timestamp}_${randomHash}${extension}`;
 }
 
 /**

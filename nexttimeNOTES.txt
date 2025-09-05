@@ -1,0 +1,17 @@
+111
+Problem: Arabic filenames (بلات.jpg) caused ERR_INVALID_CHAR 
+because R2 object keys and HTTP headers only accept ASCII
+ characters. 
+ Solution: Generate ASCII-only storage keys 
+(courses/id/timestamp_hash.jpg) for R2, but store original 
+Arabic names in database for display.
+Result: Users see Arabic filenames 
+in UI, but storage system uses safe ASCII keys internally.
+222
+Only cleanup states that track:
+
+Active async operations
+Timers/intervals
+Event listeners
+Network requests in progress
+3333

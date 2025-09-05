@@ -70,7 +70,6 @@ export async function uploadCourseFile(
       ContentType: file.type,
       ContentLength: file.size,
       Metadata: {
-        originalName: metadata.originalName,
         uploadedAt: new Date().toISOString(),
         fileHash: metadata.hash,
         uploader: "course-system", // You can add user info here
@@ -82,11 +81,6 @@ export async function uploadCourseFile(
 
     await r2Client.send(uploadCommand);
     // Log successful upload (for audit trail)
-    console.log(`File uploaded successfully: ${metadata.sanitizedName}`, {
-      originalName: file.name,
-      size: file.size,
-      timestamp: new Date().toISOString(),
-    });
 
     return {
       success: true,
