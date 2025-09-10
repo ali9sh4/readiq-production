@@ -2,7 +2,7 @@
 "use server";
 
 import { adminAuth, db } from "@/firebase/service";
-import { Course } from "@/types/types";
+import { Course, CourseFile } from "@/types/types";
 import {
   CourseDataSchema,
   QuickCourseSchema,
@@ -20,16 +20,6 @@ interface SaveCourseFilesParams {
   courseId: string;
   files: UploadedFile[];
   token?: string;
-}
-
-interface CourseFile {
-  id: string;
-  filename: string;
-  size: number;
-  originalName: string;
-  uploadedAt: string;
-  order: number;
-  type: string;
 }
 
 // Helper function to determine file type
@@ -80,8 +70,8 @@ export const SaveNewProperty = async (
     // Prepare course data
     const courseToSave = {
       ...CourseData,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       createdBy: verifiedToken.uid,
       isApproved: false,
       isRejected: false,
@@ -134,8 +124,8 @@ export const SaveQuickCourseCreation = async (
     // Prepare course data
     const courseToSave = {
       ...CourseData,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       createdBy: verifiedToken.uid,
       isApproved: false,
       isRejected: false,
@@ -200,7 +190,7 @@ export const SaveImages = async (
     // Update course with images using v8 Admin SDK syntax
     await db.collection("courses").doc(courseId).update({
       images,
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     });
 
     return {
@@ -289,7 +279,7 @@ export async function saveCourseFiles({
       files: allFiles, // ✅ Keep all files (existing + new)
       hasFiles: true,
       filesCount: allFiles.length, // ✅ Total count of all files
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
       status: "complete",
     });
 
@@ -311,13 +301,11 @@ export async function saveCourseFiles({
 export async function getCourseFiles(courseId: string): Promise<{
   success: boolean;
   files?: CourseFile[];
-  courseData?: any;
   error?: boolean;
   message?: string;
 }> {
   try {
     if (!courseId) {
-      
       return {
         success: false,
         error: true,
@@ -327,7 +315,6 @@ export async function getCourseFiles(courseId: string): Promise<{
 
     // Get course document using v8 Admin SDK syntax
     const courseDoc = await db.collection("courses").doc(courseId).get();
-
     if (!courseDoc.exists) {
       return {
         success: false,
@@ -337,24 +324,10 @@ export async function getCourseFiles(courseId: string): Promise<{
     }
 
     const courseData = courseDoc.data();
-    const convertTimestamps = (obj: any) => {
-      if (obj?.toDate) return obj.toDate().toISOString();
-      return obj;
-    };
 
     return {
       success: true,
-      files:
-        courseData?.files?.map((file: any) => ({
-          ...file,
-          uploadedAt: convertTimestamps(file.uploadedAt),
-        })) || [],
-      courseData: {
-        id: courseDoc.id,
-        ...courseData,
-        createdAt: convertTimestamps(courseData?.createdAt),
-        updatedAt: convertTimestamps(courseData?.updatedAt),
-      },
+      files: courseData?.files || [],
     };
   } catch (error) {
     console.error("Error fetching course files:", error);
@@ -395,19 +368,14 @@ export async function getCourseById(courseId: string): Promise<{
     return {
       success: true,
       course: {
-        id: courseDoc.id,
-        ...courseDoc.data(),
-        rating: 0,
-        studentsCount: 0,
-        instructor: "",
         title: "",
         category: "",
-        price: 0,
-        description: "",
-        level: "beginner",
-        language: "arabic",
-        duration: 0,
-        createdAt: null,
+        ...courseDoc.data(),
+        id: courseDoc.id,
+        createdAt:
+          courseDoc.data()?.createdAt?.toDate?.()?.toISOString() || null,
+        updatedAt:
+          courseDoc.data()?.updatedAt?.toDate?.()?.toISOString() || null,
       },
     };
   } catch (error) {
@@ -451,7 +419,7 @@ export async function updateCourseStatus(
 
     await db.collection("courses").doc(courseId).update({
       status,
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     });
 
     return {
@@ -469,7 +437,7 @@ export async function updateCourseStatus(
 }
 
 // Delete course file (v8 Admin SDK)
-export async function deleteCourseFile(
+export async function deleteCourseMetaDataFile(
   courseId: string,
   fileId: string,
   token: string
@@ -512,7 +480,7 @@ export async function deleteCourseFile(
         files: updatedFiles,
         filesCount: updatedFiles.length,
         hasFiles: updatedFiles.length > 0,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       });
 
     return {

@@ -4,26 +4,39 @@ export type FirestoreTimestamp = {
   seconds: number;
   nanoseconds: number;
 };
-
+export interface CourseFile {
+  id: string;
+  filename: string;
+  size: number;
+  originalName: string;
+  uploadedAt: string;
+  order: number;
+  type: string;
+}
 export interface Course {
-  rating: number;
-  studentsCount: number;
-  instructor: string;
-  isApproved?: boolean;
-  isRejected?: boolean;
+  // Required fields (must exist in database)
   id: string;
   title: string;
-  subtitle?: string;
   category: string;
-  price: number;
-  description: string;
-  level: "beginner" | "intermediate" | "advanced" | "all_levels";
-  language: "arabic" | "english" | "french" | "spanish";
-  duration: number;
+  createdAt: string | null;
+  updatedAt: string | null;
+
+  // Optional fields (can have defaults)
+  CourseFiles?: CourseFile[];
+  price?: number;
+  duration?: number;
+  level?: "beginner" | "intermediate" | "advanced" | "all_levels";
+  description?: string;
+  language?: "arabic" | "english" | "french" | "spanish";
+  rating?: number;
+  studentsCount?: number;
+  instructor?: string;
+  subtitle?: string;
+  isApproved?: boolean;
+  isRejected?: boolean;
   learningPoints?: string[];
   requirements?: string[];
   images?: string[];
-  createdAt: FirestoreTimestamp | Date | null;
   createdBy?: string;
 }
 

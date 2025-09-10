@@ -18,14 +18,19 @@ export default async function EditCoursePage({
     function cleanCourseData(course: any) {
       return {
         ...course,
-        createdAt:
-          course.createdAt?.toDate?.() instanceof Date
-            ? course.createdAt.toDate()
-            : course.createdAt,
-        updatedAt:
-          course.updatedAt?.toDate?.() instanceof Date
-            ? course.updatedAt.toDate()
-            : course.updatedAt,
+        // Convert Firestore Timestamps to ISO strings
+        createdAt: course.createdAt?.toDate
+          ? course.createdAt.toDate().toISOString()
+          : course.createdAt || null,
+        updatedAt: course.updatedAt?.toDate
+          ? course.updatedAt.toDate().toISOString()
+          : course.updatedAt || null,
+        approvedAt: course.approvedAt?.toDate
+          ? course.approvedAt.toDate().toISOString()
+          : course.approvedAt || null,
+        rejectedAt: course.rejectedAt?.toDate
+          ? course.rejectedAt.toDate().toISOString()
+          : course.rejectedAt || null,
       };
     }
     const CleanCourse = cleanCourseData(Course);

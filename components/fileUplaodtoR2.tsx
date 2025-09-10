@@ -24,6 +24,7 @@ import {
   Loader,
 } from "lucide-react";
 import {
+  deleteCourseFile,
   downloadCourseFile,
   uploadCourseFile,
   viewCourseFile,
@@ -47,7 +48,7 @@ interface UploadedFile {
 }
 
 // ✅ Database CourseFile interface (from existing files)
-interface CourseFile {
+export interface CourseFile {
   id: string;
   filename: string;
   url?: string; // May exist in old data but we ignore it
@@ -365,16 +366,19 @@ export default function SmartCourseUploader({
 
     setUploading(true);
     setError({});
-    const newUploadedFiles: UploadedFile[] = [];
     const failedFiles: string[] = [];
+    let successCount = 0;
 
     try {
       for (const selectedFile of selectedFiles) {
         try {
+          const token = await auth.user.getIdToken();
           const formData = new FormData();
           formData.append("file", selectedFile.file);
           formData.append("courseId", courseId);
+          formData.append("token", token);
 
+          // 1. Upload to R2
           const result = await uploadCourseFile(formData);
 
           if (result.success && result.data) {
@@ -385,8 +389,56 @@ export default function SmartCourseUploader({
               uploadedAt: new Date().toISOString(),
               type: getFileTypeLabel(result.data.metadata.originalName),
             };
-            newUploadedFiles.push(uploadedFile);
+
+            // 2. Save to database immediately
+            const saveResult = await saveCourseFiles({
+              courseId,
+              files: [uploadedFile], // Save one file at a time
+              token,
+            });
+
+            if (saveResult.success) {
+              // ✅ Success - both R2 and database updated
+              successCount++;
+              console.log(
+                `✅ Successfully uploaded: ${selectedFile.file.name}`
+              );
+            } else {
+              // ❌ Database save failed - cleanup R2 file
+              console.log(
+                `Database save failed for ${uploadedFile.filename}, cleaning up R2...`
+              );
+
+              try {
+                const deleteResult = await deleteCourseFile(
+                  uploadedFile.filename
+                );
+
+                if (deleteResult.success) {
+                  console.log(
+                    `✅ Successfully cleaned up orphaned file: ${uploadedFile.filename}`
+                  );
+                } else {
+                  console.error(
+                    `❌ Failed to cleanup orphaned file: ${uploadedFile.filename}`,
+                    deleteResult.error
+                  );
+                  // This creates an orphan - very rare
+                }
+              } catch (cleanupError) {
+                console.error(
+                  `❌ Cleanup error for ${uploadedFile.filename}:`,
+                  cleanupError
+                );
+                // This creates an orphan - very rare
+              }
+
+              failedFiles.push(
+                `${selectedFile.file.name}: ${saveResult.message}`
+              );
+            }
           } else {
+            // R2 upload failed - no cleanup needed
             failedFiles.push(`${selectedFile.file.name}: ${result.error}`);
           }
         } catch (error) {
@@ -399,41 +451,24 @@ export default function SmartCourseUploader({
         }
       }
 
-      if (newUploadedFiles.length > 0) {
-        try {
-          const token = await auth.user.getIdToken();
-
-          const saveResult = await saveCourseFiles({
-            courseId,
-            files: newUploadedFiles,
-            token,
-          });
-
-          if (saveResult.success) {
-            setSelectedFiles([]); // Clear selected files
-            setUploadedFiles([]); // Clear session uploads
-
-            // Refresh previous files to show new uploads
-            await loadPreviousFiles(); // This is safe here since upload is done
-
-            setShowUploadedFiles(true);
-          } else {
-            setError({
-              file: `فشل في حفظ الملفات في قاعدة البيانات: ${saveResult.message}`,
-            });
-          }
-        } catch (error) {
-          console.error("Database save error:", error);
-          setError({
-            file: "حدث خطأ أثناء حفظ الملفات في قاعدة البيانات",
-          });
-        }
+      // ✅ Handle results based on individual file processing
+      if (successCount > 0) {
+        setSelectedFiles([]); // Clear selected files
+        await loadPreviousFiles(); // Refresh the file list
+        setShowUploadedFiles(true);
       }
 
       if (failedFiles.length > 0) {
         setError({
           file: `فشل في رفع بعض الملفات:\n${failedFiles.join("\n")}`,
         });
+      }
+
+      // ✅ Show summary
+      if (successCount > 0 && failedFiles.length > 0) {
+        console.log(
+          `Upload completed: ${successCount} successful, ${failedFiles.length} failed`
+        );
       }
     } catch (error) {
       setError({
@@ -444,7 +479,6 @@ export default function SmartCourseUploader({
       setUploading(false);
     }
   };
-
   // ===== FILE ACCESS HANDLERS =====
   const viewFile = async (filename: string, originalName: string) => {
     if (!auth?.user) {

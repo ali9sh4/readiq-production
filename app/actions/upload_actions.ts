@@ -3,14 +3,22 @@
 
 import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-
 import {
   validateFile,
   createFileMetadata,
   FileMetadata,
 } from "@/lib/R2/file-security";
+
+import { Ratelimit } from "@upstash/ratelimit";
 import { R2_BUCKET_NAME, r2Client } from "@/lib/R2/r2_client";
 import { adminAuth, db } from "@/firebase/service";
+import { Redis } from "@upstash/redis";
+import { CourseFile } from "@/components/fileUplaodtoR2";
+
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(10, "1 m"), // 10 uploads per minute
+});
 
 export interface UploadResult {
   success: boolean;
@@ -29,40 +37,49 @@ export async function uploadCourseFile(
   formData: FormData
 ): Promise<UploadResult> {
   try {
-    // Extract file from form data
+    // 1. Extract and validate inputs first
     const file = formData.get("file") as File;
     const courseId = formData.get("courseId") as string;
-    if (!courseId) {
+    const token = formData.get("token") as string;
+
+    // 2. Basic validation
+    if (!token) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    if (!file || !courseId) {
+      return { success: false, error: "No file provided" };
+    }
+
+    // 3. Verify authentication
+    const verifiedToken = await adminAuth.verifyIdToken(token);
+    if (!verifiedToken) {
+      return { success: false, error: "Invalid authentication" };
+    }
+
+    // 4. Apply rate limiting AFTER authentication
+    const identifier = `upload_${verifiedToken.uid}`;
+    const { success: rateLimitOk } = await ratelimit.limit(identifier);
+
+    if (!rateLimitOk) {
       return {
         success: false,
-        error: "Course ID is required",
+        error: "تم تجاوز الحد المسموح به. يرجى الانتظار قبل المحاولة مرة أخرى.",
       };
     }
 
-    if (!file) {
-      return {
-        success: false,
-        error: "No file provided",
-      };
-    }
-
-    // Validate file
+    // 5. File validation
     const validation = validateFile(file);
     if (!validation.isValid) {
-      return {
-        success: false,
-        error: validation.error,
-      };
+      return { success: false, error: validation.error };
     }
 
-    // Convert file to buffer
+    // 6. Continue with upload logic...
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-
-    // Create file metadata
     const metadata = await createFileMetadata(file, buffer, courseId);
 
-    // Upload to R2
+    // 7. Upload to R2
     const uploadCommand = new PutObjectCommand({
       Bucket: R2_BUCKET_NAME,
       Key: metadata.sanitizedName,
@@ -72,15 +89,13 @@ export async function uploadCourseFile(
       Metadata: {
         uploadedAt: new Date().toISOString(),
         fileHash: metadata.hash,
-        uploader: "course-system", // You can add user info here
-        courseId: courseId, // Associate with course ID
+        uploader: verifiedToken.uid,
+        courseId: courseId,
       },
-      // Security headers
       ServerSideEncryption: "AES256",
     });
 
     await r2Client.send(uploadCommand);
-    // Log successful upload (for audit trail)
 
     return {
       success: true,
@@ -93,7 +108,6 @@ export async function uploadCourseFile(
   } catch (error) {
     console.error("Upload failed:", error);
 
-    // Don't expose internal errors to client
     return {
       success: false,
       error: "Upload failed. Please try again.",
@@ -200,7 +214,7 @@ export async function getFileSignedUrl({
 
     // ✅ 3. Verify file belongs to this course
     const fileExists = courseData?.files?.some(
-      (file: any) => file.filename === filename
+      (file: CourseFile) => file.filename === filename
     );
 
     if (!fileExists) {

@@ -69,7 +69,7 @@ export interface Lesson {
   thumbnailUrl?: string;
 }
 
-export interface CourseFile {
+interface CourseFile {
   id: string;
   name: string;
   sizeKB: number;
