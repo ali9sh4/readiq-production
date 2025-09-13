@@ -16,13 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,15 +28,10 @@ import {
   ExternalLink,
   Eye,
   File as FileIcon,
-  Grid2X2,
   Image as ImageIcon,
-  MoreHorizontal,
-  Pencil,
-  Plus,
   Settings,
   Trash2,
   Upload,
-  Video,
 } from "lucide-react";
 import { Course } from "@/types/types";
 import SmartCourseUploader from "./fileUplaodtoR2";
@@ -128,12 +117,6 @@ const mockFiles: CourseFile[] = [
 ];
 
 // ---------- Helpers ----------
-function secondsToHMM(sec?: number) {
-  if (!sec) return "—";
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
 
 function StatusBadge({ status }: { status: CourseStatus }) {
   const statusMap: Record<CourseStatus, string> = {

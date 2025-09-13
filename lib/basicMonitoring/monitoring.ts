@@ -1,6 +1,10 @@
-import { db } from "@/firebase/service";
+// firebase-monitor.ts - Fixed for Next.js client-side usage
+import { db } from "@/firebase/client";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
-interface MonitorEvent {
+// Make sure to use the client SDK, not admin SDK
+
+interface BaseMonitorEvent {
   type:
     | "upload_success"
     | "upload_failed"
@@ -11,50 +15,68 @@ interface MonitorEvent {
   message: string;
   userId?: string;
   courseId?: string;
+  severity: "low" | "medium" | "high";
+  timestamp: any; // Firebase serverTimestamp
+  createdAt: string;
+}
+
+interface MonitorEvent extends BaseMonitorEvent {
   fileName?: string;
-  severity?: "low" | "medium" | "high";
   metadata?: Record<string, any>;
-  timestamp: FirebaseFirestore.Timestamp;
 }
 
 class FirebaseMonitor {
+  private queue: MonitorEvent[] = [];
+  private isProcessing = false;
+
   private async logEvent(
-    event: Omit<MonitorEvent, "timestamp">
+    event: Omit<MonitorEvent, "timestamp" | "createdAt">
   ): Promise<void> {
     try {
-      await db.collection("system_events").add({
+      const monitorEvent: MonitorEvent = {
         ...event,
-        timestamp: new Date(),
+        timestamp: serverTimestamp(),
         createdAt: new Date().toISOString(),
-      });
+      };
+
+      // Add to queue for batch processing
+      this.queue.push(monitorEvent);
+
+      // Process queue if not already processing
+      if (!this.isProcessing) {
+        this.processQueue();
+      }
     } catch (error) {
-      console.error("Failed to log event to Firebase:", error);
-      // Don't throw - monitoring shouldn't break the app
+      console.error("Failed to queue monitoring event:", error);
     }
   }
 
-  async logUploadSuccess(params: {
-    userId: string;
-    courseId: string;
-    fileName: string;
-    fileSize: number;
-    fileType: string;
-  }): Promise<void> {
-    await this.logEvent({
-      type: "upload_success",
-      message: `File uploaded successfully: ${params.fileName}`,
-      userId: params.userId,
-      courseId: params.courseId,
-      fileName: params.fileName,
-      severity: "low",
-      metadata: {
-        fileSize: params.fileSize,
-        fileType: params.fileType,
-        action: "upload",
-      },
-    });
+  private async processQueue(): Promise<void> {
+    if (this.isProcessing || this.queue.length === 0 || !db) return;
+
+    this.isProcessing = true;
+    const batch = this.queue.splice(0, 10); // Process max 10 events at once
+
+    try {
+      // Use individual addDoc calls (simpler than batch for client SDK)
+      const promises = batch.map((event) =>
+        addDoc(collection(db, "failed_system_events"), event)
+      );
+
+      await Promise.allSettled(promises); // Don't fail if one event fails
+    } catch (error) {
+      console.error("Failed to process monitoring queue:", error);
+    } finally {
+      this.isProcessing = false;
+
+      // Process remaining queue items
+      if (this.queue.length > 0) {
+        setTimeout(() => this.processQueue(), 1000); // Delay to avoid spam
+      }
+    }
   }
 
+  // Essential failure logging
   async logUploadFailed(params: {
     userId: string;
     courseId: string;
@@ -63,90 +85,65 @@ class FirebaseMonitor {
   }): Promise<void> {
     await this.logEvent({
       type: "upload_failed",
-      message: `Upload failed: ${params.errorMessage}`,
+      message: `Upload failed: ${params.fileName}`,
       userId: params.userId,
       courseId: params.courseId,
       fileName: params.fileName,
       severity: "medium",
       metadata: {
-        errorMessage: params.errorMessage,
+        error: params.errorMessage,
         action: "upload",
       },
     });
   }
 
-  async logError(params: {
+  // Critical errors only
+  async logCriticalError(params: {
     userId?: string;
     courseId?: string;
     errorMessage: string;
-    severity?: "low" | "medium" | "high";
-    metadata?: Record<string, any>;
+    context?: string;
   }): Promise<void> {
     await this.logEvent({
       type: "error",
       message: params.errorMessage,
       userId: params.userId,
       courseId: params.courseId,
-      severity: params.severity || "medium",
-      metadata: params.metadata,
+      severity: "high",
+      metadata: {
+        context: params.context,
+      },
     });
   }
 
+  // File access logging
   async logFileAccess(params: {
     userId: string;
     courseId: string;
     fileName: string;
     action: "view" | "download";
   }): Promise<void> {
-    await this.logEvent({
-      type: "file_access",
-      message: `File ${params.action}: ${params.fileName}`,
-      userId: params.userId,
-      courseId: params.courseId,
-      fileName: params.fileName,
-      severity: "low",
-      metadata: {
-        action: params.action,
-      },
-    });
+    // Only log downloads to reduce noise
+    if (params.action === "download") {
+      await this.logEvent({
+        type: "file_access",
+        message: `File downloaded: ${params.fileName}`,
+        userId: params.userId,
+        courseId: params.courseId,
+        fileName: params.fileName,
+        severity: "low",
+        metadata: {
+          action: params.action,
+        },
+      });
+    }
   }
 
-  async logCourseApproval(params: {
-    adminUserId: string;
-    courseId: string;
-    courseName: string;
-    approved: boolean;
-    courseCreatorId?: string;
-  }): Promise<void> {
-    await this.logEvent({
-      type: "course_approval",
-      message: `Course ${params.approved ? "approved" : "rejected"}: ${
-        params.courseName
-      }`,
-      userId: params.adminUserId,
-      courseId: params.courseId,
-      severity: "low",
-      metadata: {
-        approved: params.approved,
-        courseName: params.courseName,
-        courseCreatorId: params.courseCreatorId,
-        action: params.approved ? "approve" : "reject",
-      },
-    });
-  }
+  // System info - only for important events
 
-  async logSystemInfo(params: {
-    message: string;
-    userId?: string;
-    metadata?: Record<string, any>;
-  }): Promise<void> {
-    await this.logEvent({
-      type: "system_info",
-      message: params.message,
-      userId: params.userId,
-      severity: "low",
-      metadata: params.metadata,
-    });
+  // Force process queue (call on app close/unmount)
+  async flush(): Promise<void> {
+    await this.processQueue();
   }
 }
 

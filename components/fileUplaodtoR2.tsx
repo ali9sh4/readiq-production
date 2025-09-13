@@ -24,13 +24,14 @@ import {
   Loader,
 } from "lucide-react";
 import {
-  deleteCourseFile,
+  deleteCourseFileFromR2,
   downloadCourseFile,
   uploadCourseFile,
   viewCourseFile,
 } from "@/app/actions/upload_actions";
 import { saveCourseFiles, getCourseFiles } from "@/app/course-upload/action";
 import { useAuth } from "@/context/authContext";
+import { deleteCourseFileFromFireStore } from "@/app/course-upload/edit/action";
 
 // ===== INTERFACES =====
 interface SelectedFile {
@@ -158,6 +159,7 @@ export default function SmartCourseUploader({
 }: Props) {
   // ===== STATE =====
   const auth = useAuth();
+  const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set());
 
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]); // Current session
@@ -233,6 +235,7 @@ export default function SmartCourseUploader({
   useEffect(() => {
     return () => {
       setViewingFiles(new Set());
+      setDeletingFiles(new Set());
     };
   }, []);
 
@@ -377,10 +380,8 @@ export default function SmartCourseUploader({
           formData.append("file", selectedFile.file);
           formData.append("courseId", courseId);
           formData.append("token", token);
-
           // 1. Upload to R2
           const result = await uploadCourseFile(formData);
-
           if (result.success && result.data) {
             const uploadedFile: UploadedFile = {
               filename: result.data.filename,
@@ -389,42 +390,25 @@ export default function SmartCourseUploader({
               uploadedAt: new Date().toISOString(),
               type: getFileTypeLabel(result.data.metadata.originalName),
             };
-
             // 2. Save to database immediately
             const saveResult = await saveCourseFiles({
               courseId,
               files: [uploadedFile], // Save one file at a time
               token,
             });
-
             if (saveResult.success) {
-              // ✅ Success - both R2 and database updated
               successCount++;
-              console.log(
-                `✅ Successfully uploaded: ${selectedFile.file.name}`
-              );
             } else {
-              // ❌ Database save failed - cleanup R2 file
-              console.log(
-                `Database save failed for ${uploadedFile.filename}, cleaning up R2...`
-              );
-
               try {
-                const deleteResult = await deleteCourseFile(
-                  uploadedFile.filename
+                console.error(
+                  "Failed to save file record to DB FIRESTORE, cleaning up R2:",
+                  saveResult.message
                 );
-
-                if (deleteResult.success) {
-                  console.log(
-                    `✅ Successfully cleaned up orphaned file: ${uploadedFile.filename}`
-                  );
-                } else {
-                  console.error(
-                    `❌ Failed to cleanup orphaned file: ${uploadedFile.filename}`,
-                    deleteResult.error
-                  );
-                  // This creates an orphan - very rare
-                }
+                await deleteCourseFileFromR2({
+                  filename: uploadedFile.filename,
+                  courseId,
+                  token,
+                });
               } catch (cleanupError) {
                 console.error(
                   `❌ Cleanup error for ${uploadedFile.filename}:`,
@@ -432,12 +416,12 @@ export default function SmartCourseUploader({
                 );
                 // This creates an orphan - very rare
               }
-
               failedFiles.push(
                 `${selectedFile.file.name}: ${saveResult.message}`
               );
             }
           } else {
+            console.error("Upload to R2 failed:", result.error);
             // R2 upload failed - no cleanup needed
             failedFiles.push(`${selectedFile.file.name}: ${result.error}`);
           }
@@ -450,25 +434,16 @@ export default function SmartCourseUploader({
           failedFiles.push(`${selectedFile.file.name}: خطأ في الرفع`);
         }
       }
-
       // ✅ Handle results based on individual file processing
       if (successCount > 0) {
         setSelectedFiles([]); // Clear selected files
         await loadPreviousFiles(); // Refresh the file list
         setShowUploadedFiles(true);
       }
-
       if (failedFiles.length > 0) {
         setError({
           file: `فشل في رفع بعض الملفات:\n${failedFiles.join("\n")}`,
         });
-      }
-
-      // ✅ Show summary
-      if (successCount > 0 && failedFiles.length > 0) {
-        console.log(
-          `Upload completed: ${successCount} successful, ${failedFiles.length} failed`
-        );
       }
     } catch (error) {
       setError({
@@ -567,14 +542,80 @@ export default function SmartCourseUploader({
   };
 
   // ===== FILE MANAGEMENT HANDLERS =====
-  const removeUploadedFile = (index: number) => {
-    setUploadedFiles((prev) => {
-      const updated = prev.filter((_, i) => i !== index);
-      if (onUploadComplete) {
-        onUploadComplete(updated);
+  const removeUploadedFile = async (filename: string, originalName: string) => {
+    if (!auth?.user) {
+      setError({
+        file: "يرجى تسجيل الدخول لحذف الملفات",
+      });
+      return;
+    }
+
+    // Confirm deletion with specific file name
+    if (
+      !window.confirm(
+        `هل أنت متأكد من حذف الملف "${originalName}"؟\n\nهذا الإجراء لا يمكن التراجع عنه.`
+      )
+    ) {
+      return;
+    }
+
+    // Add filename to deleting state
+    setDeletingFiles((prev) => new Set([...prev, filename]));
+    setError({}); // Clear any previous errors
+
+    try {
+      const token = await auth.user.getIdToken();
+
+      // Delete from R2 storage
+      const r2Result = await deleteCourseFileFromR2({
+        filename,
+        courseId,
+        token,
+      });
+
+      if (!r2Result.success) {
+        throw new Error(`فشل في حذف الملف من التخزين: ${r2Result.error}`);
       }
-      return updated;
-    });
+
+      // Delete from Firestore database
+      const firestoreResult = await deleteCourseFileFromFireStore(
+        filename,
+        courseId,
+        token
+      );
+
+      if (!firestoreResult.success) {
+        // If Firestore deletion fails but R2 succeeded, we have an inconsistent state
+        // Log this for monitoring but don't fail the user operation
+        console.error(
+          "Firestore deletion failed but R2 succeeded:",
+          firestoreResult.error
+        );
+
+        // Still show success to user since the file is effectively deleted from storage
+        // The Firestore cleanup can be handled separately
+      }
+
+      // Refresh the file list to reflect changes
+      await loadPreviousFiles();
+
+      // Optional: Show success message briefly
+      // You could add a success state if you want to show a temporary success message
+    } catch (error) {
+      console.error("Error removing file:", error);
+      setError({
+        file: `فشل في حذف الملف "${originalName}": ${
+          error instanceof Error ? error.message : "حدث خطأ غير متوقع"
+        }`,
+      });
+    } finally {
+      // Remove filename from deleting state
+      setDeletingFiles((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(filename);
+        return newSet;
+      });
+    }
   };
 
   const clearAllFiles = () => {
@@ -722,13 +763,6 @@ export default function SmartCourseUploader({
               <Upload className="w-5 h-5" />
               ملفات في انتظار الرفع ({selectedFiles.length})
             </h4>
-            <button
-              onClick={clearSelectedFiles}
-              className="text-sm text-red-600 hover:text-red-800 flex items-center gap-1 px-3 py-1 rounded-md hover:bg-red-50 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              حذف الكل
-            </button>
           </div>
 
           <div className="space-y-3">
@@ -796,18 +830,6 @@ export default function SmartCourseUploader({
             </div>
 
             <div className="flex items-center gap-2">
-              {allUploadedFiles.length > 0 && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    clearAllFiles();
-                  }}
-                  className="text-sm text-red-600 hover:text-red-800 px-3 py-1 rounded-md hover:bg-red-100 transition-colors"
-                >
-                  حذف الكل
-                </button>
-              )}
-
               {!loadingPreviousFiles &&
                 (showUploadedFiles ? (
                   <ChevronUp className="w-5 h-5 text-green-600" />
@@ -891,19 +913,28 @@ export default function SmartCourseUploader({
                           <span className="text-xs">تحميل</span>
                         </button>
 
-                        {/* Only allow removing current session files, not previous ones */}
-                        {index >= previousFiles.length && (
-                          <button
-                            onClick={() =>
-                              removeUploadedFile(index - previousFiles.length)
-                            }
-                            className="flex items-center gap-2 px-3 py-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors"
-                            title="حذف الملف"
-                          >
+                        <button
+                          onClick={() =>
+                            removeUploadedFile(file.filename, file.originalName)
+                          }
+                          disabled={
+                            deletingFiles.has(file.filename) ||
+                            viewingFiles.has(file.filename)
+                          }
+                          className="flex items-center gap-2 px-3 py-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="حذف الملف"
+                        >
+                          {deletingFiles.has(file.filename) ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500"></div>
+                          ) : (
                             <X className="w-4 h-4" />
-                            <span className="text-xs">حذف</span>
-                          </button>
-                        )}
+                          )}
+                          <span className="text-xs">
+                            {deletingFiles.has(file.filename)
+                              ? "جاري الحذف..."
+                              : "حذف"}
+                          </span>
+                        </button>
                       </div>
                     </div>
                   ))}

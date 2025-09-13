@@ -118,30 +118,90 @@ export async function uploadCourseFile(
 /**
  * Delete course file server action
  */
-export async function deleteCourseFile(
-  filename: string
-): Promise<UploadResult> {
+export async function deleteCourseFileFromR2({
+  filename,
+  courseId,
+  token,
+}: {
+  filename: string;
+  courseId: string;
+  token: string;
+}): Promise<UploadResult> {
   try {
-    // Validate filename to prevent path traversal
-    if (
-      !filename ||
-      filename.includes("..") ||
-      !filename.startsWith("courses/")
-    ) {
+    // 1. Validate inputs
+    if (!filename || !courseId || !token) {
+      return {
+        success: false,
+        error: "Missing required parameters",
+      };
+    }
+
+    // 2. Validate filename to prevent path traversal
+    if (filename.includes("..") || !filename.startsWith("courses/")) {
       return {
         success: false,
         error: "Invalid filename",
       };
     }
 
-    const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
+    // 3. Authenticate user
+    const verifiedToken = await adminAuth.verifyIdToken(token);
+    if (!verifiedToken) {
+      return {
+        success: false,
+        error: "Invalid authentication",
+      };
+    }
 
+    // 4. Check course ownership/permission
+    const courseDoc = await db.collection("courses").doc(courseId).get();
+    if (!courseDoc.exists) {
+      return {
+        success: false,
+        error: "Course not found",
+      };
+    }
+
+    const courseData = courseDoc.data();
+    const canDelete = courseData?.createdBy === verifiedToken.uid;
+
+    if (!canDelete) {
+      return {
+        success: false,
+        error: "Permission denied",
+      };
+    }
+
+    // 5. Verify file belongs to this course
+    const fileExists = courseData?.files?.some(
+      (file: CourseFile) => file.filename === filename
+    );
+
+    if (!fileExists) {
+      return {
+        success: false,
+        error: "File not found in course",
+      };
+    }
+
+    // 6. Delete from R2
+    const { DeleteObjectCommand } = await import("@aws-sdk/client-s3");
     const deleteCommand = new DeleteObjectCommand({
       Bucket: R2_BUCKET_NAME,
       Key: filename,
     });
 
     await r2Client.send(deleteCommand);
+
+    // 7. Remove from database
+    await db
+      .collection("courses")
+      .doc(courseId)
+      .update({
+        files: courseData.files.filter(
+          (file: CourseFile) => file.filename !== filename
+        ),
+      });
 
     console.log(`File deleted successfully: ${filename}`);
 
@@ -150,7 +210,6 @@ export async function deleteCourseFile(
     };
   } catch (error) {
     console.error("Delete failed:", error);
-
     return {
       success: false,
       error: "Delete failed. Please try again.",

@@ -21,13 +21,13 @@ cont creating the firebase courses !///done
 you need to truly understand what the heck the file uplaoder work
 do the fixes that ai suggest by your self ..////  done 
 the arabic naming issue /// donnneee
-rarelimits ///  
-delete func //. 
-rarelmit test // redis !! /// 
+rarelimits ///  done 
+delete func //.  donnnnnne 
+rarelmit test // redis !! ///  done  
 this week the file uploader should be over !! 
-basic monitoring 
-virues scanning 
-uploade progress feedback  
+basic monitoring /// no need and done  
+virues scanning //
+uploade progress feedback  //no need 
 the next week is the video uploader ///
 the next week is viewing the course /// 
  

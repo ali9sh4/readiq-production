@@ -1,6 +1,5 @@
 import { Breadcrumbs } from "@/components/ui/breadcrumb";
 import { fetchCourseDetails } from "@/data/courses";
-import EditCourseForm from "../edit-course-form";
 import CourseDashboard from "@/components/CourseDashboard";
 
 export default async function EditCoursePage({

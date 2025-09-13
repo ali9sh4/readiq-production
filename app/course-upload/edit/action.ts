@@ -449,9 +449,9 @@ export async function updateCourseStatus(
 }
 
 // Delete course file (v8 Admin SDK)
-export async function deleteCourseFile(
+export async function deleteCourseFileFromFireStore(
   courseId: string,
-  fileId: string,
+  fileId: string,    
   token: string
 ): Promise<{
   success: boolean;
