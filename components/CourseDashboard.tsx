@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { Course } from "@/types/types";
 import SmartCourseUploader from "./fileUplaodtoR2";
+import VideoUploader from "./video_uploader";
 
 // ---------- Types ----------
 export type CourseStatus = "draft" | "published" | "archived";
@@ -315,57 +316,16 @@ export default function CourseDashboard({
                 </div>
                 <SmartCourseUploader id={courseData.id} />
               </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="الكل">
-                  <TabsList className="grid w-full grid-cols-4">
-                    <TabsTrigger value="الكل">الكل</TabsTrigger>
-                    <TabsTrigger value="Resource">الموارد</TabsTrigger>
-                    <TabsTrigger value="Assignment">الواجبات</TabsTrigger>
-                    <TabsTrigger value="Misc">متنوع</TabsTrigger>
-                  </TabsList>
-
-                  {(["الكل", "Resource", "Assignment", "Misc"] as const).map(
-                    (k) => (
-                      <TabsContent key={k} value={k} className="mt-3 space-y-2">
-                        {files
-                          .filter((f) => k === "الكل" || f.category === k)
-                          .map((f) => (
-                            <div
-                              key={f.id}
-                              className="flex items-center justify-between rounded-xl border p-3"
-                            >
-                              <div className="flex items-center gap-3">
-                                <FileIcon className="h-4 w-4" />
-                                <div>
-                                  <div className="font-medium">{f.name}</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {Math.round(f.sizeKB)} ك.ب •{" "}
-                                    {f.category === "Resource"
-                                      ? "مورد"
-                                      : f.category === "Assignment"
-                                      ? "واجب"
-                                      : "متنوع"}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <IconButton title="تحميل">
-                                  <ExternalLink className="h-4 w-4" />
-                                </IconButton>
-                                <IconButton
-                                  title="حذف"
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </IconButton>
-                              </div>
-                            </div>
-                          ))}
-                      </TabsContent>
-                    )
-                  )}
-                </Tabs>
-              </CardContent>
+            </Card>
+            {/* videos*/}
+            <Card className="shadow-sm">
+              <CardHeader className="flex-row items-center justify-between">
+                <div>
+                  <CardTitle>الملفات</CardTitle>
+                  <CardDescription>الموارد والواجبات</CardDescription>
+                </div>
+                <VideoUploader courseId={courseData.id} />
+              </CardHeader>
             </Card>
           </div>
         </div>

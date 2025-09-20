@@ -28,7 +28,7 @@ import {
   downloadCourseFile,
   uploadCourseFile,
   viewCourseFile,
-} from "@/app/actions/upload_actions";
+} from "@/app/actions/upload_File_actions";
 import { saveCourseFiles, getCourseFiles } from "@/app/course-upload/action";
 import { useAuth } from "@/context/authContext";
 import { deleteCourseFileFromFireStore } from "@/app/course-upload/edit/action";

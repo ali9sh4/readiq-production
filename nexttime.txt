@@ -26,11 +26,16 @@ delete func //.  donnnnnne
 rarelmit test // redis !! ///  done  
 this week the file uploader should be over !! 
 basic monitoring /// no need and done  
-virues scanning //
+virues scanning // no need
 uploade progress feedback  //no need 
 the next week is the video uploader ///
 the next week is viewing the course /// 
- 
+video uploader \\\
+mux account //   done 
+video uploading component  //  
+uploadFailed // where in fact it succeed /// done 
+retreiving the old videos //
+upload more than on video // 
 
 
 
