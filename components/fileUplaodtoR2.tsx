@@ -9,7 +9,6 @@ import {
   X,
   File,
   Eye,
-  Trash2,
   Download,
   ChevronDown,
   ChevronUp,
@@ -26,10 +25,13 @@ import {
 import {
   deleteCourseFileFromR2,
   downloadCourseFile,
-  uploadCourseFile,
+  uploadCourseFileToR2,
   viewCourseFile,
 } from "@/app/actions/upload_File_actions";
-import { saveCourseFiles, getCourseFiles } from "@/app/course-upload/action";
+import {
+  saveCourseFilesToFirebase,
+  getCourseFiles,
+} from "@/app/course-upload/action";
 import { useAuth } from "@/context/authContext";
 import { deleteCourseFileFromFireStore } from "@/app/course-upload/edit/action";
 
@@ -61,7 +63,6 @@ export interface CourseFile {
 }
 
 interface Props {
-  onUploadComplete?: (files: UploadedFile[]) => void;
   maxFiles?: number;
   maxFileSize?: number;
   disabled?: boolean;
@@ -151,16 +152,14 @@ const formatUploadDate = (timestamp?: string): string => {
 
 // ===== MAIN COMPONENT =====
 export default function SmartCourseUploader({
-  onUploadComplete,
   maxFiles = 100,
   maxFileSize = 50 * 1024 * 1024,
-  disabled = false,
   id: courseId,
+  disabled = false,
 }: Props) {
   // ===== STATE =====
   const auth = useAuth();
   const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set());
-
   const [selectedFiles, setSelectedFiles] = useState<SelectedFile[]>([]);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]); // Current session
   const [previousFiles, setPreviousFiles] = useState<CourseFile[]>([]); // ✅ Previous uploads from DB
@@ -214,8 +213,10 @@ export default function SmartCourseUploader({
           setShowUploadedFiles(true);
         }
       } else {
+        // for the developer
         console.error("Failed to load previous files:", result.message);
-        // Don't show error for empty courses - it's normal
+        // for the user
+        // we Don't show error for empty courses - it's normal might be navigation/URL issue
         if (result.message && !result.message.includes("غير موجودة")) {
           setError({
             load: "فشل في تحميل الملفات السابقة. يرجى المحاولة مرة أخرى.",
@@ -381,7 +382,7 @@ export default function SmartCourseUploader({
           formData.append("courseId", courseId);
           formData.append("token", token);
           // 1. Upload to R2
-          const result = await uploadCourseFile(formData);
+          const result = await uploadCourseFileToR2(formData);
           if (result.success && result.data) {
             const uploadedFile: UploadedFile = {
               filename: result.data.filename,
@@ -391,7 +392,7 @@ export default function SmartCourseUploader({
               type: getFileTypeLabel(result.data.metadata.originalName),
             };
             // 2. Save to database immediately
-            const saveResult = await saveCourseFiles({
+            const saveResult = await saveCourseFilesToFirebase({
               courseId,
               files: [uploadedFile], // Save one file at a time
               token,
@@ -623,9 +624,6 @@ export default function SmartCourseUploader({
     setUploadedFiles([]);
     setError({});
     setShowUploadedFiles(false);
-    if (onUploadComplete) {
-      onUploadComplete([]);
-    }
   };
 
   // ===== COMPUTED VALUES =====

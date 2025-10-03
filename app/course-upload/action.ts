@@ -207,7 +207,7 @@ export const SaveImages = async (
 };
 
 // Fixed saveCourseFiles function
-export async function saveCourseFiles({
+export async function saveCourseFilesToFirebase({
   courseId,
   files,
   token,

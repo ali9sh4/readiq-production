@@ -6,30 +6,51 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { revalidatePath } from "next/cache";
 
+// ✅ Fixed: Match what you're actually storing
+export interface CourseVideo {
+  videoId: string;
+  courseId: string;
+  assetId: string;
+  playbackId: string;
+  duration?: number;
+  title: string;
+  uploadedAt: string;
+}
+
+interface VideoUploadData {
+  uploadId: string;
+  assetId: string;
+  playbackId: string;
+  duration?: number;
+  title: string;
+}
+
+interface SaveCourseVideoParam {
+  courseId: string;
+  videoData: VideoUploadData[];
+  token: string;
+}
+
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(5, "10 m"), // 5 video uploads per 10 minutes
+  limiter: Ratelimit.slidingWindow(5, "10 m"),
 });
 
 export async function createMuxUpload(formData: FormData) {
   try {
-    // 1. Extract inputs (same as your files)
     const courseId = formData.get("courseId") as string;
     const title = formData.get("title") as string;
     const token = formData.get("token") as string;
 
-    // 2. Basic validation (same pattern)
     if (!token) {
       return { success: false, error: "Authentication required" };
     }
 
-    // 3. Verify authentication (exact same)
     const verifiedToken = await adminAuth.verifyIdToken(token);
     if (!verifiedToken) {
       return { success: false, error: "Invalid authentication" };
     }
 
-    // 4. Rate limiting (same pattern)
     const identifier = `video_upload_${verifiedToken.uid}`;
     const { success: rateLimitOk } = await ratelimit.limit(identifier);
 
@@ -40,7 +61,6 @@ export async function createMuxUpload(formData: FormData) {
       };
     }
 
-    // 5. Course ownership check (same as your delete function)
     const courseDoc = await db.collection("courses").doc(courseId).get();
     if (!courseDoc.exists) {
       return { success: false, error: "Course not found" };
@@ -53,7 +73,6 @@ export async function createMuxUpload(formData: FormData) {
       return { success: false, error: "Permission denied" };
     }
 
-    // 6. Create Mux upload (instead of R2)
     const upload = await mux.video.uploads.create({
       new_asset_settings: {
         playback_policy: ["public"],
@@ -62,7 +81,6 @@ export async function createMuxUpload(formData: FormData) {
       cors_origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
     });
 
-    // 7. Return same format as your files
     return {
       success: true,
       data: {
@@ -71,7 +89,10 @@ export async function createMuxUpload(formData: FormData) {
       },
     };
   } catch (error) {
-    console.error("Mux upload creation failed:", error);
+    console.error("Error creating Mux upload:", error);
+
+    // Detailed logging
+
     return {
       success: false,
       error: "Failed to create upload URL",
@@ -79,13 +100,10 @@ export async function createMuxUpload(formData: FormData) {
   }
 }
 
-// ADD THESE MISSING FUNCTIONS:
-
 export async function getMuxAssetStatus(uploadId: string) {
   try {
     const upload = await mux.video.uploads.retrieve(uploadId);
     if (!upload.asset_id) {
-      // Asset not yet created, still processing
       return {
         success: true,
         status: "processing",
@@ -98,7 +116,7 @@ export async function getMuxAssetStatus(uploadId: string) {
       status: asset.status,
       playbackId: asset.playback_ids?.[0]?.id,
       duration: asset.duration,
-      assetId: asset.id, // Add this so you have the real asset ID
+      assetId: asset.id,
     };
   } catch (error) {
     console.error("Failed to get asset status:", error);
@@ -109,57 +127,115 @@ export async function getMuxAssetStatus(uploadId: string) {
   }
 }
 
-export async function saveCourseVideo(
-  courseId: string,
-  videoData: {
-    uploadId: string;
-    assetId: string;
-    playbackId: string;
-    duration?: number;
-    title: string;
-  },
-  token: string
-) {
+export async function getCourseVideos(courseId: string): Promise<{
+  success: boolean;
+  videos?: CourseVideo[];
+  error?: boolean;
+  message?: string;
+}> {
   try {
-    // 1. Verify authentication (same pattern as your files)
+    if (!courseId) {
+      return {
+        success: false,
+        error: true,
+        message: "معرف الدورة مطلوب",
+      };
+    }
+
+    const courseDoc = await db.collection("courses").doc(courseId).get();
+    if (!courseDoc.exists) {
+      return {
+        success: false,
+        error: true,
+        message: "الدورة غير موجودة",
+      };
+    }
+
+    const courseData = courseDoc.data();
+
+    return {
+      success: true,
+      videos: courseData?.videos || [],
+    };
+  } catch (error) {
+    console.error("Error fetching course videos:", error);
+    return {
+      success: false,
+      error: true,
+      message: "حدث خطأ أثناء جلب فيديوهات الدورة",
+    };
+  }
+}
+
+export async function saveCourseVideoToFireStore({
+  courseId,
+  videoData,
+  token,
+}: SaveCourseVideoParam) {
+  try {
     const verifiedToken = await adminAuth.verifyIdToken(token);
     if (!verifiedToken) {
       return { success: false, error: "Invalid authentication" };
     }
 
-    // 2. Course ownership check
     const courseDoc = await db.collection("courses").doc(courseId).get();
     if (!courseDoc.exists) {
       return { success: false, error: "Course not found" };
     }
 
     const courseData = courseDoc.data();
-    const canUpdate = courseData?.createdBy === verifiedToken.uid;
 
-    if (!canUpdate) {
+    if (courseData?.createdBy !== verifiedToken.uid) {
       return { success: false, error: "Permission denied" };
     }
 
-    // 3. Save video data to course document (same as your files)
-    await db
-      .collection("courses")
-      .doc(courseId)
-      .update({
-        video: {
-          uploadId: videoData.uploadId,
-          assetId: videoData.assetId,
-          playbackId: videoData.playbackId,
-          duration: videoData.duration,
-          title: videoData.title,
-          uploadedAt: new Date().toISOString(),
-        },
-        updatedAt: new Date().toISOString(),
-      });
+    // ✅ Ensure it's an array
+    let existingVideos: CourseVideo[] = [];
+    if (courseData?.videos) {
+      existingVideos = Array.isArray(courseData.videos)
+        ? courseData.videos
+        : [];
+    }
 
-    // 4. Revalidate path (same as your files)
+    // ✅ Fixed: Use videoId not id
+    const currentHighestId =
+      existingVideos.length > 0
+        ? Math.max(
+            ...existingVideos.map(
+              (v) => parseInt(v.videoId.replace("video_", "")) || 0
+            )
+          )
+        : 0;
+
+    // ✅ Create new videos
+    const newVideos: CourseVideo[] = videoData.map((video, index) => {
+      const videoDoc: any = {
+        videoId: `video_${currentHighestId + index + 1}`,
+        assetId: video.assetId,
+        playbackId: video.playbackId,
+        title: video.title,
+        uploadedAt: new Date().toISOString(),
+        courseId: courseId,
+      };
+
+      // Only add duration if it exists
+      if (video.duration !== undefined) {
+        videoDoc.duration = video.duration;
+      }
+
+      return videoDoc;
+    });
+
+    const allVideos = [...existingVideos, ...newVideos];
+
+    await db.collection("courses").doc(courseId).update({
+      videos: allVideos,
+      updatedAt: new Date().toISOString(),
+    });
+
     revalidatePath(`/course/${courseId}`);
 
-    return { success: true };
+    return { success: true, videos: newVideos };
   } catch (error) {
     console.error("Failed to save video data:", error);
     return {
@@ -171,35 +247,42 @@ export async function saveCourseVideo(
 
 export async function deleteCourseVideo(
   courseId: string,
-  assetId: string,
+  videoId: string,
   token: string
 ) {
   try {
-    // 1. Verify authentication (same pattern)
     const verifiedToken = await adminAuth.verifyIdToken(token);
     if (!verifiedToken) {
       return { success: false, error: "Invalid authentication" };
     }
 
-    // 2. Course ownership check
     const courseDoc = await db.collection("courses").doc(courseId).get();
     if (!courseDoc.exists) {
       return { success: false, error: "Course not found" };
     }
 
     const courseData = courseDoc.data();
-    const canDelete = courseData?.createdBy === verifiedToken.uid;
 
-    if (!canDelete) {
+    if (courseData?.createdBy !== verifiedToken.uid) {
       return { success: false, error: "Permission denied" };
     }
 
-    // 3. Delete from Mux
-    await mux.video.assets.delete(assetId);
+    const existingVideos: CourseVideo[] = courseData?.videos || [];
 
-    // 4. Remove from database
+    // ✅ Fixed: Use videoId not id
+    const videoToDelete = existingVideos.find((v) => v.videoId === videoId);
+
+    if (!videoToDelete) {
+      return { success: false, error: "Video not found" };
+    }
+
+    await mux.video.assets.delete(videoToDelete.assetId);
+
+    // ✅ Fixed: Use videoId not id
+    const updatedVideos = existingVideos.filter((v) => v.videoId !== videoId);
+
     await db.collection("courses").doc(courseId).update({
-      video: null,
+      videos: updatedVideos,
       updatedAt: new Date().toISOString(),
     });
 

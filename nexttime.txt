@@ -34,8 +34,15 @@ video uploader \\\
 mux account //   done 
 video uploading component  //  
 uploadFailed // where in fact it succeed /// done 
-retreiving the old videos //
-upload more than on video // 
+retreiving the old videos //done
+upload more than on video // done 
+cancel the video that is chosen // done 
+upload vide once // done 
+this night rewrite the fileUplaoder and understandit step by step to build the videoUploader without the help of AI 
+use your mind and do not shut it down ////
+length video problem // done 
+upload previous videos // done 
+numbering //   
 
 
 

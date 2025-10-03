@@ -33,7 +33,7 @@ export interface UploadResult {
 /**
  * Secure file upload server action
  */
-export async function uploadCourseFile(
+export async function uploadCourseFileToR2(
   formData: FormData
 ): Promise<UploadResult> {
   try {

@@ -16,7 +16,7 @@ interface UploadedFile {
   originalName: string;
 }
 
-interface SaveCourseFilesParams {
+  interface SaveCourseFilesParams {
   courseId: string;
   files: UploadedFile[];
   token: string;
@@ -218,7 +218,7 @@ export const SaveImages = async (
 };
 
 // Save course files to R2 and update database (v8 Admin SDK)
-export async function saveCourseFiles({
+export async function saveCourseFilesTpFireStore({
   courseId,
   files,
   token,
@@ -451,7 +451,7 @@ export async function updateCourseStatus(
 // Delete course file (v8 Admin SDK)
 export async function deleteCourseFileFromFireStore(
   courseId: string,
-  fileId: string,          
+  fileId: string,
   token: string
 ): Promise<{
   success: boolean;
