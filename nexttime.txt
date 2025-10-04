@@ -42,7 +42,12 @@ this night rewrite the fileUplaoder and understandit step by step to build the v
 use your mind and do not shut it down ////
 length video problem // done 
 upload previous videos // done 
-numbering //   
+numbering // done 
+videoCoverPhoto //    the button is covering the thumb nail !!  donneee ! 
+limit the input instructor and instruct him // 
+video uploading disconnection ///
+
+
 
 
 

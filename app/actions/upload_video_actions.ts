@@ -15,6 +15,7 @@ export interface CourseVideo {
   duration?: number;
   title: string;
   uploadedAt: string;
+  order?: number;
 }
 
 interface VideoUploadData {
@@ -23,6 +24,7 @@ interface VideoUploadData {
   playbackId: string;
   duration?: number;
   title: string;
+  order?: number;
 }
 
 interface SaveCourseVideoParam {
@@ -206,6 +208,10 @@ export async function saveCourseVideoToFireStore({
             )
           )
         : 0;
+    const currentHighestOrder =
+      existingVideos.length > 0
+        ? Math.max(...existingVideos.map((v) => v.order || 0))
+        : 0;
 
     // ✅ Create new videos
     const newVideos: CourseVideo[] = videoData.map((video, index) => {
@@ -216,6 +222,10 @@ export async function saveCourseVideoToFireStore({
         title: video.title,
         uploadedAt: new Date().toISOString(),
         courseId: courseId,
+        order:
+          video.order !== undefined
+            ? video.order
+            : currentHighestOrder + index + 1,
       };
 
       // Only add duration if it exists
@@ -224,6 +234,14 @@ export async function saveCourseVideoToFireStore({
       }
 
       return videoDoc;
+    });
+    const insertOrder = newVideos[0].order;
+
+    const updatedExisting = existingVideos.map((video) => {
+      if ((video.order ?? 0) >= (insertOrder ?? 0)) {
+        return { ...video, order: (video.order ?? 0) + 1 }; // Shift down
+      }
+      return video;
     });
 
     const allVideos = [...existingVideos, ...newVideos];
@@ -295,5 +313,55 @@ export async function deleteCourseVideo(
       success: false,
       error: "Failed to delete video",
     };
+  }
+}
+export async function reorderCourseVideos(
+  courseId: string,
+  videoId: string,
+  newOrder: number,
+  token: string
+) {
+  try {
+    const verifiedToken = await adminAuth.verifyIdToken(token);
+    if (!verifiedToken) {
+      return { success: false, error: "Invalid authentication" };
+    }
+
+    const courseDoc = await db.collection("courses").doc(courseId).get();
+    if (!courseDoc.exists) {
+      return { success: false, error: "Course not found" };
+    }
+
+    const courseData = courseDoc.data();
+    if (courseData?.createdBy !== verifiedToken.uid) {
+      return { success: false, error: "Permission denied" };
+    }
+
+    const videos: CourseVideo[] = courseData?.videos || [];
+    const videoIndex = videos.findIndex((v) => v.videoId === videoId);
+    if (videoIndex === -1) {
+      return { success: false, error: "Video not found" };
+    }
+
+    // Remove and reinsert
+    const [movedVideo] = videos.splice(videoIndex, 1);
+    videos.splice(newOrder - 1, 0, movedVideo);
+
+    // Update all orders
+    const reorderedVideos = videos.map((video, index) => ({
+      ...video,
+      order: index + 1,
+    }));
+
+    await db.collection("courses").doc(courseId).update({
+      videos: reorderedVideos,
+      updatedAt: new Date().toISOString(),
+    });
+
+    revalidatePath(`/course/${courseId}`);
+    return { success: true, videos: reorderedVideos };
+  } catch (error) {
+    console.error("Failed to reorder videos:", error);
+    return { success: false, error: "Failed to reorder videos" };
   }
 }

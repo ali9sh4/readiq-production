@@ -1,5 +1,6 @@
 "use client";
 import MuxPlayer from "@mux/mux-player-react";
+import Image from "next/image";
 
 import { useState, useRef, useEffect } from "react";
 import {
@@ -16,6 +17,9 @@ import {
   ChevronDown,
   ChevronUp,
   RefreshCw,
+  MoveUp,
+  MoveDown,
+  Hash,
 } from "lucide-react";
 import { useVideoUpload } from "@/hooks/useVideoUpload";
 import { useAuth } from "@/context/authContext";
@@ -24,8 +28,11 @@ import {
   saveCourseVideoToFireStore,
   deleteCourseVideo,
   CourseVideo,
+  reorderCourseVideos,
 } from "@/app/actions/upload_video_actions";
-
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Label } from "./ui/label";
+import { Input } from "./ui/input";
 // ===== INTERFACES =====
 interface SelectedVideo {
   file: File;
@@ -100,6 +107,10 @@ export default function VideoUploader({
   const [uploading, setUploading] = useState(false);
   const [showUploadedVideos, setShowUploadedVideos] = useState(false);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
+  const [videoOrder, setVideoOrder] = useState<number>(1);
+  const [reorderingVideoId, setReorderingVideoId] = useState<string | null>(
+    null
+  );
 
   const ALLOWED_TYPES = [
     "video/mp4",
@@ -129,23 +140,60 @@ export default function VideoUploader({
 
       if (result.success) {
         const videoList = result.videos || result.videos || [];
-        setPreviousVideos(Array.isArray(videoList) ? videoList : []);
-
-        if (videoList.length > 0) {
+        const sortedVideos = [...videoList].sort(
+          (a, b) => (a.order || 0) - (b.order || 0)
+        );
+        setPreviousVideos(Array.isArray(sortedVideos) ? sortedVideos : []);
+        if (sortedVideos.length > 0) {
+          const maxOrder = Math.max(...sortedVideos.map((v) => v.order || 0));
+          setVideoOrder(maxOrder + 1);
           setShowUploadedVideos(true);
+        } else {
+          setVideoOrder(1);
         }
       } else {
         setPreviousVideos([]);
-        if (result.message && !result.message.includes("غير موجودة")) {
-          setError(result.message);
-        }
+        setVideoOrder(1);
       }
     } catch (error) {
       console.error("Error loading videos:", error);
       setPreviousVideos([]);
-      setError("حدث خطأ أثناء تحميل الفيديوهات");
+      setVideoOrder(1);
     } finally {
       setLoadingVideos(false);
+    }
+  };
+  const handleReorder = async (videoId: string, direction: "up" | "down") => {
+    if (!auth?.user) return;
+
+    const currentIndex = previousVideos.findIndex((v) => v.videoId === videoId);
+    if (currentIndex === -1) return;
+
+    const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    if (newIndex < 0 || newIndex >= previousVideos.length) return;
+
+    setReorderingVideoId(videoId);
+    setError("");
+
+    try {
+      const token = await auth.user.getIdToken();
+      const result = await reorderCourseVideos(
+        courseId,
+        videoId,
+        newIndex + 1,
+        token
+      );
+
+      if (result.success && result.videos) {
+        setPreviousVideos(result.videos);
+      } else {
+        setError(result.error || "فشل في إعادة الترتيب");
+      }
+    } catch (error) {
+      console.error("Reorder failed:", error);
+      setError("حدث خطأ أثناء إعادة الترتيب");
+    } finally {
+      setReorderingVideoId(null);
     }
   };
 
@@ -252,6 +300,7 @@ export default function VideoUploader({
             uploadId: uploadResult.uploadId,
             title: selectedVideo.file.name,
             duration: uploadResult.duration,
+            order: videoOrder,
           },
         ],
         token,
@@ -448,6 +497,52 @@ export default function VideoUploader({
                 )}
               </div>
             </div>
+            {/* ⭐ ADD THIS ENTIRE BLOCK */}
+            {state.status === "idle" && (
+              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                {" "}
+                <label className="flex items-center gap-2 text-sm font-medium text-blue-900 mb-2">
+                  {" "}
+                  <Hash className="w-4 h-4" /> ترتيب الفيديو في الدورة{" "}
+                </label>{" "}
+                <input
+                  type="number"
+                  min="1"
+                  max={previousVideos.length + 1}
+                  value={videoOrder}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    // ⭐ Only update if not empty
+                    if (val !== "") {
+                      setVideoOrder(parseInt(val));
+                    }
+                  }}
+                  onBlur={() => {
+                    const max = previousVideos.length + 1;
+                    if (videoOrder > max) setVideoOrder(max);
+                    if (videoOrder < 1) setVideoOrder(1);
+                  }}
+                  className="w-full px-4 py-2 border border-blue-300 rounded-lg"
+                />{" "}
+                {/* ⭐ ADD THIS: Show what will happen */}{" "}
+                <div className="text-xs mt-2">
+                  {" "}
+                  {videoOrder <= previousVideos.length ? (
+                    <p className="text-orange-600">
+                      {" "}
+                      💡 سيتم إدراج الفيديو في الموقع {videoOrder} وتحريك
+                      الفيديوهات التالية للأسفل{" "}
+                    </p>
+                  ) : (
+                    <p className="text-blue-600">
+                      {" "}
+                      ✓ سيتم إضافة الفيديو في النهاية (الموقع{" "}
+                      {previousVideos.length + 1}){" "}
+                    </p>
+                  )}{" "}
+                </div>{" "}
+              </div>
+            )}
 
             {/* Progress */}
             {state.status !== "idle" && (
@@ -557,21 +652,31 @@ export default function VideoUploader({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {previousVideos.map((video) => (
+                  {previousVideos.map((video, index) => (
                     <div
                       key={video.videoId}
                       className="bg-white rounded-lg border border-green-200 overflow-hidden"
                     >
                       {/* Video Info Row */}
                       <div className="flex items-center gap-4 p-4">
+                        <div className="flex-shrink-0 w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                          {index + 1}
+                        </div>
                         {/* Thumbnail */}
                         <div
-                          className="relative w-32 h-20 bg-gray-900 rounded overflow-hidden flex-shrink-0 group cursor-pointer"
+                          className="relative w-32 h-20 bg-red-500 rounded overflow-hidden flex-shrink-0 group cursor-pointer"
                           onClick={() => {
                             togglePlayVideo(video.videoId);
                           }}
                         >
-                          <div className="absolute inset-0 bg-black bg-opacity-40 group-hover:bg-opacity-60 transition-all flex items-center justify-center">
+                          <Image
+                            src={`https://image.mux.com/${video.playbackId}/thumbnail.jpg?time=0`}
+                            alt={video.title}
+                            fill
+                            sizes="128px" // Changed - matches w-32 (32 * 4px = 128px)
+                            className="object-cover"
+                          />
+                          <div className="absolute inset-0 bg-opacity-20 group-hover:bg-opacity-40 transition-all flex items-center justify-center z-10">
                             <Play className="w-8 h-8 text-white" />
                           </div>
                           {video.duration && (
@@ -597,6 +702,29 @@ export default function VideoUploader({
                               <span>{formatUploadDate(video.uploadedAt)}</span>
                             </div>
                           </div>
+                        </div>
+                        <div className="flex flex-col gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => handleReorder(video.videoId, "up")}
+                            disabled={
+                              index === 0 || reorderingVideoId === video.videoId
+                            }
+                            className="p-2.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors border border-gray-300 hover:border-blue-400"
+                            title="تحريك لأعلى"
+                          >
+                            <MoveUp className="w-6 h-6" />
+                          </button>
+                          <button
+                            onClick={() => handleReorder(video.videoId, "down")}
+                            disabled={
+                              index === previousVideos.length - 1 ||
+                              reorderingVideoId === video.videoId
+                            }
+                            className="p-2.5 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-30 disabled:cursor-not-allowed transition-colors border border-gray-300 hover:border-blue-400"
+                            title="تحريك لأسفل"
+                          >
+                            <MoveDown className="w-6 h-6" />
+                          </button>
                         </div>
 
                         {/* Actions */}
