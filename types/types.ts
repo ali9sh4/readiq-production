@@ -10,8 +10,9 @@ export interface CourseFile {
   size: number;
   originalName: string;
   uploadedAt: string;
-  order: number;
+  order?: number;
   type: string;
+  relatedVideoId?: string; 
 }
 export interface Course {
   // Required fields (must exist in database)

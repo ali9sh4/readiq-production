@@ -34,6 +34,10 @@ import {
 } from "@/app/course-upload/action";
 import { useAuth } from "@/context/authContext";
 import { deleteCourseFileFromFireStore } from "@/app/course-upload/edit/action";
+import {
+  CourseVideo,
+  getCourseVideos,
+} from "@/app/actions/upload_video_actions";
 
 // ===== INTERFACES =====
 interface SelectedFile {
@@ -48,6 +52,7 @@ interface UploadedFile {
   originalName: string;
   uploadedAt?: string;
   type?: string;
+  relatedVideoId?: string;
 }
 
 // ✅ Database CourseFile interface (from existing files)
@@ -58,8 +63,8 @@ export interface CourseFile {
   size: number;
   originalName: string;
   uploadedAt: string;
-  order: number;
   type: string;
+  relatedVideoId?: string;
 }
 
 interface Props {
@@ -173,6 +178,8 @@ export default function SmartCourseUploader({
   const [viewingFiles, setViewingFiles] = useState<Set<string>>(new Set());
   const [showUploadedFiles, setShowUploadedFiles] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [courseVideos, setCourseVideos] = useState<CourseVideo[]>([]);
+  const [selectedVideoId, setSelectedVideoId] = useState<string>("");
 
   // ===== CONFIGURATION =====
   const allowedTypes = [
@@ -194,6 +201,22 @@ export default function SmartCourseUploader({
   const hasError = () => {
     return error.upload || error.file || error.load;
   };
+  const loadPreviousVideo = async () => {
+    if (!auth?.user || !courseId) return;
+    try {
+      const result = await getCourseVideos(courseId);
+      if (result.success && result.videos) {
+        setCourseVideos(
+          result.videos.sort((a, b) => (a.order || 0) - (b.order || 0))
+        );
+      }
+    } catch (error) {
+      console.log("error loading videos", error);
+    }
+  };
+  useEffect(() => {
+    loadPreviousVideo();
+  }, [courseId]);
 
   // ✅ LOAD PREVIOUS FILES FROM DATABASE
   const loadPreviousFiles = async () => {
@@ -390,7 +413,9 @@ export default function SmartCourseUploader({
               originalName: result.data.metadata.originalName,
               uploadedAt: new Date().toISOString(),
               type: getFileTypeLabel(result.data.metadata.originalName),
+              ...(selectedVideoId && { relatedVideoId: selectedVideoId }),
             };
+
             // 2. Save to database immediately
             const saveResult = await saveCourseFilesToFirebase({
               courseId,
@@ -437,6 +462,7 @@ export default function SmartCourseUploader({
       }
       // ✅ Handle results based on individual file processing
       if (successCount > 0) {
+        setSelectedVideoId("");
         setSelectedFiles([]); // Clear selected files
         await loadPreviousFiles(); // Refresh the file list
         setShowUploadedFiles(true);
@@ -731,6 +757,32 @@ export default function SmartCourseUploader({
           </div>
         )}
       </div>
+      {/* Video Selector */}
+      {selectedFiles.length > 0 && (
+        <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            ربط بفيديو (اختياري)
+          </label>
+          <select
+            onFocus={loadPreviousVideo}
+            value={selectedVideoId}
+            onChange={(e) => setSelectedVideoId(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+            disabled={uploading}
+          >
+            <option value="">بدون ربط - ملفات عامة للدورة</option>
+            {courseVideos.map((video, idx) => (
+              <option key={video.videoId} value={video.videoId}>
+                فيديو #{idx + 1}: {video.title}
+              </option>
+            ))}
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            سيظهر الملف تحت الفيديو المحدد. إذا لم تحدد، سيكون متاحاً في قسم
+            الملفات العامة
+          </p>
+        </div>
+      )}
 
       {/* ===== ERROR MESSAGE ===== */}
       {hasError() && (

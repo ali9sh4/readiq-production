@@ -16,6 +16,11 @@ export interface CourseVideo {
   title: string;
   uploadedAt: string;
   order?: number;
+  originalFilename?: string;
+  description?: string;
+  section?: string;
+  isPublished?: boolean;
+  isFreePreview?: boolean;
 }
 
 interface VideoUploadData {
@@ -220,6 +225,11 @@ export async function saveCourseVideoToFireStore({
         assetId: video.assetId,
         playbackId: video.playbackId,
         title: video.title,
+        originalFilename: video.title, // NEW: Keep original
+        description: "", // NEW: Empty by default
+        section: "", // NEW: Empty by default
+        isPublished: false, // NEW: Visible by default
+        isFreePreview: false,
         uploadedAt: new Date().toISOString(),
         courseId: courseId,
         order:
@@ -244,7 +254,8 @@ export async function saveCourseVideoToFireStore({
       return video;
     });
 
-    const allVideos = [...existingVideos, ...newVideos];
+    const allVideos = [...updatedExisting, ...newVideos];
+    allVideos.sort((a, b) => (a.order || 0) - (b.order || 0));
 
     await db.collection("courses").doc(courseId).update({
       videos: allVideos,
@@ -259,6 +270,72 @@ export async function saveCourseVideoToFireStore({
     return {
       success: false,
       error: "Failed to save video data",
+    };
+  }
+}
+export async function updateVideoDetails(
+  courseId: string,
+  videoId: string,
+  updates: {
+    title?: string;
+    description?: string;
+    section?: string;
+    isPublished?: boolean;
+    isFreePreview?: boolean;
+  },
+  token: string
+) {
+  try {
+    const verifiedToken = await adminAuth.verifyIdToken(token);
+    if (!verifiedToken) {
+      return { success: false, error: "Invalid authentication" };
+    }
+
+    const courseDoc = await db.collection("courses").doc(courseId).get();
+    if (!courseDoc.exists) {
+      return { success: false, error: "Course not found" };
+    }
+
+    const courseData = courseDoc.data();
+
+    if (courseData?.createdBy !== verifiedToken.uid) {
+      return { success: false, error: "Permission denied" };
+    }
+
+    // ✅ Ensure it's an array
+    let existingVideos: CourseVideo[] = [];
+    if (courseData?.videos) {
+      existingVideos = Array.isArray(courseData.videos)
+        ? courseData.videos
+        : [];
+    }
+
+    // ✅ Find and update the specific video
+    const videoExists = existingVideos.some((v) => v.videoId === videoId);
+    if (!videoExists) {
+      return { success: false, error: "Video not found" };
+    }
+
+    const updatedVideos = existingVideos.map((video) => {
+      if (video.videoId === videoId) {
+        return { ...video, ...updates };
+      }
+      return video;
+    });
+
+    await db.collection("courses").doc(courseId).update({
+      videos: updatedVideos,
+      updatedAt: new Date().toISOString(),
+    });
+
+    revalidatePath(`/course/${courseId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update video details:", error);
+    return {
+      success: false,
+      error: "Failed to update video details",
     };
   }
 }

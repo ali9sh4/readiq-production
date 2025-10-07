@@ -20,6 +20,11 @@ import {
   MoveUp,
   MoveDown,
   Hash,
+  Edit3,
+  Save,
+  Eye,
+  EyeOff,
+  Gift,
 } from "lucide-react";
 import { useVideoUpload } from "@/hooks/useVideoUpload";
 import { useAuth } from "@/context/authContext";
@@ -29,6 +34,7 @@ import {
   deleteCourseVideo,
   CourseVideo,
   reorderCourseVideos,
+  updateVideoDetails,
 } from "@/app/actions/upload_video_actions";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Label } from "./ui/label";
@@ -107,21 +113,25 @@ export default function VideoUploader({
   const [uploading, setUploading] = useState(false);
   const [showUploadedVideos, setShowUploadedVideos] = useState(false);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
-  const [videoOrder, setVideoOrder] = useState<number>(1);
+  const [videoOrder, setVideoOrder] = useState<number | "">(1);
   const [reorderingVideoId, setReorderingVideoId] = useState<string | null>(
     null
   );
-
+  const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
+  const [savingVideoId, setSavingVideoId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    section: "",
+    isPublished: false,
+    isFreePreview: false,
+  });
   const ALLOWED_TYPES = [
     "video/mp4",
     "video/webm",
     "video/quicktime",
     "video/x-msvideo",
   ];
-  useEffect(() => {
-    console.log("🔴 About to get token");
-    console.log("🔴 handleUpload STARTED"); // Add this first line
-  }, [auth?.user, courseId]);
 
   // ===== LOAD VIDEOS ON MOUNT (Like File Uploader) =====
   useEffect(() => {
@@ -265,7 +275,11 @@ export default function VideoUploader({
 
   // ===== UPLOAD VIDEO =====
   const handleUpload = async () => {
-    console.log("🔴 handleUpload STARTED"); // Add this first line
+    if (!courseId) {
+      setError("معرف الدورة مفقود");
+      return;
+    }
+
     if (!selectedVideo || !auth?.user) {
       setError("يرجى تسجيل الدخول واختيار ملف فيديو");
       return;
@@ -273,7 +287,6 @@ export default function VideoUploader({
 
     setUploading(true);
     setError("");
-    console.log("🔴 About to get token");
 
     try {
       const token = await auth.user.getIdToken();
@@ -284,7 +297,6 @@ export default function VideoUploader({
         courseId,
         token
       );
-      console.log("Upload result :", uploadResult);
       if (!uploadResult.playbackId) {
         setError("فشل في الحصول على معرف التشغيل من Mux");
         return;
@@ -300,17 +312,15 @@ export default function VideoUploader({
             uploadId: uploadResult.uploadId,
             title: selectedVideo.file.name,
             duration: uploadResult.duration,
-            order: videoOrder,
+            order: videoOrder !== "" ? videoOrder : previousVideos.length + 1,
           },
         ],
         token,
       });
-      console.log("Upload result :", uploadResult);
 
       if (saveResult.success) {
         // Reload video list
         await loadPreviousVideos();
-        console.log("Upload result :", uploadResult);
 
         // Clear selection
         clearSelectedFile();
@@ -378,6 +388,53 @@ export default function VideoUploader({
         return "حدث خطأ";
       default:
         return "";
+    }
+  };
+  const startEdit = (video: CourseVideo) => {
+    setEditForm({
+      title: video.title,
+      description: video.description || "",
+      section: video.section || "",
+      isPublished: video.isPublished ?? false,
+      isFreePreview: video.isFreePreview ?? false,
+    });
+    setEditingVideoId(video.videoId);
+    setPlayingVideoId(null);
+  };
+
+  const cancelEdit = () => {
+    setEditingVideoId(null);
+  };
+
+  const saveVideoDetails = async (videoId: string) => {
+    if (!auth?.user) return;
+
+    setSavingVideoId(videoId);
+    try {
+      const token = await auth.user.getIdToken();
+
+      // Call your Firebase action here
+      const result = await updateVideoDetails(
+        courseId,
+        videoId,
+        editForm,
+        token
+      );
+
+      if (result.success) {
+        // Update local state
+        setPreviousVideos((prev) =>
+          prev.map((v) => (v.videoId === videoId ? { ...v, ...editForm } : v))
+        );
+        setEditingVideoId(null);
+      } else {
+        setError(result.error || "فشل في حفظ التغييرات");
+      }
+    } catch (error) {
+      console.error("Save failed:", error);
+      setError("حدث خطأ أثناء الحفظ");
+    } finally {
+      setSavingVideoId(null);
     }
   };
 
@@ -500,47 +557,50 @@ export default function VideoUploader({
             {/* ⭐ ADD THIS ENTIRE BLOCK */}
             {state.status === "idle" && (
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                {" "}
-                <label className="flex items-center gap-2 text-sm font-medium text-blue-900 mb-2">
-                  {" "}
-                  <Hash className="w-4 h-4" /> ترتيب الفيديو في الدورة{" "}
-                </label>{" "}
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  ترتيب الفيديو
+                </label>
                 <input
-                  type="number"
-                  min="1"
-                  max={previousVideos.length + 1}
+                  type="text"
                   value={videoOrder}
                   onChange={(e) => {
                     const val = e.target.value;
-                    // ⭐ Only update if not empty
-                    if (val !== "") {
+                    if (val === "") {
+                      setVideoOrder("");
+                      return;
+                    }
+                    if (/^\d+$/.test(val)) {
                       setVideoOrder(parseInt(val));
                     }
                   }}
                   onBlur={() => {
+                    if (videoOrder === "" || videoOrder < 1) {
+                      setVideoOrder(previousVideos.length + 1);
+                      return;
+                    }
                     const max = previousVideos.length + 1;
-                    if (videoOrder > max) setVideoOrder(max);
-                    if (videoOrder < 1) setVideoOrder(1);
+                    if (videoOrder > max) {
+                      setVideoOrder(max);
+                    }
                   }}
                   className="w-full px-4 py-2 border border-blue-300 rounded-lg"
-                />{" "}
-                {/* ⭐ ADD THIS: Show what will happen */}{" "}
+                  placeholder={`الافتراضي: ${previousVideos.length + 1}`}
+                />
                 <div className="text-xs mt-2">
-                  {" "}
-                  {videoOrder <= previousVideos.length ? (
+                  {videoOrder === "" ? (
+                    <p className="text-gray-400">أدخل رقم الترتيب</p>
+                  ) : videoOrder <= previousVideos.length ? (
                     <p className="text-orange-600">
-                      {" "}
                       💡 سيتم إدراج الفيديو في الموقع {videoOrder} وتحريك
-                      الفيديوهات التالية للأسفل{" "}
+                      الفيديوهات التالية للأسفل
                     </p>
                   ) : (
                     <p className="text-blue-600">
-                      {" "}
                       ✓ سيتم إضافة الفيديو في النهاية (الموقع{" "}
-                      {previousVideos.length + 1}){" "}
+                      {previousVideos.length + 1})
                     </p>
-                  )}{" "}
-                </div>{" "}
+                  )}
+                </div>
               </div>
             )}
 
@@ -730,12 +790,34 @@ export default function VideoUploader({
                         {/* Actions */}
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <button
-                            onClick={() => togglePlayVideo(video.videoId)}
+                            onClick={() => {
+                              setPlayingVideoId(
+                                playingVideoId === video.videoId
+                                  ? null
+                                  : video.videoId
+                              );
+                              setEditingVideoId(null);
+                            }}
                             className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-colors"
                             title="تشغيل"
                           >
                             <Play className="w-4 h-4" />
                             <span className="text-xs">تشغيل</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (editingVideoId === video.videoId) {
+                                cancelEdit();
+                              } else {
+                                startEdit(video);
+                              }
+                            }}
+                            className="flex items-center gap-2 px-3 py-2 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded-md transition-colors"
+                            title="تعديل"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                            <span className="text-xs">تعديل</span>
                           </button>
 
                           <button
@@ -773,6 +855,158 @@ export default function VideoUploader({
                               }}
                               className="w-full aspect-video"
                             />
+                          </div>
+                        </div>
+                      )}
+                      {/* Edit Form (Expandable) */}
+                      {editingVideoId === video.videoId && (
+                        <div className="border-t border-green-200 bg-gray-50 p-6">
+                          <div className="max-w-3xl space-y-4">
+                            <div className="flex items-center justify-between mb-4">
+                              <h3 className="text-lg font-semibold text-gray-900">
+                                تعديل تفاصيل الفيديو
+                              </h3>
+                              {savingVideoId === video.videoId && (
+                                <span className="text-sm text-blue-600 flex items-center gap-2">
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  جاري الحفظ...
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Title */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                عنوان الفيديو *
+                              </label>
+                              <input
+                                type="text"
+                                value={editForm.title}
+                                onChange={(e) =>
+                                  setEditForm((prev) => ({
+                                    ...prev,
+                                    title: e.target.value,
+                                  }))
+                                }
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="أدخل عنوان الفيديو"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                الاسم الأصلي:{" "}
+                                {video.originalFilename || video.title}
+                              </p>
+                            </div>
+
+                            {/* Section */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                القسم / الوحدة
+                              </label>
+                              <input
+                                type="text"
+                                value={editForm.section}
+                                onChange={(e) =>
+                                  setEditForm((prev) => ({
+                                    ...prev,
+                                    section: e.target.value,
+                                  }))
+                                }
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                placeholder="مثال: المقدمة، الوحدة الأولى، الخاتمة"
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                اختياري - يساعد في تنظيم الفيديوهات
+                              </p>
+                            </div>
+
+                            {/* Description */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                الوصف
+                              </label>
+                              <textarea
+                                value={editForm.description}
+                                onChange={(e) =>
+                                  setEditForm((prev) => ({
+                                    ...prev,
+                                    description: e.target.value,
+                                  }))
+                                }
+                                rows={3}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                placeholder="وصف مختصر عن محتوى الفيديو"
+                              />
+                            </div>
+
+                            {/* Toggles */}
+                            <div className="grid grid-cols-2 gap-4">
+                              {/* Free Preview */}
+                              <div className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                  <Gift
+                                    className={`w-5 h-5 ${
+                                      editForm.isFreePreview
+                                        ? "text-green-600"
+                                        : "text-gray-400"
+                                    }`}
+                                  />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">
+                                      معاينة مجانية
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {editForm.isFreePreview
+                                        ? "متاح للجميع"
+                                        : "للمشتركين فقط"}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    setEditForm((prev) => ({
+                                      ...prev,
+                                      isFreePreview: !prev.isFreePreview,
+                                    }))
+                                  }
+                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                    editForm.isFreePreview
+                                      ? "bg-green-600"
+                                      : "bg-gray-300"
+                                  }`}
+                                >
+                                  <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                      editForm.isFreePreview
+                                        ? "translate-x-6"
+                                        : "translate-x-1"
+                                    }`}
+                                  />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-3 pt-4">
+                              <button
+                                onClick={() => saveVideoDetails(video.videoId)}
+                                disabled={
+                                  savingVideoId === video.videoId ||
+                                  !editForm.title.trim()
+                                }
+                                className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <Save className="w-4 h-4" />
+                                حفظ التغييرات
+                              </button>
+                              <button
+                                onClick={cancelEdit}
+                                disabled={savingVideoId === video.videoId}
+                                className="flex items-center gap-2 px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                                إلغاء
+                              </button>
+                            </div>
                           </div>
                         </div>
                       )}

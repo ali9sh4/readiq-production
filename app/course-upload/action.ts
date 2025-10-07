@@ -14,8 +14,8 @@ interface UploadedFile {
   filename: string;
   size: number;
   originalName: string;
+  relatedVideoId?: string;
 }
-
 interface SaveCourseFilesParams {
   courseId: string;
   files: UploadedFile[];
@@ -269,6 +269,7 @@ export async function saveCourseFilesToFirebase({
       uploadedAt: new Date().toISOString(),
       order: maxOrder + index + 1, // ✅ Continue order sequence
       type: getFileType(file.originalName),
+      ...(file.relatedVideoId && { relatedVideoId: file.relatedVideoId }),
     }));
 
     // ✅ Combine existing files with new files

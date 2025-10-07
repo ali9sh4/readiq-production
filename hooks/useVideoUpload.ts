@@ -31,7 +31,6 @@ export const useVideoUpload = () => {
       courseId: string,
       token: string
     ): Promise<VideoUploadResult> => {
-      console.log("🟢 startUpload called");
       const POLL_INTERVAL = 5000; // 5 seconds
       const MAX_ATTEMPTS = 20;
       return new Promise<VideoUploadResult>((resolveUpload, rejectUpload) => {
