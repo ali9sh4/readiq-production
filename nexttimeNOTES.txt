@@ -18,4 +18,9 @@ You're trying to verify a token on the client side, which is
 impossible and insecure. Token verification can only happen
 on the server side with Firebase Admin SDK.
   444
+  You're calling checkConnection(file.filename) inside the render, which:
 
+❌ Calls an async function on every render
+❌ Makes a Firebase query for EVERY file on EVERY render
+❌ If you have 10 files, that's 10+ Firebase calls constantly!
+❌ The function doesn't even return anything properly

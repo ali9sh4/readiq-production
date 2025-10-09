@@ -154,6 +154,7 @@ const formatUploadDate = (timestamp?: string): string => {
     day: "numeric",
   });
 };
+// In your component
 
 // ===== MAIN COMPONENT =====
 export default function SmartCourseUploader({
@@ -214,9 +215,6 @@ export default function SmartCourseUploader({
       console.log("error loading videos", error);
     }
   };
-  useEffect(() => {
-    loadPreviousVideo();
-  }, [courseId]);
 
   // ✅ LOAD PREVIOUS FILES FROM DATABASE
   const loadPreviousFiles = async () => {
@@ -255,7 +253,16 @@ export default function SmartCourseUploader({
       setLoadingPreviousFiles(false);
     }
   };
+  useEffect(() => {
+    const loadBoth = async () => {
+      await loadPreviousVideo(); // Wait for videos
+      await loadPreviousFiles(); // Then load files
+    };
 
+    if (auth?.user && courseId) {
+      loadBoth();
+    }
+  }, [courseId, auth?.user]);
   useEffect(() => {
     return () => {
       setViewingFiles(new Set());
@@ -264,9 +271,6 @@ export default function SmartCourseUploader({
   }, []);
 
   // ✅ LOAD FILES ON COMPONENT MOUNT
-  useEffect(() => {
-    loadPreviousFiles();
-  }, [courseId, auth?.user]);
 
   // ===== UTILITY FUNCTIONS =====
   const formatFileSize = (bytes: number): string => {
@@ -673,10 +677,13 @@ export default function SmartCourseUploader({
 
           {/* ✅ Refresh Button */}
           <button
-            onClick={loadPreviousFiles}
+            onClick={() => {
+              loadPreviousVideo();
+              loadPreviousFiles();
+            }}
             disabled={loadingPreviousFiles || uploading || disabled}
             className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-            title="تحديث الملفات"
+            title="تحديث الملفات والفيديوهات"
           >
             <RefreshCw
               className={`w-4 h-4 ${
@@ -920,6 +927,17 @@ export default function SmartCourseUploader({
                           <span>
                             {file.type || getFileTypeLabel(file.originalName)}
                           </span>
+                          <span>•</span>
+                          {file.relatedVideoId ? (
+                            <span className="text-purple-600 font-medium">
+                              مرتبط بالفيديو #
+                              {courseVideos.find(
+                                (v) => v.videoId === file.relatedVideoId
+                              )?.order || "؟"}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">📁 ملف عام</span>
+                          )}
                           <span>•</span>
                           <div className="flex items-center gap-1">
                             <Calendar className="w-3 h-3" />

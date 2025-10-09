@@ -18,7 +18,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Sparkles, Zap, Clock } from "lucide-react";
+import { Sparkles, Zap, Clock, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { QuickCourseSchema } from "@/validation/propertySchema";
 import z from "zod";
@@ -42,7 +42,7 @@ export default function QuickCourseForm({
       title: "",
       category: undefined,
       level: undefined,
-      price: 0,
+      price: 0, // This stays as 0
       description: "",
     } as Partial<InputT>,
   });
@@ -137,6 +137,16 @@ export default function QuickCourseForm({
                           aria-required
                         />
                       </FormControl>
+                      {/* ✅ ADD THIS */}
+                      <div className="text-sm text-gray-500">
+                        {field.value.length > 0
+                          ? `${field.value.length} حرف ${
+                              field.value.length >= 10
+                                ? "✓"
+                                : "- يُفضل 10 أحرف على الأقل"
+                            }`
+                          : "أدخل عنوانًا واضحًا وجذابًا"}
+                      </div>
                       <FormMessage className="text-sm" />
                     </FormItem>
                   )}
@@ -233,26 +243,57 @@ export default function QuickCourseForm({
                       </FormLabel>
                       <FormControl>
                         <Input
-                          inputMode="decimal"
-                          type="number"
-                          placeholder="0 للدورة المجانية"
-                          className="h-12 text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500"
-                          value={
-                            Number.isFinite(field.value as unknown as number)
-                              ? (field.value as number)
-                              : 0
-                          }
+                          type="text"
+                          value={field.value === 0 ? "" : String(field.value)}
                           onChange={(e) => {
-                            const n = Number(e.target.value);
-                            field.onChange(Number.isFinite(n) ? n : 0);
+                            const val = e.target.value;
+
+                            if (val === "") {
+                              field.onChange(0);
+                              return;
+                            }
+
+                            if (/^\d*\.?\d{0,2}$/.test(val)) {
+                              const num = parseFloat(val);
+                              field.onChange(isNaN(num) ? 0 : num);
+                            }
                           }}
+                          onBlur={(e) => {
+                            const val = e.target.value;
+                            const numValue = parseFloat(val);
+
+                            if (val === "" || isNaN(numValue)) {
+                              field.onChange(0);
+                              return;
+                            }
+
+                            if (numValue < 0) {
+                              field.onChange(0);
+                              return;
+                            }
+
+                            field.onChange(Math.round(numValue * 100) / 100);
+                          }}
+                          placeholder="اتركه فارغًا للدورة المجانية"
+                          className="h-12 text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500"
                         />
                       </FormControl>
+                      {/* ✅ IMPROVED FEEDBACK */}
+                      <div className="text-sm">
+                        {field.value === 0 ? (
+                          <span className="text-green-600 font-medium">
+                            ✓ دورة مجانية (السعر = $0.00)
+                          </span>
+                        ) : (
+                          <span className="text-blue-600 font-medium">
+                            السعر: ${Number(field.value).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
                       <FormMessage className="text-sm" />
                     </FormItem>
                   )}
                 />
-
                 {/* Description */}
                 <FormField
                   control={form.control}
@@ -274,9 +315,6 @@ export default function QuickCourseForm({
                         />
                       </FormControl>
                       <div className="flex items-center justify-between text-sm">
-                        <span id="desc-help" className="text-gray-500">
-                          يفضل 1–2 جمل واضحة.
-                        </span>
                         <span
                           id="desc-count"
                           className={`tabular-nums ${
@@ -294,14 +332,22 @@ export default function QuickCourseForm({
                 />
 
                 {/* Submit */}
-                <Button
-                  type="submit"
-                  className="w-full h-12 text-base font-semibold rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                  disabled={form.formState.isSubmitting}
-                >
-                  {submitButtonLabel}
-                </Button>
               </fieldset>
+
+              <Button
+                type="submit"
+                className="w-full h-12 text-base font-semibold rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-70"
+                disabled={form.formState.isSubmitting}
+              >
+                {form.formState.isSubmitting ? (
+                  <>
+                    <Loader2 className="ml-2 h-5 w-5 animate-spin" />
+                    جاري الإنشاء...
+                  </>
+                ) : (
+                  submitButtonLabel
+                )}
+              </Button>
             </form>
           </Form>
         </div>

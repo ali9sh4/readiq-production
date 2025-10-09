@@ -50,7 +50,11 @@ the input ui /// done
 cloudImprovment//  done 
 the files in the file uploader ui 
 and display the video that is realted//
-the course added information ... price name desc image  etc  // 
+the course added information ... price name desc image  etc  // done
+updating the connection instantlu between videos and files // done
+dashboard right to left //
+how change the arrangment from right to left /// 
+
 
 
 
