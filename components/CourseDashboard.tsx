@@ -535,9 +535,10 @@ export default function CourseDashboard({ defaultValues }: Props) {
           {/* OVERVIEW TAB */}
 
           <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {" "}
               {/* Basic Info Form - LEFT COLUMN */}
-              <Card className="lg:col-span-2">
+              <Card className="lg:col-span-3">
                 <CardHeader>
                   <CardTitle className="text-right">
                     المعلومات الأساسية
@@ -728,11 +729,10 @@ export default function CourseDashboard({ defaultValues }: Props) {
                   </Form>
                 </CardContent>
               </Card>
-
               {/* RIGHT COLUMN - Pricing and Thumbnail */}
-              <div className="space-y-6">
+              <div>
                 {/* Pricing Form */}
-                <Card>
+                <Card className="h-full">
                   <CardHeader>
                     <CardTitle className="text-right">التسعير</CardTitle>
                     <CardDescription className="text-right">
@@ -786,76 +786,73 @@ export default function CourseDashboard({ defaultValues }: Props) {
                     </Form>
                   </CardContent>
                 </Card>
-
-                {/* 🔥 THUMBNAIL UPLOAD - SEPARATE FORM WITH SUBMIT BUTTON */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-right">صورة الغلاف</CardTitle>
-                    <CardDescription className="text-right">
-                      تحميل صورة غلاف الدورة
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent dir="rtl">
-                    <Form {...form}>
-                      <form
-                        onSubmit={form.handleSubmit(onImageSubmit)}
-                        className="space-y-4"
-                      >
-                        <FormField
-                          control={form.control}
-                          name="image"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormDescription className="text-sm text-gray-600 mb-3">
-                                📸 اختر صورة واحدة عالية الجودة لتكون غلاف
-                                الدورة (يُفضل 1280×720 بكسل)
-                              </FormDescription>
-                              <FormControl>
-                                <MultiImageUploader
-                                  onImagesChange={(images: ImageUpload[]) => {
-                                    const singleImage =
-                                      images.length > 0 ? images[0] : undefined;
-                                    field.onChange(singleImage);
-                                  }}
-                                  images={field.value ? [field.value] : []}
-                                  maxImages={1}
-                                  urlFormatter={(image) => {
-                                    if (!image.file && image.url) {
-                                      if (!image.url.startsWith("http")) {
-                                        return `https://firebasestorage.googleapis.com/v0/b/readiq-1f109.firebasestorage.app/o/${encodeURIComponent(
-                                          image.url
-                                        )}?alt=media`;
-                                      }
-                                      return image.url;
-                                    }
-                                    return image.url;
-                                  }}
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        {/* 🔥 THIS WAS MISSING - SUBMIT BUTTON FOR IMAGE UPLOAD */}
-                        <Button
-                          type="submit"
-                          disabled={uploadingThumbnail}
-                          className="w-full gap-2"
-                        >
-                          {uploadingThumbnail ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Upload className="h-4 w-4" />
-                          )}
-                          حفظ صورة الغلاف
-                        </Button>
-                      </form>
-                    </Form>
-                  </CardContent>
-                </Card>
               </div>
             </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-right">صورة الغلاف</CardTitle>
+                <CardDescription className="text-right">
+                  تحميل صورة غلاف الدورة
+                </CardDescription>
+              </CardHeader>
+              <CardContent dir="rtl">
+                <Form {...form}>
+                  <form
+                    onSubmit={form.handleSubmit(onImageSubmit)}
+                    className="space-y-4"
+                  >
+                    <FormField
+                      control={form.control}
+                      name="image"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormDescription className="text-sm text-gray-600 mb-3">
+                            📸 اختر صورة واحدة عالية الجودة لتكون غلاف الدورة
+                            (يُفضل 1280×720 بكسل)
+                          </FormDescription>
+                          <FormControl>
+                            <MultiImageUploader
+                              onImagesChange={(images: ImageUpload[]) => {
+                                const singleImage =
+                                  images.length > 0 ? images[0] : undefined;
+                                field.onChange(singleImage);
+                              }}
+                              images={field.value ? [field.value] : []}
+                              maxImages={1}
+                              urlFormatter={(image) => {
+                                if (!image.file && image.url) {
+                                  if (!image.url.startsWith("http")) {
+                                    return `https://firebasestorage.googleapis.com/v0/b/readiq-1f109.firebasestorage.app/o/${encodeURIComponent(
+                                      image.url
+                                    )}?alt=media`;
+                                  }
+                                  return image.url;
+                                }
+                                return image.url;
+                              }}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button
+                      type="submit"
+                      disabled={uploadingThumbnail}
+                      className="w-full gap-2"
+                    >
+                      {uploadingThumbnail ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4" />
+                      )}
+                      حفظ صورة الغلاف
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+            {/* End space-y-6 wrapper */}
           </TabsContent>
           {/* CONTENT TAB */}
           <TabsContent value="content" className="space-y-6">

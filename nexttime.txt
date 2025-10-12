@@ -64,6 +64,7 @@ course dashboard into something better using the old way !!//
 submmitting the values of the for in the form dashbaord/// 
 one thumbnail to push //
 how to view it //
+image uplaoder is at the base //  
 
 
 

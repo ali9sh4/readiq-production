@@ -179,7 +179,7 @@ export default function MultiImageUploader({
   };
 
   const getBadgeText = (index: number) => {
-    if (index === 0) return "الصورة الرئيسية";
+    if (index === 0) return "صورة غلاف الدوره ";
     if (index === 1) return "صورة ثانوية";
     return `صورة ${index + 1}`;
   };
