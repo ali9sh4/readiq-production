@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useAuth } from "@/context/authContext";
 import { Textarea } from "@/components/ui/textarea";
+import { useRouter } from "next/navigation";
+import { storage } from "@/firebase/client";
+import { ref, uploadBytesResumable, UploadTask } from "firebase/storage";
 
 import {
   ChevronLeft,
@@ -17,9 +20,9 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2,
+  EyeOff,
 } from "lucide-react";
 
-// Assuming these are your actual imports - adjust paths as needed
 import {
   Card,
   CardContent,
@@ -30,7 +33,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
@@ -47,34 +49,28 @@ import {
 } from "@/app/actions/basic_info_actios";
 import VideoUploader from "./video_uploader";
 import SmartCourseUploader from "./fileUplaodtoR2";
-
+import { ThumbnailUpdateSchema } from "@/validation/propertySchema";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "./ui/form";
+import { BasicInfoSchema, PricingSchema } from "@/validation/propertySchema";
+import { Course } from "@/types/types";
+import { toast } from "sonner";
+import { SaveImages } from "@/app/course-upload/action";
+import MultiImageUploader, { ImageUpload } from "./muti_image_uploader";
 // Types
-interface CourseVideo {
-  videoId: string;
-  title: string;
-  duration?: number;
-  isPublished?: boolean;
-}
 
-interface CourseFile {
-  id: string;
-  filename: string;
-  originalName: string;
-}
-
-interface Course {
-  id: string;
-  title: string;
-  subtitle?: string;
-  description?: string;
-  category: string;
-  level?: string;
-  language?: string;
-  price?: number;
-  status?: string;
-  images?: string[];
-  videos?: CourseVideo[];
-  files?: CourseFile[];
+interface Props {
+  defaultValues: Course; // ✅ Changed to receive full Course object
 }
 
 type CourseStatus = "draft" | "published" | "archived";
@@ -126,39 +122,65 @@ function getFirstImageUrl(course: Course): string {
 }
 
 // ===== MAIN COMPONENT =====
-export default function CourseDashboard({
-  courseData,
-}: {
-  courseData: Course;
-}) {
-  console.log("Course ID:", courseData.id, "Full data:", courseData);
-  const [course] = useState<Course>(courseData);
+export default function CourseDashboard({ defaultValues }: Props) {
+  const router = useRouter();
+  const auth = useAuth();
+
+  // ✅ Initialize course state properly
+  const [course, setCourse] = useState<Course>(defaultValues);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [unpublishing, setUnPublishing] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
 
-  const [basicForm, setBasicForm] = useState({
-    title: course.title || "",
-    subtitle: course.subtitle || "",
-    description: course.description || "",
-    category: course.category || "",
-    level:
-      (course.level as
-        | "beginner"
-        | "intermediate"
-        | "advanced"
-        | "all_levels") || "all_levels",
-    language:
-      (course.language as "arabic" | "english" | "french" | "spanish") ||
-      "arabic",
+  // ✅ Initialize forms with proper default values
+  const basicInfoForm = useForm<z.infer<typeof BasicInfoSchema>>({
+    resolver: zodResolver(BasicInfoSchema),
+    defaultValues: {
+      title: defaultValues.title || "",
+      subtitle: defaultValues.subtitle || "",
+      description: defaultValues.description || "",
+      category: defaultValues.category || "",
+      level: (defaultValues.level as "beginner") || "beginner",
+      language: (defaultValues.language as "arabic") || "arabic",
+    },
   });
-  const [pricingForm, setPricingForm] = useState<{
-    price: number | string;
-  }>({
-    price: course.price || 0,
+  const form = useForm<z.infer<typeof ThumbnailUpdateSchema>>({
+    resolver: zodResolver(ThumbnailUpdateSchema),
+    defaultValues: {
+      image: course.thumbnailUrl
+        ? {
+            id: "1",
+            url: course.thumbnailUrl,
+          }
+        : undefined,
+    },
   });
-  const auth = useAuth();
+
+  const pricingForm = useForm<z.infer<typeof PricingSchema>>({
+    resolver: zodResolver(PricingSchema),
+    defaultValues: {
+      price: defaultValues.price || 0,
+    },
+  });
+
+  // ✅ Update forms when defaultValues change (for refresh scenarios)
+  useEffect(() => {
+    basicInfoForm.reset({
+      title: defaultValues.title || "",
+      subtitle: defaultValues.subtitle || "",
+      description: defaultValues.description || "",
+      category: defaultValues.category || "",
+      level: (defaultValues.level as "beginner") || "beginner",
+      language: (defaultValues.language as "arabic") || "arabic",
+    });
+    pricingForm.reset({
+      price: defaultValues.price || 0,
+    });
+    setCourse(defaultValues);
+  }, [defaultValues]);
 
   const videos = course.videos || [];
   const files = course.files || [];
@@ -168,38 +190,12 @@ export default function CourseDashboard({
   );
   const publishedVideosCount = videos.filter((v) => v.isPublished).length;
   const status = (course.status as CourseStatus) || "draft";
+  const isPublished = status === "published";
+  const canPublish = videos.length > 0 && !isPublished;
+  const canUnpublish = isPublished;
 
-  const handleSaveBasicInfo = async () => {
-    if (!auth?.user) {
-      setError("يرجى تسجيل الدخول");
-      return;
-    }
-
-    setSaving(true);
-    setError("");
-    setSuccess("");
-
-    try {
-      const token = await auth?.user.getIdToken();
-      const result = await updateCourseBasicInfo(course.id, basicForm, token);
-
-      if (result.success) {
-        setSuccess("تم الحفظ بنجاح");
-        setTimeout(() => setSuccess(""), 3000);
-      } else {
-        setError(result.error || "فشل في الحفظ");
-      }
-    } catch (err) {
-      console.error("Error saving basic info:", err);
-      setError("حدث خطأ أثناء الحفظ");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Do the same for handleSavePricing and handlePublish
-
-  const handleSavePricing = async () => {
+  // ✅ Updated handler for Basic Info
+  const onSubmitBasicInfo = async (data: z.infer<typeof BasicInfoSchema>) => {
     if (!auth?.user) {
       setError("يرجى تسجيل الدخول");
       return;
@@ -211,19 +207,108 @@ export default function CourseDashboard({
 
     try {
       const token = await auth.user.getIdToken();
-      const result = await updateCoursePricing(course.id, pricingForm, token);
-
-      if (result.success) {
-        setSuccess("تم الحفظ بنجاح");
-        setTimeout(() => setSuccess(""), 3000);
-      } else {
-        setError(result.error || "فشل في الحفظ");
-      }
+      setCourse((prev) => ({ ...prev, ...data }));
+      toast.promise(updateCourseBasicInfo(course.id, data, token), {
+        loading: "جاري الحفظ...",
+        success: "تم الحفظ بنجاح",
+        error: (err) => {
+          // Rollback on error
+          setCourse(defaultValues);
+          return "فشل في الحفظ";
+        },
+      });
     } catch (err) {
       console.error("Error saving basic info:", err);
       setError("حدث خطأ أثناء الحفظ");
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ✅ Updated handler for Pricing
+  const onSubmitPricing = async (data: z.infer<typeof PricingSchema>) => {
+    if (!auth?.user) {
+      setError("يرجى تسجيل الدخول");
+      return;
+    }
+
+    setSaving(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const token = await auth.user.getIdToken();
+      const result = await updateCoursePricing(course.id, data, token);
+
+      if (result.success) {
+        // ✅ Update local state with new price
+        setCourse((prev) => ({
+          ...prev,
+          price: data.price,
+        }));
+        toast.success("تم الحفظ  السعر بنجاح");
+      } else {
+        setError(result.error || "فشل في الحفظ");
+      }
+    } catch (err) {
+      console.error("Error saving pricing:", err);
+      setError("حدث خطأ أثناء الحفظ");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onImageSubmit = async (data: z.infer<typeof ThumbnailUpdateSchema>) => {
+    const token = await auth?.user?.getIdToken();
+
+    if (!token) {
+      toast.error("يرجى تسجيل الدخول");
+      return;
+    }
+
+    // Check if image exists and has a file to upload
+    if (!data.image || !data.image.file) {
+      toast.error("يرجى اختيار صورة");
+      return;
+    }
+
+    try {
+      setUploadingThumbnail(true);
+
+      // Upload single thumbnail image to Firebase Storage
+      const path = `courses/${course.id}/thumbnail/${Date.now()}-${
+        data.image.file.name
+      }`;
+      const storageRef = ref(storage, path);
+      const uploadTask = uploadBytesResumable(storageRef, data.image.file);
+
+      // Wait for upload to complete
+      await uploadTask;
+
+      // Save image path to database (as array since SaveImages expects it)
+      await SaveImages(
+        {
+          courseId: course.id,
+          images: [path],
+        },
+        token
+      );
+
+      toast.success("تم حفظ صورة الغلاف بنجاح!");
+
+      // Update local state with new thumbnail
+      setCourse((prev) => ({
+        ...prev,
+        thumbnailUrl: path,
+      }));
+
+      // Optional: Refresh to show updated thumbnail
+      router.refresh();
+    } catch (error) {
+      console.error("Error uploading thumbnail:", error);
+      toast.error("حدث خطأ أثناء رفع الصورة");
+    } finally {
+      setUploadingThumbnail(false);
     }
   };
 
@@ -242,28 +327,62 @@ export default function CourseDashboard({
       const result = await publishCourse(course.id, token);
 
       if (result.success) {
-        setSuccess("تم الحفظ بنجاح");
-        setTimeout(() => setSuccess(""), 3000);
+        setCourse((prev) => ({ ...prev, status: "published" }));
+        toast.success("تم نشر الدوره بنجاح");
+        router.refresh();
       } else {
-        setError(result.error || "فشل في الحفظ");
+        setError(result.error || "فشل في نشر الدورة");
       }
     } catch (err) {
-      console.error("Error saving basic info:", err);
-      setError("حدث خطأ أثناء الحفظ");
+      console.error("Error publishing course:", err);
+      setError("حدث خطأ أثناء نشر الدورة");
     } finally {
       setPublishing(false);
     }
   };
 
+  const handleUnPublish = async () => {
+    if (!confirm("هل أنت متأكد من إلغاء نشر الدورة؟")) {
+      return;
+    }
+
+    if (!auth?.user) {
+      setError("يرجى تسجيل الدخول");
+      return;
+    }
+
+    setUnPublishing(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const token = await auth.user.getIdToken();
+      const result = await unpublishCourse(course.id, token);
+
+      if (result.success) {
+        setCourse((prev) => ({ ...prev, status: "draft" }));
+        toast.success("تم الغاء نشر الدوره بنجاح");
+        router.refresh();
+      } else {
+        setError(result.error || "فشل في إلغاء النشر");
+      }
+    } catch (err) {
+      console.error("Error unpublishing course:", err);
+      setError("حدث خطأ أثناء إلغاء النشر");
+    } finally {
+      setUnPublishing(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6" dir="rtl">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6" dir="rtl" lang="ar">
       <div className="mx-auto max-w-7xl">
         {/* BREADCRUMBS */}
         <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
           <a href="/course-upload" className="hover:text-gray-900">
             الدورات
           </a>
-          <ChevronLeft className="h-4 w-4 rotate-180" /> {/* ✅ Flip for RTL */}
+          <ChevronLeft className="h-4 w-4 rotate-180" />
           <span className="text-gray-900">{course.title}</span>
         </div>
 
@@ -275,23 +394,34 @@ export default function CourseDashboard({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" className="gap-2">
-              <Eye className="h-4 w-4" />
-              معاينة
-            </Button>
-
-            <Button
-              onClick={handlePublish}
-              disabled={publishing || videos.length === 0}
-              className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-            >
-              {publishing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Upload className="h-4 w-4" />
-              )}
-              نشر الدورة
-            </Button>
+            {canPublish && (
+              <Button
+                onClick={handlePublish}
+                disabled={publishing || videos.length === 0}
+                className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+              >
+                {publishing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4" />
+                )}
+                نشر الدورة
+              </Button>
+            )}
+            {canUnpublish && (
+              <Button
+                onClick={handleUnPublish}
+                disabled={unpublishing}
+                className="gap-2 bg-red-600 hover:bg-red-700 text-white"
+              >
+                {unpublishing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <EyeOff className="h-4 w-4" />
+                )}
+                إيقاف الدورة
+              </Button>
+            )}
           </div>
         </div>
 
@@ -354,7 +484,7 @@ export default function CourseDashboard({
                   <Clock className="h-6 w-6 text-purple-600" />
                 </div>
                 <div className="text-right flex-1">
-                  <p className="text-sm text-gray-600">المدة الإجمالية</p>
+                  <p className="text-sm text-gray-600">مدة الدورة</p>
                   <p className="text-2xl font-bold text-gray-900">
                     {formatDuration(totalVideoDuration)}
                   </p>
@@ -402,241 +532,347 @@ export default function CourseDashboard({
               الإعدادات
             </TabsTrigger>
           </TabsList>
-
           {/* OVERVIEW TAB */}
+
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Course Image */}
-              <Card className="lg:col-span-1">
-                <CardHeader>
-                  <CardTitle>صورة الدورة</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="aspect-video relative rounded-lg overflow-hidden border"></div>
-                  <Button variant="outline" className="w-full mt-4">
-                    تغيير الصورة
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Basic Info */}
+              {/* Basic Info Form - LEFT COLUMN */}
               <Card className="lg:col-span-2">
                 <CardHeader>
-                  <CardTitle>المعلومات الأساسية</CardTitle>
-                  <CardDescription>
+                  <CardTitle className="text-right">
+                    المعلومات الأساسية
+                  </CardTitle>
+                  <CardDescription className="text-right">
                     تحديث تفاصيل الدورة الرئيسية
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>العنوان *</Label>
-                      <Input
-                        value={basicForm.title}
-                        onChange={(e) =>
-                          setBasicForm({ ...basicForm, title: e.target.value })
-                        }
-                        placeholder="عنوان الدورة"
+                <CardContent dir="rtl">
+                  <Form {...basicInfoForm}>
+                    <form
+                      onSubmit={basicInfoForm.handleSubmit(onSubmitBasicInfo)}
+                      className="space-y-4"
+                    >
+                      {/* Title and Subtitle */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField
+                          control={basicInfoForm.control}
+                          name="title"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-right block">
+                                العنوان *
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="عنوان الدورة"
+                                  className="text-right"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={basicInfoForm.control}
+                          name="subtitle"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-right block">
+                                العنوان الفرعي
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="وصف قصير"
+                                  className="text-right"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
+                      {/* Description */}
+                      <FormField
+                        control={basicInfoForm.control}
+                        name="description"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-right block">
+                              الوصف
+                            </FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                placeholder="وصف تفصيلي للدورة"
+                                rows={4}
+                                className="resize-none text-right"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
                       />
-                    </div>
 
-                    <div className="space-y-2">
-                      <Label>العنوان الفرعي</Label>
-                      <Input
-                        value={basicForm.subtitle}
-                        onChange={(e) =>
-                          setBasicForm({
-                            ...basicForm,
-                            subtitle: e.target.value,
-                          })
-                        }
-                        placeholder="وصف قصير"
-                      />
-                    </div>
-                  </div>
+                      {/* Category, Level, Language */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <FormField
+                          control={basicInfoForm.control}
+                          name="category"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-right block">
+                                التصنيف
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  placeholder="مثال: البرمجة"
+                                  className="text-right"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={basicInfoForm.control}
+                          name="level"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-right block">
+                                المستوى
+                              </FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="text-right">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="beginner">
+                                    مبتدئ
+                                  </SelectItem>
+                                  <SelectItem value="intermediate">
+                                    متوسط
+                                  </SelectItem>
+                                  <SelectItem value="advanced">
+                                    متقدم
+                                  </SelectItem>
+                                  <SelectItem value="all_levels">
+                                    جميع المستويات
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={basicInfoForm.control}
+                          name="language"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-right block">
+                                اللغة
+                              </FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="text-right">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="arabic">
+                                    العربية
+                                  </SelectItem>
+                                  <SelectItem value="english">
+                                    English
+                                  </SelectItem>
+                                  <SelectItem value="french">
+                                    Français
+                                  </SelectItem>
+                                  <SelectItem value="spanish">
+                                    Español
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label>الوصف</Label>
-                    <Textarea
-                      value={basicForm.description}
-                      onChange={(e) =>
-                        setBasicForm({
-                          ...basicForm,
-                          description: e.target.value,
-                        })
-                      }
-                      placeholder="وصف تفصيلي للدورة"
-                      rows={4}
-                      className="resize-none"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label>التصنيف</Label>
-                      <Input
-                        value={basicForm.category}
-                        onChange={(e) =>
-                          setBasicForm({
-                            ...basicForm,
-                            category: e.target.value,
-                          })
-                        }
-                        placeholder="مثال: البرمجة"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>المستوى</Label>
-                      <Select
-                        value={basicForm.level}
-                        onValueChange={(value) =>
-                          setBasicForm({ ...basicForm, level: value })
-                        }
+                      {/* Submit Button for Basic Info */}
+                      <Button
+                        type="submit"
+                        disabled={basicInfoForm.formState.isSubmitting}
+                        className="w-full gap-2"
                       >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="beginner">مبتدئ</SelectItem>
-                          <SelectItem value="intermediate">متوسط</SelectItem>
-                          <SelectItem value="advanced">متقدم</SelectItem>
-                          <SelectItem value="all_levels">
-                            جميع المستويات
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>اللغة</Label>
-                      <Select
-                        value={basicForm.language}
-                        onValueChange={(value) =>
-                          setBasicForm({ ...basicForm, language: value })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="arabic">العربية</SelectItem>
-                          <SelectItem value="english">English</SelectItem>
-                          <SelectItem value="french">Français</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={handleSaveBasicInfo}
-                    disabled={saving}
-                    className="w-full gap-2"
-                  >
-                    {saving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                    حفظ المعلومات الأساسية
-                  </Button>
+                        {basicInfoForm.formState.isSubmitting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        حفظ المعلومات الأساسية
+                      </Button>
+                    </form>
+                  </Form>
                 </CardContent>
               </Card>
+
+              {/* RIGHT COLUMN - Pricing and Thumbnail */}
+              <div className="space-y-6">
+                {/* Pricing Form */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-right">التسعير</CardTitle>
+                    <CardDescription className="text-right">
+                      تحديد سعر الدورة
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent dir="rtl">
+                    <Form {...pricingForm}>
+                      <form
+                        onSubmit={pricingForm.handleSubmit(onSubmitPricing)}
+                        className="space-y-4"
+                      >
+                        <FormField
+                          control={pricingForm.control}
+                          name="price"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-right block">
+                                السعر (دولار) *
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  type="number"
+                                  placeholder="0.00"
+                                  className="text-right"
+                                  onChange={(e) =>
+                                    field.onChange(
+                                      parseFloat(e.target.value) || 0
+                                    )
+                                  }
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <Button
+                          type="submit"
+                          disabled={pricingForm.formState.isSubmitting}
+                          className="w-full gap-2"
+                        >
+                          {pricingForm.formState.isSubmitting ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Save className="h-4 w-4" />
+                          )}
+                          حفظ السعر
+                        </Button>
+                      </form>
+                    </Form>
+                  </CardContent>
+                </Card>
+
+                {/* 🔥 THUMBNAIL UPLOAD - SEPARATE FORM WITH SUBMIT BUTTON */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-right">صورة الغلاف</CardTitle>
+                    <CardDescription className="text-right">
+                      تحميل صورة غلاف الدورة
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent dir="rtl">
+                    <Form {...form}>
+                      <form
+                        onSubmit={form.handleSubmit(onImageSubmit)}
+                        className="space-y-4"
+                      >
+                        <FormField
+                          control={form.control}
+                          name="image"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormDescription className="text-sm text-gray-600 mb-3">
+                                📸 اختر صورة واحدة عالية الجودة لتكون غلاف
+                                الدورة (يُفضل 1280×720 بكسل)
+                              </FormDescription>
+                              <FormControl>
+                                <MultiImageUploader
+                                  onImagesChange={(images: ImageUpload[]) => {
+                                    const singleImage =
+                                      images.length > 0 ? images[0] : undefined;
+                                    field.onChange(singleImage);
+                                  }}
+                                  images={field.value ? [field.value] : []}
+                                  maxImages={1}
+                                  urlFormatter={(image) => {
+                                    if (!image.file && image.url) {
+                                      if (!image.url.startsWith("http")) {
+                                        return `https://firebasestorage.googleapis.com/v0/b/readiq-1f109.firebasestorage.app/o/${encodeURIComponent(
+                                          image.url
+                                        )}?alt=media`;
+                                      }
+                                      return image.url;
+                                    }
+                                    return image.url;
+                                  }}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* 🔥 THIS WAS MISSING - SUBMIT BUTTON FOR IMAGE UPLOAD */}
+                        <Button
+                          type="submit"
+                          disabled={uploadingThumbnail}
+                          className="w-full gap-2"
+                        >
+                          {uploadingThumbnail ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Upload className="h-4 w-4" />
+                          )}
+                          حفظ صورة الغلاف
+                        </Button>
+                      </form>
+                    </Form>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-
-            {/* Pricing */}
-            <Card>
-              <CardHeader>
-                <CardTitle>التسعير</CardTitle>
-                <CardDescription>تحديد سعر الدورة</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>السعر (دولار) *</Label>
-                    <Input
-                      type="text"
-                      value={pricingForm.price}
-                      onChange={(e) => {
-                        const val = e.target.value;
-
-                        // Allow empty
-                        if (val === "") {
-                          setPricingForm({ ...pricingForm, price: "" as any });
-                          return;
-                        }
-
-                        // Allow numbers and one decimal point
-                        if (/^\d*\.?\d*$/.test(val)) {
-                          setPricingForm({ ...pricingForm, price: val as any });
-                        }
-                      }}
-                      onBlur={() => {
-                        const numValue = parseFloat(pricingForm.price as any);
-
-                        // If empty or invalid, set to 0
-                        if (pricingForm.price === "" || isNaN(numValue)) {
-                          setPricingForm({ ...pricingForm, price: 0 });
-                          return;
-                        }
-
-                        // If negative, set to 0
-                        if (numValue < 0) {
-                          setPricingForm({ ...pricingForm, price: 0 });
-                          return;
-                        }
-
-                        // Round to 2 decimal places
-                        setPricingForm({
-                          ...pricingForm,
-                          price: Math.round(numValue * 100) / 100,
-                        });
-                      }}
-                      className="w-full px-4 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                      placeholder="0.00"
-                    />
-                    <p className="text-xs text-gray-500">
-                      {pricingForm.price === "" || pricingForm.price === 0
-                        ? "أدخل السعر بالدولار"
-                        : `السعر: $${
-                            typeof pricingForm.price === "number"
-                              ? pricingForm.price.toFixed(2)
-                              : pricingForm.price
-                          }`}
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleSavePricing}
-                  disabled={saving}
-                  className="gap-2"
-                >
-                  {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4" />
-                  )}
-                  حفظ السعر
-                </Button>
-              </CardContent>
-            </Card>
           </TabsContent>
-
           {/* CONTENT TAB */}
           <TabsContent value="content" className="space-y-6">
             <VideoUploader courseId={course.id} />
             <SmartCourseUploader id={course.id} />
           </TabsContent>
-
           {/* SETTINGS TAB */}
           <TabsContent value="settings">
             <Card>
               <CardHeader>
-                <CardTitle>إعدادات الدورة</CardTitle>
-                <CardDescription>إعدادات متقدمة للدورة</CardDescription>
+                <CardTitle className="text-right">إعدادات الدورة</CardTitle>
+                <CardDescription className="text-right">
+                  إعدادات متقدمة للدورة
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-500">قريباً...</p>
+              <CardContent dir="rtl">
+                <p className="text-gray-500 text-right">قريباً...</p>
               </CardContent>
             </Card>
           </TabsContent>

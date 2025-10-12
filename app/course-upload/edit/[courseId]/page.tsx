@@ -50,7 +50,7 @@ export default async function EditCoursePage({
         <h1 className="text-3xl font-bold mt-6 mb-4">تعديل الدورة</h1>
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          <CourseDashboard courseData={CleanCourse} />
+          <CourseDashboard defaultValues={CleanCourse} />
         </div>
       </div>
     );

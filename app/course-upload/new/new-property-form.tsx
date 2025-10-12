@@ -5,7 +5,9 @@ import {
   SaveNewProperty,
   SaveQuickCourseCreation,
 } from "@/app/course-upload/action";
+import CoursesCardList from "@/components/CoursesCardList.tsx  ";
 import QuickCourseForm from "@/components/quick_course_form";
+import CourseForm from "@/components/ui/property-form";
 import { useAuth } from "@/context/authContext";
 import { storage } from "@/firebase/client";
 import {
@@ -102,3 +104,5 @@ export default function NewPropertyForm() {
     </div>
   );
 }
+
+///courseForm is the old way

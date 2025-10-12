@@ -24,3 +24,16 @@ on the server side with Firebase Admin SDK.
 ❌ Makes a Firebase query for EVERY file on EVERY render
 ❌ If you have 10 files, that's 10+ Firebase calls constantly!
 ❌ The function doesn't even return anything properly
+
+5555
+At 2,000 users:
+- Add loading skeletons (if slow)
+- Monitor error rates
+
+At 5,000 users:
+- Split large components
+- Add analytics tracking
+
+At 10,000 users:
+- Performance optimization
+- Advanced error tracking (Sentry)

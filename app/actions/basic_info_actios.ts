@@ -244,3 +244,42 @@ export async function unpublishCourse(courseId: string, token: string) {
     return { success: false, error: "Failed to unpublish course" };
   }
 }
+// ===== UPDATE COURSE THUMBNAIL =====
+
+// ===== UPDATE COURSE THUMBNAIL =====
+export async function updateCourseThumbnail(
+  courseId: string,
+  thumbnailPath: string | null, // Just the path, not full URL
+  token: string
+) {
+  try {
+    const verifiedToken = await adminAuth.verifyIdToken(token);
+    if (!verifiedToken) {
+      return { success: false, error: "Invalid authentication" };
+    }
+
+    const courseDoc = await db.collection("courses").doc(courseId).get();
+    if (!courseDoc.exists) {
+      return { success: false, error: "Course not found" };
+    }
+
+    const courseData = courseDoc.data();
+    if (courseData?.createdBy !== verifiedToken.uid) {
+      return { success: false, error: "Permission denied" };
+    }
+
+    // ✅ Update or remove thumbnail
+    await db.collection("courses").doc(courseId).update({
+      thumbnail: thumbnailPath, // Store just the path
+      updatedAt: new Date().toISOString(),
+    });
+
+    revalidatePath(`/course/${courseId}`);
+    revalidatePath(`/course-upload/edit/${courseId}`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update thumbnail:", error);
+    return { success: false, error: "Failed to update thumbnail" };
+  }
+}

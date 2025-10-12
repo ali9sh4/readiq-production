@@ -7,10 +7,8 @@ export const QuickCourseSchema = z.object({
     .min(1, "يجب إدخال عنوان الدورة")
     .min(10, "يجب أن يحتوي العنوان على 10 أحرف على الأقل"),
   category: z.string().min(1, "يجب اختيار تصنيف الدورة"),
-  level: z
-    .enum(["beginner", "intermediate", "advanced", "all_levels"])
-    .default("all_levels"),
-  price: z.coerce.number().min(0).default(0),
+  level: z.enum(["beginner", "intermediate", "advanced", "all_levels"]),
+  price: z.coerce.number().min(0),
   description: z.string().optional(), // Optional but shown in form
 });
 
@@ -46,6 +44,15 @@ export const ImageSchema = z.object({
     )
     .optional(),
 });
+export const ThumbnailUpdateSchema = z.object({
+  image: z
+    .object({
+      id: z.string(),
+      url: z.string(),
+      file: z.instanceof(File).optional(),
+    })
+    .optional(),
+});
 
 export const FileSchema = z.object({
   files: z
@@ -66,4 +73,22 @@ export const FileSchema = z.object({
     .optional(),
 });
 
+// Basic Info Schema
+export const BasicInfoSchema = z.object({
+  title: z.string().min(1, "العنوان مطلوب").min(10, "العنوان قصير جداً"),
+  subtitle: z.string().optional(),
+  description: z.string().optional(),
+  category: z.string().min(1, "التصنيف مطلوب"),
+  level: z.enum(["beginner", "intermediate", "advanced", "all_levels"]),
+  language: z.enum(["arabic", "english", "french", "spanish"]),
+});
+
+// Pricing Schema
+export const PricingSchema = z.object({
+  price: z.coerce.number().min(0, "السعر يجب أن يكون صفر أو أكثر"),
+});
+
 export const CourseDataSchema = CourseSchema.and(ImageSchema);
+export const QuickCourseSchemaThumbNail = QuickCourseSchema.and(
+  ThumbnailUpdateSchema
+);

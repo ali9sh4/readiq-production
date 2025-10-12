@@ -1,60 +1,93 @@
 // types/course.ts
+
+// ===== UTILITY TYPES =====
 export type FirestoreTimestamp = {
   toDate: () => Date;
   seconds: number;
   nanoseconds: number;
 };
+
+export type CourseStatus = "draft" | "published" | "archived";
+export type CourseLevel =
+  | "beginner"
+  | "intermediate"
+  | "advanced"
+  | "all_levels";
+export type CourseLanguage = "arabic" | "english" | "french" | "spanish";
+
+// ===== ENTITY TYPES =====
+
+export interface CourseVideo {
+  videoId: string;
+  title: string;
+  duration?: number;
+  isPublished?: boolean;
+  order?: number;
+}
+
 export interface CourseFile {
   id: string;
   filename: string;
-  size: number;
   originalName: string;
+  size: number;
+  type: string;
   uploadedAt: string;
   order?: number;
-  type: string;
-  relatedVideoId?: string; 
+  relatedVideoId?: string;
 }
+
 export interface Course {
-  // Required fields (must exist in database)
+  // ===== Required Fields =====
   id: string;
   title: string;
   category: string;
   createdAt: string | null;
   updatedAt: string | null;
 
-  // Optional fields (can have defaults)
-  CourseFiles?: CourseFile[];
+  // ===== Basic Info (Optional) =====
+  subtitle?: string;
+  description?: string;
+  level?: CourseLevel;
+  language?: CourseLanguage;
   price?: number;
   duration?: number;
-  level?: "beginner" | "intermediate" | "advanced" | "all_levels";
-  description?: string;
-  language?: "arabic" | "english" | "french" | "spanish";
-  rating?: number;
-  studentsCount?: number;
-  instructor?: string;
-  subtitle?: string;
+
+  // ===== Status & Approval =====
+  status?: CourseStatus;
   isApproved?: boolean;
   isRejected?: boolean;
+
+  // ===== Content =====
+  thumbnailUrl?: string;
+  images?: string[];
+  videos?: CourseVideo[];
+  files?: CourseFile[]; // Using the more detailed CourseFile
   learningPoints?: string[];
   requirements?: string[];
-  images?: string[];
+
+  // ===== Metadata =====
+  instructor?: string;
   createdBy?: string;
+  rating?: number;
+  studentsCount?: number;
 }
+
+// ===== API RESPONSE TYPES =====
 
 export interface CourseResponse {
   success: boolean;
   courses: Course[];
   hasMore: boolean;
   nextCursor: string | null;
-  error?: string;
   totalPages?: number;
+  error?: string;
 }
 
 export interface GetCourseOptions {
   filters?: {
     category?: string;
-    level?: "beginner" | "intermediate" | "advanced" | "all_levels";
-    language?: "arabic" | "english" | "french" | "spanish";
+    level?: CourseLevel;
+    language?: CourseLanguage;
     isApproved?: boolean;
     isRejected?: boolean;
     userId?: string;

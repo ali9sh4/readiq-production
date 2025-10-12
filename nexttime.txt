@@ -1,3 +1,8 @@
+fixed prices// /
+my own course (phone ) ///
+instagram page // 
+how to do a marketing campaign /// 
+
 building the view for the coursed creator /// done  
 approving functionality // done
 on the course card list activate the edit button ! 
@@ -52,8 +57,19 @@ the files in the file uploader ui
 and display the video that is realted//
 the course added information ... price name desc image  etc  // done
 updating the connection instantlu between videos and files // done
-dashboard right to left //
-how change the arrangment from right to left /// 
+dashboard right to left // done 
+how change the arrangment from right to left /// done
+course thumbnail // 
+course dashboard into something better using the old way !!//
+submmitting the values of the for in the form dashbaord/// 
+one thumbnail to push //
+how to view it //
+
+
+
+
+
+
 
 
 
