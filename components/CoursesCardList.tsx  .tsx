@@ -1,3 +1,8 @@
+"use client";
+
+import { memo, useMemo } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import {
   Card,
   CardHeader,
@@ -5,237 +10,387 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import Image from "next/image";
-import { Course, CourseResponse } from "@/types/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import {
   Star,
-  Clock,
   Users,
-  Heart,
   ShoppingCart,
   Play,
   Award,
   Edit,
   Trash2,
-  Eye,
   BookOpen,
   TrendingUp,
+  Clock,
+  AlertCircle,
 } from "lucide-react";
+import { Course, CourseResponse } from "@/types/types";
 
-// Type for ImageUpload objects (from form)
-type ImageUpload = {
-  id: string;
-  url: string;
-  file?: File;
+// ===== TYPES =====
+interface CoursesCardListProps {
+  data: CourseResponse;
+  isAdminView?: boolean;
+  onDeleteCourse?: (courseId: string) => void;
+}
+
+// ===== UTILITY FUNCTIONS =====
+
+/**
+ * Formats Firebase Storage path to full URL
+ */
+const getImageUrl = (thumbnailUrl?: string): string => {
+  // No thumbnail provided
+  if (!thumbnailUrl) {
+    return "/images/course-placeholder.jpg";
+  }
+
+  // Already a full URL
+  if (thumbnailUrl.startsWith("http")) {
+    return thumbnailUrl;
+  }
+
+  // Format Firebase Storage URL
+  return `https://firebasestorage.googleapis.com/v0/b/readiq-1f109.firebasestorage.app/o/${encodeURIComponent(
+    thumbnailUrl
+  )}?alt=media`;
 };
 
-// Type guard to check if it's an ImageUpload object
-const isImageUpload = (image: unknown): image is ImageUpload => {
-  return (
-    typeof image === "object" &&
-    image !== null &&
-    "url" in image &&
-    typeof (image as ImageUpload).url === "string"
-  );
-};
-
-// Utility functions
-const formatPrice = (price: number): string => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(price);
-};
-
-const formatStudentsCount = (count: number): string => {
-  if (!count) return "0";
+/**
+ * Formats student count with K notation
+ */
+const formatStudentsCount = (count?: number): string => {
+  if (!count || count === 0) return "0";
   if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
   return count.toString();
 };
 
-const formatDuration = (duration: number): string => {
-  const hours = Math.floor(duration);
-  const minutes = Math.round((duration - hours) * 60);
-  return minutes === 0 ? `${hours}h` : `${hours}h ${minutes}m`;
+/**
+ * Formats duration in minutes to readable string
+ */
+const formatDuration = (minutes?: number): string => {
+  if (!minutes || minutes === 0) return "غير محدد";
+  if (minutes < 60) return `${minutes} دقيقة`;
+  const hours = Math.floor(minutes / 60);
+  const remainingMins = minutes % 60;
+  if (remainingMins === 0) return `${hours} ساعة`;
+  return `${hours} س ${remainingMins} د`;
 };
 
-// Enhanced level colors with gradients
-const levelColors = {
-  beginner:
-    "bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border-emerald-200 shadow-sm",
-  intermediate:
-    "bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-200 shadow-sm",
-  advanced:
-    "bg-gradient-to-r from-rose-100 to-red-100 text-rose-800 border-rose-200 shadow-sm",
-  all_levels:
-    "bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border-blue-200 shadow-sm",
+/**
+ * Gets localized language name
+ */
+const getLanguageName = (lang?: string): string => {
+  const languageMap: Record<string, string> = {
+    arabic: "العربية",
+    english: "English",
+    french: "Français",
+    spanish: "Español",
+  };
+  return languageMap[lang || "arabic"] || lang || "العربية";
 };
 
-// Level labels in Arabic
-const levelLabelsAr = {
-  beginner: "مبتدئ",
-  intermediate: "متوسط",
-  advanced: "متقدم",
-  all_levels: "جميع المستويات",
+/**
+ * Gets localized level name
+ */
+const getLevelName = (level?: string): string => {
+  const levelMap: Record<string, string> = {
+    beginner: "مبتدئ",
+    intermediate: "متوسط",
+    advanced: "متقدم",
+    all_levels: "جميع المستويات",
+  };
+  return levelMap[level || "beginner"] || "مبتدئ";
 };
 
-// Enhanced Star Rating Component
-const StarRating = ({ rating = 4.0 }: { rating?: number }) => {
+// ===== SUB-COMPONENTS =====
+
+/**
+ * Star Rating Component
+ */
+const StarRating = memo(({ rating = 4.0 }: { rating?: number }) => {
   const fullStars = Math.floor(rating);
-  const hasHalfStar = rating % 1 !== 0;
+  const hasHalfStar = rating % 1 >= 0.5;
   const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
 
   return (
-    <div className="flex items-center gap-1">
-      {Array(fullStars)
-        .fill(0)
-        .map((_, i) => (
-          <Star
-            key={`full-${i}`}
-            className="w-4 h-4 fill-amber-400 text-amber-400 drop-shadow-sm"
-          />
-        ))}
+    <div
+      className="flex items-center gap-1"
+      role="img"
+      aria-label={`تقييم ${rating} من 5`}
+    >
+      {/* Full Stars */}
+      {Array.from({ length: fullStars }).map((_, i) => (
+        <Star
+          key={`full-${i}`}
+          className="w-4 h-4 fill-amber-400 text-amber-400"
+          aria-hidden="true"
+        />
+      ))}
+      {/* Half Star */}
       {hasHalfStar && (
-        <Star className="w-4 h-4 fill-amber-400 text-amber-400 opacity-60 drop-shadow-sm" />
+        <Star
+          className="w-4 h-4 fill-amber-400 text-amber-400 opacity-60"
+          aria-hidden="true"
+        />
       )}
-      {Array(emptyStars)
-        .fill(0)
-        .map((_, i) => (
-          <Star key={`empty-${i}`} className="w-4 h-4 text-gray-300" />
-        ))}
+      {/* Empty Stars */}
+      {Array.from({ length: emptyStars }).map((_, i) => (
+        <Star
+          key={`empty-${i}`}
+          className="w-4 h-4 text-gray-300"
+          aria-hidden="true"
+        />
+      ))}
       <span className="text-sm font-semibold text-gray-700 mr-1 bg-white/80 px-1.5 py-0.5 rounded-full">
         {rating.toFixed(1)}
       </span>
     </div>
   );
-};
+});
+StarRating.displayName = "StarRating";
 
-interface CoursesCardListProps {
-  data: CourseResponse;
-  isAdminView?: boolean;
-}
+/**
+ * Empty State Component
+ */
+const EmptyState = memo(() => (
+  <div className="flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
+    <div className="bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200 p-8 max-w-md">
+      <div className="w-16 h-16 bg-gray-400 rounded-full flex items-center justify-center mx-auto mb-4">
+        <BookOpen className="w-8 h-8 text-white" aria-hidden="true" />
+      </div>
+      <h3 className="text-xl font-bold text-gray-800 mb-2">لا توجد دورات</h3>
+      <p className="text-gray-600">لا توجد دورات متاحة في الوقت الحالي</p>
+    </div>
+  </div>
+));
+EmptyState.displayName = "EmptyState";
+
+/**
+ * Error State Component
+ */
+const ErrorState = memo(({ message }: { message?: string }) => (
+  <div className="flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
+    <div className="bg-gradient-to-br from-red-50 to-rose-100 rounded-2xl shadow-lg border border-red-200 p-8 max-w-md">
+      <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+        <AlertCircle className="w-8 h-8 text-white" aria-hidden="true" />
+      </div>
+      <h3 className="text-xl font-bold text-red-800 mb-2">خطأ في التحميل</h3>
+      <p className="text-red-600">{message || "حدث خطأ غير متوقع"}</p>
+    </div>
+  </div>
+));
+ErrorState.displayName = "ErrorState";
+
+/**
+ * Course Card Component
+ */
+const CourseCard = memo(
+  ({
+    course,
+    isAdminView,
+    onDelete,
+  }: {
+    course: Course;
+    isAdminView: boolean;
+    onDelete?: (id: string) => void;
+  }) => {
+    const imageUrl = useMemo(
+      () => getImageUrl(course.thumbnailUrl),
+      [course.thumbnailUrl]
+    );
+    const languageName = useMemo(
+      () => getLanguageName(course.language),
+      [course.language]
+    );
+    const levelName = useMemo(() => getLevelName(course.level), [course.level]);
+
+    const rating = course.rating || 4.2;
+    const studentsCount = course.studentsCount || 0;
+    const instructor = course.instructor || "مدرب محترف";
+
+    return (
+      <Card className="group cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 border-0 shadow-lg overflow-hidden bg-white rounded-2xl">
+        {/* Course Image */}
+        <div className="relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 h-48">
+          <Image
+            src={imageUrl}
+            fill
+            alt={course.title}
+            className="object-cover transition-transform duration-500 group-hover:scale-110"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            priority={false}
+          />
+
+          {/* Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+
+          {/* Play Button Overlay */}
+          {!isAdminView && (
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/0 to-purple-600/0 group-hover:from-blue-600/20 group-hover:to-purple-600/20 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
+              <div className="bg-white/95 rounded-full p-4 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-2xl">
+                <Play
+                  className="w-6 h-6 text-gray-800 fill-current"
+                  aria-label="تشغيل معاينة الدورة"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Status Badge */}
+          {course.status === "published" && (
+            <Badge className="absolute top-3 right-3 bg-green-500 text-white border-0 shadow-lg">
+              منشور
+            </Badge>
+          )}
+        </div>
+
+        {/* Card Content */}
+        <CardHeader className="pb-3 pt-5">
+          <CardTitle className="text-lg font-bold text-gray-900 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors text-right">
+            {course.title}
+          </CardTitle>
+          {course.subtitle && (
+            <CardDescription className="text-sm text-gray-600 text-right line-clamp-2 mt-1">
+              {course.subtitle}
+            </CardDescription>
+          )}
+        </CardHeader>
+
+        <CardContent className="pt-0 text-right space-y-3">
+          {/* Instructor */}
+          <div className="flex items-center gap-2 flex-row-reverse bg-gray-50 rounded-lg p-2">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
+              <Award className="w-4 h-4 text-white" aria-hidden="true" />
+            </div>
+            <span className="text-sm text-gray-700 font-medium truncate">
+              {instructor}
+            </span>
+          </div>
+
+          {/* Rating and Students */}
+          <div className="flex items-center gap-3 flex-row-reverse justify-between">
+            <StarRating rating={rating} />
+            <div className="flex items-center text-sm text-gray-600 gap-1 bg-blue-50 rounded-full px-3 py-1">
+              <Users className="w-4 h-4" aria-hidden="true" />
+              <span
+                className="font-medium"
+                aria-label={`${studentsCount} طالب`}
+              >
+                {formatStudentsCount(studentsCount)}
+              </span>
+            </div>
+          </div>
+
+          {/* Duration, Level, Language */}
+          <div className="flex items-center justify-between text-xs text-gray-600 bg-gray-50 rounded-lg p-2.5 gap-2">
+            {course.duration && (
+              <div className="flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+                <span>{formatDuration(course.duration)}</span>
+              </div>
+            )}
+            <span className="font-medium text-gray-700">{languageName}</span>
+            <span className="text-blue-600 font-medium">{levelName}</span>
+          </div>
+
+          {/* Price */}
+          {course.price !== undefined && (
+            <div className="text-center py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+              <span className="text-2xl font-bold text-blue-600">
+                {course.price === 0 ? "مجاني" : `$${course.price}`}
+              </span>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 pt-3 border-t border-gray-100">
+            {isAdminView ? (
+              <>
+                <Link
+                  href={`/course-upload/edit/${course.id}`}
+                  className="flex-1"
+                >
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 font-medium rounded-xl transition-all duration-300"
+                    aria-label={`تعديل دورة ${course.title}`}
+                  >
+                    <Edit className="w-3.5 h-3.5 ml-1" aria-hidden="true" />
+                    تعديل
+                  </Button>
+                </Link>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => onDelete?.(course.id)}
+                  className="font-medium rounded-xl transition-all duration-300"
+                  aria-label={`حذف دورة ${course.title}`}
+                >
+                  <Trash2 className="w-3.5 h-3.5 ml-1" aria-hidden="true" />
+                  حذف
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50 font-medium rounded-xl transition-all duration-300"
+                  aria-label={`إضافة دورة ${course.title} للسلة`}
+                >
+                  <ShoppingCart
+                    className="w-3.5 h-3.5 ml-1"
+                    aria-hidden="true"
+                  />
+                  إضافة
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-xl transition-all duration-300"
+                  aria-label={`التسجيل في دورة ${course.title}`}
+                >
+                  تسجيل
+                </Button>
+              </>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+);
+CourseCard.displayName = "CourseCard";
+
+// ===== MAIN COMPONENT =====
 
 export default function CoursesCardList({
   data,
   isAdminView = false,
+  onDeleteCourse,
 }: CoursesCardListProps) {
-  // Enhanced function to get the first image URL with proper typing
-  const getFirstImageUrl = (course: Course): string => {
-    console.log("Course images:", course.images);
-
-    if (!course.images || course.images.length === 0) {
-      console.log("No images found, using placeholder");
-      return "/images/course-placeholder.jpg";
-    }
-
-    const firstImage = course.images[0];
-    console.log("First image:", firstImage, "Type:", typeof firstImage);
-
-    // Since Course interface defines images as string[], we know it should be a string
-    // But let's handle both cases for form data compatibility
-
-    // Handle if it's an ImageUpload object (from form - shouldn't happen with Course type, but just in case)
-    if (isImageUpload(firstImage)) {
-      const imageUrl = firstImage.url;
-      console.log("Processing object image URL:", imageUrl);
-
-      // If it's already a full URL, return as is
-      if (imageUrl.startsWith("http")) {
-        console.log("Returning full URL:", imageUrl);
-        return imageUrl;
-      }
-
-      // Format Firebase storage URL
-      const formattedUrl = `https://firebasestorage.googleapis.com/v0/b/readiq-1f109.firebasestorage.app/o/${encodeURIComponent(
-        imageUrl
-      )}?alt=media`;
-      console.log("Returning formatted URL:", formattedUrl);
-      return formattedUrl;
-    }
-
-    // Handle if it's a string (expected from Course interface)
-    if (typeof firstImage === "string") {
-      console.log("Processing string image URL:", firstImage);
-
-      // If it's already a full URL, return as is
-      if (firstImage.startsWith("http")) {
-        console.log("Returning string full URL:", firstImage);
-        return firstImage;
-      }
-
-      // Format Firebase storage URL
-      const formattedUrl = `https://firebasestorage.googleapis.com/v0/b/readiq-1f109.firebasestorage.app/o/${encodeURIComponent(
-        firstImage
-      )}?alt=media`;
-      console.log("Returning formatted string URL:", formattedUrl);
-      return formattedUrl;
-    }
-
-    // Fallback
-    console.log("No valid image found, using placeholder");
-    return "/images/course-placeholder.jpg";
-  };
-
-  // Error handling with enhanced design
+  // Error State
   if (!data.success || data.error) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 text-center">
-        <div className="bg-gradient-to-br from-red-50 to-rose-100 rounded-2xl shadow-lg border border-red-200 p-8 max-w-md">
-          <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-white"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 15.5c-.77.833.192 2.5 1.732 2.5z"
-              />
-            </svg>
-          </div>
-          <h3 className="text-xl font-bold text-red-800 mb-2">
-            خطأ في التحميل
-          </h3>
-          <p className="text-red-600">{data.error || "حدث خطأ غير متوقع"}</p>
-        </div>
-      </div>
-    );
+    return <ErrorState message={data.error} />;
   }
 
-  // Empty state with enhanced design
+  // Empty State
   if (!data.courses || data.courses.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center p-12 text-center">
-        <div className="bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200 p-8 max-w-md">
-          <div className="w-16 h-16 bg-gray-400 rounded-full flex items-center justify-center mx-auto mb-4">
-            <BookOpen className="w-8 h-8 text-white" />
-          </div>
-          <h3 className="text-xl font-bold text-gray-800 mb-2">
-            لا توجد دورات
-          </h3>
-          <p className="text-gray-600">لا توجد دورات متاحة في الوقت الحالي</p>
-        </div>
-      </div>
-    );
+    return <EmptyState />;
   }
 
   return (
-    <div className="space-y-8">
-      {/* Enhanced header with gradient background */}
+    <div className="space-y-8" role="region" aria-label="قائمة الدورات">
+      {/* Header */}
       <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-6 border border-blue-100 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
               {isAdminView ? (
-                <Edit className="w-5 h-5 text-white" />
+                <Edit className="w-5 h-5 text-white" aria-hidden="true" />
               ) : (
-                <TrendingUp className="w-5 h-5 text-white" />
+                <TrendingUp className="w-5 h-5 text-white" aria-hidden="true" />
               )}
             </div>
             <div>
@@ -244,8 +399,8 @@ export default function CoursesCardList({
               </h2>
               <p className="text-gray-600 text-sm">
                 {isAdminView
-                  ? `إجمالي الدورات: ${data.courses.length} دورة`
-                  : `اكتشف أفضل الدورات التدريبية (${data.courses.length} دورة)`}
+                  ? `إجمالي الدورات: ${data.courses.length}`
+                  : `اكتشف ${data.courses.length} دورة تدريبية`}
               </p>
             </div>
           </div>
@@ -257,184 +412,24 @@ export default function CoursesCardList({
         </div>
       </div>
 
-      {/* Enhanced grid with better responsive design */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {data.courses.map((course) => {
-          const rating = course.rating || 4.2;
-          const studentsCount = course.studentsCount || 1250;
-          const instructor =
-            course.instructor || course.createdBy || "مدرب محترف";
-
-          return (
-            <Card
-              key={course.id}
-              className="group cursor-pointer transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-3 border-0 shadow-xl overflow-hidden bg-white rounded-2xl backdrop-blur-sm"
-            >
-              {/* Enhanced Course Image with better overlay */}
-              <div className="relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl h-48">
-                <Image
-                  src={getFirstImageUrl(course)}
-                  fill
-                  alt={course.title || "Course image"}
-                  className="object-cover"
-                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                />
-
-                {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-
-                {/* Enhanced play overlay */}
-                {!isAdminView && (
-                  <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center backdrop-blur-[2px]">
-                    <div className="bg-white/95 backdrop-blur-md rounded-full p-4 transform scale-75 group-hover:scale-100 transition-all duration-500 shadow-2xl border border-white/50">
-                      <Play className="w-6 h-6 text-gray-800 fill-current" />
-                    </div>
-                  </div>
-                )}
-
-                {/* Enhanced badges */}
-                <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
-                  <Badge
-                    className={`${
-                      levelColors[course.level]
-                    } border-0 font-semibold text-xs px-3 py-1.5 rounded-full backdrop-blur-sm`}
-                  >
-                    {levelLabelsAr[course.level]}
-                  </Badge>
-
-                  {/* Enhanced admin controls */}
-                  {isAdminView ? (
-                    <div className="flex gap-2">
-                      <Link href={`/courses/${course.id}`}>
-                        <button className="p-2 bg-white/95 backdrop-blur-md rounded-full hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl border border-white/50">
-                          <Eye className="w-4 h-4 text-gray-600 hover:text-blue-500 transition-colors" />
-                        </button>
-                      </Link>
-                      <Link href={`/dashboard/courses/edit/${course.id}`}>
-                        <button className="p-2 bg-white/95 backdrop-blur-md rounded-full hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl border border-white/50">
-                          <Edit className="w-4 h-4 text-gray-600 hover:text-blue-500 transition-colors" />
-                        </button>
-                      </Link>
-                      <button className="p-2 bg-white/95 backdrop-blur-md rounded-full hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl border border-white/50">
-                        <Trash2 className="w-4 h-4 text-gray-600 hover:text-red-500 transition-colors" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button className="p-2 bg-white/95 backdrop-blur-md rounded-full hover:bg-white transition-all duration-300 shadow-lg hover:shadow-xl border border-white/50">
-                      <Heart className="w-4 h-4 text-gray-600 hover:text-red-500 transition-colors" />
-                    </button>
-                  )}
-                </div>
-
-                {/* New: Price badge on image */}
-                <div className="absolute bottom-4 right-4">
-                  <div className="bg-white/95 backdrop-blur-md rounded-full px-3 py-1.5 shadow-lg border border-white/50">
-                    <span className="text-sm font-bold text-gray-900">
-                      {formatPrice(course.price)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Enhanced Card Content */}
-              <CardHeader className="pb-3 pt-6">
-                <CardTitle className="text-lg font-bold text-gray-900 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors text-right mb-2">
-                  {course.title}
-                </CardTitle>
-                <CardDescription className="text-sm text-gray-600 text-right line-clamp-2 leading-relaxed">
-                  {course.subtitle || `تخصص: ${course.category}`}
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent className="pt-0 text-right space-y-4">
-                {/* Enhanced Instructor */}
-                <div className="flex items-center gap-2 mb-3 flex-row-reverse bg-gray-50 rounded-lg p-2">
-                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                    <Award className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="text-sm text-gray-700 font-medium truncate">
-                    {instructor}
-                  </span>
-                </div>
-
-                {/* Enhanced Rating and Students */}
-                <div className="flex items-center gap-4 mb-3 flex-row-reverse justify-between">
-                  <StarRating rating={rating} />
-                  <div className="flex items-center text-sm text-gray-600 gap-1 bg-blue-50 rounded-full px-3 py-1">
-                    <Users className="w-4 h-4" />
-                    <span className="font-medium">
-                      ({formatStudentsCount(studentsCount)})
-                    </span>
-                  </div>
-                </div>
-
-                {/* Enhanced Duration and Language */}
-                <div className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 rounded-lg p-3">
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-blue-500" />
-                    <span className="font-medium">
-                      {formatDuration(course.duration)}
-                    </span>
-                  </div>
-                  <div className="text-sm">
-                    <span className="font-medium text-gray-700">
-                      {course.language === "arabic"
-                        ? "العربية"
-                        : course.language}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Enhanced Actions */}
-                <div className="flex gap-2 pt-4 border-t border-gray-100">
-                  {isAdminView ? (
-                    <>
-                      <Link
-                        href={`/course-upload/edit/${course.id}`}
-                        className="flex-1"
-                      >
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 font-medium text-xs py-2 rounded-xl transition-all duration-300 hover:shadow-lg"
-                        >
-                          <Edit className="w-3 h-3 ml-1" />
-                          تعديل
-                        </Button>
-                      </Link>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="font-medium text-xs py-2 px-4 rounded-xl transition-all duration-300 hover:shadow-lg"
-                      >
-                        <Trash2 className="w-3 h-3 ml-1" />
-                        حذف
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50 font-medium text-xs py-2 rounded-xl transition-all duration-300 hover:shadow-lg"
-                      >
-                        <ShoppingCart className="w-3 h-3 ml-1" />
-                        إضافة
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium text-xs py-2 rounded-xl transition-all duration-300 hover:shadow-lg shadow-blue-500/25"
-                      >
-                        تسجيل
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+      {/* Courses Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {data.courses.map((course) => (
+          <CourseCard
+            key={course.id}
+            course={course}
+            isAdminView={isAdminView}
+            onDelete={onDeleteCourse}
+          />
+        ))}
       </div>
+
+      {/* Pagination Info */}
+      {data.hasMore && (
+        <div className="text-center py-4">
+          <p className="text-sm text-gray-600">المزيد من الدورات متاحة...</p>
+        </div>
+      )}
     </div>
   );
 }

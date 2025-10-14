@@ -124,23 +124,23 @@ export const getCourses = async (
     const totalPages = await getTotalPages(CoursesQuery, pageSize);
     const CoursesSnapShot = await CoursesQuery.limit(pageSize + 1).get();
 
+    // In /data/courses.ts, getCourses function
     const coursesList: Course[] = CoursesSnapShot.docs
       .slice(0, pageSize)
       .map((doc) => {
         const docData = doc.data();
-        const { id: dataFieldId, ...cleanData } = docData;
-
-        if (dataFieldId && dataFieldId !== doc.id) {
-          console.warn(`ID conflict detected for course "${docData.title}":`, {
-            firestoreId: doc.id,
-            dataFieldId: dataFieldId,
-            using: doc.id,
-          });
-        }
+        const { ...cleanData } = docData;
 
         return {
-          id: doc.id,
           ...cleanData,
+          id: doc.id,
+          // ✅ Convert Firestore Timestamps to strings
+          createdAt: cleanData.createdAt?.toDate?.()?.toISOString() || null,
+          updatedAt: cleanData.updatedAt?.toDate?.()?.toISOString() || null,
+          approvedAt: cleanData.approvedAt?.toDate?.()?.toISOString() || null,
+          rejectedAt: cleanData.rejectedAt?.toDate?.()?.toISOString() || null,
+          title: cleanData.title || "",
+          category: cleanData.category || "",
         } as Course;
       });
 

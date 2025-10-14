@@ -1,7 +1,7 @@
 // app/course-upload/action.ts
 "use server";
 
-import { adminAuth, db } from "@/firebase/service";
+import { adminAuth, db, storage } from "@/firebase/service";
 import { Course, CourseFile } from "@/types/types";
 import {
   CourseDataSchema,
@@ -152,13 +152,13 @@ export const SaveQuickCourseCreation = async (
 };
 
 // Save course images (v8 Admin SDK)
-export const SaveImages = async (
+export const SaveThumbnail = async (
   {
     courseId,
-    images,
+    thumbnailUrl,
   }: {
     courseId: string;
-    images: string[];
+    thumbnailUrl: string;
   },
   token: string
 ) => {
@@ -175,10 +175,10 @@ export const SaveImages = async (
     // Validate input
     const schema = z.object({
       courseId: z.string().min(1, "معرف الدورة مطلوب"),
-      images: z.array(z.string()).min(1, "صورة واحدة على الأقل مطلوبة"),
+      thumbnailUrl: z.string().min(1, "رابط الصورة المصغرة مطلوب"),
     });
 
-    const validation = schema.safeParse({ courseId, images });
+    const validation = schema.safeParse({ courseId, thumbnailUrl });
     if (!validation.success) {
       return {
         error: true,
@@ -187,25 +187,24 @@ export const SaveImages = async (
       };
     }
 
-    // Update course with images using v8 Admin SDK syntax
+    // Update course with thumbnail using v8 Admin SDK syntax
     await db.collection("courses").doc(courseId).update({
-      images,
+      thumbnailUrl,
       updatedAt: new Date().toISOString(),
     });
 
     return {
       success: true,
-      message: "تم حفظ الصور بنجاح",
+      message: "تم حفظ الصورة المصغرة بنجاح",
     };
   } catch (error) {
-    console.error("Error saving images:", error);
+    console.error("Error saving thumbnail:", error);
     return {
       error: true,
-      message: "حدث خطأ أثناء حفظ الصور",
+      message: "حدث خطأ أثناء حفظ الصورة المصغرة",
     };
   }
 };
-
 // Fixed saveCourseFiles function
 export async function saveCourseFilesToFirebase({
   courseId,
@@ -339,6 +338,58 @@ export async function getCourseFiles(courseId: string): Promise<{
     };
   }
 }
+// action.ts
+export const DeleteThumbnail = async (courseId: string, token: string) => {
+  try {
+    const verifiedToken = await adminAuth.verifyIdToken(token);
+    if (!verifiedToken) {
+      return {
+        success: false,
+        error: true,
+        message: "يرجى تسجيل الدخول مرة أخرى.",
+      };
+    }
+
+    // ✅ Get course to verify ownership AND get thumbnail path
+    const courseDoc = await db.collection("courses").doc(courseId).get();
+
+    if (!courseDoc.exists) {
+      return { success: false, error: true, message: "الدورة غير موجودة" };
+    }
+
+    const courseData = courseDoc.data();
+
+    // ✅ Verify ownership
+    if (courseData?.createdBy !== verifiedToken.uid) {
+      return {
+        success: false,
+        error: true,
+        message: "ليس لديك صلاحية لحذف هذه الصورة",
+      };
+    }
+
+    // ✅ Delete from Storage (server-side using Admin SDK)
+    if (courseData?.thumbnailUrl) {
+      const bucket = storage.bucket();
+      await bucket.file(courseData.thumbnailUrl).delete();
+    }
+
+    // ✅ Update Firestore
+    await db.collection("courses").doc(courseId).update({
+      thumbnailUrl: null,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return { success: true, message: "تم حذف الصورة المصغرة بنجاح" };
+  } catch (error) {
+    console.error("Error deleting thumbnail:", error);
+    return {
+      success: false,
+      error: true,
+      message: "حدث خطأ أثناء حذف الصورة المصغرة",
+    };
+  }
+};
 
 // Get course by ID (v8 Admin SDK)
 export async function getCourseById(courseId: string): Promise<{

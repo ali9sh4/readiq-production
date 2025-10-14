@@ -22,7 +22,9 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { Input } from "./input";
-import MultiImageUploader, { ImageUpload } from "../muti_image_uploader";
+import MultiImageUploader, {
+  MultipleImageUpload,
+} from "../muti_image_uploader";
 
 type Props = {
   handleSubmit?: (
@@ -359,7 +361,7 @@ export default function CourseForm({
                       </FormDescription>
                       <FormControl>
                         <MultiImageUploader
-                          onImagesChange={(images: ImageUpload[]) => {
+                          onImagesChange={(images: MultipleImageUpload[]) => {
                             form.setValue("images", images);
                           }}
                           images={field.value || []}
@@ -371,7 +373,7 @@ export default function CourseForm({
                               )}?alt=media`;
                             }
                             return image.url;
-                          }} // Assuming image has a url property
+                          }}
                         />
                       </FormControl>
                       <FormMessage />

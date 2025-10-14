@@ -59,12 +59,48 @@ the course added information ... price name desc image  etc  // done
 updating the connection instantlu between videos and files // done
 dashboard right to left // done 
 how change the arrangment from right to left /// done
-course thumbnail // 
-course dashboard into something better using the old way !!//
-submmitting the values of the for in the form dashbaord/// 
-one thumbnail to push //
-how to view it //
-image uplaoder is at the base //  
+course thumbnail // done
+course dashboard into something better using the old way !!//done
+submmitting the values of the form in the form dashbaord/// done
+one thumbnail to push // done 
+how to view it // done 
+image uplaoder is at the base //  done 
+image uploader ui //done 
+price input //  done 
+image ui for the instructor // 
+Course Detail/Preview Page ui // 
+ Create /courses/[id]/page.tsx// 
+  Enroll/Purchase button//
+  Implement Course Deletion//
+ Create server action deleteCourse(courseId, token)//
+ Delete from Firestore//
+ Delete thumbnail from Storage//
+ Delete all videos from Storage//
+ Delete all files from R2//
+ Add confirmation dialog//
+ Show toast notifications//
+ 4. Search & Filtering
+
+ Search by title/description//
+ Filter by category, level, price range//
+ Sort by: newest, price, rating//
+ URL params for shareable filters//
+ 5. Student Enrollment System//
+
+ enrollments collection in Firestore//
+ Enroll button functionality//
+ Student dashboard to view enrolled courses//
+ Progress tracking//
+ 6. Payment Integration (Stripe)//
+
+ Stripe checkout for paid courses//
+ Webhook to handle successful payments//
+ Free course instant enrollment///
+ Receipt/invoice generation//
+
+
+
+
 
 
 

@@ -50,6 +50,7 @@ export const ThumbnailUpdateSchema = z.object({
       id: z.string(),
       url: z.string(),
       file: z.instanceof(File).optional(),
+      isExisting: z.boolean().optional(),
     })
     .optional(),
 });

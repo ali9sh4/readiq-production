@@ -65,8 +65,9 @@ import {
 import { BasicInfoSchema, PricingSchema } from "@/validation/propertySchema";
 import { Course } from "@/types/types";
 import { toast } from "sonner";
-import { SaveImages } from "@/app/course-upload/action";
-import MultiImageUploader, { ImageUpload } from "./muti_image_uploader";
+
+import ThumbNailUploader, { ImageUpload } from "./thumb_nail_uploder";
+import { DeleteThumbnail, SaveThumbnail } from "@/app/course-upload/action";
 // Types
 
 interface Props {
@@ -134,6 +135,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [deletingThumbnail, setDeletingThumbnail] = useState(false);
 
   // ✅ Initialize forms with proper default values
   const basicInfoForm = useForm<z.infer<typeof BasicInfoSchema>>({
@@ -180,6 +182,15 @@ export default function CourseDashboard({ defaultValues }: Props) {
       price: defaultValues.price || 0,
     });
     setCourse(defaultValues);
+    form.reset({
+      image: defaultValues.thumbnailUrl
+        ? {
+            id: "existing-thumbnail",
+            url: defaultValues.thumbnailUrl,
+            isExisting: true, // ✅ This is crucial!
+          }
+        : undefined,
+    });
   }, [defaultValues]);
 
   const videos = course.videos || [];
@@ -212,6 +223,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
         loading: "جاري الحفظ...",
         success: "تم الحفظ بنجاح",
         error: (err) => {
+          console.error(err);
           // Rollback on error
           setCourse(defaultValues);
           return "فشل في الحفظ";
@@ -286,10 +298,10 @@ export default function CourseDashboard({ defaultValues }: Props) {
       await uploadTask;
 
       // Save image path to database (as array since SaveImages expects it)
-      await SaveImages(
+      await SaveThumbnail(
         {
           courseId: course.id,
-          images: [path],
+          thumbnailUrl: path,
         },
         token
       );
@@ -309,6 +321,42 @@ export default function CourseDashboard({ defaultValues }: Props) {
       toast.error("حدث خطأ أثناء رفع الصورة");
     } finally {
       setUploadingThumbnail(false);
+    }
+  };
+  // CourseDashboard - REMOVE deleteObject from client
+  const handleDeleteThumbnail = async () => {
+    const token = await auth?.user?.getIdToken();
+    if (!token || !course.thumbnailUrl) {
+      toast.error("لا توجد صورة لحذفها"); // ✅ Better error message
+      return;
+    }
+
+    // ✅ Small warning dialog
+    if (
+      !confirm(
+        "⚠️ هل أنت متأكد من حذف صورة الغلاف؟\nلا يمكن التراجع عن هذا الإجراء."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setDeletingThumbnail(true);
+      const result = await DeleteThumbnail(course.id, token);
+
+      if (result.success) {
+        toast.success("تم حذف صورة الغلاف بنجاح!");
+        setCourse((prev) => ({ ...prev, thumbnailUrl: undefined }));
+        form.reset({ image: undefined });
+        router.refresh();
+      } else {
+        toast.error(result.message || "فشل في حذف صورة الغلاف"); // ✅ Show error from server
+      }
+    } catch (error) {
+      console.error("Error deleting thumbnail:", error);
+      toast.error("حدث خطأ أثناء حذف الصورة");
+    } finally {
+      setDeletingThumbnail(false);
     }
   };
 
@@ -755,15 +803,45 @@ export default function CourseDashboard({ defaultValues }: Props) {
                               </FormLabel>
                               <FormControl>
                                 <Input
-                                  {...field}
-                                  type="number"
-                                  placeholder="0.00"
-                                  className="text-right"
-                                  onChange={(e) =>
-                                    field.onChange(
-                                      parseFloat(e.target.value) || 0
-                                    )
+                                  {...field} // ✅ Includes name, ref, and base handlers
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={
+                                    field.value === 0 ? "" : String(field.value)
                                   }
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+
+                                    if (val === "") {
+                                      field.onChange("");
+                                      return;
+                                    }
+
+                                    if (/^\d*\.?\d{0,2}$/.test(val)) {
+                                      field.onChange(val);
+                                    }
+                                  }}
+                                  onBlur={(e) => {
+                                    const val = e.target.value;
+
+                                    if (val === "") {
+                                      field.onChange(0);
+                                      return;
+                                    }
+
+                                    const numValue = parseFloat(val);
+
+                                    if (isNaN(numValue) || numValue < 0) {
+                                      field.onChange(0);
+                                      return;
+                                    }
+
+                                    field.onChange(
+                                      Math.round(numValue * 100) / 100
+                                    );
+                                  }}
+                                  placeholder="اتركه فارغًا للدورة المجانية"
+                                  className="h-12 text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500 text-right"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -811,14 +889,13 @@ export default function CourseDashboard({ defaultValues }: Props) {
                             (يُفضل 1280×720 بكسل)
                           </FormDescription>
                           <FormControl>
-                            <MultiImageUploader
-                              onImagesChange={(images: ImageUpload[]) => {
-                                const singleImage =
-                                  images.length > 0 ? images[0] : undefined;
-                                field.onChange(singleImage);
+                            <ThumbNailUploader
+                              onImageChange={(image) => {
+                                field.onChange(image);
                               }}
-                              images={field.value ? [field.value] : []}
-                              maxImages={1}
+                              image={field.value} //
+                              onDelete={handleDeleteThumbnail}
+                              isDeleting={deletingThumbnail}
                               urlFormatter={(image) => {
                                 if (!image.file && image.url) {
                                   if (!image.url.startsWith("http")) {
