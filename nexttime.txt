@@ -67,7 +67,7 @@ how to view it // done
 image uplaoder is at the base //  done 
 image uploader ui //done 
 price input //  done 
-image ui for the instructor // 
+image ui for the instructor //  done 
 Course Detail/Preview Page ui // 
  Create /courses/[id]/page.tsx// 
   Enroll/Purchase button//

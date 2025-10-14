@@ -179,17 +179,15 @@ export default function ThumbNailUploader({
       />
 
       <Button
-        className="w-full mb-4 h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        className="w-full mb-5 h-14 text-lg font-medium bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-60"
         type="button"
         disabled={isProcessing || images.length >= 1}
-        onClick={() => {
-          uploadInputRef?.current?.click();
-        }}
+        onClick={() => uploadInputRef?.current?.click()}
       >
         <Upload className="w-5 h-5 ml-2" />
         {isProcessing
           ? "جاري المعالجة..."
-          : `اختر صورة للتحميل (${images.length}/1)`}{" "}
+          : `اختر صورة (${images.length}/1)`}{" "}
       </Button>
 
       {error && (
@@ -212,36 +210,37 @@ export default function ThumbNailUploader({
                         snapshot.isDragging ? "opacity-70 scale-105" : ""
                       }`}
                     >
-                      <div className="bg-white rounded-lg flex gap-3 items-center p-4 border-2 border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-md transition-all duration-200">
+                      <div className="bg-white rounded-2xl flex gap-4 items-center p-5 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-lg transition-all duration-300">
                         <div
                           {...provided.dragHandleProps}
                           className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing"
                         >
                           <GripVertical className="w-5 h-5" />
                         </div>
-                        <div className="w-16 h-16 relative rounded-lg overflow-hidden border-2 border-gray-200">
+                        <div className="w-48 h-48 relative rounded-xl overflow-hidden border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300">
                           <Image
                             src={urlFormatter ? urlFormatter(image) : image.url}
                             fill
                             alt=""
-                            className="object-cover"
+                            className="object-cover hover:scale-105 transition-transform duration-300"
                           />
                         </div>
 
                         <div className="flex-grow">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="text-sm font-medium text-gray-800">
+                          <div className="flex items-center gap-2 mb-2">
+                            <p className="text-base font-semibold text-gray-800">
                               صورة {index + 1}
                             </p>
                             <Badge
                               variant={getBadgeVariant(index)}
-                              className="text-xs"
+                              className="text-xs px-2 py-0.5 rounded-md"
                             >
                               {getBadgeText(index)}
                             </Badge>
                           </div>
+
                           {image.file && (
-                            <p className="text-xs text-gray-500 truncate">
+                            <p className="text-sm text-gray-500 truncate">
                               {image.file.name}
                             </p>
                           )}
@@ -270,11 +269,12 @@ export default function ThumbNailUploader({
         </Droppable>
       </DragDropContext>
       {images.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          <File className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-          <p>لم يتم اختيار أي صورة بعد</p>
-          <p className="text-sm">اضغط على زر اختر الصور لبدء التحميل</p>{" "}
-          {/* ✅ Fixed typo */}
+        <div className="text-center py-10 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+          <File className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+          <p className="text-lg font-medium">لم يتم اختيار أي صورة بعد</p>
+          <p className="text-sm text-gray-400">
+            اضغط على زر اختر الصور لبدء التحميل
+          </p>
         </div>
       )}
     </div>

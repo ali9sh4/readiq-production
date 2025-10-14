@@ -581,7 +581,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
             </TabsTrigger>
           </TabsList>
           {/* OVERVIEW TAB */}
-
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {" "}
@@ -867,10 +866,12 @@ export default function CourseDashboard({ defaultValues }: Props) {
               </div>
             </div>
             <Card>
-              <CardHeader>
-                <CardTitle className="text-right">صورة الغلاف</CardTitle>
-                <CardDescription className="text-right">
-                  تحميل صورة غلاف الدورة
+              <CardHeader className="text-right space-y-1">
+                <CardTitle className="text-2xl font-semibold text-gray-800">
+                  🖼️ صورة الغلاف
+                </CardTitle>
+                <CardDescription className="text-base text-gray-500">
+                  قم بتحميل صورة جذابة لتكون غلاف الدورة التعليمية
                 </CardDescription>
               </CardHeader>
               <CardContent dir="rtl">
@@ -884,9 +885,16 @@ export default function CourseDashboard({ defaultValues }: Props) {
                       name="image"
                       render={({ field }) => (
                         <FormItem>
-                          <FormDescription className="text-sm text-gray-600 mb-3">
-                            📸 اختر صورة واحدة عالية الجودة لتكون غلاف الدورة
-                            (يُفضل 1280×720 بكسل)
+                          <FormDescription className="text-base text-gray-600 mt-3 leading-relaxed bg-gray-50 border border-gray-100 rounded-lg p-4">
+                            📸 اختر{" "}
+                            <span className="font-medium text-gray-800">
+                              صورة واحدة عالية الجودة
+                            </span>{" "}
+                            لتكون غلاف الدورة
+                            <br />
+                            <span className="text-sm text-gray-500">
+                              (يُفضل 1280×720 بكسل)
+                            </span>
                           </FormDescription>
                           <FormControl>
                             <ThumbNailUploader
