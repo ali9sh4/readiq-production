@@ -68,8 +68,10 @@ image uplaoder is at the base //  done
 image uploader ui //done 
 price input //  done 
 image ui for the instructor //  done 
-Course Detail/Preview Page ui // 
- Create /courses/[id]/page.tsx// 
+Course Detail/Preview Page ui // done 
+ Create /courses/[id]/page.tsx// done 
+ files button  that is attached to the video section /// 
+ file download // 
   Enroll/Purchase button//
   Implement Course Deletion//
  Create server action deleteCourse(courseId, token)//
@@ -97,6 +99,7 @@ Course Detail/Preview Page ui //
  Webhook to handle successful payments//
  Free course instant enrollment///
  Receipt/invoice generation//
+ enrollment system, payment integration, progress tracking, certificates///
 
 
 

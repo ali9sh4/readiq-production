@@ -5,23 +5,9 @@ import { adminAuth, db } from "@/firebase/service";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { revalidatePath } from "next/cache";
+import { CourseVideo } from "@/types/types";
 
 // ✅ Fixed: Match what you're actually storing
-export interface CourseVideo {
-  videoId: string;
-  courseId: string;
-  assetId: string;
-  playbackId: string;
-  duration?: number;
-  title: string;
-  uploadedAt: string;
-  order?: number;
-  originalFilename?: string;
-  description?: string;
-  section?: string;
-  isPublished?: boolean;
-  isFreePreview?: boolean;
-}
 
 interface VideoUploadData {
   uploadId: string;

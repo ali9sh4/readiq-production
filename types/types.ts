@@ -19,10 +19,18 @@ export type CourseLanguage = "arabic" | "english" | "french" | "spanish";
 
 export interface CourseVideo {
   videoId: string;
-  title: string;
+  courseId: string;
+  assetId: string;
+  playbackId: string;
   duration?: number;
-  isPublished?: boolean;
+  title: string;
+  uploadedAt: string;
   order?: number;
+  originalFilename?: string;
+  description?: string;
+  section?: string;
+  isPublished?: boolean;
+  isFreePreview?: boolean;
 }
 
 export interface CourseFile {

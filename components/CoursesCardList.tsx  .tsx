@@ -185,6 +185,7 @@ ErrorState.displayName = "ErrorState";
 /**
  * Course Card Component
  */
+// Update the CourseCard component
 const CourseCard = memo(
   ({
     course,
@@ -209,7 +210,8 @@ const CourseCard = memo(
     const studentsCount = course.studentsCount || 0;
     const instructor = course.instructor || "مدرب محترف";
 
-    return (
+    // ✅ Card content component
+    const cardContent = (
       <Card className="group cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 border-0 shadow-lg overflow-hidden bg-white rounded-2xl">
         {/* Course Image */}
         <div className="relative overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 h-48">
@@ -222,22 +224,16 @@ const CourseCard = memo(
             priority={false}
           />
 
-          {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
-          {/* Play Button Overlay */}
           {!isAdminView && (
             <div className="absolute inset-0 bg-gradient-to-br from-blue-600/0 to-purple-600/0 group-hover:from-blue-600/20 group-hover:to-purple-600/20 opacity-0 group-hover:opacity-100 transition-all duration-500 flex items-center justify-center">
               <div className="bg-white/95 rounded-full p-4 transform scale-75 group-hover:scale-100 transition-all duration-300 shadow-2xl">
-                <Play
-                  className="w-6 h-6 text-gray-800 fill-current"
-                  aria-label="تشغيل معاينة الدورة"
-                />
+                <Play className="w-6 h-6 text-gray-800 fill-current" />
               </div>
             </div>
           )}
 
-          {/* Status Badge */}
           {course.status === "published" && (
             <Badge className="absolute top-3 right-3 bg-green-500 text-white border-0 shadow-lg">
               منشور
@@ -245,7 +241,6 @@ const CourseCard = memo(
           )}
         </div>
 
-        {/* Card Content */}
         <CardHeader className="pb-3 pt-5">
           <CardTitle className="text-lg font-bold text-gray-900 line-clamp-2 leading-tight group-hover:text-blue-600 transition-colors text-right">
             {course.title}
@@ -258,35 +253,29 @@ const CourseCard = memo(
         </CardHeader>
 
         <CardContent className="pt-0 text-right space-y-3">
-          {/* Instructor */}
           <div className="flex items-center gap-2 flex-row-reverse bg-gray-50 rounded-lg p-2">
             <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0">
-              <Award className="w-4 h-4 text-white" aria-hidden="true" />
+              <Award className="w-4 h-4 text-white" />
             </div>
             <span className="text-sm text-gray-700 font-medium truncate">
               {instructor}
             </span>
           </div>
 
-          {/* Rating and Students */}
           <div className="flex items-center gap-3 flex-row-reverse justify-between">
             <StarRating rating={rating} />
             <div className="flex items-center text-sm text-gray-600 gap-1 bg-blue-50 rounded-full px-3 py-1">
-              <Users className="w-4 h-4" aria-hidden="true" />
-              <span
-                className="font-medium"
-                aria-label={`${studentsCount} طالب`}
-              >
+              <Users className="w-4 h-4" />
+              <span className="font-medium">
                 {formatStudentsCount(studentsCount)}
               </span>
             </div>
           </div>
 
-          {/* Duration, Level, Language */}
           <div className="flex items-center justify-between text-xs text-gray-600 bg-gray-50 rounded-lg p-2.5 gap-2">
             {course.duration && (
               <div className="flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+                <Clock className="w-3.5 h-3.5" />
                 <span>{formatDuration(course.duration)}</span>
               </div>
             )}
@@ -294,7 +283,6 @@ const CourseCard = memo(
             <span className="text-blue-600 font-medium">{levelName}</span>
           </div>
 
-          {/* Price */}
           {course.price !== undefined && (
             <div className="text-center py-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
               <span className="text-2xl font-bold text-blue-600">
@@ -303,64 +291,50 @@ const CourseCard = memo(
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex gap-2 pt-3 border-t border-gray-100">
-            {isAdminView ? (
-              <>
-                <Link
-                  href={`/course-upload/edit/${course.id}`}
-                  className="flex-1"
-                >
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full border-blue-600 text-blue-600 hover:bg-blue-50 font-medium rounded-xl transition-all duration-300"
-                    aria-label={`تعديل دورة ${course.title}`}
-                  >
-                    <Edit className="w-3.5 h-3.5 ml-1" aria-hidden="true" />
-                    تعديل
-                  </Button>
-                </Link>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => onDelete?.(course.id)}
-                  className="font-medium rounded-xl transition-all duration-300"
-                  aria-label={`حذف دورة ${course.title}`}
-                >
-                  <Trash2 className="w-3.5 h-3.5 ml-1" aria-hidden="true" />
-                  حذف
-                </Button>
-              </>
-            ) : (
-              <>
+          {/* ✅ Admin buttons */}
+          {isAdminView && (
+            <div className="flex gap-2 pt-3 border-t border-gray-100">
+              <Link
+                href={`/course-upload/edit/${course.id}`}
+                className="flex-1"
+              >
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50 font-medium rounded-xl transition-all duration-300"
-                  aria-label={`إضافة دورة ${course.title} للسلة`}
+                  className="w-full border-blue-600 text-blue-600 hover:bg-blue-50"
                 >
-                  <ShoppingCart
-                    className="w-3.5 h-3.5 ml-1"
-                    aria-hidden="true"
-                  />
-                  إضافة
+                  <Edit className="w-3.5 h-3.5 ml-1" />
+                  تعديل
                 </Button>
-                <Button
-                  size="sm"
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-xl transition-all duration-300"
-                  aria-label={`التسجيل في دورة ${course.title}`}
-                >
-                  تسجيل
-                </Button>
-              </>
-            )}
-          </div>
+              </Link>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete?.(course.id);
+                }}
+              >
+                <Trash2 className="w-3.5 h-3.5 ml-1" />
+                حذف
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     );
+
+    // ✅ Conditionally wrap with Link
+    return isAdminView ? (
+      cardContent
+    ) : (
+      <Link href={`/Course/${course.id}`} className="block">
+        {cardContent}
+      </Link>
+    );
   }
 );
+
 CourseCard.displayName = "CourseCard";
 
 // ===== MAIN COMPONENT =====

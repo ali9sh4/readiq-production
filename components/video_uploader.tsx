@@ -19,11 +19,8 @@ import {
   RefreshCw,
   MoveUp,
   MoveDown,
-  Hash,
   Edit3,
   Save,
-  Eye,
-  EyeOff,
   Gift,
 } from "lucide-react";
 import { useVideoUpload } from "@/hooks/useVideoUpload";
@@ -36,9 +33,6 @@ import {
   reorderCourseVideos,
   updateVideoDetails,
 } from "@/app/actions/upload_video_actions";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Label } from "./ui/label";
-import { Input } from "./ui/input";
 // ===== INTERFACES =====
 interface SelectedVideo {
   file: File;
