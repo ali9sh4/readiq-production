@@ -83,13 +83,23 @@ export const getCourses = async (
   try {
     const pageSize = options?.pagination?.pageSize || 8;
     const lastDocId = options?.pagination?.lastDocId;
-    const { category, level, language, userId, isApproved, isRejected } =
-      options?.filters || {};
+    const {
+      status,
+      category,
+      level,
+      language,
+      userId,
+      isApproved,
+      isRejected,
+    } = options?.filters || {};
 
     let CoursesQuery = courseRepository.query().orderBy("updatedAt", "desc");
 
     if (userId) {
       CoursesQuery = CoursesQuery.where("createdBy", "==", userId);
+    }
+    if (status) {
+      CoursesQuery = CoursesQuery.where("status", "==", status);
     }
     if (isApproved !== undefined) {
       CoursesQuery = CoursesQuery.where("isApproved", "==", isApproved);

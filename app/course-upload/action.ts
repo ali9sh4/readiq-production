@@ -129,7 +129,7 @@ export const SaveQuickCourseCreation = async (
       createdBy: verifiedToken.uid,
       isApproved: false,
       isRejected: false,
-      status: "draft", // Initial status
+      status: "draft",
       hasFiles: false,
       filesCount: 0,
     };

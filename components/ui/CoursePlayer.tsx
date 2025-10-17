@@ -67,7 +67,7 @@ export default function CoursePlayer({
 
   // Organize videos by section
   const videosBySections = useMemo(() => {
-    const videos = course?.videos?.filter((v) => v.isPublished) || [];
+    const videos = course?.videos || [];
     const sections: Record<string, any[]> = {};
 
     videos.forEach((video) => {

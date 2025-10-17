@@ -27,6 +27,7 @@ export default async function PublicCoursesCardList({
       level: (params?.level as CourseLevel) || undefined,
       isApproved: true,
       isRejected: false,
+      status: "published",
       // ✅ Optional: Add userId filter if needed
     },
   });

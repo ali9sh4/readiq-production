@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import {
   Star,
   Users,
-  ShoppingCart,
   Play,
   Award,
   Edit,
