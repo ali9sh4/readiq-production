@@ -90,6 +90,21 @@ export async function updateCoursePricing(
         ...cleanPricing,
         updatedAt: new Date().toISOString(),
       });
+    if (cleanPricing.price !== undefined) {
+      const courseDoc = await db.collection("courses").doc(courseId).get();
+      const courseData = courseDoc.data();
+
+      if (courseData?.videos && courseData.videos.length > 0) {
+        const updatedVideos = courseData.videos.map((video: any) => ({
+          ...video,
+          coursePrice: cleanPricing.price,
+        }));
+
+        await db.collection("courses").doc(courseId).update({
+          videos: updatedVideos,
+        });
+      }
+    }
 
     revalidatePath(`/course/${courseId}`);
     return { success: true };

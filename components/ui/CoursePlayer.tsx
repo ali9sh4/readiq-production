@@ -67,7 +67,9 @@ export default function CoursePlayer({
 
   // Organize videos by section
   const videosBySections = useMemo(() => {
-    const videos = course?.videos || [];
+    const videos = (course?.videos || []).filter(
+      (video) => video.isVisible == true
+    );
     const sections: Record<string, any[]> = {};
 
     videos.forEach((video) => {
@@ -81,6 +83,12 @@ export default function CoursePlayer({
     Object.keys(sections).forEach((section) => {
       sections[section].sort((a, b) => (a.order || 0) - (b.order || 0));
     });
+    // Remove empty sections
+    Object.keys(sections).forEach((section) => {
+      if (sections[section].length === 0) {
+        delete sections[section];
+      }
+    });
 
     return sections;
   }, [course?.videos]);
@@ -91,7 +99,19 @@ export default function CoursePlayer({
   }, [videosBySections]);
 
   const currentVideo = allVideos[currentVideoIndex];
+  const canAccessVideo = useMemo(() => {
+    if (!currentVideo) return false;
 
+    // First check: Is the video visible to students?
+    if (currentVideo.isVisible !== true) return false;
+
+    // Then check access permissions:
+    if (currentVideo.isFreePreview === true) return true;
+    if (course.price === 0) return true;
+    if (isEnrolled === true) return true;
+
+    return false;
+  }, [currentVideo, course.price, isEnrolled]);
   // Get files related to current video
   const currentVideoFiles = useMemo(() => {
     if (!currentVideo || !course?.files) return [];
@@ -208,22 +228,42 @@ export default function CoursePlayer({
         </div>
 
         {/* Video Player */}
+        {/* Video Player */}
         {currentVideo ? (
           <div className="bg-black">
-            <MuxPlayer
-              playbackId={currentVideo.playbackId}
-              streamType="on-demand"
-              metadata={{
-                video_id: currentVideo.videoId,
-                video_title: currentVideo.title,
-              }}
-              className="w-full"
-              style={{ aspectRatio: "16/9" }}
-              onEnded={() => {
-                toggleComplete(currentVideo.videoId);
-                playNext();
-              }}
-            />
+            {canAccessVideo ? (
+              <MuxPlayer
+                playbackId={currentVideo.playbackId}
+                streamType="on-demand"
+                metadata={{
+                  video_id: currentVideo.videoId,
+                  video_title: currentVideo.title,
+                }}
+                className="w-full"
+                style={{ aspectRatio: "16/9" }}
+                onEnded={() => {
+                  toggleComplete(currentVideo.videoId);
+                  playNext();
+                }}
+              />
+            ) : (
+              // Show locked state for videos that aren't accessible
+              <div className="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 flex flex-col items-center justify-center relative overflow-hidden">
+                <div className="relative z-10 text-center max-w-md px-6">
+                  <div className="mb-6">
+                    <Lock className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                    <h3 className="text-2xl font-bold text-white mb-2">
+                      {course.price === 0 ? "يتطلب التسجيل" : "معاينة محدودة"}
+                    </h3>
+                    <p className="text-gray-300 leading-relaxed">
+                      {course.price === 0
+                        ? "هذه الدورة مجانية! قم بالتسجيل للوصول إلى جميع الفيديوهات"
+                        : "هذا الفيديو متاح للمشتركين فقط. قم بشراء الدورة للوصول إلى المحتوى كاملاً"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="aspect-video bg-gray-800 flex items-center justify-center">

@@ -29,7 +29,7 @@ export interface CourseVideo {
   originalFilename?: string;
   description?: string;
   section?: string;
-  isPublished?: boolean;
+  isVisible?: boolean;
   isFreePreview?: boolean;
 }
 

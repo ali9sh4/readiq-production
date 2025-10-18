@@ -22,6 +22,7 @@ import {
   Edit3,
   Save,
   Gift,
+  Eye,
 } from "lucide-react";
 import { useVideoUpload } from "@/hooks/useVideoUpload";
 import { useAuth } from "@/context/authContext";
@@ -29,10 +30,10 @@ import {
   getCourseVideos,
   saveCourseVideoToFireStore,
   deleteCourseVideo,
-  CourseVideo,
   reorderCourseVideos,
   updateVideoDetails,
 } from "@/app/actions/upload_video_actions";
+import { CourseVideo } from "@/types/types";
 // ===== INTERFACES =====
 interface SelectedVideo {
   file: File;
@@ -117,7 +118,7 @@ export default function VideoUploader({
     title: "",
     description: "",
     section: "",
-    isPublished: false,
+    isVisible: true,
     isFreePreview: false,
   });
   const ALLOWED_TYPES = [
@@ -389,7 +390,7 @@ export default function VideoUploader({
       title: video.title,
       description: video.description || "",
       section: video.section || "",
-      isPublished: video.isPublished ?? false,
+      isVisible: video.isVisible ?? true,
       isFreePreview: video.isFreePreview ?? false,
     });
     setEditingVideoId(video.videoId);
@@ -934,6 +935,49 @@ export default function VideoUploader({
 
                             {/* Toggles */}
                             <div className="grid grid-cols-2 gap-4">
+                              {/* Visibility Toggle - NEW */}
+                              <div className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg">
+                                <div className="flex items-center gap-3">
+                                  <Eye
+                                    className={`w-5 h-5 ${
+                                      editForm.isVisible
+                                        ? "text-blue-600"
+                                        : "text-gray-400"
+                                    }`}
+                                  />
+                                  <div>
+                                    <p className="text-sm font-medium text-gray-900">
+                                      مرئي للطلاب
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      {editForm.isVisible
+                                        ? "الطلاب يمكنهم مشاهدته"
+                                        : "مخفي عن الطلاب"}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    setEditForm((prev) => ({
+                                      ...prev,
+                                      isVisible: !prev.isVisible,
+                                    }))
+                                  }
+                                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                                    editForm.isVisible
+                                      ? "bg-blue-600"
+                                      : "bg-gray-300"
+                                  }`}
+                                >
+                                  <span
+                                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                      editForm.isVisible
+                                        ? "translate-x-6"
+                                        : "translate-x-1"
+                                    }`}
+                                  />
+                                </button>
+                              </div>
                               {/* Free Preview */}
                               <div className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg">
                                 <div className="flex items-center gap-3">

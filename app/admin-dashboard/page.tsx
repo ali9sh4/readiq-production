@@ -284,31 +284,16 @@ export default function AdminDashboard() {
                       <span className="font-medium text-gray-500">السعر:</span>
                       <p className="text-gray-900">${course.price}</p>
                     </div>
-                    <div>
-                      <span className="font-medium text-gray-500">
-                        المستوى:
-                      </span>
-                      <p className="text-gray-900">
-                        {getLevelText(course.level)}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-500">اللغة:</span>
-                      <p className="text-gray-900">
-                        {getLanguageText(course.language)}
-                      </p>
-                    </div>
+
                     <div>
                       <span className="font-medium text-gray-500">المدة:</span>
                       <p className="text-gray-900">{course.duration} ساعة</p>
                     </div>
                     <div>
                       <span className="font-medium text-gray-500">
-                        تاريخ الإنشاء:
+                        حالة الدوره{" "}
                       </span>
-                      <p className="text-gray-900">
-                        {formatDate(course.createdAt)}
-                      </p>
+                      <p className="text-gray-900">{course.status}</p>
                     </div>
                   </div>
 

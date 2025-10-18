@@ -172,11 +172,13 @@ export async function saveCourseVideoToFireStore({
     }
 
     const courseDoc = await db.collection("courses").doc(courseId).get();
+
     if (!courseDoc.exists) {
       return { success: false, error: "Course not found" };
     }
 
     const courseData = courseDoc.data();
+    const coursePrice = courseData?.price || 0;
 
     if (courseData?.createdBy !== verifiedToken.uid) {
       return { success: false, error: "Permission denied" };
@@ -213,8 +215,9 @@ export async function saveCourseVideoToFireStore({
         title: video.title,
         originalFilename: video.title, // NEW: Keep original
         description: "", // NEW: Empty by default
-        section: "", // NEW: Empty by default
-        isPublished: false, // NEW: Visible by default
+        section: "",
+        coursePrice: coursePrice, // NEW: Empty by default
+        isVisible: true, // NEW: Visible by default
         isFreePreview: false,
         uploadedAt: new Date().toISOString(),
         courseId: courseId,
@@ -266,7 +269,7 @@ export async function updateVideoDetails(
     title?: string;
     description?: string;
     section?: string;
-    isPublished?: boolean;
+    isVisible?: boolean;
     isFreePreview?: boolean;
   },
   token: string
