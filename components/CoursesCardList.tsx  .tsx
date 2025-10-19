@@ -1,8 +1,9 @@
 "use client";
 
-import { memo, useMemo } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+
 import {
   Card,
   CardHeader,
@@ -25,8 +26,14 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Course, CourseResponse } from "@/types/types";
+import {
+  checkUserEnrollments,
+  enrollInFreeCourse,
+} from "@/app/actions/enrollment_action";
+import { useAuth } from "@/context/authContext";
 
 // ===== TYPES =====
+
 interface CoursesCardListProps {
   data: CourseResponse;
   isAdminView?: boolean;
@@ -190,11 +197,35 @@ const CourseCard = memo(
     course,
     isAdminView,
     onDelete,
+    isEnrolled = false,
+    enrollmentLoading = false,
+    onEnrollmentUpdate,
   }: {
     course: Course;
     isAdminView: boolean;
     onDelete?: (id: string) => void;
+    isEnrolled?: boolean;
+    enrollmentLoading?: boolean;
+    onEnrollmentUpdate?: (courseId: string) => void;
   }) => {
+    const auth = useAuth();
+    const handleFreeEnrollment = async (courseId: string) => {
+      if (!auth?.user) {
+        return;
+      }
+
+      const token = await auth.user.getIdToken();
+      const result = await enrollInFreeCourse(courseId, token);
+
+      if (result.success) {
+        // Update local enrollment status
+        onEnrollmentUpdate?.(courseId); // Show success message, redirect to course page
+        window.location.href = `/Course/${courseId}`;
+      } else {
+        // Show error message
+        alert(result.message || "فشل الاشتراك في الدورة");
+      }
+    };
     const imageUrl = useMemo(
       () => getImageUrl(course.thumbnailUrl),
       [course.thumbnailUrl]
@@ -319,17 +350,63 @@ const CourseCard = memo(
               </Button>
             </div>
           )}
+          {!isAdminView && (
+            <div className="flex gap-2 pt-3 border-t border-gray-100">
+              {enrollmentLoading ? (
+                <Button size="sm" variant="outline" className="w-full" disabled>
+                  جاري التحميل...
+                </Button>
+              ) : isEnrolled ? (
+                <Link href={`/Course/${course.id}`} className="w-full">
+                  <Button
+                    size="sm"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    متابعة الدورة
+                  </Button>
+                </Link>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full border-blue-600 text-blue-600 hover:bg-blue-50"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    if (!auth?.user) {
+                      alert("يرجى تسجيل الدخول أولاً");
+                      return;
+                    }
+                    if (course.price === 0) {
+                      handleFreeEnrollment(course.id);
+                    } else {
+                      // Handle paid course enrollment here
+                      // You can call initiatePurchase or redirect to payment
+                      console.log("Handle paid course:", course.id);
+                    }
+                  }}
+                >
+                  {course.price === 0
+                    ? "اشتراك مجاني"
+                    : `شراء الدورة - $${course.price}`}
+                </Button>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
     );
 
     // ✅ Conditionally wrap with Link
-    return isAdminView ? (
-      cardContent
+    return isAdminView || isEnrolled ? (
+      isAdminView ? (
+        cardContent
+      ) : (
+        <Link href={`/Course/${course.id}`} className="block">
+          {cardContent}
+        </Link>
+      )
     ) : (
-      <Link href={`/Course/${course.id}`} className="block">
-        {cardContent}
-      </Link>
+      cardContent
     );
   }
 );
@@ -343,6 +420,34 @@ export default function CoursesCardList({
   isAdminView = false,
   onDeleteCourse,
 }: CoursesCardListProps) {
+  const auth = useAuth();
+  const [enrollmentStatus, setEnrollmentStatus] = useState<
+    Record<string, boolean>
+  >({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchEnrollments = async () => {
+      if (!auth?.user || isAdminView || !data.courses) {
+        setLoading(false);
+        return;
+      }
+
+      const courseIds = data.courses.map((course) => course.id);
+      const result = await checkUserEnrollments(auth.user.uid, courseIds);
+
+      if (result.success) {
+        setEnrollmentStatus(result.enrollments);
+      } else {
+        console.error("Failed to check enrollments:", result.message);
+        setEnrollmentStatus({});
+      }
+      setLoading(false);
+    };
+
+    fetchEnrollments();
+  }, [auth?.user, data.courses, isAdminView]);
+
   // Error State
   if (!data.success || data.error) {
     return <ErrorState message={data.error} />;
@@ -393,6 +498,11 @@ export default function CoursesCardList({
             course={course}
             isAdminView={isAdminView}
             onDelete={onDeleteCourse}
+            isEnrolled={enrollmentStatus[course.id] || false}
+            enrollmentLoading={loading}
+            onEnrollmentUpdate={(courseId) => {
+              setEnrollmentStatus((prev) => ({ ...prev, [courseId]: true }));
+            }}
           />
         ))}
       </div>

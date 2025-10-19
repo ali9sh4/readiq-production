@@ -70,6 +70,7 @@ price input //  done
 image ui for the instructor //  done 
 Course Detail/Preview Page ui // done 
  Create /courses/[id]/page.tsx// done 
+ free enrolled // 
  free preview and paid video showing to the user//
  what should you do about the (free course)//
  0 dollar them preview the whole course ///
