@@ -54,6 +54,9 @@ export const AuthButton = () => {
             <DropdownMenuItem asChild>
               <Link href="/">حسابي</Link>
             </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+                <Link href="/user_dashboard"> دوراتي المشترك بها</Link>
+            </DropdownMenuItem>
 
             {!!auth.CustomClaims?.admin && (
               <DropdownMenuItem asChild>

@@ -100,6 +100,7 @@ export interface GetCourseOptions {
     isRejected?: boolean;
     userId?: string;
     status?: CourseStatus;
+    enrolledUserId?: string;
   };
   pagination?: {
     pageSize?: number;

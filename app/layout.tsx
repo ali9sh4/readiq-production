@@ -4,7 +4,6 @@ import "./globals.css";
 import Link from "next/link";
 import { AuthProvider } from "@/context/authContext";
 import { AuthButton } from "@/components/Authbutton";
-import './globals.css';
 import { Toaster } from "sonner";
 
 const geistSans = Geist({
@@ -33,37 +32,46 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
       >
         <AuthProvider>
-          <nav className="bg-gradient-to-r from-sky-900 to-sky-950 text-white p-5 h-20 flex items-center justify-between shadow-lg">
-            {/* Logo/Brand */}
-            <Link 
-              href="/" 
-              className="text-3xl font-bold text-white hover:text-sky-200 transition-colors duration-300 tracking-wide drop-shadow-lg"
-            >
-              <span>اقْرَأْ</span>
+          <nav className="bg-gradient-to-r from-sky-900 to-sky-950 text-white p-4 h-20 flex items-center justify-between shadow-lg">
+            {/* Logo Section */}
+            <Link href="/" className="flex items-center gap-2 group">
+              <span className="text-4xl font-extrabold tracking-wide text-white group-hover:text-sky-300 transition-all duration-300 drop-shadow-lg">
+                اقْرَأْ
+              </span>
+              <span className="text-sm text-sky-200 font-light opacity-80 group-hover:opacity-100 transition-opacity duration-300">
+                منصة القراءة العربية
+              </span>
             </Link>
 
-            {/* Navigation Items */}
-            <ul className="flex gap-8 items-center">
+            {/* Navigation Links */}
+            <ul className="flex items-center gap-6">
               <li>
-                <Link 
-                  href="/" 
-                  className="text-white hover:text-sky-200 transition-colors duration-200 font-medium"
+                <Link
+                  href="/user_dashboard"
+                  className="px-4 py-2 bg-sky-800 hover:bg-sky-700 rounded-xl shadow-md transition-all duration-300 font-semibold"
                 >
-                  البحث 
+                  📚 دوراتي
                 </Link>
-              </li> 
+              </li>
+              <li>
+                <Link
+                  href="/"
+                  className="hover:text-sky-200 transition-colors duration-200 font-medium"
+                >
+                  البحث
+                </Link>
+              </li>
               <li>
                 <AuthButton />
               </li>
             </ul>
           </nav>
-          
+
           <main className="min-h-screen">
             {children}
-            <Toaster richColors closeButton   />
+            <Toaster richColors closeButton />
           </main>
         </AuthProvider>
-        
       </body>
     </html>
   );
