@@ -1,4 +1,5 @@
 "use client";
+import "@mux/mux-player/themes/minimal";
 
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import MuxPlayer from "@mux/mux-player-react";
@@ -60,7 +61,7 @@ function getFileIcon(filename: string) {
     mp4: "text-green-400",
     mp3: "text-orange-400",
   };
-  return <FileText className={`w-5 h-5 ${colors[ext] || "text-gray-400"}`} />;
+  return <FileText className={`w-5 h-5 ${colors[ext] || "text-gray-600"}`} />;
 }
 
 // --- Component ---
@@ -84,8 +85,18 @@ export default function CoursePlayer({
     "overview"
   );
   const [completedVideos, setCompletedVideos] = useState<Set<string>>(
-    new Set(userProgress?.filter((p) => p.completed).map((p) => p.videoId))
+    new Set()
   );
+  useEffect(() => {
+    if (currentVideo) {
+      const section = currentVideo.section || "دروس الدورة";
+      setExpandedSections((prev) => {
+        if (prev.has(section)) return prev; // ⭐ Don't update if already expanded
+        return new Set(prev).add(section);
+      });
+    }
+  }, [currentVideoIndex]);
+
   const [isLoadingVideo, setIsLoadingVideo] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [markingComplete, setMarkingComplete] = useState(false);
@@ -213,7 +224,11 @@ export default function CoursePlayer({
   const toggleSection = useCallback((section: string) => {
     setExpandedSections((prev) => {
       const next = new Set(prev);
-      next.has(section) ? next.delete(section) : next.add(section);
+      if (next.has(section)) {
+        next.delete(section);
+      } else {
+        next.add(section);
+      }
       return next;
     });
   }, []);
@@ -226,41 +241,45 @@ export default function CoursePlayer({
   // --- UI ---
   return (
     <div
-      className="flex h-screen bg-gray-950 text-white overflow-hidden"
+      className="flex h-screen bg-gray-50 text-gray-900 overflow-hidden"
       dir="rtl"
     >
       {/* Sidebar */}
       <aside
         className={`${
           sidebarOpen ? "w-80" : "w-0"
-        } bg-gray-900 border-l border-gray-800 transition-all duration-300 overflow-hidden flex flex-col`}
+        } bg-white border-l border-gray-200 transition-all duration-300 overflow-hidden flex flex-col`}
       >
         {sidebarOpen && (
           <>
             {/* Header */}
-            <div className="p-4 border-b border-gray-800 flex items-center justify-between">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <h2 className="flex items-center gap-2 font-semibold text-lg">
                 <List className="w-5 h-5 text-blue-400" />
                 محتوى الدورة
               </h2>
               <button
-                className="lg:hidden hover:bg-gray-800 p-1.5 rounded transition"
-                onClick={() => setSidebarOpen(false)}
-                aria-label="إغلاق القائمة"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 hover:bg-gray-50 rounded-lg transition flex-shrink-0"
+                aria-label={sidebarOpen ? "إغلاق القائمة" : "فتح القائمة"}
               >
-                <X className="w-5 h-5 text-gray-400" />
+                {sidebarOpen ? (
+                  <X className="w-5 h-5 text-gray-300" />
+                ) : (
+                  <Menu className="w-5 h-5 text-gray-300" />
+                )}
               </button>
             </div>
 
             {/* Progress */}
-            <div className="px-4 py-4 border-b border-gray-800">
+            <div className="px-4 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-gray-400">التقدم</span>
+                <span className="text-gray-600">التقدم</span>
                 <span className="text-blue-400 font-semibold">{progress}%</span>
               </div>
-              <div className="bg-gray-800 rounded-full h-2.5 overflow-hidden">
+              <div className="bg-gray-200 rounded-full h-2.5 overflow-hidden">
                 <div
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 h-full transition-all duration-500"
+                  className="bg-gradient-to-r from-green-500 to-green-600 h-full transition-all duration-500"
                   style={{ width: `${progress}%` }}
                 />
               </div>
@@ -275,28 +294,28 @@ export default function CoursePlayer({
             {/* Sections */}
             <div className="flex-1 overflow-y-auto custom-scrollbar">
               {Object.entries(videosBySections).map(([section, videos]) => (
-                <div key={section} className="border-b border-gray-800">
+                <div key={section} className="border-b border-gray-200">
                   <button
                     onClick={() => toggleSection(section)}
-                    className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-800 transition-colors"
+                    className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center gap-2 text-right">
-                      <BookOpen className="w-4 h-4 text-gray-400" />
+                      <BookOpen className="w-4 h-4 text-gray-600" />
                       <span className="font-medium text-sm">{section}</span>
                       <span className="text-xs text-gray-500">
                         ({videos.length})
                       </span>
                     </div>
                     {expandedSections.has(section) ? (
-                      <ChevronDown className="w-4 h-4 text-gray-400" />
+                      <ChevronDown className="w-4 h-4 text-gray-600" />
                     ) : (
-                      <ChevronRight className="w-4 h-4 text-gray-400" />
+                      <ChevronRight className="w-4 h-4 text-gray-600" />
                     )}
                   </button>
 
                   {/* Videos */}
                   {expandedSections.has(section) && (
-                    <div className="space-y-0.5 bg-gray-950">
+                    <div className="space-y-0.5 bg-white">
                       {videos.map((video) => {
                         const globalIndex = allVideos.findIndex(
                           (v) => v.videoId === video.videoId
@@ -314,10 +333,6 @@ export default function CoursePlayer({
                             onClick={() => setCurrentVideoIndex(globalIndex)}
                             disabled={isLocked}
                             className={`w-full text-right px-5 py-3 flex items-center gap-3 transition-all ${
-                              isActive
-                                ? "bg-gray-800 border-r-2 border-blue-500"
-                                : "hover:bg-gray-800/50"
-                            } ${
                               isLocked ? "opacity-50 cursor-not-allowed" : ""
                             }`}
                           >
@@ -337,7 +352,7 @@ export default function CoursePlayer({
                                 className={`text-sm truncate ${
                                   isActive
                                     ? "text-blue-400 font-medium"
-                                    : "text-gray-200"
+                                    : "text-gray-900"
                                 }`}
                               >
                                 {video.title}
@@ -370,24 +385,13 @@ export default function CoursePlayer({
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
-        <header className="flex items-center justify-between px-4 py-3 bg-gray-900 border-b border-gray-800">
+        <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
           <div className="flex items-center gap-3 min-w-0 flex-1">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-gray-800 rounded-lg transition flex-shrink-0"
-              aria-label={sidebarOpen ? "إغلاق القائمة" : "فتح القائمة"}
-            >
-              {sidebarOpen ? (
-                <X className="w-5 h-5 text-gray-300" />
-              ) : (
-                <Menu className="w-5 h-5 text-gray-300" />
-              )}
-            </button>
             <div className="min-w-0">
               <h1 className="text-base lg:text-lg font-semibold truncate">
                 {course.title}
               </h1>
-              <p className="text-xs text-gray-400 truncate">
+              <p className="text-xs text-gray-600 truncate">
                 {course.instructor || "مدرب غير معروف"} •{" "}
                 {course.level || "جميع المستويات"}
               </p>
@@ -402,60 +406,102 @@ export default function CoursePlayer({
         </header>
 
         {/* Video Player */}
-        <div className="relative bg-black flex justify-center items-center">
+        <div className="relative bg-black flex justify-center items-center min-h-[400px]">
+          {/* Loading State */}
           {isLoadingVideo && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
               <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
             </div>
           )}
 
-          {videoError ? (
+          {/* Error State */}
+          {videoError && (
             <div className="aspect-video flex flex-col items-center justify-center text-center p-6">
-              <AlertCircle className="w-12 h-12 text-red-500 mb-3" />
-              <p className="text-gray-300 mb-4">{videoError}</p>
-              <Button onClick={() => setVideoError(null)} variant="outline">
+              <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
+              <p className="text-white mb-4">{videoError}</p>
+              <Button
+                onClick={() => {
+                  setVideoError(null);
+                  setIsLoadingVideo(false);
+                }}
+                variant="outline"
+                className="text-white border-white hover:bg-white/10"
+              >
                 إعادة المحاولة
               </Button>
             </div>
-          ) : currentVideo && canAccessVideo ? (
-            <MuxPlayer
-              playbackId={currentVideo.playbackId}
-              streamType="on-demand"
-              className="w-full"
-              style={{ aspectRatio: "16/9", maxHeight: "70vh" }}
-              onLoadStart={() => setIsLoadingVideo(true)}
-              onLoadedData={() => setIsLoadingVideo(false)}
-              onError={() => {
-                setIsLoadingVideo(false);
-                setVideoError("فشل تحميل الفيديو. يرجى المحاولة لاحقاً");
-              }}
-              onEnded={handleVideoComplete}
-              metadata={{
-                video_title: currentVideo.title,
-                video_id: currentVideo.videoId,
-              }}
-            />
-          ) : (
-            <div className="aspect-video flex flex-col items-center justify-center text-center p-6 bg-gradient-to-br from-gray-900 to-gray-950">
-              <Lock className="w-16 h-16 mb-4 text-gray-600" />
-              <h3 className="text-xl font-semibold mb-2">محتوى مقفل</h3>
-              <p className="text-gray-400 mb-4">
+          )}
+
+          {/* Video Player - When User Has Access */}
+          {!videoError && currentVideo && canAccessVideo && (
+            <>
+              {/* 🔍 Debug Console Log */}
+              {console.log("🎥 Video Debug:", {
+                videoId: currentVideo.videoId,
+                title: currentVideo.title,
+                playbackId: currentVideo.playbackId,
+                muxPlaybackId: currentVideo.muxPlaybackId,
+                hasPlaybackId: !!(
+                  currentVideo.playbackId || currentVideo.muxPlaybackId
+                ),
+              })}
+
+              {/* Check if playback ID exists */}
+              {!currentVideo.playbackId && !currentVideo.muxPlaybackId ? (
+                <div className="aspect-video flex flex-col items-center justify-center text-center p-6">
+                  <AlertCircle className="w-16 h-16 text-yellow-500 mb-4" />
+                  <h3 className="text-xl font-semibold text-white mb-2">
+                    معرف الفيديو مفقود
+                  </h3>
+                  <p className="text-gray-400">
+                    لم يتم العثور على معرف Mux لهذا الفيديو
+                  </p>
+                </div>
+              ) : (
+                <iframe
+                  src="https://player.mux.com/2u02NizAD7Aelc9rM6QkrxQ8dZ00JiNsHaBAowvgxCjQk"
+                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                ></iframe>
+              )}
+            </>
+          )}
+
+          {/* Locked Content - When User Doesn't Have Access */}
+          {!videoError && currentVideo && !canAccessVideo && (
+            <div className="aspect-video flex flex-col items-center justify-center text-center p-6 bg-gradient-to-br from-gray-100 to-gray-200">
+              <Lock className="w-16 h-16 mb-4 text-gray-400" />
+              <h3 className="text-xl font-semibold mb-2 text-gray-900">
+                محتوى مقفل
+              </h3>
+              <p className="text-gray-600 mb-4">
                 {isEnrolled
                   ? "هذا الفيديو غير متاح حالياً"
                   : "قم بالتسجيل في الدورة للوصول إلى هذا المحتوى"}
               </p>
               {!isEnrolled && (
                 <Link href={`/courses/${course.id}`}>
-                  <Button>التسجيل في الدورة</Button>
+                  <Button className="bg-blue-600 hover:bg-blue-700">
+                    التسجيل في الدورة
+                  </Button>
                 </Link>
               )}
+            </div>
+          )}
+
+          {/* No Video Selected */}
+          {!currentVideo && (
+            <div className="aspect-video flex flex-col items-center justify-center text-center p-6">
+              <PlayCircle className="w-16 h-16 mb-4 text-gray-400" />
+              <p className="text-gray-400">
+                اختر درساً من القائمة لبدء المشاهدة
+              </p>
             </div>
           )}
         </div>
 
         {/* Video Controls */}
         {currentVideo && canAccessVideo && (
-          <div className="flex items-center justify-between px-6 py-4 bg-gray-900 border-b border-gray-800">
+          <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
             <div className="flex items-center gap-2">
               <Button
                 onClick={goToPreviousVideo}
@@ -495,13 +541,13 @@ export default function CoursePlayer({
         )}
 
         {/* Tabs */}
-        <div className="bg-gray-900 flex border-b border-gray-800">
+        <div className="bg-white flex border-b border-gray-200">
           <button
             onClick={() => setActiveTab("overview")}
             className={`px-6 py-3 text-sm font-medium border-b-2 transition-all ${
               activeTab === "overview"
                 ? "text-blue-400 border-blue-500"
-                : "text-gray-400 border-transparent hover:text-white"
+                : "text-gray-600 border-transparent hover:text-gray-900"
             }`}
           >
             نظرة عامة
@@ -511,7 +557,7 @@ export default function CoursePlayer({
             className={`px-6 py-3 text-sm font-medium border-b-2 transition-all ${
               activeTab === "resources"
                 ? "text-blue-400 border-blue-500"
-                : "text-gray-400 border-transparent hover:text-white"
+                : "text-gray-600 border-transparent hover:text-gray-900"
             }`}
           >
             الملفات ({currentVideoFiles.length + generalFiles.length})
@@ -528,16 +574,16 @@ export default function CoursePlayer({
               </h3>
 
               {/* Video Description */}
-              <div className="bg-gray-900 rounded-lg p-6 mb-6">
+              <div className="bg-white rounded-lg p-6 mb-6">
                 <h4 className="font-medium mb-3 text-gray-300">وصف الدرس</h4>
-                <p className="text-gray-400 leading-relaxed whitespace-pre-wrap">
+                <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
                   {currentVideo?.description || "لا يوجد وصف لهذا الدرس"}
                 </p>
               </div>
 
               {/* Course Info */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-gray-900 rounded-lg p-4 flex items-center gap-3">
+                <div className="bg-white rounded-lg p-4 flex items-center gap-3">
                   <User className="w-5 h-5 text-blue-400" />
                   <div>
                     <p className="text-xs text-gray-500">المدرب</p>
@@ -546,7 +592,7 @@ export default function CoursePlayer({
                     </p>
                   </div>
                 </div>
-                <div className="bg-gray-900 rounded-lg p-4 flex items-center gap-3">
+                <div className="bg-white rounded-lg p-4 flex items-center gap-3">
                   <BarChart3 className="w-5 h-5 text-green-400" />
                   <div>
                     <p className="text-xs text-gray-500">المستوى</p>
@@ -555,7 +601,7 @@ export default function CoursePlayer({
                     </p>
                   </div>
                 </div>
-                <div className="bg-gray-900 rounded-lg p-4 flex items-center gap-3">
+                <div className="bg-white rounded-lg p-4 flex items-center gap-3">
                   <Award className="w-5 h-5 text-purple-400" />
                   <div>
                     <p className="text-xs text-gray-500">التقدم</p>
@@ -579,7 +625,7 @@ export default function CoursePlayer({
                 <div className="space-y-3">
                   {currentVideoFiles.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-400 mb-3">
+                      <h4 className="text-sm font-medium text-gray-600 mb-3">
                         ملفات هذا الدرس
                       </h4>
                       {currentVideoFiles.map((file) => (
@@ -594,7 +640,7 @@ export default function CoursePlayer({
 
                   {generalFiles.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-400 mb-3 mt-6">
+                      <h4 className="text-sm font-medium text-gray-600 mb-3 mt-6">
                         ملفات عامة للدورة
                       </h4>
                       {generalFiles.map((file) => (
@@ -619,14 +665,14 @@ export default function CoursePlayer({
           width: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #1f2937;
+          background: #f3f4f6; // track
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #4b5563;
+          background: #d1d5db;
           border-radius: 3px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #6b7280;
+          background: #9ca3af;
         }
       `}</style>
     </div>
@@ -642,7 +688,7 @@ function FileCard({
   onDownload: (filename: string, originalName: string) => void;
 }) {
   return (
-    <div className="flex items-center justify-between p-4 bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors mb-2">
+    <div className="flex items-center justify-between p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors mb-2">
       <div className="flex items-center gap-3 min-w-0 flex-1">
         {getFileIcon(file.originalName)}
         <div className="min-w-0">

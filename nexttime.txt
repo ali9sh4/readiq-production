@@ -75,6 +75,8 @@ Course Detail/Preview Page ui // done
  what should you do about the (free course)// done
  0 dollar them preview the whole course ///done
  Course Viewer arrangemnt... ui !! // 
+ user dashboard ..  just show the course card and no ne
+ ed for others card  // 
  how to add the payment functionality // 
  how to protect your code .// 
  files button  that is attached to the video section /// 

@@ -69,7 +69,9 @@ export async function createMuxUpload(formData: FormData) {
     const upload = await mux.video.uploads.create({
       new_asset_settings: {
         playback_policy: ["public"],
-        encoding_tier: "baseline",
+        encoding_tier: "smart",
+
+        normalize_audio: true,
       },
       cors_origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
     });
