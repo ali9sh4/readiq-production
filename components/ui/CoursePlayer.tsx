@@ -4,7 +4,6 @@ import "@mux/mux-player/themes/minimal";
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import MuxPlayer from "@mux/mux-player-react";
 import {
-  Menu,
   X,
   ChevronDown,
   ChevronRight,
@@ -15,7 +14,6 @@ import {
   FileText,
   Download,
   Eye,
-  List,
   BookOpen,
   ChevronLeft,
   Award,
@@ -23,6 +21,8 @@ import {
   BarChart3,
   Loader2,
   AlertCircle,
+  TrendingUp,
+  Menu,
 } from "lucide-react";
 import { Course } from "@/types/types";
 import { Button } from "@/components/ui/button";
@@ -87,15 +87,6 @@ export default function CoursePlayer({
   const [completedVideos, setCompletedVideos] = useState<Set<string>>(
     new Set()
   );
-  useEffect(() => {
-    if (currentVideo) {
-      const section = currentVideo.section || "دروس الدورة";
-      setExpandedSections((prev) => {
-        if (prev.has(section)) return prev; // ⭐ Don't update if already expanded
-        return new Set(prev).add(section);
-      });
-    }
-  }, [currentVideoIndex]);
 
   const [isLoadingVideo, setIsLoadingVideo] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
@@ -245,148 +236,235 @@ export default function CoursePlayer({
       dir="rtl"
     >
       {/* Sidebar */}
+      {/* Fixed Sidebar - Replace your entire aside block with this */}
       <aside
         className={`${
-          sidebarOpen ? "w-80" : "w-0"
-        } bg-white border-l border-gray-200 transition-all duration-300 overflow-hidden flex flex-col`}
+          sidebarOpen ? "w-96 border-l border-gray-200" : "w-0"
+        } h-full backdrop-blur-xl transition-all duration-300 flex flex-col overflow-hidden`}
       >
-        {sidebarOpen && (
-          <>
-            {/* Header */}
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <h2 className="flex items-center gap-2 font-semibold text-lg">
-                <List className="w-5 h-5 text-blue-400" />
+        <div className={`${sidebarOpen ? "flex" : "hidden"} flex-col h-full`}>
+          {/* Header with Gradient */}
+          <div className="flex-shrink-0 bg-gradient-to-br from-slate-50 via-gray-100 to-slate-100 p-6 text-gray-900 border-b border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <BookOpen className="w-6 h-6" />
                 محتوى الدورة
               </h2>
               <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 hover:bg-gray-50 rounded-lg transition flex-shrink-0"
-                aria-label={sidebarOpen ? "إغلاق القائمة" : "فتح القائمة"}
+                onClick={() => setSidebarOpen(false)}
+                className="p-2 hover:bg-gray-200 rounded-lg transition-all"
               >
-                {sidebarOpen ? (
-                  <X className="w-5 h-5 text-gray-300" />
-                ) : (
-                  <Menu className="w-5 h-5 text-gray-300" />
-                )}
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Progress */}
-            <div className="px-4 py-4 border-b border-gray-200">
-              <div className="flex items-center justify-between text-sm mb-2">
-                <span className="text-gray-600">التقدم</span>
-                <span className="text-blue-400 font-semibold">{progress}%</span>
-              </div>
-              <div className="bg-gray-200 rounded-full h-2.5 overflow-hidden">
-                <div
-                  className="bg-gradient-to-r from-green-500 to-green-600 h-full transition-all duration-500"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-              <div className="flex items-center justify-between text-xs text-gray-500 mt-2">
-                <span>
-                  {completedVideos.size} من {allVideos.length} درس
+            {/* Enhanced Progress Bar */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4" />
+                  التقدم الإجمالي
                 </span>
-                <span>{formatDuration(totalDuration)}</span>
+                <span className="font-bold">{progress}%</span>
+              </div>
+              <div className="relative h-3 bg-white/60 rounded-full overflow-hidden border border-gray-200">
+                <div
+                  className="absolute inset-y-0 right-0 bg-gradient-to-l from-green-400 to-emerald-500 rounded-full transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                >
+                  <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-xs opacity-90">
+                <span>
+                  {completedVideos.size} من {allVideos.length} مكتمل
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {formatDuration(totalDuration)}
+                </span>
               </div>
             </div>
+          </div>
 
-            {/* Sections */}
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
-              {Object.entries(videosBySections).map(([section, videos]) => (
-                <div key={section} className="border-b border-gray-200">
-                  <button
-                    onClick={() => toggleSection(section)}
-                    className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 text-right">
-                      <BookOpen className="w-4 h-4 text-gray-600" />
-                      <span className="font-medium text-sm">{section}</span>
-                      <span className="text-xs text-gray-500">
-                        ({videos.length})
-                      </span>
-                    </div>
-                    {expandedSections.has(section) ? (
-                      <ChevronDown className="w-4 h-4 text-gray-600" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-gray-600" />
-                    )}
-                  </button>
+          {/* Course Sections - Scrollable Area */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
+            <div className="space-y-3">
+              {Object.entries(videosBySections).map(([section, videos]) => {
+                const isExpanded = expandedSections.has(section);
+                const sectionCompleted = videos.filter((v) =>
+                  completedVideos.has(v.videoId)
+                ).length;
+                const sectionProgress = Math.round(
+                  (sectionCompleted / videos.length) * 100
+                );
 
-                  {/* Videos */}
-                  {expandedSections.has(section) && (
-                    <div className="space-y-0.5 bg-white">
-                      {videos.map((video) => {
-                        const globalIndex = allVideos.findIndex(
-                          (v) => v.videoId === video.videoId
-                        );
-                        const isActive = globalIndex === currentVideoIndex;
-                        const isCompleted = completedVideos.has(video.videoId);
-                        const isLocked =
-                          !video.isFreePreview &&
-                          !isEnrolled &&
-                          course.price > 0;
+                return (
+                  <div key={section} className="space-y-3">
+                    {/* Section Header */}
+                    <button
+                      onClick={() => toggleSection(section)}
+                      className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors "
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`p-2 rounded-lg ${
+                            isExpanded ? "bg-blue-100" : "bg-gray-100"
+                          } transition-colors`}
+                        >
+                          {isExpanded ? (
+                            <ChevronDown className="w-4 h-4 text-blue-600" />
+                          ) : (
+                            <ChevronLeft className="w-4 h-4 text-gray-600" />
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <h3 className="font-semibold text-gray-900">
+                            {section}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {videos.length} دروس • {sectionCompleted} مكتمل
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-12 h-12 relative">
+                          <svg className="w-12 h-12 transform -rotate-90">
+                            <circle
+                              cx="24"
+                              cy="24"
+                              r="20"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                              className="text-gray-200"
+                            />
+                            <circle
+                              cx="24"
+                              cy="24"
+                              r="20"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                              fill="none"
+                              strokeDasharray={`${2 * Math.PI * 20}`}
+                              strokeDashoffset={`${
+                                2 * Math.PI * 20 * (1 - sectionProgress / 100)
+                              }`}
+                              className="text-blue-600 transition-all duration-500"
+                            />
+                          </svg>
+                          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700">
+                            {sectionProgress}%
+                          </span>
+                        </div>
+                      </div>
+                    </button>
 
-                        return (
-                          <button
-                            key={video.videoId}
-                            onClick={() => setCurrentVideoIndex(globalIndex)}
-                            disabled={isLocked}
-                            className={`w-full text-right px-5 py-3 flex items-center gap-3 transition-all ${
-                              isLocked ? "opacity-50 cursor-not-allowed" : ""
-                            }`}
-                          >
-                            {isLocked ? (
-                              <Lock className="w-4 h-4 text-gray-600" />
-                            ) : isCompleted ? (
-                              <CheckCircle className="w-4 h-4 text-green-500" />
-                            ) : (
-                              <PlayCircle
-                                className={`w-4 h-4 ${
-                                  isActive ? "text-blue-400" : "text-gray-500"
-                                }`}
-                              />
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <p
-                                className={`text-sm truncate ${
-                                  isActive
-                                    ? "text-blue-400 font-medium"
-                                    : "text-gray-900"
+                    {/* Videos List */}
+                    {isExpanded && (
+                      <div className="border-t ">
+                        {videos.map((video, idx) => {
+                          const videoIndex = allVideos.indexOf(video);
+                          const isActive = videoIndex === currentVideoIndex;
+                          const isCompleted = completedVideos.has(
+                            video.videoId
+                          );
+                          const isLocked =
+                            !video.isFreePreview &&
+                            course.price !== 0 &&
+                            !isEnrolled;
+
+                          return (
+                            <button
+                              key={video.videoId}
+                              onClick={() => {
+                                if (!isLocked) {
+                                  setCurrentVideoIndex(videoIndex);
+                                  setVideoError(null);
+                                }
+                              }}
+                              disabled={isLocked}
+                              className={`w-full p-4 flex items-center gap-3 transition-all border-b  last:border-b-0 ${
+                                isActive
+                                  ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-r-4 border-blue-600"
+                                  : "hover:bg-gray-50"
+                              } ${
+                                isLocked ? "opacity-50 cursor-not-allowed" : ""
+                              }`}
+                            >
+                              {/* Video Number/Status */}
+                              <div
+                                className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm transition-all ${
+                                  isCompleted
+                                    ? "bg-gradient-to-br from-green-500 to-emerald-600 text-white"
+                                    : isActive
+                                    ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white"
+                                    : "bg-gray-100 text-gray-600"
                                 }`}
                               >
-                                {video.title}
-                              </p>
-                              <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                                <Clock className="w-3 h-3" />
-                                <span>{formatDuration(video.duration)}</span>
-                                {video.isFreePreview && (
-                                  <>
-                                    <span>•</span>
-                                    <span className="text-green-400">
-                                      مجاني
-                                    </span>
-                                  </>
+                                {isLocked ? (
+                                  <Lock className="w-5 h-5" />
+                                ) : isCompleted ? (
+                                  <CheckCircle className="w-5 h-5" />
+                                ) : (
+                                  idx + 1
                                 )}
                               </div>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              ))}
+
+                              {/* Video Info */}
+                              <div className="flex-1 text-right min-w-0">
+                                <p
+                                  className={`font-medium truncate ${
+                                    isActive ? "text-blue-900" : "text-gray-900"
+                                  }`}
+                                >
+                                  {video.title}
+                                </p>
+                                <div className="flex items-center gap-3 mt-1">
+                                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {formatDuration(video.duration)}
+                                  </span>
+                                  {video.isFreePreview && (
+                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                                      معاينة مجانية
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Play Icon */}
+                              {isActive && !isLocked && (
+                                <PlayCircle className="w-5 h-5 text-blue-600 flex-shrink-0 animate-pulse" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          </>
-        )}
+          </div>
+        </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Bar */}
         <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
           <div className="flex items-center gap-3 min-w-0 flex-1">
+            {!sidebarOpen && (
+              <button
+                onClick={() => {
+                  setSidebarOpen(true);
+                }}
+                className="p-2 hover:bg-gray-100  rounded-lg  transition-all group"
+              >
+                <Menu className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors" />
+              </button>
+            )}
             <div className="min-w-0">
               <h1 className="text-base lg:text-lg font-semibold truncate">
                 {course.title}
@@ -458,10 +536,19 @@ export default function CoursePlayer({
                   </p>
                 </div>
               ) : (
-                <iframe
-                  src="https://player.mux.com/2u02NizAD7Aelc9rM6QkrxQ8dZ00JiNsHaBAowvgxCjQk"
-                  allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
-                ></iframe>
+                <MuxPlayer
+                  playbackId={currentVideo.playbackId}
+                  streamType="on-demand"
+                  metadata={{
+                    video_id: currentVideo.videoId,
+                    video_title: currentVideo.title,
+                  }}
+                  className="w-full h-full aspect-video bg-black"
+                  onEnded={() => {
+                    handleVideoComplete();
+                    goToNextVideo();
+                  }}
+                />
               )}
             </>
           )}
@@ -501,13 +588,14 @@ export default function CoursePlayer({
 
         {/* Video Controls */}
         {currentVideo && canAccessVideo && (
-          <div className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
+          <div className="flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
             <div className="flex items-center gap-2">
               <Button
                 onClick={goToPreviousVideo}
                 disabled={currentVideoIndex === 0}
                 variant="outline"
                 size="sm"
+                className="hover:bg-blue-50 hover:border-blue-300 transition-all"
               >
                 <ChevronRight className="w-4 h-4" />
                 السابق
@@ -517,6 +605,7 @@ export default function CoursePlayer({
                 disabled={currentVideoIndex === allVideos.length - 1}
                 variant="outline"
                 size="sm"
+                className="hover:bg-blue-50 hover:border-blue-300 transition-all"
               >
                 التالي
                 <ChevronLeft className="w-4 h-4" />
@@ -527,7 +616,7 @@ export default function CoursePlayer({
                 onClick={handleMarkComplete}
                 disabled={markingComplete}
                 size="sm"
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all"
               >
                 {markingComplete ? (
                   <Loader2 className="w-4 h-4 animate-spin ml-2" />
@@ -541,115 +630,158 @@ export default function CoursePlayer({
         )}
 
         {/* Tabs */}
-        <div className="bg-white flex border-b border-gray-200">
+        <div className="bg-white/80 backdrop-blur-xl flex border-b border-gray-200/50">
           <button
             onClick={() => setActiveTab("overview")}
-            className={`px-6 py-3 text-sm font-medium border-b-2 transition-all ${
+            className={`px-8 py-4 text-sm font-medium border-b-2 transition-all relative ${
               activeTab === "overview"
-                ? "text-blue-400 border-blue-500"
-                : "text-gray-600 border-transparent hover:text-gray-900"
+                ? "text-blue-600 border-blue-600"
+                : "text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50"
             }`}
           >
-            نظرة عامة
+            <span className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4" />
+              نظرة عامة
+            </span>
+            {activeTab === "overview" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+            )}
           </button>
           <button
             onClick={() => setActiveTab("resources")}
-            className={`px-6 py-3 text-sm font-medium border-b-2 transition-all ${
+            className={`px-8 py-4 text-sm font-medium border-b-2 transition-all relative ${
               activeTab === "resources"
-                ? "text-blue-400 border-blue-500"
-                : "text-gray-600 border-transparent hover:text-gray-900"
+                ? "text-blue-600 border-blue-600"
+                : "text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50"
             }`}
           >
-            الملفات ({currentVideoFiles.length + generalFiles.length})
+            <span className="flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              الملفات ({currentVideoFiles.length + generalFiles.length})
+            </span>
+            {activeTab === "resources" && (
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+            )}
           </button>
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        <div className="flex-1 p-8 overflow-y-auto">
           {activeTab === "overview" && (
-            <div className="max-w-4xl">
-              <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-blue-400" />
-                {currentVideo?.title || "عنوان الدرس"}
-              </h3>
-
-              {/* Video Description */}
-              <div className="bg-white rounded-lg p-6 mb-6">
-                <h4 className="font-medium mb-3 text-gray-300">وصف الدرس</h4>
-                <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">
-                  {currentVideo?.description || "لا يوجد وصف لهذا الدرس"}
-                </p>
+            <div className="max-w-5xl mx-auto space-y-6">
+              {/* Video Title Card */}
+              <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
+                <h3 className="text-2xl font-bold mb-2 flex items-center gap-3 text-gray-900">
+                  <div className="bg-gradient-to-br from-blue-100 to-indigo-100 p-2 rounded-xl">
+                    <BookOpen className="w-6 h-6 text-blue-600" />
+                  </div>
+                  {currentVideo?.title || "عنوان الدرس"}
+                </h3>
+                {currentVideo?.description && (
+                  <p className="text-gray-600 leading-relaxed whitespace-pre-wrap mt-4 text-lg">
+                    {currentVideo.description}
+                  </p>
+                )}
               </div>
 
-              {/* Course Info */}
+              {/* Course Info Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white rounded-lg p-4 flex items-center gap-3">
-                  <User className="w-5 h-5 text-blue-400" />
-                  <div>
-                    <p className="text-xs text-gray-500">المدرب</p>
-                    <p className="font-medium">
-                      {course.instructor || "غير محدد"}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-100 shadow-sm hover:shadow-md transition-all">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="bg-white p-2 rounded-xl shadow-sm">
+                      <User className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <p className="text-xs font-medium text-blue-800 uppercase tracking-wide">
+                      المدرب
                     </p>
                   </div>
+                  <p className="font-bold text-gray-900 text-lg">
+                    {course.instructor || "غير محدد"}
+                  </p>
                 </div>
-                <div className="bg-white rounded-lg p-4 flex items-center gap-3">
-                  <BarChart3 className="w-5 h-5 text-green-400" />
-                  <div>
-                    <p className="text-xs text-gray-500">المستوى</p>
-                    <p className="font-medium">
-                      {course.level || "جميع المستويات"}
+
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-100 shadow-sm hover:shadow-md transition-all">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="bg-white p-2 rounded-xl shadow-sm">
+                      <BarChart3 className="w-5 h-5 text-green-600" />
+                    </div>
+                    <p className="text-xs font-medium text-green-800 uppercase tracking-wide">
+                      المستوى
                     </p>
                   </div>
+                  <p className="font-bold text-gray-900 text-lg">
+                    {course.level || "جميع المستويات"}
+                  </p>
                 </div>
-                <div className="bg-white rounded-lg p-4 flex items-center gap-3">
-                  <Award className="w-5 h-5 text-purple-400" />
-                  <div>
-                    <p className="text-xs text-gray-500">التقدم</p>
-                    <p className="font-medium">{progress}%</p>
+
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border border-purple-100 shadow-sm hover:shadow-md transition-all">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="bg-white p-2 rounded-xl shadow-sm">
+                      <Award className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <p className="text-xs font-medium text-purple-800 uppercase tracking-wide">
+                      التقدم
+                    </p>
                   </div>
+                  <p className="font-bold text-gray-900 text-lg flex items-center gap-2">
+                    {progress}%
+                    <span className="text-sm font-normal text-gray-600">
+                      ({completedVideos.size}/{allVideos.length})
+                    </span>
+                  </p>
                 </div>
               </div>
             </div>
           )}
-
           {activeTab === "resources" && (
-            <div className="max-w-4xl">
+            <div className="max-w-5xl mx-auto">
               {currentVideoFiles.length === 0 && generalFiles.length === 0 ? (
-                <div className="text-center py-12">
-                  <FileText className="w-16 h-16 text-gray-700 mx-auto mb-4" />
-                  <p className="text-gray-500">
+                <div className="text-center py-16 bg-white rounded-2xl shadow-md border border-gray-100">
+                  <div className="bg-gray-50 rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4">
+                    <FileText className="w-12 h-12 text-gray-400" />
+                  </div>
+                  <p className="text-gray-500 text-lg font-medium">
                     لا توجد ملفات متاحة لهذا الدرس
+                  </p>
+                  <p className="text-gray-400 text-sm mt-2">
+                    سيتم إضافة الملفات والموارد هنا عند توفرها
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-6">
                   {currentVideoFiles.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-600 mb-3">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                        <div className="w-1 h-5 bg-gradient-to-b from-blue-600 to-indigo-600 rounded-full"></div>
                         ملفات هذا الدرس
                       </h4>
-                      {currentVideoFiles.map((file) => (
-                        <FileCard
-                          key={file.id}
-                          file={file}
-                          onDownload={handleDownload}
-                        />
-                      ))}
+                      <div className="space-y-3">
+                        {currentVideoFiles.map((file) => (
+                          <FileCard
+                            key={file.id}
+                            file={file}
+                            onDownload={handleDownload}
+                          />
+                        ))}
+                      </div>
                     </div>
                   )}
 
                   {generalFiles.length > 0 && (
                     <div>
-                      <h4 className="text-sm font-medium text-gray-600 mb-3 mt-6">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                        <div className="w-1 h-5 bg-gradient-to-b from-purple-600 to-pink-600 rounded-full"></div>
                         ملفات عامة للدورة
                       </h4>
-                      {generalFiles.map((file) => (
-                        <FileCard
-                          key={file.id}
-                          file={file}
-                          onDownload={handleDownload}
-                        />
-                      ))}
+                      <div className="space-y-3">
+                        {generalFiles.map((file) => (
+                          <FileCard
+                            key={file.id}
+                            file={file}
+                            onDownload={handleDownload}
+                          />
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
