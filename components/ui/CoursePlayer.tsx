@@ -27,6 +27,7 @@ import {
 import { Course } from "@/types/types";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { translateLevel } from "@/utils/translation";
 
 // --- Types ---
 interface VideoProgress {
@@ -231,23 +232,20 @@ export default function CoursePlayer({
 
   // --- UI ---
   return (
-    <div
-      className="flex h-screen bg-gray-50 text-gray-900 overflow-hidden"
-      dir="rtl"
-    >
+    <div className="flex min-h-screen bg-gray-50 text-gray-900" dir="rtl">
       {/* Sidebar */}
       {/* Fixed Sidebar - Replace your entire aside block with this */}
       <aside
         className={`${
           sidebarOpen ? "w-96 border-l border-gray-200" : "w-0"
-        } h-full backdrop-blur-xl transition-all duration-300 flex flex-col overflow-hidden`}
+        } sticky top-0 h-screen backdrop-blur-xl transition-all duration-300 `}
       >
         <div className={`${sidebarOpen ? "flex" : "hidden"} flex-col h-full`}>
           {/* Header with Gradient */}
           <div className="flex-shrink-0 bg-gradient-to-br from-slate-50 via-gray-100 to-slate-100 p-6 text-gray-900 border-b border-gray-200">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold flex items-center gap-2">
-                <BookOpen className="w-6 h-6" />
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <BookOpen className="w-5 h-5" />
                 محتوى الدورة
               </h2>
               <button
@@ -259,7 +257,7 @@ export default function CoursePlayer({
             </div>
 
             {/* Enhanced Progress Bar */}
-            <div className="space-y-2">
+            <div className="space-y-1">
               <div className="flex items-center justify-between text-sm">
                 <span className="flex items-center gap-2">
                   <TrendingUp className="w-4 h-4" />
@@ -274,15 +272,6 @@ export default function CoursePlayer({
                 >
                   <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
                 </div>
-              </div>
-              <div className="flex items-center justify-between text-xs opacity-90">
-                <span>
-                  {completedVideos.size} من {allVideos.length} مكتمل
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {formatDuration(totalDuration)}
-                </span>
               </div>
             </div>
           </div>
@@ -451,7 +440,7 @@ export default function CoursePlayer({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <main className="flex-1 flex flex-col min-w-0 ">
         {/* Top Bar */}
         <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
           <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -465,17 +454,18 @@ export default function CoursePlayer({
                 <Menu className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors" />
               </button>
             )}
+
             <div className="min-w-0">
               <h1 className="text-base lg:text-lg font-semibold truncate">
                 {course.title}
               </h1>
               <p className="text-xs text-gray-600 truncate">
                 {course.instructor || "مدرب غير معروف"} •{" "}
-                {course.level || "جميع المستويات"}
+                {course.level ? translateLevel(course.level) : "جميع المستويات"}
               </p>
             </div>
           </div>
-          <Link href="/dashboard">
+          <Link href="/">
             <Button variant="outline" size="sm" className="flex-shrink-0">
               <ChevronLeft className="w-4 h-4 ml-1" />
               العودة
@@ -666,7 +656,7 @@ export default function CoursePlayer({
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 p-8 overflow-y-auto">
+        <div className="flex-1 p-8 ">
           {activeTab === "overview" && (
             <div className="max-w-5xl mx-auto space-y-6">
               {/* Video Title Card */}

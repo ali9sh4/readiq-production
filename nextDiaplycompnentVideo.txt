@@ -1,123 +1,18 @@
-"use client";
-
-import { CourseVideo } from "@/app/actions/upload_video_actions";
-import { CourseFile } from "@/components/SmartCourseUploader";
-import { File, Download, Eye } from "lucide-react";
-
-interface Props {
-  videos: CourseVideo[];
-  files: CourseFile[];
-  onViewFile: (filename: string, originalName: string) => void;
-  onDownloadFile: (filename: string, originalName: string) => void;
-}
-
-export default function VideoResourcesDisplay({ 
-  videos, 
-  files, 
-  onViewFile, 
-  onDownloadFile 
-}: Props) {
-  
-  // Group files by video
-  const filesGroupedByVideo = videos.map(video => ({
-    video,
-    files: files.filter(f => f.relatedVideoId === video.videoId)
-  })).filter(group => group.files.length > 0);
-
-  // Unlinked files
-  const unlinkedFiles = files.filter(f => !f.relatedVideoId);
-
-  return (
-    <div className="space-y-6" dir="rtl">
-      {/* Files grouped by video */}
-      {filesGroupedByVideo.map(({ video, files: videoFiles }) => (
-        <div key={video.videoId} className="bg-white rounded-lg border shadow-sm p-4">
-          <h3 className="font-bold text-gray-800 mb-3">
-            📹 {video.title}
-          </h3>
-          
-          <div className="space-y-2">
-            {videoFiles.map((file) => (
-              <div 
-                key={file.id} 
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <File className="w-5 h-5 text-purple-500" />
-                  <div>
-                    <p className="font-medium text-sm">{file.originalName}</p>
-                    <p className="text-xs text-gray-500">{file.type}</p>
-                  </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => onViewFile(file.filename, file.originalName)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => onDownloadFile(file.filename, file.originalName)}
-                    className="p-2 text-green-600 hover:bg-green-50 rounded"
-                  >
-                    <Download className="w-4 h-4" />
-                  </button>
-                </div>
+  const totalDuration = useMemo(() => {
+    return allVideos.reduce((sum, v) => sum + (v.duration || 0), 0);
+  }, [allVideos]);
+    <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {formatDuration(totalDuration)}
+                </span>
+                function formatDuration(seconds: number) {
+  if (!seconds) return "0:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+    <div className="flex items-center justify-between text-xs opacity-90">
+                <span>
+                  {completedVideos.size} من {allVideos.length} مكتمل
+                </span>
               </div>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      {/* Unlinked files */}
-      {unlinkedFiles.length > 0 && (
-        <div className="bg-gray-50 rounded-lg border border-dashed border-gray-300 p-4">
-          <h3 className="font-bold text-gray-700 mb-3">
-            📁 ملفات عامة للدورة
-          </h3>
-          
-          <div className="space-y-2">
-            {unlinkedFiles.map((file) => (
-              <div 
-                key={file.id}
-                className="flex items-center justify-between p-3 bg-white rounded-lg"
-              >
-                <div className="flex items-center gap-3">
-                  <File className="w-5 h-5 text-gray-500" />
-                  <div>
-                    <p className="font-medium text-sm">{file.originalName}</p>
-                    <p className="text-xs text-gray-500">{file.type}</p>
-                  </div>
-                </div>
-                
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => onViewFile(file.filename, file.originalName)}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => onDownloadFile(file.filename, file.originalName)}
-                    className="p-2 text-green-600 hover:bg-green-50 rounded"
-                  >
-                    <Download className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
 }
-import VideoResourcesDisplay from "@/components/VideoResourcesDisplay";
-
-<VideoResourcesDisplay
-  videos={videos}
-  files={files}
-  onViewFile={viewFile}
-  onDownloadFile={downloadFile}
-/>

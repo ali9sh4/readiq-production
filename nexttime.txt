@@ -74,6 +74,10 @@ Course Detail/Preview Page ui // done
  free preview and paid video showing to the user//done
  what should you do about the (free course)// done
  0 dollar them preview the whole course ///done
+ when delting all the videos   and files the unpublish is setting to of 
+ why ????? // 
+ does the buttons is protected between enroll in the course and cont.. //
+ how to make impossible to mix ?? //  
  Course Viewer arrangemnt... ui !! // 
  user dashboard ..  just show the course card and no ne
  ed for others card  // 
@@ -110,6 +114,8 @@ Course Detail/Preview Page ui // done
  Receipt/invoice generation//
  enrollment system, payment integration, progress tracking, certificates///
 
+after launching :
+sectioning improvments //
 
 
 
