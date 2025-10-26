@@ -32,6 +32,7 @@ import {
   deleteCourseVideo,
   reorderCourseVideos,
   updateVideoDetails,
+  cleanupVideoCoursePrice,
 } from "@/app/actions/upload_video_actions";
 import { CourseVideo } from "@/types/types";
 // ===== INTERFACES =====
@@ -188,6 +189,7 @@ export default function VideoUploader({
         newIndex + 1,
         token
       );
+      
 
       if (result.success && result.videos) {
         setPreviousVideos(result.videos);

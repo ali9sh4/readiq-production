@@ -16,3 +16,14 @@
                 </span>
               </div>
 }
+
+
+
+
+22222
+  if (cleanPricing.price !== undefined && Array.isArray(courseData?.videos)) {
+    updates.videos = courseData.videos.map((v: any) => ({
+      ...v,
+      coursePrice: cleanPricing.price,
+    }));
+  }

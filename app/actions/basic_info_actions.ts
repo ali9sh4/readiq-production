@@ -56,11 +56,7 @@ export async function updateCourseBasicInfo(
 // ===== UPDATE COURSE PRICING =====
 export async function updateCoursePricing(
   courseId: string,
-  pricing: {
-    price?: number;
-    discountPrice?: number;
-    currency?: string;
-  },
+  pricing: { price?: number; discountPrice?: number; currency?: string },
   token: string
 ) {
   try {
@@ -80,31 +76,16 @@ export async function updateCoursePricing(
     }
 
     const cleanPricing = Object.fromEntries(
-      Object.entries(pricing).filter(([v]) => v !== undefined)
+      Object.entries(pricing).filter(([_, v]) => v !== undefined)
     );
 
-    await db
-      .collection("courses")
-      .doc(courseId)
-      .update({
-        ...cleanPricing,
-        updatedAt: new Date().toISOString(),
-      });
-    if (cleanPricing.price !== undefined) {
-      const courseDoc = await db.collection("courses").doc(courseId).get();
-      const courseData = courseDoc.data();
+    // ✅ Single atomic update
+    const updates: any = {
+      ...cleanPricing,
+      updatedAt: new Date().toISOString(),
+    };
 
-      if (courseData?.videos && courseData.videos.length > 0) {
-        const updatedVideos = courseData.videos.map((video: any) => ({
-          ...video,
-          coursePrice: cleanPricing.price,
-        }));
-
-        await db.collection("courses").doc(courseId).update({
-          videos: updatedVideos,
-        });
-      }
-    }
+    await db.collection("courses").doc(courseId).update(updates);
 
     revalidatePath(`/course/${courseId}`);
     return { success: true };

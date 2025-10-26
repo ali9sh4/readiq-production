@@ -180,7 +180,6 @@ export async function saveCourseVideoToFireStore({
     }
 
     const courseData = courseDoc.data();
-    const coursePrice = courseData?.price || 0;
 
     if (courseData?.createdBy !== verifiedToken.uid) {
       return { success: false, error: "Permission denied" };
@@ -218,7 +217,6 @@ export async function saveCourseVideoToFireStore({
         originalFilename: video.title, // NEW: Keep original
         description: "", // NEW: Empty by default
         section: "",
-        coursePrice: coursePrice, // NEW: Empty by default
         isVisible: true, // NEW: Visible by default
         isFreePreview: false,
         uploadedAt: new Date().toISOString(),
@@ -432,4 +430,19 @@ export async function reorderCourseVideos(
     console.error("Failed to reorder videos:", error);
     return { success: false, error: "Failed to reorder videos" };
   }
+}
+///  this function for cleanup coursePrice from videos or any field in the future
+export async function cleanupVideoCoursePrice(courseId: string) {
+  const courseDoc = await db.collection("courses").doc(courseId).get();
+  const videos = courseDoc.data()?.videos || [];
+
+  const cleanedVideos = videos.map((v: any) => {
+    const { coursePrice, ...rest } = v; // Remove coursePrice
+    return rest;
+  });
+
+  await db
+    .collection("courses")
+    .doc(courseId)
+    .update({ videos: cleanedVideos });
 }
