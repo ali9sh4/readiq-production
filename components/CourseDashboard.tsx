@@ -1,19 +1,16 @@
 "use client";
-
+//const publishedVideosCount = videos.filter((v) => v.isPublished).length;
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
 import { useAuth } from "@/context/authContext";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
 import { storage } from "@/firebase/client";
-import { ref, uploadBytesResumable, UploadTask } from "firebase/storage";
+import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 
 import {
   ChevronLeft,
   Save,
-  Eye,
   Upload,
-  Video,
   FileText,
   Clock,
   DollarSign,
@@ -46,7 +43,7 @@ import {
   updateCoursePricing,
   publishCourse,
   unpublishCourse,
-} from "@/app/actions/basic_info_actios";
+} from "@/app/actions/basic_info_actions";
 import VideoUploader from "./video_uploader";
 import SmartCourseUploader from "./fileUplaodtoR2";
 import { ThumbnailUpdateSchema } from "@/validation/propertySchema";
@@ -66,7 +63,7 @@ import { BasicInfoSchema, PricingSchema } from "@/validation/propertySchema";
 import { Course } from "@/types/types";
 import { toast } from "sonner";
 
-import ThumbNailUploader, { ImageUpload } from "./thumb_nail_uploder";
+import ThumbNailUploader from "./thumb_nail_uploder";
 import { DeleteThumbnail, SaveThumbnail } from "@/app/course-upload/action";
 // Types
 
@@ -112,16 +109,6 @@ function formatDuration(seconds?: number): string {
   return `${mins} د`;
 }
 
-function getFirstImageUrl(course: Course): string {
-  if (!course.images || course.images.length === 0) {
-    return "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop";
-  }
-  const firstImage = course.images[0];
-  if (typeof firstImage === "string" && firstImage.startsWith("http"))
-    return firstImage;
-  return "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop";
-}
-
 // ===== MAIN COMPONENT =====
 export default function CourseDashboard({ defaultValues }: Props) {
   const router = useRouter();
@@ -136,6 +123,12 @@ export default function CourseDashboard({ defaultValues }: Props) {
   const [success, setSuccess] = useState("");
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [deletingThumbnail, setDeletingThumbnail] = useState(false);
+  const isAnyActionRunning =
+    saving ||
+    publishing ||
+    unpublishing ||
+    uploadingThumbnail ||
+    deletingThumbnail;
 
   // ✅ Initialize forms with proper default values
   const basicInfoForm = useForm<z.infer<typeof BasicInfoSchema>>({
@@ -175,7 +168,9 @@ export default function CourseDashboard({ defaultValues }: Props) {
       subtitle: defaultValues.subtitle || "",
       description: defaultValues.description || "",
       category: defaultValues.category || "",
-      level: (defaultValues.level as "beginner") || "beginner",
+      level:
+        (defaultValues.level as "beginner" | "intermediate" | "advanced") ||
+        "beginner",
       language: (defaultValues.language as "arabic") || "arabic",
     });
     pricingForm.reset({
@@ -199,7 +194,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
     (sum, v) => sum + (v.duration || 0),
     0
   );
-  const publishedVideosCount = videos.filter((v) => v.isPublished).length;
   const status = (course.status as CourseStatus) || "draft";
   const isPublished = status === "published";
   const canPublish = videos.length > 0 && !isPublished;
@@ -218,7 +212,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
 
     try {
       const token = await auth.user.getIdToken();
-      setCourse((prev) => ({ ...prev, ...data }));
       toast.promise(updateCourseBasicInfo(course.id, data, token), {
         loading: "جاري الحفظ...",
         success: "تم الحفظ بنجاح",
@@ -229,6 +222,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
           return "فشل في الحفظ";
         },
       });
+      setCourse((prev) => ({ ...prev, ...data }));
     } catch (err) {
       console.error("Error saving basic info:", err);
       setError("حدث خطأ أثناء الحفظ");
@@ -287,35 +281,49 @@ export default function CourseDashboard({ defaultValues }: Props) {
     try {
       setUploadingThumbnail(true);
 
-      // Upload single thumbnail image to Firebase Storage
+      // Create storage reference
       const path = `courses/${course.id}/thumbnail/${Date.now()}-${
         data.image.file.name
       }`;
       const storageRef = ref(storage, path);
       const uploadTask = uploadBytesResumable(storageRef, data.image.file);
 
-      // Wait for upload to complete
-      await uploadTask;
+      // ✅ Wait for upload to complete (properly wrapped)
+      await new Promise<void>((resolve, reject) => {
+        uploadTask.on(
+          "state_changed",
+          null, // No progress tracking needed
+          reject, // Handle errors
+          () => resolve() // Resolve on completion
+        );
+      });
 
-      // Save image path to database (as array since SaveImages expects it)
-      await SaveThumbnail(
+      // ✅ Get the full download URL
+      const downloadURL = await getDownloadURL(storageRef);
+
+      // ✅ Save full URL to database
+      const result = await SaveThumbnail(
         {
           courseId: course.id,
-          thumbnailUrl: path,
+          thumbnailUrl: downloadURL,
         },
         token
       );
 
-      toast.success("تم حفظ صورة الغلاف بنجاح!");
+      // ✅ Only update state if save was successful
+      if (result.success) {
+        setCourse((prev) => ({
+          ...prev,
+          thumbnailUrl: downloadURL,
+        }));
 
-      // Update local state with new thumbnail
-      setCourse((prev) => ({
-        ...prev,
-        thumbnailUrl: path,
-      }));
+        toast.success("تم حفظ صورة الغلاف بنجاح!");
+        await new Promise((resolve) => setTimeout(resolve, 100)); // Small delay to ensure consistency
 
-      // Optional: Refresh to show updated thumbnail
-      router.refresh();
+        router.refresh();
+      } else {
+        toast.error("فشل في حفظ الصورة");
+      }
     } catch (error) {
       console.error("Error uploading thumbnail:", error);
       toast.error("حدث خطأ أثناء رفع الصورة");
@@ -346,9 +354,8 @@ export default function CourseDashboard({ defaultValues }: Props) {
 
       if (result.success) {
         toast.success("تم حذف صورة الغلاف بنجاح!");
-        setCourse((prev) => ({ ...prev, thumbnailUrl: undefined }));
-        form.reset({ image: undefined });
-        router.refresh();
+        await new Promise((resolve) => setTimeout(resolve, 100)); // Small delay to ensure consistency
+        router.refresh(); // ✅ ADD THIS LINE!
       } else {
         toast.error(result.message || "فشل في حذف صورة الغلاف"); // ✅ Show error from server
       }
@@ -490,25 +497,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
 
         {/* KPI CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-blue-100 rounded-lg">
-                  <Video className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="text-right flex-1">
-                  <p className="text-sm text-gray-600">الفيديوهات</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {videos.length}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {publishedVideosCount} منشور
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -812,12 +800,15 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                     const val = e.target.value;
 
                                     if (val === "") {
-                                      field.onChange("");
+                                      field.onChange(0);
                                       return;
                                     }
 
                                     if (/^\d*\.?\d{0,2}$/.test(val)) {
-                                      field.onChange(val);
+                                      const numVal = parseFloat(val);
+                                      field.onChange(
+                                        isNaN(numVal) ? 0 : numVal
+                                      );
                                     }
                                   }}
                                   onBlur={(e) => {
@@ -898,23 +889,10 @@ export default function CourseDashboard({ defaultValues }: Props) {
                           </FormDescription>
                           <FormControl>
                             <ThumbNailUploader
-                              onImageChange={(image) => {
-                                field.onChange(image);
-                              }}
-                              image={field.value} //
+                              onImageChange={(image) => field.onChange(image)}
+                              image={field.value}
                               onDelete={handleDeleteThumbnail}
                               isDeleting={deletingThumbnail}
-                              urlFormatter={(image) => {
-                                if (!image.file && image.url) {
-                                  if (!image.url.startsWith("http")) {
-                                    return `https://firebasestorage.googleapis.com/v0/b/readiq-1f109.firebasestorage.app/o/${encodeURIComponent(
-                                      image.url
-                                    )}?alt=media`;
-                                  }
-                                  return image.url;
-                                }
-                                return image.url;
-                              }}
                             />
                           </FormControl>
                           <FormMessage />
@@ -941,8 +919,8 @@ export default function CourseDashboard({ defaultValues }: Props) {
           </TabsContent>
           {/* CONTENT TAB */}
           <TabsContent value="content" className="space-y-6">
-            <VideoUploader courseId={course.id} />
-            <SmartCourseUploader id={course.id} />
+            <VideoUploader courseId={course.id} disabled={isAnyActionRunning} />
+            <SmartCourseUploader id={course.id} disabled={isAnyActionRunning} />
           </TabsContent>
           {/* SETTINGS TAB */}
           <TabsContent value="settings">

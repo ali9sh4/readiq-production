@@ -277,10 +277,7 @@ export async function saveCourseFilesToFirebase({
     // Update the course document
     await db.collection("courses").doc(courseId).update({
       files: allFiles, // ✅ Keep all files (existing + new)
-      hasFiles: true,
       filesCount: allFiles.length, // ✅ Total count of all files
-      updatedAt: new Date().toISOString(),
-      status: "complete",
     });
 
     return {
@@ -368,10 +365,28 @@ export const DeleteThumbnail = async (courseId: string, token: string) => {
       };
     }
 
-    // ✅ Delete from Storage (server-side using Admin SDK)
+    // ✅ Delete from Storage (only handle new URL format)
     if (courseData?.thumbnailUrl) {
       const bucket = storage.bucket();
-      await bucket.file(courseData.thumbnailUrl).delete();
+
+      // Extract path from Firebase Storage URL
+      // Format: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{encodedPath}?alt=media&token=...
+      const url = new URL(courseData.thumbnailUrl);
+      const pathMatch = url.pathname.match(/\/o\/(.+)/);
+
+      if (!pathMatch || !pathMatch[1]) {
+        return {
+          success: false,
+          error: true,
+          message: "رابط الصورة غير صالح",
+        };
+      }
+
+      // Decode the URL-encoded path and remove query params
+      const storagePath = decodeURIComponent(pathMatch[1].split("?")[0]);
+
+      // Delete from Storage
+      await bucket.file(storagePath).delete();
     }
 
     // ✅ Update Firestore

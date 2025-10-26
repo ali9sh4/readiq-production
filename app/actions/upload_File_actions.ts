@@ -14,8 +14,6 @@ import { R2_BUCKET_NAME, r2Client } from "@/lib/R2/r2_client";
 import { adminAuth, db } from "@/firebase/service";
 import { Redis } from "@upstash/redis";
 import { CourseFile } from "@/components/fileUplaodtoR2";
-import { _success } from "zod/v4/core";
-import { error } from "console";
 
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),

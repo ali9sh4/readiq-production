@@ -74,8 +74,11 @@ Course Detail/Preview Page ui // done
  free preview and paid video showing to the user//done
  what should you do about the (free course)// done
  0 dollar them preview the whole course ///done
+
  when delting all the videos   and files the unpublish is setting to of 
- why ????? // 
+ why ????? // done
+ cheking the uploading of the files ... and checking all the firebase firestore functions // 
+
  does the buttons is protected between enroll in the course and cont.. //
  how to make impossible to mix ?? //  
  Course Viewer arrangemnt... ui !! // 
