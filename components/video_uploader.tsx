@@ -32,7 +32,6 @@ import {
   deleteCourseVideo,
   reorderCourseVideos,
   updateVideoDetails,
-  cleanupVideoCoursePrice,
 } from "@/app/actions/upload_video_actions";
 import { CourseVideo } from "@/types/types";
 // ===== INTERFACES =====
@@ -145,11 +144,16 @@ export default function VideoUploader({
       const result = await getCourseVideos(courseId);
 
       if (result.success) {
-        const videoList = result.videos || result.videos || [];
+        const videoList = result.videos || [];
         const sortedVideos = [...videoList].sort(
           (a, b) => (a.order || 0) - (b.order || 0)
         );
         setPreviousVideos(Array.isArray(sortedVideos) ? sortedVideos : []);
+        console.log("🎥 Loaded videos:", sortedVideos); // ADD THIS
+        console.log(
+          "🔢 Orders:",
+          sortedVideos.map((v) => ({ id: v.videoId, order: v.order }))
+        ); // ADD THIS
         if (sortedVideos.length > 0) {
           const maxOrder = Math.max(...sortedVideos.map((v) => v.order || 0));
           setVideoOrder(maxOrder + 1);
@@ -178,6 +182,19 @@ export default function VideoUploader({
     const newIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
     if (newIndex < 0 || newIndex >= previousVideos.length) return;
 
+    // 🔍 ADD THESE LOGS:
+    console.log("🔼 Reordering:", {
+      videoId,
+      direction,
+      currentIndex,
+      newIndex,
+      newOrder: newIndex + 1,
+      currentVideos: previousVideos.map((v) => ({
+        id: v.videoId,
+        order: v.order,
+      })),
+    });
+
     setReorderingVideoId(videoId);
     setError("");
 
@@ -189,16 +206,27 @@ export default function VideoUploader({
         newIndex + 1,
         token
       );
-      
+
+      // 🔍 ADD THIS LOG:
+      console.log("📥 Reorder result:", {
+        success: result.success,
+        returnedVideos: result.videos?.map((v) => ({
+          id: v.videoId,
+          order: v.order,
+        })),
+      });
 
       if (result.success && result.videos) {
         setPreviousVideos(result.videos);
-      } else {
-        setError(result.error || "فشل في إعادة الترتيب");
+
+        // 🔍 ADD THIS LOG:
+        console.log(
+          "✅ State updated with:",
+          result.videos.map((v) => ({ id: v.videoId, order: v.order }))
+        );
       }
     } catch (error) {
-      console.error("Reorder failed:", error);
-      setError("حدث خطأ أثناء إعادة الترتيب");
+      console.error("❌ Reorder error:", error);
     } finally {
       setReorderingVideoId(null);
     }

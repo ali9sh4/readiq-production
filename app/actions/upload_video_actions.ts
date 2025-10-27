@@ -238,16 +238,20 @@ export async function saveCourseVideoToFireStore({
 
     const updatedExisting = existingVideos.map((video) => {
       if ((video.order ?? 0) >= (insertOrder ?? 0)) {
-        return { ...video, order: (video.order ?? 0) + 1 }; // Shift down
+        return { ...video, order: (video.order ?? 0) + newVideos.length }; // Shift down
       }
       return video;
     });
 
     const allVideos = [...updatedExisting, ...newVideos];
+    // After any modification, normalize orders
+    const normalizedVideos = allVideos
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map((video, index) => ({ ...video, order: index + 1 }));
     allVideos.sort((a, b) => (a.order || 0) - (b.order || 0));
 
     await db.collection("courses").doc(courseId).update({
-      videos: allVideos,
+      videos: normalizedVideos,
       updatedAt: new Date().toISOString(),
     });
 
@@ -403,8 +407,13 @@ export async function reorderCourseVideos(
       return { success: false, error: "Permission denied" };
     }
 
-    const videos: CourseVideo[] = courseData?.videos || [];
+    // ✅ FIX: Sort videos by order BEFORE reordering!
+    const videos: CourseVideo[] = (
+      (courseData?.videos || []) as CourseVideo[]
+    ).sort((a: CourseVideo, b: CourseVideo) => (a.order || 0) - (b.order || 0));
+
     const videoIndex = videos.findIndex((v) => v.videoId === videoId);
+
     if (videoIndex === -1) {
       return { success: false, error: "Video not found" };
     }
@@ -413,19 +422,19 @@ export async function reorderCourseVideos(
     const [movedVideo] = videos.splice(videoIndex, 1);
     videos.splice(newOrder - 1, 0, movedVideo);
 
-    // Update all orders
-    const reorderedVideos = videos.map((video, index) => ({
+    // Normalize orders
+    const normalizedVideos = videos.map((video, index) => ({
       ...video,
       order: index + 1,
     }));
 
     await db.collection("courses").doc(courseId).update({
-      videos: reorderedVideos,
+      videos: normalizedVideos,
       updatedAt: new Date().toISOString(),
     });
 
     revalidatePath(`/course/${courseId}`);
-    return { success: true, videos: reorderedVideos };
+    return { success: true, videos: normalizedVideos };
   } catch (error) {
     console.error("Failed to reorder videos:", error);
     return { success: false, error: "Failed to reorder videos" };
