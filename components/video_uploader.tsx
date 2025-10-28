@@ -117,7 +117,7 @@ export default function VideoUploader({
   const [editForm, setEditForm] = useState({
     title: "",
     description: "",
-    section: "",
+    section: "", // ✅ Use empty string, not undefined
     isVisible: true,
     isFreePreview: false,
   });
@@ -442,10 +442,15 @@ export default function VideoUploader({
       const result = await updateVideoDetails(
         courseId,
         videoId,
-        editForm,
+        {
+          title: editForm.title.trim(),
+          description: editForm.description.trim(),
+          section: editForm.section, // ✅ Send empty string directly
+          isVisible: editForm.isVisible,
+          isFreePreview: editForm.isFreePreview,
+        },
         token
       );
-
       if (result.success) {
         // Update local state
         setPreviousVideos((prev) =>
@@ -923,24 +928,38 @@ export default function VideoUploader({
                             </div>
 
                             {/* Section */}
+                            {/* Section */}
+                            {/* Section */}
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">
-                                القسم / الوحدة
+                                القسم
                               </label>
-                              <input
-                                type="text"
-                                value={editForm.section}
+                              <select
+                                value={editForm.section || ""} // ✅ Fixed: Read from section
                                 onChange={(e) =>
                                   setEditForm((prev) => ({
                                     ...prev,
-                                    section: e.target.value,
+                                    section: e.target.value, // ✅ Fixed: Write to section
                                   }))
                                 }
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="مثال: المقدمة، الوحدة الأولى، الخاتمة"
-                              />
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                              >
+                                <option value="">بدون قسم</option>
+                                <option value="المقدمة">المقدمة</option>
+                                <option value="القسم 1">القسم 1</option>
+                                <option value="القسم 2">القسم 2</option>
+                                <option value="القسم 3">القسم 3</option>
+                                <option value="القسم 4">القسم 4</option>
+                                <option value="القسم 5">القسم 5</option>
+                                <option value="القسم 6">القسم 6</option>
+                                <option value="القسم 7">القسم 7</option>
+                                <option value="القسم 8">القسم 8</option>
+                                <option value="القسم 9">القسم 9</option>
+                                <option value="القسم 10">القسم 10</option>
+                                <option value="الخاتمة">الخاتمة</option>
+                              </select>
                               <p className="text-xs text-gray-500 mt-1">
-                                اختياري - يساعد في تنظيم الفيديوهات
+                                اختر القسم لتنظيم الفيديوهات (اختياري)
                               </p>
                             </div>
 

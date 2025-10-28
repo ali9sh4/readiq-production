@@ -21,7 +21,6 @@ import {
   BarChart3,
   Loader2,
   AlertCircle,
-  TrendingUp,
   Menu,
 } from "lucide-react";
 import { Course } from "@/types/types";
@@ -99,17 +98,48 @@ export default function CoursePlayer({
     const sections: Record<string, any[]> = {};
 
     videos.forEach((v) => {
-      const section = v.section || "دروس الدورة";
-      if (!sections[section]) sections[section] = [];
-      sections[section].push(v);
+      const sectionKey = v.section || "دروس الدورة";
+      if (!sections[sectionKey]) sections[sectionKey] = [];
+      sections[sectionKey].push(v);
     });
 
-    // Sort videos within sections
+    // Sort videos within each section by GLOBAL order
     Object.keys(sections).forEach((section) => {
       sections[section].sort((a, b) => (a.order || 0) - (b.order || 0));
     });
 
-    return sections;
+    // Sort sections in proper order
+    const sectionOrder = [
+      "المقدمة",
+      "القسم 1",
+      "القسم 2",
+      "القسم 3",
+      "القسم 4",
+      "القسم 5",
+      "القسم 6",
+      "القسم 7",
+      "القسم 8",
+      "القسم 9",
+      "القسم 10",
+      "الخاتمة",
+      "دروس الدورة", // No section - at end
+    ];
+
+    const sortedSections: Record<string, any[]> = {};
+    sectionOrder.forEach((sectionName) => {
+      if (sections[sectionName]) {
+        sortedSections[sectionName] = sections[sectionName];
+      }
+    });
+
+    // Add any other sections not in the predefined list
+    Object.keys(sections).forEach((key) => {
+      if (!sortedSections[key]) {
+        sortedSections[key] = sections[key];
+      }
+    });
+
+    return sortedSections;
   }, [course?.videos]);
 
   const allVideos = useMemo(
@@ -238,47 +268,42 @@ export default function CoursePlayer({
       <aside
         className={`${
           sidebarOpen ? "w-96 border-l border-gray-200" : "w-0"
-        } sticky top-0 h-screen backdrop-blur-xl transition-all duration-300 `}
+        } sticky top-0 h-screen backdrop-blur-xl transition-all duration-300`}
       >
         <div className={`${sidebarOpen ? "flex" : "hidden"} flex-col h-full`}>
-          {/* Header with Gradient */}
-          <div className="flex-shrink-0 bg-gradient-to-br from-slate-50 via-gray-100 to-slate-100 p-6 text-gray-900 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold flex items-center gap-2">
+          {/* Header */}
+          <div className="flex-shrink-0 bg-gradient-to-br from-slate-50 via-gray-100 to-slate-100 p-4 text-gray-900 border-b border-gray-200">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-lg font-bold flex items-center gap-2">
                 <BookOpen className="w-5 h-5" />
                 محتوى الدورة
               </h2>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="p-2 hover:bg-gray-200 rounded-lg transition-all"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
 
-            {/* Enhanced Progress Bar */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-sm">
-                <span className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  التقدم الإجمالي
-                </span>
-                <span className="font-bold">{progress}%</span>
-              </div>
-              <div className="relative h-3 bg-white/60 rounded-full overflow-hidden border border-gray-200">
-                <div
-                  className="absolute inset-y-0 right-0 bg-gradient-to-l from-green-400 to-emerald-500 rounded-full transition-all duration-500"
-                  style={{ width: `${progress}%` }}
-                >
-                  <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-24 h-2 bg-white/60 rounded-full overflow-hidden border border-gray-200">
+                    <div
+                      className="h-full bg-gradient-to-l from-green-400 to-emerald-500 rounded-full transition-all duration-500"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                  <span className="text-sm font-bold whitespace-nowrap">
+                    {progress}%
+                  </span>
                 </div>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="p-1.5 hover:bg-gray-200 rounded-lg transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Course Sections - Scrollable Area */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar min-h-0">
-            <div className="space-y-3">
+          {/* Scrollable Sections */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar border-t border-gray-200 bg-white">
+            <div className="divide-y divide-gray-200">
               {Object.entries(videosBySections).map(([section, videos]) => {
                 const isExpanded = expandedSections.has(section);
                 const sectionCompleted = videos.filter((v) =>
@@ -289,11 +314,11 @@ export default function CoursePlayer({
                 );
 
                 return (
-                  <div key={section} className="space-y-3">
+                  <div key={section} className="bg-gray-50/30">
                     {/* Section Header */}
                     <button
                       onClick={() => toggleSection(section)}
-                      className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors "
+                      className="w-full p-4 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <div
@@ -316,6 +341,7 @@ export default function CoursePlayer({
                           </p>
                         </div>
                       </div>
+
                       <div className="flex items-center gap-2">
                         <div className="w-12 h-12 relative">
                           <svg className="w-12 h-12 transform -rotate-90">
@@ -349,9 +375,9 @@ export default function CoursePlayer({
                       </div>
                     </button>
 
-                    {/* Videos List */}
+                    {/* Videos */}
                     {isExpanded && (
-                      <div className="border-t ">
+                      <div className="border-t border-gray-200 bg-gray-50">
                         {videos.map((video, idx) => {
                           const videoIndex = allVideos.indexOf(video);
                           const isActive = videoIndex === currentVideoIndex;
@@ -373,7 +399,7 @@ export default function CoursePlayer({
                                 }
                               }}
                               disabled={isLocked}
-                              className={`w-full p-4 flex items-center gap-3 transition-all border-b  last:border-b-0 ${
+                              className={`w-full p-4 flex items-center gap-3 transition-all border-b border-gray-100 last:border-b-0 ${
                                 isActive
                                   ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-r-4 border-blue-600"
                                   : "hover:bg-gray-50"
@@ -381,7 +407,6 @@ export default function CoursePlayer({
                                 isLocked ? "opacity-50 cursor-not-allowed" : ""
                               }`}
                             >
-                              {/* Video Number/Status */}
                               <div
                                 className={`flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm transition-all ${
                                   isCompleted
@@ -400,7 +425,6 @@ export default function CoursePlayer({
                                 )}
                               </div>
 
-                              {/* Video Info */}
                               <div className="flex-1 text-right min-w-0">
                                 <p
                                   className={`font-medium truncate ${
@@ -422,7 +446,6 @@ export default function CoursePlayer({
                                 </div>
                               </div>
 
-                              {/* Play Icon */}
                               {isActive && !isLocked && (
                                 <PlayCircle className="w-5 h-5 text-blue-600 flex-shrink-0 animate-pulse" />
                               )}

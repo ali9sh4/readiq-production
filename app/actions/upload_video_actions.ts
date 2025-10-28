@@ -248,7 +248,6 @@ export async function saveCourseVideoToFireStore({
     const normalizedVideos = allVideos
       .sort((a, b) => (a.order || 0) - (b.order || 0))
       .map((video, index) => ({ ...video, order: index + 1 }));
-    allVideos.sort((a, b) => (a.order || 0) - (b.order || 0));
 
     await db.collection("courses").doc(courseId).update({
       videos: normalizedVideos,
@@ -357,20 +356,34 @@ export async function deleteCourseVideo(
 
     const existingVideos: CourseVideo[] = courseData?.videos || [];
 
-    // ✅ Fixed: Use videoId not id
     const videoToDelete = existingVideos.find((v) => v.videoId === videoId);
 
     if (!videoToDelete) {
       return { success: false, error: "Video not found" };
     }
 
-    await mux.video.assets.delete(videoToDelete.assetId);
+    // Delete from Mux first
+    try {
+      await mux.video.assets.delete(videoToDelete.assetId);
+    } catch (muxError) {
+      console.error("Failed to delete from Mux:", muxError);
+      // Continue anyway - maybe the asset was already deleted
+    }
 
-    // ✅ Fixed: Use videoId not id
+    // ✅ FIX 1: Filter out the deleted video
     const updatedVideos = existingVideos.filter((v) => v.videoId !== videoId);
 
+    // ✅ FIX 2: Normalize orders after deletion
+    const normalizedVideos = updatedVideos
+      .sort((a, b) => (a.order || 0) - (b.order || 0))
+      .map((video, index) => ({
+        ...video,
+        order: index + 1,
+      }));
+
+    // ✅ FIX 3: Save normalized videos
     await db.collection("courses").doc(courseId).update({
-      videos: updatedVideos,
+      videos: normalizedVideos,
       updatedAt: new Date().toISOString(),
     });
 

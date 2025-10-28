@@ -77,7 +77,8 @@ Course Detail/Preview Page ui // done
 
  when delting all the videos   and files the unpublish is setting to of 
  why ????? // done
-reordering check !!  
+reordering check !!  done 
+sectioning //// 
  cheking the uploading of the files ... and checking all the firebase firestore functions // 
 
  does the buttons is protected between enroll in the course and cont.. //

@@ -29,7 +29,6 @@ export interface CourseVideo {
   originalFilename?: string;
   description?: string;
   section?: string;
-  orderInSection?: number;
   isVisible?: boolean;
   isFreePreview?: boolean;
 }
