@@ -11,31 +11,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  BookOpen,
-  Users,
-  Award,
-  Clock,
-  Plus,
-  AlertCircle,
-  Play,
-} from "lucide-react";
+import { BookOpen, Award, Plus, AlertCircle, Play } from "lucide-react";
 import { getDashboardStats, getUserEnrolledCourses } from "./actions";
+import CoursesCardList from "@/components/CoursesCardList.tsx  ";
+import { Course } from "@/types/types";
 
 interface DashboardStats {
   enrolledCoursesCount: number;
   createdCoursesCount: number;
   completedCoursesCount: number;
   totalLearningTime: number;
-}
-
-interface Course {
-  id: string;
-  title: string;
-  thumbnailUrl?: string;
-  instructor?: string;
-  level?: string;
-  duration?: number;
 }
 
 export default function DashboardHome() {
@@ -146,84 +131,28 @@ export default function DashboardHome() {
           استمر في رحلة التعلم وحقق أهدافك التعليمية
         </p>
       </div>
+      <section className="py-16 bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              دوراتي المسجلة
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              استمر في رحلة التعلم وحقق أهدافك التعليمية
+            </p>
+          </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-50 to-blue-100">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-600 text-sm font-medium">
-                  الدورات المسجلة
-                </p>
-                <p className="text-2xl font-bold text-blue-700">
-                  {stats?.enrolledCoursesCount || 0}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
-                <BookOpen className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-green-100">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-600 text-sm font-medium">
-                  الدورات المكتملة
-                </p>
-                <p className="text-2xl font-bold text-green-700">
-                  {stats?.completedCoursesCount || 0}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
-                <Award className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-purple-100">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-600 text-sm font-medium">
-                  الدورات المنشأة
-                </p>
-                <p className="text-2xl font-bold text-purple-700">
-                  {stats?.createdCoursesCount || 0}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-lg bg-gradient-to-br from-orange-50 to-orange-100">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-orange-600 text-sm font-medium">
-                  إجمالي ساعات التعلم
-                </p>
-                <p className="text-2xl font-bold text-orange-700">
-                  {stats?.totalLearningTime
-                    ? formatDuration(stats.totalLearningTime)
-                    : "0 د"}
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-orange-600 rounded-full flex items-center justify-center">
-                <Clock className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
+          {/* Use CoursesCardList with transformed data */}
+          <CoursesCardList
+            data={{
+              success: true,
+              courses: enrolledCourses,
+              hasMore: false,
+              nextCursor: null,
+            }}
+          />
+        </div>
+      </section>
       {/* Enrolled Courses */}
       <Card className="border-0 shadow-lg">
         <CardHeader>
@@ -289,7 +218,6 @@ export default function DashboardHome() {
           )}
         </CardContent>
       </Card>
-
       {/* Quick Actions */}
       <Card className="border-0 shadow-lg bg-gradient-to-l from-gray-50 to-white">
         <CardHeader>

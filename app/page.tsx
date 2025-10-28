@@ -1,4 +1,3 @@
-// Replace your entire app/page.tsx with this:
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowLeft, BookOpen, Users, Star, PlusCircle } from "lucide-react";

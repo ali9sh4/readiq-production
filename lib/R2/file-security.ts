@@ -2,7 +2,27 @@
 
 import crypto from "crypto";
 import path from "path";
-
+// Add this constant
+const EXTENSION_MIME_MAP: Record<string, string[]> = {
+  ".pdf": ["application/pdf"],
+  ".doc": ["application/msword"],
+  ".docx": [
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ],
+  ".ppt": ["application/vnd.ms-powerpoint"],
+  ".pptx": [
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  ],
+  ".mp4": ["video/mp4"],
+  ".webm": ["video/webm"],
+  ".mp3": ["audio/mpeg"],
+  ".wav": ["audio/wav", "audio/wave", "audio/x-wav"],
+  ".zip": ["application/zip", "application/x-zip-compressed"],
+  ".jpg": ["image/jpeg"],
+  ".jpeg": ["image/jpeg"],
+  ".png": ["image/png"],
+  ".webp": ["image/webp"],
+};
 // Allowed file types for course materials
 const ALLOWED_MIME_TYPES = [
   "application/pdf",
@@ -90,6 +110,13 @@ export function validateFile(file: File): FileValidationResult {
       return {
         isValid: false,
         error: `File extension ${extension} is not allowed`,
+      };
+    }
+    const allowedMimes = EXTENSION_MIME_MAP[extension];
+    if (!allowedMimes || !allowedMimes.includes(file.type)) {
+      return {
+        isValid: false,
+        error: `File type mismatch: ${extension} files must be ${allowedMimes?.[0]}, but got ${file.type}`,
       };
     }
 

@@ -78,12 +78,12 @@ Course Detail/Preview Page ui // done
  when delting all the videos   and files the unpublish is setting to of 
  why ????? // done
 reordering check !!  done 
-sectioning //// 
- cheking the uploading of the files ... and checking all the firebase firestore functions // 
-
+sectioning //// done 
+ cheking the uploading of the files ...
+  and checking all the firebase firestore functions // done
  does the buttons is protected between enroll in the course and cont.. //
  how to make impossible to mix ?? //  
- Course Viewer arrangemnt... ui !! // 
+ Course Viewer arrangemnt... ui !! // done   
  user dashboard ..  just show the course card and no ne
  ed for others card  // 
  how to add the payment functionality // 
