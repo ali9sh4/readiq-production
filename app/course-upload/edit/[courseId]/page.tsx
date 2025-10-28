@@ -1,4 +1,3 @@
-import { Breadcrumbs } from "@/components/ui/breadcrumb";
 import { fetchCourseDetails } from "@/data/courses";
 import CourseDashboard from "@/components/CourseDashboard";
 
@@ -36,17 +35,6 @@ export default async function EditCoursePage({
 
     return (
       <div className="container mx-auto px-4 py-8">
-        <Breadcrumbs
-          items={[
-            {
-              href: "/course-upload",
-              label: "لوحة إدارة الكورسات",
-            },
-            {
-              label: "تعديل دورة",
-            },
-          ]}
-        />
         <h1 className="text-3xl font-bold mt-6 mb-4">تعديل الدورة</h1>
 
         <div className="bg-white rounded-lg shadow-md p-6">

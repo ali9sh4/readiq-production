@@ -1,37 +1,47 @@
-import * as React from "react"
-import { Slot } from "@radix-ui/react-slot"
-import { ChevronRight, MoreHorizontal } from "lucide-react"
+import * as React from "react";
+import { Slot } from "@radix-ui/react-slot";
+import { ChevronRight, MoreHorizontal } from "lucide-react";
 
-import { cn } from "@/lib/utils"
-import Link from "next/link"
-const Breadcrumbs=({items}:{items:
-  {
-    href?:string;
-    label:string
-
-  }[]
-
-
-})=>{
+import { cn } from "@/lib/utils";
+import Link from "next/link";
+const Breadcrumbs = ({
+  items,
+}: {
+  items: {
+    href?: string;
+    label: string;
+  }[];
+}) => {
   return (
     <Breadcrumb>
-    <BreadcrumbList>
-    {items.map((item,i)=>(
-      <React.Fragment key={i}>
-      <BreadcrumbItem >
-        {!!item.href ? <Link href={item.href}>{item.label}</Link> : <BreadcrumbPage>{item.label}</BreadcrumbPage>}
-      </BreadcrumbItem>  
-      {i < items.length -1  && <BreadcrumbSeparator/>}
-      </React.Fragment>
-    ))}
-    </BreadcrumbList>
+      <BreadcrumbList>
+        {items.map((item, i) => (
+          <React.Fragment key={i}>
+            <BreadcrumbItem>
+              {!!item.href ? (
+                <Link href={item.href}>{item.label}</Link>
+              ) : (
+                <BreadcrumbPage>{item.label}</BreadcrumbPage>
+              )}
+            </BreadcrumbItem>
+            {i < items.length - 1 && <BreadcrumbSeparator />}
+          </React.Fragment>
+        ))}
+      </BreadcrumbList>
     </Breadcrumb>
-  )
- }
- Breadcrumbs.displayName = "Breadcrumbs"
+  );
+};
+Breadcrumbs.displayName = "Breadcrumbs";
 
 function Breadcrumb({ ...props }: React.ComponentProps<"nav">) {
-  return <nav aria-label="breadcrumb" data-slot="breadcrumb" {...props} />
+  return (
+    <nav
+      aria-label="breadcrumb"
+      data-slot="breadcrumb"
+      className="flex items-center justify-between w-full bg-white border-2 border-gray-100 rounded-2xl px-6 py-4 shadow-lg hover:shadow-2xl hover:border-blue-200 hover:-translate-y-0.5 transition-all duration-200"
+      {...props}
+    />
+  );
 }
 
 function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
@@ -44,7 +54,7 @@ function BreadcrumbList({ className, ...props }: React.ComponentProps<"ol">) {
       )}
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbItem({ className, ...props }: React.ComponentProps<"li">) {
@@ -54,7 +64,7 @@ function BreadcrumbItem({ className, ...props }: React.ComponentProps<"li">) {
       className={cn("inline-flex items-center gap-1.5", className)}
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbLink({
@@ -62,9 +72,9 @@ function BreadcrumbLink({
   className,
   ...props
 }: React.ComponentProps<"a"> & {
-  asChild?: boolean
+  asChild?: boolean;
 }) {
-  const Comp = asChild ? Slot : "a"
+  const Comp = asChild ? Slot : "a";
 
   return (
     <Comp
@@ -72,7 +82,7 @@ function BreadcrumbLink({
       className={cn("hover:text-foreground transition-colors", className)}
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
@@ -85,7 +95,7 @@ function BreadcrumbPage({ className, ...props }: React.ComponentProps<"span">) {
       className={cn("text-foreground font-normal", className)}
       {...props}
     />
-  )
+  );
 }
 
 function BreadcrumbSeparator({
@@ -103,7 +113,7 @@ function BreadcrumbSeparator({
     >
       {children ?? <ChevronRight />}
     </li>
-  )
+  );
 }
 
 function BreadcrumbEllipsis({
@@ -121,7 +131,7 @@ function BreadcrumbEllipsis({
       <MoreHorizontal className="size-4" />
       <span className="sr-only">More</span>
     </span>
-  )
+  );
 }
 
 export {
@@ -133,4 +143,4 @@ export {
   BreadcrumbPage,
   BreadcrumbSeparator,
   BreadcrumbEllipsis,
-}
+};

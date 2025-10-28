@@ -85,7 +85,10 @@ sectioning //// done
  how to make impossible to mix ?? //  
  Course Viewer arrangemnt... ui !! // done   
  user dashboard ..  just show the course card and no ne
- ed for others card  // 
+ ed for others card  // done 
+ user dashbaord improvments  /// 
+ view the course page ///
+
  how to add the payment functionality // 
  how to protect your code .// 
  files button  that is attached to the video section /// 

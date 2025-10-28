@@ -3,7 +3,6 @@
 import CourseForm from "@/components/ui/property-form";
 import { CourseDataSchema } from "@/validation/propertySchema";
 import z from "zod";
-import { UpdateCourse } from "./action";
 import { useAuth } from "@/context/authContext";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
@@ -99,12 +98,7 @@ export default function EditCourseForm({
         }
       });
       Promise.all(storageTask);
-      await SaveImages(
-        {courseId: id , images:paths},
-        token
-
-      )
-
+      await SaveImages({ courseId: id, images: paths }, token);
 
       // ✅ Success handling
       toast.success("تم تعديل الدورة بنجاح!", {

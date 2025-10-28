@@ -432,15 +432,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6" dir="rtl" lang="ar">
       <div className="mx-auto max-w-7xl">
-        {/* BREADCRUMBS */}
-        <div className="flex items-center gap-2 text-sm text-gray-600 mb-4">
-          <a href="/course-upload" className="hover:text-gray-900">
-            الدورات
-          </a>
-          <ChevronLeft className="h-4 w-4 rotate-180" />
-          <span className="text-gray-900">{course.title}</span>
-        </div>
-
         {/* HEADER */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
@@ -548,7 +539,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
 
         {/* TABS */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl h-16 p-1.5 shadow-sm">
+          <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl h-16 p-1.5 shadow-sm">
             <TabsTrigger
               value="overview"
               className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
@@ -560,12 +551,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
               className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-green-700 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
             >
               المحتوى
-            </TabsTrigger>
-            <TabsTrigger
-              value="settings"
-              className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-purple-700 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
-            >
-              الإعدادات
             </TabsTrigger>
           </TabsList>
           {/* OVERVIEW TAB */}
@@ -923,19 +908,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
             <SmartCourseUploader id={course.id} disabled={isAnyActionRunning} />
           </TabsContent>
           {/* SETTINGS TAB */}
-          <TabsContent value="settings">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-right">إعدادات الدورة</CardTitle>
-                <CardDescription className="text-right">
-                  إعدادات متقدمة للدورة
-                </CardDescription>
-              </CardHeader>
-              <CardContent dir="rtl">
-                <p className="text-gray-500 text-right">قريباً...</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
     </div>

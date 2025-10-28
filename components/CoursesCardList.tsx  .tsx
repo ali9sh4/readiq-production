@@ -460,36 +460,6 @@ export default function CoursesCardList({
 
   return (
     <div className="space-y-8" role="region" aria-label="قائمة الدورات">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-6 border border-blue-100 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-              {isAdminView ? (
-                <Edit className="w-5 h-5 text-white" aria-hidden="true" />
-              ) : (
-                <TrendingUp className="w-5 h-5 text-white" aria-hidden="true" />
-              )}
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">
-                {isAdminView ? "إدارة الدورات" : "الدورات التدريبية"}
-              </h2>
-              <p className="text-gray-600 text-sm">
-                {isAdminView
-                  ? `إجمالي الدورات: ${data.courses.length}`
-                  : `اكتشف ${data.courses.length} دورة تدريبية`}
-              </p>
-            </div>
-          </div>
-          {!isAdminView && (
-            <Badge className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 shadow-lg">
-              جديد
-            </Badge>
-          )}
-        </div>
-      </div>
-
       {/* Courses Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {data.courses.map((course) => (
