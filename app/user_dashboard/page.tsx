@@ -244,7 +244,7 @@ export default function DashboardHome() {
                 <span>إنشاء دورة جديدة</span>
               </Button>
             </Link>
-            <Link href="/dashboard/certificates">
+            <Link href="/user_dashboard/certificates">
               <Button
                 variant="outline"
                 className="w-full h-16 flex flex-col gap-2"

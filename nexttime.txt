@@ -86,8 +86,11 @@ sectioning //// done
  Course Viewer arrangemnt... ui !! // done   
  user dashboard ..  just show the course card and no ne
  ed for others card  // done 
- user dashbaord improvments  /// 
+ user dashbaord improvments  /// done 
  view the course page ///
+ FOOTER  improvments  /// 
+ GENERAL STYLING  improvments  ///
+
 
  how to add the payment functionality // 
  how to protect your code .// 

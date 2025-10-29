@@ -20,6 +20,7 @@ import {
   Trophy,
   AlertCircle,
   Gift,
+  Link,
 } from "lucide-react";
 
 // Mock certificates data (since there's no certificate system yet)
@@ -236,13 +237,13 @@ export default function DashboardCertificates() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button asChild>
-                  <link href="/">
+                  <Link href="/">
                     <BookOpen className="w-4 h-4 ml-2" />
                     استكشف الدورات
-                  </link>
+                  </Link>
                 </Button>
                 <Button variant="outline" asChild>
-                  <a href="/dashboard">العودة للوحة التحكم</a>
+                  <a href="/user_dashboard">العودة للوحة التحكم</a>
                 </Button>
               </div>
             </div>

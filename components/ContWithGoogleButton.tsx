@@ -3,7 +3,7 @@
 import React from "react";
 import { useAuth } from "@/context/authContext";
 import { Button } from "./ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Card,
   CardHeader,
@@ -13,6 +13,8 @@ import {
 } from "./ui/card";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect");
   const router = useRouter();
   const { handleGoogleSignIn, isLoading, error } = useAuth();
 
@@ -31,7 +33,11 @@ export default function LoginPage() {
           <Button
             onClick={async () => {
               await handleGoogleSignIn();
-              router.refresh();
+              if (redirect) {
+                router.push(redirect); // ✅ Go back to course
+              } else {
+                router.push("/"); // ✅ Default redirect
+              }
             }}
             disabled={isLoading}
             className="w-full flex items-center justify-center space-x-2"

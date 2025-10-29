@@ -4,7 +4,11 @@ import { adminAuth, db } from "@/firebase/service";
 export async function checkUserEnrollments(
   userId: string,
   courseIds: string[]
-) {
+): Promise<{
+  success: boolean;
+  enrollments: Record<string, boolean>;
+  message?: string;
+}> {
   try {
     const enrollmentPromises = courseIds.map((courseId) =>
       db.collection("enrollments").doc(`${userId}_${courseId}`).get()
@@ -24,8 +28,8 @@ export async function checkUserEnrollments(
   } catch (error) {
     return {
       success: false,
+      enrollments: {}, // ✅ Empty but still Record<string, boolean>
       message: `Failed to check enrollments: ${error}`,
-      enrollments: {},
     };
   }
 }

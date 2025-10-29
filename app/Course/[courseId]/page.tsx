@@ -1,6 +1,10 @@
-// app/course/[courseId]/watch/page.tsx
+"use server";
+import { checkUserEnrollments } from "@/app/actions/enrollment_action";
 import { getCourseById } from "@/app/course-upload/action";
+import CoursePreview from "@/components/CoursePreview";
 import CoursePlayer from "@/components/ui/CoursePlayer";
+import { getCurrentUser } from "@/data/auth-server";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 // ✅ Helper function to clean Firestore data
@@ -46,17 +50,42 @@ export default async function WatchCoursePage({
   params: Promise<{ courseId: string }>;
 }) {
   const { courseId } = await params;
-  const result = await getCourseById(courseId);
 
+  // 1. Get course
+  const result = await getCourseById(courseId);
   if (!result.success || !result.course) {
     redirect("/courses");
   }
 
-  // ✅ Clean the data HERE on the server before passing to client
   const cleanedCourse = cleanCourseData(result.course);
 
-  // TODO: Check if user is enrolled
-  // const isEnrolled = await checkEnrollment(userId, courseId);
+  // 2. Get authentication
+  const cookieStore = await cookies();
+  const token = cookieStore.get("firebaseAuthToken")?.value;
 
-  return <CoursePlayer course={cleanedCourse} isEnrolled={true} />;
+  if (!token) {
+    // ✅ No token - show preview for guests
+    return <CoursePreview course={cleanedCourse} />;
+  }
+
+  const authResult = await getCurrentUser({ token });
+
+  if (!authResult.success || !authResult.user) {
+    // ✅ Invalid token - show preview
+    return <CoursePreview course={cleanedCourse} />;
+  }
+
+  // 3. Check enrollment
+  const user = authResult.user;
+  const enrollmentResult = await checkUserEnrollments(user.uid, [courseId]);
+  const isEnrolled = enrollmentResult.enrollments?.[courseId] || false;
+
+  // 4. Render based on enrollment status
+  if (isEnrolled) {
+    // ✅ Enrolled - full access
+    return <CoursePlayer course={cleanedCourse} isEnrolled={true} />;
+  }
+
+  // ✅ Not enrolled - show preview with enroll option
+  return <CoursePreview course={cleanedCourse} />;
 }
