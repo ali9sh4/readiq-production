@@ -39,6 +39,7 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
       (v) => v.section === "المقدمة" && v.isVisible !== false
     );
   }, [course.videos]);
+  const [selectedVideo, setSelectedVideo] = useState(freePreviewVideo);
 
   // Organize videos by section
   const videosBySections = useMemo(() => {
@@ -57,8 +58,34 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
     Object.keys(sections).forEach((section) => {
       sections[section].sort((a, b) => (a.order || 0) - (b.order || 0));
     });
+    const sectionOrder = [
+      "المقدمة",
+      "القسم 1",
+      "القسم 2",
+      "القسم 3",
+      "القسم 4",
+      "القسم 5",
+      "القسم 6",
+      "القسم 7",
+      "القسم 8",
+      "القسم 9",
+      "القسم 10",
+      "الخاتمة",
+      "دروس الدورة", // No section - at end
+    ];
+    const sortedSections: [string, any[]][] = [];
+    sectionOrder.forEach((sectionName) => {
+      if (sections[sectionName]) {
+        sortedSections.push([sectionName, sections[sectionName]]);
+      }
+    });
+    Object.keys(sections).forEach((key) => {
+      if (!sectionOrder.includes(key)) {
+        sortedSections.push([key, sections[key]]);
+      }
+    });
 
-    return sections;
+    return sortedSections;
   }, [course.videos]);
 
   const toggleSection = (section: string) => {
@@ -246,13 +273,13 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
             <div className="lg:sticky lg:top-4">
               <Card className="overflow-hidden shadow-2xl border-0">
                 <div className="relative bg-black">
-                  {showVideoPlayer && freePreviewVideo?.playbackId ? (
+                  {showVideoPlayer && selectedVideo?.playbackId ? (
                     <MuxPlayer
-                      playbackId={freePreviewVideo.playbackId}
+                      playbackId={selectedVideo.playbackId}
                       streamType="on-demand"
                       metadata={{
-                        video_id: freePreviewVideo.videoId,
-                        video_title: freePreviewVideo.title,
+                        video_id: selectedVideo.videoId,
+                        video_title: selectedVideo.title,
                       }}
                       className="w-full aspect-video"
                     />
@@ -268,7 +295,7 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
                         className="object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex items-center justify-center">
-                        {freePreviewVideo ? (
+                        {freePreviewVideo?.playbackId ? (
                           <button
                             onClick={() => setShowVideoPlayer(true)}
                             className="group flex flex-col items-center gap-3"
@@ -379,9 +406,15 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
                 </div>
 
                 <div className="space-y-3">
-                  {Object.entries(videosBySections).map(([section, videos]) => {
+                  {videosBySections.map(([section, videos]) => {
                     const isExpanded = expandedSections.has(section);
                     const isFreeSection = section === "المقدمة";
+                    const isVideoFree = (video: any) => {
+                      return (
+                        video.section === "المقدمة" ||
+                        video.isFreePreview === true
+                      );
+                    };
                     const sectionDuration = videos.reduce(
                       (sum, v) => sum + (v.duration || 0),
                       0
@@ -423,41 +456,54 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
                         {/* Videos List */}
                         {isExpanded && (
                           <div className="divide-y divide-gray-100 bg-white">
-                            {videos.map((video, idx) => (
-                              <div
-                                key={video.videoId}
-                                className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                              >
-                                <div className="flex items-center gap-3 flex-1">
-                                  <div
-                                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                      isFreeSection
-                                        ? "bg-green-100"
-                                        : "bg-gray-100"
-                                    }`}
-                                  >
-                                    {isFreeSection ? (
-                                      <Play className="w-4 h-4 text-green-600" />
-                                    ) : (
-                                      <Lock className="w-4 h-4 text-gray-400" />
-                                    )}
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="font-medium text-gray-900 text-sm">
-                                      {video.title}
-                                    </p>
-                                    {video.description && (
-                                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                                        {video.description}
+                            {videos.map((video, idx) => {
+                              const isThisVideoFree = isVideoFree(video);
+                              return (
+                                <div
+                                  key={video.videoId}
+                                  onClick={() => {
+                                    if (isThisVideoFree) {
+                                      setSelectedVideo(video);
+                                      setShowVideoPlayer(true);
+                                      window.scrollTo({
+                                        top: 0,
+                                        behavior: "smooth",
+                                      });
+                                    }
+                                  }}
+                                  className="p-4 flex items-center justify-between cursor-pointer"
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div
+                                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                        isThisVideoFree
+                                          ? "bg-green-100"
+                                          : "bg-gray-100"
+                                      }`}
+                                    >
+                                      {isThisVideoFree ? (
+                                        <Play className="w-4 h-4 text-green-600" />
+                                      ) : (
+                                        <Lock className="w-4 h-4 text-gray-400" />
+                                      )}
+                                    </div>
+                                    <div className="flex-1 text-right">
+                                      <p className="font-medium text-gray-900 text-sm">
+                                        {video.title}
                                       </p>
-                                    )}
+                                      {video.description && (
+                                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                                          {video.description}
+                                        </p>
+                                      )}
+                                    </div>
                                   </div>
+                                  <span className="text-sm text-gray-600 font-medium ml-4">
+                                    {formatDuration(video.duration)}
+                                  </span>
                                 </div>
-                                <span className="text-sm text-gray-600 font-medium ml-4">
-                                  {formatDuration(video.duration)}
-                                </span>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>

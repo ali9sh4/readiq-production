@@ -87,7 +87,9 @@ sectioning //// done
  user dashboard ..  just show the course card and no ne
  ed for others card  // done 
  user dashbaord improvments  /// done 
- view the course page ///
+ view the course page /// done 
+ the instucotr view his course ///
+ styling of the courseView page and logic check /// 
  FOOTER  improvments  /// 
  GENERAL STYLING  improvments  ///
 
