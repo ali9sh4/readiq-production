@@ -64,6 +64,7 @@ export interface Course {
   status?: CourseStatus;
   isApproved?: boolean;
   isRejected?: boolean;
+  rejectionReason?: string | null;
 
   // ===== Content =====
   thumbnailUrl?: string;

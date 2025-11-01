@@ -10,11 +10,11 @@ import { useState, useEffect } from "react";
 import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "@/firebase/client";
 import { useAuth } from "@/context/authContext";
-import { Breadcrumbs } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, Clock, Eye } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Eye, Edit } from "lucide-react";
 import { approveCourse } from "./action";
 import { Course, FirestoreTimestamp } from "@/types/types";
+import Link from "next/link";
 
 export default function AdminDashboard() {
   const { user, isLoading } = useAuth();
@@ -25,6 +25,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<
     "pending" | "approved" | "rejected"
   >("pending");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Initialize Firestore
 
@@ -66,14 +67,25 @@ export default function AdminDashboard() {
     };
   }, [user, isLoading, db]);
 
-  const formatDate = (timestamp: FirestoreTimestamp | Date | null) => {
+  const formatDate = (timestamp: FirestoreTimestamp | Date | string | null) => {
     if (!timestamp) return "غير محدد";
-    if (timestamp && typeof timestamp === "object" && "toDate" in timestamp) {
+
+    // Handle ISO strings stored in some parts of the app
+    if (typeof timestamp === "string") {
+      const d = new Date(timestamp);
+      if (isNaN(d.getTime())) return "غير محدد";
+      return d.toLocaleDateString("en-US");
+    }
+
+    // Firestore Timestamp-like object
+    if (typeof timestamp === "object" && "toDate" in timestamp) {
       return timestamp.toDate().toLocaleDateString("ar-SA");
     }
+
     if (timestamp instanceof Date) {
       return timestamp.toLocaleDateString("ar-SA");
     }
+
     return "غير محدد";
   };
 
@@ -123,6 +135,9 @@ export default function AdminDashboard() {
         return pendingCourses;
     }
   };
+  const filteredCourses = getCurrentCourses().filter((course) =>
+    course.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   if (isLoading) {
     return (
@@ -144,13 +159,6 @@ export default function AdminDashboard() {
 
   return (
     <div dir="rtl" className="container mx-auto px-4 py-8 space-y-6">
-      <Breadcrumbs
-        items={[
-          { label: "الرئيسية", href: "/" },
-          { label: "لوحة التحكم الإدارية" },
-        ]}
-      />
-
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-800">
           لوحة التحكم الإدارية
@@ -195,6 +203,15 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+      <div className="mb-4">
+        <input
+          type="text"
+          placeholder="بحث في الدورات..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
@@ -234,7 +251,7 @@ export default function AdminDashboard() {
 
       {/* Course List */}
       <div className="space-y-6">
-        {getCurrentCourses().length === 0 ? (
+        {filteredCourses.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <p className="text-gray-500">
               {activeTab === "pending" && "لا توجد دورات قيد المراجعة"}
@@ -243,7 +260,7 @@ export default function AdminDashboard() {
             </p>
           </div>
         ) : (
-          getCurrentCourses().map((course) => (
+          filteredCourses.map((course) => (
             <div
               key={course.id}
               className="bg-white border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
@@ -262,13 +279,6 @@ export default function AdminDashboard() {
                         {course.description}
                       </p>
                     </div>
-                    {course.image && (
-                      <img
-                        src={course.image}
-                        alt={course.title}
-                        className="w-24 h-24 object-cover rounded-lg mr-4"
-                      />
-                    )}
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
@@ -288,6 +298,31 @@ export default function AdminDashboard() {
                     <div>
                       <span className="font-medium text-gray-500">المدة:</span>
                       <p className="text-gray-900">{course.duration} ساعة</p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-500">
+                        المحتوى:
+                      </span>
+                      <p className="text-gray-900">
+                        {course.videos?.length || 0} فيديو •{" "}
+                        {course.files?.length || 0} ملف
+                      </p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-500">
+                        أنشئت بواسطة:
+                      </span>
+                      <p className="text-gray-900 text-xs">
+                        {course.createdBy}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-500">
+                        تاريخ الإنشاء:
+                      </span>
+                      <p className="text-gray-900">
+                        {formatDate(course.createdAt)}
+                      </p>
                     </div>
                     <div>
                       <span className="font-medium text-gray-500">
@@ -328,6 +363,17 @@ export default function AdminDashboard() {
                         </ul>
                       </div>
                     )}
+                  {course.rejectionReason && (
+                    <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                      <h4 className="font-medium text-red-800 mb-2 flex items-center gap-2">
+                        <XCircle className="w-4 h-4" />
+                        سبب الرفض:
+                      </h4>
+                      <p className="text-red-700 text-sm">
+                        {course.rejectionReason}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -336,6 +382,8 @@ export default function AdminDashboard() {
                 <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
                   <Button
                     onClick={async () => {
+                      if (!confirm("هل أنت متأكد من اعتماد هذه الدورة؟"))
+                        return;
                       setActionLoading(course.id);
                       try {
                         const token = await user.getIdToken();
@@ -366,13 +414,17 @@ export default function AdminDashboard() {
 
                   <Button
                     onClick={async () => {
+                      if (!confirm("هل أنت متأكد من رفض هذه الدورة؟")) return;
+                      const reason = prompt("سبب الرفض (اختياري):");
+                      if (reason === null) return; // User cancelled
                       setActionLoading(course.id);
                       try {
                         const token = await user.getIdToken();
                         const result = await approveCourse(
                           course.id,
                           false,
-                          token
+                          token,
+                          reason || undefined // ✅ Pass reason
                         );
 
                         if (result.error) {
@@ -395,9 +447,17 @@ export default function AdminDashboard() {
                     رفض الدورة
                   </Button>
 
-                  <Button variant="outline" className="mr-auto">
-                    <Eye className="h-4 w-4 ml-2" />
-                    عرض التفاصيل
+                  <Button variant="outline" asChild>
+                    <Link href={`/Course/${course.id}`}>
+                      <Eye className="h-4 w-4 ml-2" />
+                      عرض التفاصيل
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link href={`/course-upload/edit/${course.id}`}>
+                      <Edit className="h-4 w-4 ml-2" />
+                      تعديل
+                    </Link>
                   </Button>
                 </div>
               )}
@@ -406,13 +466,18 @@ export default function AdminDashboard() {
                 <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
                   <Button
                     onClick={async () => {
+                      if (!confirm("هل أنت متأكد من رفض هذه الدورة؟")) return;
+                      const reason = prompt("سبب الرفض (اختياري):");
+                      if (reason === null) return; // User cancelled
+
                       setActionLoading(course.id);
                       try {
                         const token = await user.getIdToken();
                         const result = await approveCourse(
                           course.id,
                           false,
-                          token
+                          token,
+                          reason || undefined
                         );
 
                         if (result.error) {
@@ -435,9 +500,17 @@ export default function AdminDashboard() {
                     رفض الدورة
                   </Button>
 
-                  <Button variant="outline">
-                    <Eye className="h-4 w-4 ml-2" />
-                    عرض التفاصيل
+                  <Button variant="outline" asChild>
+                    <Link href={`/Course/${course.id}`}>
+                      <Eye className="h-4 w-4 ml-2" />
+                      عرض التفاصيل
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link href={`/course-upload/edit/${course.id}`}>
+                      <Edit className="h-4 w-4 ml-2" />
+                      تعديل
+                    </Link>
                   </Button>
                 </div>
               )}
@@ -446,6 +519,8 @@ export default function AdminDashboard() {
                 <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
                   <Button
                     onClick={async () => {
+                      if (!confirm("هل أنت متأكد من اعتماد هذه الدورة؟"))
+                        return;
                       setActionLoading(course.id);
                       try {
                         const token = await user.getIdToken();
@@ -474,9 +549,17 @@ export default function AdminDashboard() {
                     اعتماد الدورة
                   </Button>
 
-                  <Button variant="outline">
-                    <Eye className="h-4 w-4 ml-2" />
-                    عرض التفاصيل
+                  <Button variant="outline" asChild>
+                    <Link href={`/Course/${course.id}`}>
+                      <Eye className="h-4 w-4 ml-2" />
+                      عرض التفاصيل
+                    </Link>
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link href={`/course-upload/edit/${course.id}`}>
+                      <Edit className="h-4 w-4 ml-2" />
+                      تعديل
+                    </Link>
                   </Button>
                 </div>
               )}

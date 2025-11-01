@@ -60,7 +60,9 @@ export async function createMuxUpload(formData: FormData) {
     }
 
     const courseData = courseDoc.data();
-    const canUpload = courseData?.createdBy === verifiedToken.uid;
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    const canUpload = isAdmin || isOwner;
 
     if (!canUpload) {
       return { success: false, error: "Permission denied" };
@@ -181,7 +183,9 @@ export async function saveCourseVideoToFireStore({
 
     const courseData = courseDoc.data();
 
-    if (courseData?.createdBy !== verifiedToken.uid) {
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    if (!isAdmin && !isOwner) {
       return { success: false, error: "Permission denied" };
     }
 
@@ -290,7 +294,9 @@ export async function updateVideoDetails(
 
     const courseData = courseDoc.data();
 
-    if (courseData?.createdBy !== verifiedToken.uid) {
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    if (!isAdmin && !isOwner) {
       return { success: false, error: "Permission denied" };
     }
 
@@ -350,10 +356,11 @@ export async function deleteCourseVideo(
 
     const courseData = courseDoc.data();
 
-    if (courseData?.createdBy !== verifiedToken.uid) {
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    if (!isAdmin && !isOwner) {
       return { success: false, error: "Permission denied" };
     }
-
     const existingVideos: CourseVideo[] = courseData?.videos || [];
 
     const videoToDelete = existingVideos.find((v) => v.videoId === videoId);
@@ -416,7 +423,9 @@ export async function reorderCourseVideos(
     }
 
     const courseData = courseDoc.data();
-    if (courseData?.createdBy !== verifiedToken.uid) {
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    if (!isAdmin && !isOwner) {
       return { success: false, error: "Permission denied" };
     }
 

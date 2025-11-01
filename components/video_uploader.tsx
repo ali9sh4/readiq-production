@@ -928,8 +928,7 @@ export default function VideoUploader({
                             </div>
 
                             {/* Section */}
-                            {/* Section */}
-                            {/* Section */}
+
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">
                                 القسم
@@ -945,7 +944,7 @@ export default function VideoUploader({
                                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
                               >
                                 <option value="">بدون قسم</option>
-                                <option value="المقدمة">المقدمة</option>
+                                <option value="المقدمة"> المقدمة</option>
                                 <option value="القسم 1">القسم 1</option>
                                 <option value="القسم 2">القسم 2</option>
                                 <option value="القسم 3">القسم 3</option>
@@ -958,7 +957,16 @@ export default function VideoUploader({
                                 <option value="القسم 10">القسم 10</option>
                                 <option value="الخاتمة">الخاتمة</option>
                               </select>
-                              <p className="text-xs text-gray-500 mt-1">
+                              {editForm.section === "المقدمة" && (
+                                <div className="flex items-center gap-2 text-md text-green-600 bg-green-50 p-2 rounded-lg mt-2">
+                                  <CheckCircle className="w-4 h-4" />
+                                  <span>
+                                    جميع الفيديوهات في هذا القسم ستكون مجانية
+                                    للمعاينة
+                                  </span>
+                                </div>
+                              )}
+                              <p className="text-s text-gray-500 mt-1">
                                 اختر القسم لتنظيم الفيديوهات (اختياري)
                               </p>
                             </div>

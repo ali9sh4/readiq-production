@@ -8,7 +8,7 @@ import { RefreshCw, ArrowRight, ArrowLeft } from "lucide-react";
 interface LoadMoreButtonProps {
   nextCursor: string;
   hasMore: boolean;
-  currentParams?: Record<string, string | undefined>;
+  currentParams?: Record<string, string | boolean | undefined>;
 }
 
 export default function NextBackButton({
@@ -29,7 +29,9 @@ export default function NextBackButton({
       const params = new URLSearchParams(searchParams.toString());
       params.set("cursor", nextCursor);
       Object.entries(currentParams).forEach(([key, value]) => {
-        if (value && key !== "cursor") params.set(key, value);
+        if (value !== undefined && value !== null && key !== "cursor") {
+          params.set(key, String(value)); // ✅ Convert to string
+        }
       });
       router.push(`?${params.toString()}`);
     } catch (error) {
@@ -45,7 +47,8 @@ export default function NextBackButton({
     const params = new URLSearchParams(searchParams.toString());
     params.delete("cursor");
     Object.entries(currentParams).forEach(([key, value]) => {
-      if (value && key !== "cursor") params.set(key, value);
+      if (value !== undefined && value !== null && key !== "cursor")
+        params.set(key, String(value));
     });
     router.push(`?${params.toString()}`);
   };

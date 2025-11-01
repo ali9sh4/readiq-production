@@ -7,26 +7,30 @@ import { CourseResponse } from "@/types/types";
 type CourseLevel = "beginner" | "intermediate" | "advanced" | "all_levels";
 
 export default async function InstructorCourse({
-  searchParams = {},
+  searchParams,
 }: {
-  searchParams?: {
+  searchParams?: Promise<{
+    // ✅ Changed to Promise
     cursor?: string;
     category?: string;
     level?: string;
-  };
+    isAdminView?: boolean;
+  }>;
 }) {
+  // ✅ Await searchParams
+  const params = await searchParams;
+
   const cookieStore = await cookies();
   const token = cookieStore.get("firebaseAuthToken")?.value;
-  console.log("🔍 Token found:", !!token); // Check if token exists // ✅ Correct cookie name
 
   let currentUserId: string | undefined = undefined;
+  let isAdmin = false;
+
   if (token) {
-    console.log("🔍 Attempting to get current user...");
     const userResult = await getCurrentUser({ token });
-    console.log("🔍 User result:", userResult); // See what's returned
     if (userResult.success) {
       currentUserId = userResult.user?.uid;
-      console.log("🔍 Current user ID:", currentUserId);
+      isAdmin = userResult.isAdmin || false;
     } else {
       console.log("❌ Failed to get user:", userResult.message);
     }
@@ -34,13 +38,13 @@ export default async function InstructorCourse({
 
   const data: CourseResponse = await getCourses({
     pagination: {
-      lastDocId: searchParams.cursor || undefined,
+      lastDocId: params?.cursor || undefined, // ✅ Use params
       pageSize: 8,
     },
     filters: {
-      category: searchParams.category || undefined,
-      level: (searchParams.level as CourseLevel) || undefined,
-      userId: currentUserId || undefined,
+      category: params?.category || undefined, // ✅ Use params
+      level: (params?.level as CourseLevel) || undefined, // ✅ Use params
+      userId: isAdmin ? undefined : currentUserId,
     },
   });
 
@@ -55,14 +59,13 @@ export default async function InstructorCourse({
 
   return (
     <>
-      <CoursesCardList data={data} isAdminView={true} />{" "}
-      {/* ✅ Add isAdminView */}
+      <CoursesCardList data={data} isAdminView={true} />
       {data.hasMore && (
         <div className="mt-8">
           <NextBackButton
             nextCursor={data.nextCursor || ""}
             hasMore={data.hasMore}
-            currentParams={searchParams}
+            currentParams={params || {}} // ✅ Use params
           />
         </div>
       )}

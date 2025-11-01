@@ -5,7 +5,8 @@ import { adminAuth, db } from "@/firebase/service";
 export const approveCourse = async (
   courseId: string,
   approve: boolean,
-  token: string
+  token: string,
+  reason?: string
 ) => {
   try {
     const verifyAuthToken = await adminAuth.verifyIdToken(token);
@@ -28,6 +29,7 @@ export const approveCourse = async (
         rejectedAt: approve ? null : new Date(),
         approvedBy: verifyAuthToken.uid,
         updatedAt: new Date(),
+        rejectionReason: !approve && reason ? reason : null, // ✅ Add this
       });
 
     return {

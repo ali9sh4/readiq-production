@@ -28,7 +28,9 @@ export async function updateCourseBasicInfo(
     }
 
     const courseData = courseDoc.data();
-    if (courseData?.createdBy !== verifiedToken.uid) {
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    if (!isAdmin && !isOwner) {
       return { success: false, error: "Permission denied" };
     }
 
@@ -71,7 +73,9 @@ export async function updateCoursePricing(
     }
 
     const courseData = courseDoc.data();
-    if (courseData?.createdBy !== verifiedToken.uid) {
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    if (!isAdmin && !isOwner) {
       return { success: false, error: "Permission denied" };
     }
 
@@ -113,7 +117,9 @@ export async function updateCourseLearningPoints(
     }
 
     const courseData = courseDoc.data();
-    if (courseData?.createdBy !== verifiedToken.uid) {
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    if (!isAdmin && !isOwner) {
       return { success: false, error: "Permission denied" };
     }
 
@@ -148,7 +154,11 @@ export async function updateCourseRequirements(
     }
 
     const courseData = courseDoc.data();
-    if (courseData?.createdBy !== verifiedToken.uid) {
+    // ✅ Allow owner OR admin
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+
+    if (!isOwner && !isAdmin) {
       return { success: false, error: "Permission denied" };
     }
 
@@ -179,7 +189,9 @@ export async function publishCourse(courseId: string, token: string) {
     }
 
     const courseData = courseDoc.data();
-    if (courseData?.createdBy !== verifiedToken.uid) {
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    if (!isAdmin && !isOwner) {
       return { success: false, error: "Permission denied" };
     }
 
@@ -224,7 +236,9 @@ export async function unpublishCourse(courseId: string, token: string) {
     }
 
     const courseData = courseDoc.data();
-    if (courseData?.createdBy !== verifiedToken.uid) {
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    if (!isAdmin && !isOwner) {
       return { success: false, error: "Permission denied" };
     }
 
@@ -260,7 +274,9 @@ export async function updateCourseThumbnail(
     }
 
     const courseData = courseDoc.data();
-    if (courseData?.createdBy !== verifiedToken.uid) {
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    if (!isAdmin && !isOwner) {
       return { success: false, error: "Permission denied" };
     }
 

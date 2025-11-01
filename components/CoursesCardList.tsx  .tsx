@@ -61,7 +61,7 @@ const ErrorState = memo(({ message }: { message?: string }) => (
 ));
 ErrorState.displayName = "ErrorState";
 
-// ✅ BEST PRACTICES: Simple, clean course card
+// ✅ BEST PRACTICE S: Simple, clean course card
 const CourseCard = memo(
   ({
     course,
@@ -96,21 +96,34 @@ const CourseCard = memo(
       return (
         <div className="group block rounded-xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1">
           {/* Image */}
-          <div className="relative h-40 sm:h-44 bg-gray-100 overflow-hidden">
-            {!imageError ? (
-              <Image
-                src={imageUrl}
-                alt={course.title}
-                fill
-                className="object-cover group-hover:scale-110 transition-transform duration-500"
-                onError={() => setImageError(true)}
-              />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                <BookOpen className="w-10 h-10 text-gray-400" />
+          {/* Image with Preview Overlay */}
+          <Link href={`/Course/${course.id}`} className="relative block">
+            <div className="relative h-40 sm:h-44 bg-gray-100 overflow-hidden group/image">
+              {!imageError ? (
+                <Image
+                  src={imageUrl}
+                  alt={course.title}
+                  fill
+                  className="object-cover group-hover:scale-110 transition-transform duration-500"
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                  <BookOpen className="w-10 h-10 text-gray-400" />
+                </div>
+              )}
+
+              {/* ✨ Preview Overlay - appears on hover */}
+              <div className="absolute inset-0 bg-black/0 group-hover/image:bg-black/40 transition-all duration-300 flex items-center justify-center">
+                <div className="opacity-0 group-hover/image:opacity-100 transition-opacity duration-300 flex flex-col items-center gap-2">
+                  <BookOpen className="w-8 h-8 text-white" />
+                  <span className="text-white text-sm font-semibold">
+                    معاينة الدورة
+                  </span>
+                </div>
               </div>
-            )}
-          </div>
+            </div>
+          </Link>
 
           {/* Content */}
           <div className="p-3 space-y-2 text-right">

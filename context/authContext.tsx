@@ -26,6 +26,7 @@ type AuthContextType = {
   error: string | null;
   CustomClaims: ParsedToken | null;
   isClient: boolean;
+  isAdmin: boolean;
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -34,6 +35,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [CustomClaims, setCustomClaims] = useState<ParsedToken | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   useEffect(() => {
     setIsClient(true);
   }, []);
@@ -52,6 +54,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const newToken = await user.getIdToken(true);
           const newTokenResult = await user.getIdTokenResult();
           setCustomClaims(newTokenResult.claims);
+          setIsAdmin(newTokenResult.claims.admin === true);
           await setToken({
             token: newToken,
             refreshToken: user.refreshToken,
@@ -143,6 +146,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         error,
         logOut,
         CustomClaims,
+        isAdmin,
       }}
     >
       {children}

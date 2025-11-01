@@ -18,6 +18,7 @@ import {
   AlertCircle,
   Loader2,
   EyeOff,
+  XCircle,
 } from "lucide-react";
 
 import {
@@ -433,42 +434,96 @@ export default function CourseDashboard({ defaultValues }: Props) {
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6" dir="rtl" lang="ar">
       <div className="mx-auto max-w-7xl">
         {/* HEADER */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-gray-900">{course.title}</h1>
-            <StatusBadge status={status} />
+        {/* Header Row - Title + Status */}
+        <div className="flex flex-col gap-4 mb-6">
+          {/* Top Row: Title, Badge, Actions */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              <h1 className="text-3xl font-bold text-gray-900 truncate">
+                {course.title}
+              </h1>
+              <StatusBadge status={status} />
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {canPublish && (
+                <Button
+                  onClick={handlePublish}
+                  disabled={publishing || videos.length === 0}
+                  className="gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md hover:shadow-lg transition-all"
+                  size="lg"
+                >
+                  {publishing ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      جاري النشر...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-5 w-5" />
+                      نشر الدورة
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {canUnpublish && (
+                <Button
+                  onClick={handleUnPublish}
+                  disabled={unpublishing}
+                  variant="destructive"
+                  className="gap-2 shadow-md hover:shadow-lg transition-all"
+                  size="lg"
+                >
+                  {unpublishing ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      جاري الإيقاف...
+                    </>
+                  ) : (
+                    <>
+                      <EyeOff className="h-5 w-5" />
+                      إيقاف الدورة
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {canPublish && (
-              <Button
-                onClick={handlePublish}
-                disabled={publishing || videos.length === 0}
-                className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-              >
-                {publishing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4" />
-                )}
-                نشر الدورة
-              </Button>
-            )}
-            {canUnpublish && (
-              <Button
-                onClick={handleUnPublish}
-                disabled={unpublishing}
-                className="gap-2 bg-red-600 hover:bg-red-700 text-white"
-              >
-                {unpublishing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <EyeOff className="h-4 w-4" />
-                )}
-                إيقاف الدورة
-              </Button>
-            )}
-          </div>
+          {/* ✅ Rejection Reason - Outside flex, full width */}
+          {course.rejectionReason && (
+            <div className="bg-gradient-to-r from-red-50 to-rose-50 border-r-4 border-red-500 rounded-lg p-5 shadow-sm">
+              <h4 className="font-bold text-red-900 mb-2 flex items-center gap-2 text-lg">
+                <div className="bg-red-100 p-1.5 rounded-lg">
+                  <XCircle className="w-5 h-5 text-red-600" />
+                </div>
+                سبب رفض الدورة
+              </h4>
+              <p className="text-red-800 leading-relaxed">
+                {course.rejectionReason}
+              </p>
+              <p className="text-red-600 text-sm mt-3 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-red-600 rounded-full"></span>
+                يرجى تعديل الدورة وإعادة تقديمها للمراجعة
+              </p>
+            </div>
+          )}
+
+          {/* ✅ Warning if can't publish */}
+          {canPublish && videos.length === 0 && (
+            <div className="bg-yellow-50 border-r-4 border-yellow-500 rounded-lg p-4 shadow-sm">
+              <p className="text-yellow-800 flex items-center gap-2">
+                <div className="bg-yellow-100 p-1 rounded-lg">
+                  <AlertCircle className="w-4 h-4 text-yellow-600" />
+                </div>
+                <span className="font-medium">
+                  يجب إضافة فيديو واحد على الأقل قبل النشر
+                </span>
+              </p>
+            </div>
+          )}
         </div>
 
         {/* ALERTS */}

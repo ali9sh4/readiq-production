@@ -88,13 +88,14 @@ sectioning //// done
  ed for others card  // done 
  user dashbaord improvments  /// done 
  view the course page /// done 
+ warning for instructor for the intro video /// done 
+ courseCardList indtructor view his course // 
  the instucotr view his course ///
- styling of the courseView page and logic check /// 
- FOOTER  improvments  /// 
- GENERAL STYLING  improvments  ///
-
-
+ styling of the courseView page and logic check /// done 
+GENERAL STYLING  improvments  /// done 
+  FOOTER  improvments  /// 
  how to add the payment functionality // 
+ student report // 
  how to protect your code .// 
  files button  that is attached to the video section /// 
  file download // 

@@ -163,9 +163,10 @@ export async function deleteCourseFileFromR2({
     }
 
     const courseData = courseDoc.data();
-    const canDelete = courseData?.createdBy === verifiedToken.uid;
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
 
-    if (!canDelete) {
+    if (!isOwner && !isAdmin) {
       return {
         success: false,
         error: "Permission denied",
@@ -259,10 +260,12 @@ export async function getFileSignedUrl({
     const courseData = courseDoc.data();
 
     // Check if user owns the course OR has access (you can expand this logic)
-    const hasAccess =
-      courseData?.createdBy === verifiedToken.uid ||
-      courseData?.students?.includes(verifiedToken.uid) ||
-      courseData?.instructors?.includes(verifiedToken.uid);
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    const isStudent = courseData?.students?.includes(verifiedToken.uid);
+    const isInstructor = courseData?.instructors?.includes(verifiedToken.uid);
+
+    const hasAccess = isOwner || isAdmin || isStudent || isInstructor;
 
     if (!hasAccess) {
       return {
