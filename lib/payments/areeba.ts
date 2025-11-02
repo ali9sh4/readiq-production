@@ -28,7 +28,7 @@ export class Areeba {
         apiOperation: "CREATE_CHECKOUT_SESSION",
         interaction: {
           operation: "PURCHASE",
-          returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payment/areeba/webhook`,
+          returnUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/areeba/webhook`,
         },
         order: {
           id: orderId,

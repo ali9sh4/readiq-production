@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { zaincash } from "@/lib/payments/zaincash";
 import { db } from "@/firebase/service";
+import { FieldValue } from "firebase-admin/firestore";
 
-// ✅ ZainCash sends GET request to webhook
 export async function GET(req: NextRequest) {
   try {
     const token = req.nextUrl.searchParams.get("token");
@@ -10,24 +10,25 @@ export async function GET(req: NextRequest) {
 
     if (!token) {
       return NextResponse.redirect(
-        new URL("/payment/error?message=missing_token", req.url)
+        new URL("/payments/error?message=missing_token", req.url)
       );
     }
 
-    // ✅ Verify token using library
+    // ✅ Verify token
     let verified;
     try {
       verified = zaincash.verifyToken(token);
     } catch (error) {
       console.error("Token verification failed:", error);
       return NextResponse.redirect(
-        new URL("/payment/error?message=invalid_token", req.url)
+        new URL("/payments/error?message=invalid_token", req.url)
       );
     }
 
+    // ✅ NOW we can get operationId (after verification)
     const operationId = verified.operationId || verified.id;
 
-    // ✅ Find PENDING enrollment by paymentId
+    // ✅ Find PENDING enrollment
     const enrollmentsSnapshot = await db
       .collection("enrollments")
       .where("paymentId", "==", operationId)
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
     if (enrollmentsSnapshot.empty) {
       console.error("No pending enrollment found for:", operationId);
       return NextResponse.redirect(
-        new URL("/payment/error?message=enrollment_not_found", req.url)
+        new URL("/payments/error?message=enrollment_not_found", req.url)
       );
     }
 
@@ -47,27 +48,34 @@ export async function GET(req: NextRequest) {
 
     // ✅ Check payment status
     if (status === "success" || verified.status === "completed") {
-      // ✅ Update enrollment to COMPLETED
-      await enrollmentDoc.ref.update({
-        status: "completed",
-        enrolledAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
+      // ✅ Use transaction for atomic updates (MOVED HERE)
+      await db.runTransaction(async (transaction) => {
+        const enrollmentRef = enrollmentDoc.ref;
+        const currentEnrollment = await transaction.get(enrollmentRef);
 
-      // ✅ Increment course students count (optional)
-      const courseRef = db.collection("courses").doc(courseId);
-      const courseDoc = await courseRef.get();
-      if (courseDoc.exists) {
-        const currentCount = courseDoc.data()?.studentsEnrolled || 0;
-        await courseRef.update({
-          studentsEnrolled: currentCount + 1,
+        // If already completed, don't process again
+        if (currentEnrollment.data()?.status === "completed") {
+          console.log("⚠️ Webhook already processed:", operationId);
+          return;
+        }
+
+        // Update enrollment
+        transaction.update(enrollmentRef, {
+          status: "completed",
+          enrolledAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
-      }
+
+        // Update course count atomically
+        const courseRef = db.collection("courses").doc(courseId);
+        transaction.update(courseRef, {
+          studentsEnrolled: FieldValue.increment(1),
+          updatedAt: new Date().toISOString(),
+        });
+      });
 
       console.log(`✅ ZainCash payment completed: ${operationId}`);
 
-      // ✅ Redirect to course page (your page will show CoursePlayer)
       return NextResponse.redirect(
         new URL(`/Course/${courseId}?payment=success`, req.url)
       );
@@ -85,7 +93,7 @@ export async function GET(req: NextRequest) {
   } catch (error: any) {
     console.error("ZainCash webhook error:", error);
     return NextResponse.redirect(
-      new URL("/payment/error?message=processing_error", req.url)
+      new URL("/payments/error?message=processing_error", req.url)
     );
   }
 }

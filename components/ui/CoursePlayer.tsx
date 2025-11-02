@@ -1,7 +1,7 @@
 "use client";
 import "@mux/mux-player/themes/minimal";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, use } from "react";
 import MuxPlayer from "@mux/mux-player-react";
 import {
   X,
@@ -27,6 +27,8 @@ import { Course } from "@/types/types";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { translateLevel } from "@/utils/translation";
+import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 
 // --- Types ---
 interface VideoProgress {
@@ -76,6 +78,20 @@ export default function CoursePlayer({
   userProgress?: VideoProgress[];
   onProgressUpdate?: (videoId: string, completed: boolean) => Promise<void>;
 }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const paymentStatus = searchParams.get("payment");
+
+    if (paymentStatus === "success") {
+      toast.success("تم الدفع بنجاح! 🎉", {
+        description: "مرحباً بك في الدورة! يمكنك الآن الوصول إلى جميع الدروس.",
+        duration: 5000,
+      });
+
+      // ✅ Only clean URL if payment=success exists
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, [searchParams]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { areeba } from "@/lib/payments/areeba";
-import { adminAuth, db } from "@/firebase/firebaseAdmin";
+import { adminAuth, db } from "@/firebase/service";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,10 +16,7 @@ export async function POST(req: NextRequest) {
 
     const verifiedToken = await adminAuth.verifyIdToken(token);
     if (!verifiedToken) {
-      return NextResponse.json(
-        { error: "جلسة غير صالحة" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "جلسة غير صالحة" }, { status: 401 });
     }
 
     const userId = verifiedToken.uid;

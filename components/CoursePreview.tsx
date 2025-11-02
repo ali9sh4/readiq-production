@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Course } from "@/types/types";
 import {
@@ -22,12 +22,30 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import MuxPlayer from "@mux/mux-player-react";
 import EnrollButton from "./EnrollButton";
-
+import { toast } from "sonner";
+import { useSearchParams } from "next/navigation"; // ✅ Only need this
 interface CoursePreviewProps {
   course: Course;
 }
 
 export default function CoursePreview({ course }: CoursePreviewProps) {
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const paymentStatus = searchParams.get("payment");
+
+    if (paymentStatus === "failed") {
+      toast.error("فشل الدفع", {
+        description:
+          "حدث خطأ أثناء معالجة الدفع. لم يتم خصم أي مبلغ. يمكنك المحاولة مرة أخرى.",
+        duration: 5000,
+      });
+
+      // Clean URL
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, [searchParams]);
+
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(["المقدمة"]) // Auto-expand intro section
   );
@@ -261,7 +279,7 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
                     </div>
                     <EnrollButton
                       courseTitle={course.title}
-                      priceIQD={course.price}
+                      price={course.price}
                       courseId={course.id}
                       isFree={course.price === 0}
                       fullWidth
@@ -350,7 +368,7 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
                     </div>
                     <EnrollButton
                       courseTitle={course.title}
-                      priceIQD={course.price}
+                      price={course.price}
                       courseId={course.id}
                       isFree={course.price === 0}
                       fullWidth
@@ -621,7 +639,7 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
                 <div className="pt-4 border-t">
                   <EnrollButton
                     courseTitle={course.title}
-                    priceIQD={course.price}
+                    price={course.price}
                     courseId={course.id}
                     isFree={course.price === 0}
                     fullWidth

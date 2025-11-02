@@ -1,0 +1,54 @@
+app/api/payments/zaincash/webhook-notify/route.ts
+typescriptimport { NextRequest, NextResponse } from "next/server";
+import { zaincash } from "@/lib/payments/zaincash";
+import { db } from "@/firebase/service";
+
+// ✅ True webhook - server to server (no redirects)
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const token = body.token;
+
+    if (!token) {
+      return NextResponse.json({ error: "missing_token" }, { status: 400 });
+    }
+
+    const verified = zaincash.verifyToken(token);
+    const operationId = verified.operationId || verified.id;
+
+    const enrollmentsSnapshot = await db
+      .collection("enrollments")
+      .where("paymentId", "==", operationId)
+      .where("status", "==", "pending")
+      .get();
+
+    if (enrollmentsSnapshot.empty) {
+      return NextResponse.json({ error: "enrollment_not_found" }, { status: 404 });
+    }
+
+    const enrollmentDoc = enrollmentsSnapshot.docs[0];
+    const enrollmentData = enrollmentDoc.data();
+
+    if (verified.status === "completed") {
+      await enrollmentDoc.ref.update({
+        status: "completed",
+        enrolledAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Update course count
+      const courseRef = db.collection("courses").doc(enrollmentData.courseId);
+      await courseRef.update({
+        studentsEnrolled: (await courseRef.get()).data()?.studentsEnrolled + 1 || 1,
+      });
+
+      console.log(`✅ Webhook: Payment completed ${operationId}`);
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ status: "pending" });
+  } catch (error: any) {
+    console.error("Webhook error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

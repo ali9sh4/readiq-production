@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { areeba } from "@/lib/payments/areeba";
-import { db } from "@/firebase/firebaseAdmin";
+import { db } from "@/firebase/service";
 
 // ✅ Areeba sends GET request to webhook after payment
 export async function GET(req: NextRequest) {
