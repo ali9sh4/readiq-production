@@ -260,6 +260,8 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
                       )}
                     </div>
                     <EnrollButton
+                      courseTitle={course.title}
+                      priceIQD={course.price}
                       courseId={course.id}
                       isFree={course.price === 0}
                       fullWidth
@@ -331,29 +333,31 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
                       ) : (
                         <div className="flex items-baseline justify-center gap-3">
                           <span className="text-4xl font-bold text-gray-900">
-                            ${course.price}
+                            {course.price} IQD
                           </span>
-                          {originalPrice > 0 && (
+                          {/* {originalPrice > 0 && (
                             <span className="text-xl text-gray-400 line-through">
                               ${originalPrice.toFixed(2)}
                             </span>
-                          )}
+                          )} */}
                         </div>
                       )}
-                      {(course.price ?? 0) > 0 && (
+                      {/* {(course.price ?? 0) > 0 && (
                         <p className="text-sm text-red-600 font-medium mt-2">
                           خصم محدود!
                         </p>
-                      )}
+                      )} */}
                     </div>
                     <EnrollButton
+                      courseTitle={course.title}
+                      priceIQD={course.price}
                       courseId={course.id}
                       isFree={course.price === 0}
                       fullWidth
                     />
-                    <p className="text-xs text-center text-gray-600">
+                    {/* <p className="text-xs text-center text-gray-600">
                       ضمان استرداد الأموال لمدة 30 يوماً
-                    </p>
+                    </p> */}
                   </CardContent>
                 </div>
               </Card>
@@ -616,6 +620,8 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
 
                 <div className="pt-4 border-t">
                   <EnrollButton
+                    courseTitle={course.title}
+                    priceIQD={course.price}
                     courseId={course.id}
                     isFree={course.price === 0}
                     fullWidth
