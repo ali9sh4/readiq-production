@@ -18,7 +18,19 @@ export async function checkUserEnrollments(
 
     const enrollments: Record<string, boolean> = {};
     enrollmentDocs.forEach((doc, index) => {
-      enrollments[courseIds[index]] = doc.exists;
+      if (!doc.exists) {
+        enrollments[courseIds[index]] = false;
+        return;
+      }
+
+      const data = doc.data();
+
+      // ✅ Check enrollment is valid
+      const isValidEnrollment =
+        data?.enrollmentType === "free" || // Free course enrollment
+        data?.status === "completed"; // Paid course completed
+
+      enrollments[courseIds[index]] = isValidEnrollment;
     });
 
     return {
@@ -28,7 +40,7 @@ export async function checkUserEnrollments(
   } catch (error) {
     return {
       success: false,
-      enrollments: {}, // ✅ Empty but still Record<string, boolean>
+      enrollments: {},
       message: `Failed to check enrollments: ${error}`,
     };
   }
@@ -73,6 +85,9 @@ export async function enrollInFreeCourse(courseId: string, token: string) {
       courseId,
       enrolledAt: new Date().toISOString(),
       enrollmentType: "free",
+      status: "completed", // ✅ Add this for consistency
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
 
     return {
