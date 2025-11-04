@@ -6,6 +6,7 @@ import { AuthProvider } from "@/context/authContext";
 import { AuthButton } from "@/components/Authbutton";
 import { Toaster } from "sonner";
 import { BookOpen, PlusCircle, User } from "lucide-react";
+import WalletBalance from "@/components/WalletBalance";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,6 +50,15 @@ export default function RootLayout({
               <ul className="flex items-center gap-3">
                 <li>
                   <Link
+                    href="/wallet/topup" // or "/user_dashboard/wallet"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold border border-white/20 hover:border-white/30 hover:scale-105"
+                  >
+                    <WalletBalance />
+                  </Link>
+                </li>
+
+                <li>
+                  <Link
                     href="/user_dashboard"
                     className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold border border-white/20 hover:border-white/30 hover:scale-105"
                   >
@@ -56,6 +66,7 @@ export default function RootLayout({
                     <span>دوراتي</span>
                   </Link>
                 </li>
+
                 <li>
                   <Link
                     href="/course-upload"

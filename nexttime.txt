@@ -94,7 +94,9 @@ sectioning //// done
  styling of the courseView page and logic check /// done 
 GENERAL STYLING  improvments  /// done 
   FOOTER  improvments  /// 
- how to add the payment functionality // 
+ how to add the payment functionality // done 
+ course Platform wallet // 
+ wallet ui colors and poistion in the navbar // 
  student report // 
  how to protect your code .// 
  files button  that is attached to the video section /// 
@@ -130,6 +132,9 @@ GENERAL STYLING  improvments  /// done
 
 after launching :
 sectioning improvments //
+migration plan // for firebase and the videos // 
+send credit to a friends // 
+
 
 
 
