@@ -48,11 +48,7 @@ export async function createTopupRequest(
   token: string,
   data: {
     amount: number;
-    method: "bank_transfer" | "zaincash" | "cash_agent";
-    receiptUrl: string;
-    transactionId?: string;
     senderName?: string;
-    senderAccount?: string;
   }
 ) {
   try {

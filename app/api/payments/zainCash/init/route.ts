@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
 
     // 4️⃣ ✅ NOW create ZainCash transaction (only if checks passed)
     const orderId = `zc_${courseId}_${userId}_${Date.now()}`;
-    const zaincashResponse = await zaincash.createTransaction(amount, orderId);
+    const zaincashResponse = await zaincash.createTransaction(amount, orderId,courseTitle);
 
     if (!zaincashResponse.id || !zaincashResponse.url) {
       return NextResponse.json(

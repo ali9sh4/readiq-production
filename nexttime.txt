@@ -96,6 +96,7 @@ GENERAL STYLING  improvments  /// done
   FOOTER  improvments  /// 
  how to add the payment functionality // done 
  course Platform wallet // 
+  adding the wallet to dashoard and approval // 
  wallet ui colors and poistion in the navbar // 
  student report // 
  how to protect your code .// 

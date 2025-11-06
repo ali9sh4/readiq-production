@@ -170,7 +170,7 @@ export async function deleteCourseFileFromR2({
       return {
         success: false,
         error: "Permission denied",
-      };
+      };  
     }
 
     // 5. Verify file belongs to this course

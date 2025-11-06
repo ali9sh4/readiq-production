@@ -16,17 +16,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  Upload,
   Wallet,
   AlertCircle,
   CheckCircle2,
-  X,
   History,
   Smartphone,
   CreditCard,
 } from "lucide-react";
-import { storage } from "@/firebase/client";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { createTopupRequest } from "@/app/actions/wallet_actions";
 
 export default function TopUpPage() {
@@ -37,8 +33,6 @@ export default function TopUpPage() {
   const [amount, setAmount] = useState("");
   const [senderName, setSenderName] = useState("");
   const [senderAccount, setSenderAccount] = useState("");
-  const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
 
   // UI states
   const [loading, setLoading] = useState(false);
@@ -57,69 +51,6 @@ export default function TopUpPage() {
       router.push("/login?redirect=/wallet/topup");
     }
   }, [auth.user, router]);
-
-  // Cleanup blob URLs on unmount
-  useEffect(() => {
-    return () => {
-      if (receiptPreview?.startsWith("blob:")) {
-        URL.revokeObjectURL(receiptPreview);
-      }
-    };
-  }, [receiptPreview]);
-
-  // Validate file
-  const validateFile = (file: File): void => {
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
-
-    if (file.size > maxSize) {
-      throw new Error("حجم الملف كبير جداً. الحد الأقصى 5 ميغابايت");
-    }
-    if (!allowedTypes.includes(file.type)) {
-      throw new Error("يرجى رفع صورة فقط (JPG, PNG, WebP)");
-    }
-  };
-
-  // Handle file selection
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      validateFile(file);
-      setReceiptFile(file);
-      setReceiptPreview(URL.createObjectURL(file));
-      setError(null);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : "حدث خطأ في رفع الملف");
-      setReceiptFile(null);
-      setReceiptPreview(null);
-    }
-  };
-
-  // Remove receipt
-  const handleRemoveReceipt = (): void => {
-    if (receiptPreview) {
-      URL.revokeObjectURL(receiptPreview);
-    }
-    setReceiptFile(null);
-    setReceiptPreview(null);
-    setError(null);
-
-    // Reset file input
-    const input = document.getElementById("receipt") as HTMLInputElement;
-    if (input) input.value = "";
-  };
-
-  // Upload receipt to Firebase
-  const uploadReceipt = async (file: File): Promise<string> => {
-    const storageRef = ref(
-      storage,
-      `receipts/${auth.user?.uid}/${Date.now()}_${file.name}`
-    );
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
-  };
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
@@ -140,11 +71,6 @@ export default function TopUpPage() {
       return;
     }
 
-    if (!receiptFile) {
-      setError("يرجى رفع إيصال التحويل");
-      return;
-    }
-
     if (!senderName.trim()) {
       setError("يرجى إدخال اسم المرسل");
       return;
@@ -154,7 +80,6 @@ export default function TopUpPage() {
 
     try {
       // Upload receipt
-      const receiptUrl = await uploadReceipt(receiptFile);
 
       // Get token
       const token = await auth.user?.getIdToken();
@@ -165,10 +90,7 @@ export default function TopUpPage() {
       // Create topup request
       const result = await createTopupRequest(token, {
         amount: numAmount,
-        method: "bank_transfer",
-        receiptUrl,
         senderName: senderName.trim(),
-        senderAccount: senderAccount.trim() || undefined,
       });
 
       if (!result.success) {
@@ -243,7 +165,8 @@ export default function TopUpPage() {
                   شحن المحفظة
                 </CardTitle>
                 <CardDescription className="text-gray-600 mt-1.5">
-                  قم بتحويل المبلغ إلى أحد حساباتنا ثم ارفع إيصال التحويل
+                  قم بتحويل المبلغ إلى أحد حساباتنا ثم أرسل إيصال التحويل الى
+                  رقم الواتساب
                 </CardDescription>
               </div>
               <Link
@@ -302,13 +225,68 @@ export default function TopUpPage() {
                 </AlertDescription>
               </Alert>
             </div>
+            {/* Receipt Submission */}
+            <div className="space-y-3">
+              <Label className="text-base font-semibold">
+                إرسال إيصال التحويل <span className="text-red-500">*</span>
+              </Label>
+
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-5 space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <Smartphone className="w-5 h-5 text-green-600" />
+                  <h4 className="font-bold text-gray-900">
+                    أرسل صورة الإيصال عبر واتساب
+                  </h4>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 border-2 border-green-400">
+                  <p className="text-3xl font-bold text-center text-green-700 tracking-wider font-mono">
+                    07886552919
+                  </p>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText("07886552919");
+                      alert("تم نسخ الرقم!");
+                    }}
+                    variant="outline"
+                    className="flex-1"
+                    size="sm"
+                  >
+                    📋 نسخ الرقم
+                  </Button>
+
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      window.open("https://wa.me/9647886552919", "_blank");
+                    }}
+                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    size="sm"
+                  >
+                    💬 فتح واتساب
+                  </Button>
+                </div>
+
+                <Alert className="bg-blue-50 border-blue-300">
+                  <AlertCircle className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-xs text-blue-800">
+                    <strong>مهم:</strong> يرجى إرسال صورة واضحة للإيصال مع ذكر
+                    اسمك في الرسالة
+                  </AlertDescription>
+                </Alert>
+              </div>
+            </div>
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Amount */}
               <div className="space-y-2">
                 <Label htmlFor="amount" className="font-semibold">
-                  المبلغ (دينار عراقي)
+                  المبلغ الذي تم تحويلة (دينار عراقي)
                 </Label>
                 <div className="relative">
                   <Input
@@ -348,67 +326,6 @@ export default function TopUpPage() {
                     required
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="senderAccount">
-                    رقم الحساب / الهاتف{" "}
-                    <span className="text-gray-500 text-xs">(اختياري)</span>
-                  </Label>
-                  <Input
-                    id="senderAccount"
-                    value={senderAccount}
-                    onChange={(e) => setSenderAccount(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Receipt Upload */}
-              <div className="space-y-2">
-                <Label htmlFor="receipt">
-                  إيصال التحويل <span className="text-red-500">*</span>
-                </Label>
-
-                {!receiptPreview ? (
-                  <label
-                    htmlFor="receipt"
-                    className="border-2 border-dashed border-gray-300 rounded-xl p-8 flex flex-col items-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all"
-                  >
-                    <div className="p-3 bg-blue-100 rounded-full mb-2">
-                      <Upload className="w-8 h-8 text-blue-600" />
-                    </div>
-                    <p className="text-sm font-semibold text-gray-700">
-                      اضغط لرفع صورة الإيصال
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      PNG, JPG, WebP - حتى 5 ميغابايت
-                    </p>
-                    <input
-                      id="receipt"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleFileChange}
-                      required
-                    />
-                  </label>
-                ) : (
-                  <div className="relative group">
-                    <img
-                      src={receiptPreview}
-                      alt="Receipt preview"
-                      className="w-full h-auto rounded-xl border-2 border-gray-200"
-                    />
-                    <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        onClick={handleRemoveReceipt}
-                      >
-                        <X className="w-4 h-4 ml-2" />
-                        إزالة الصورة
-                      </Button>
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Error Alert */}
