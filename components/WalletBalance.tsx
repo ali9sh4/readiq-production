@@ -1,14 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useAuth } from "@/context/authContext";
 import { getWalletBalance } from "@/app/actions/wallet_actions";
 import { Wallet } from "lucide-react";
+import { adminAuth } from "@/firebase/service";
 
 export default function WalletBalance() {
   const { user, getToken } = useAuth();
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const auth = useAuth();
+  useEffect(() => {}, []);
 
   useEffect(() => {
     if (user) {
@@ -18,9 +21,10 @@ export default function WalletBalance() {
 
   const fetchBalance = async () => {
     try {
-      const token = await getToken();
-      if (!token) return;
-
+      const token = await auth.user?.getIdToken();
+      if (!token) {
+        throw new Error("يرجى تسجيل الدخول أولاً");
+      }
       const result = await getWalletBalance(token);
 
       if (result.success) {

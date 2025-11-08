@@ -3,7 +3,7 @@
 
 import { adminAuth, db } from "@/firebase/service";
 import { FieldValue } from "firebase-admin/firestore";
-import type { Wallet, WalletTransaction } from "@/types/wallets";
+import type { TopupRequest, Wallet, WalletTransaction } from "@/types/wallets";
 
 // ===== GET WALLET BALANCE =====
 export async function getWalletBalance(token: string) {
@@ -88,12 +88,8 @@ export async function createTopupRequest(
       userEmail: userRecord.email || "",
       userName: userRecord.displayName || "مستخدم",
       amount: data.amount,
-      method: data.method,
       status: "pending",
-      receiptUrl: data.receiptUrl,
-      transactionId: data.transactionId,
       senderName: data.senderName,
-      senderAccount: data.senderAccount,
       createdAt: new Date().toISOString(),
       expiresAt: expiresAt.toISOString(),
       updatedAt: new Date().toISOString(),
@@ -112,13 +108,38 @@ export async function createTopupRequest(
 }
 
 // ===== PURCHASE COURSE WITH WALLET =====
+// app/actions/wallet_actions.ts
+
 export async function purchaseCourseWithWallet(
   token: string,
-  courseId: string
+  courseId: string,
+  idempotencyKey: string // ← ADD THIS PARAMETER
 ) {
   try {
     const verifiedToken = await adminAuth.verifyIdToken(token);
     const userId = verifiedToken.uid;
+
+    // ✅ STEP 1: Check if this idempotency key was already used
+    const existingTxnSnapshot = await db
+      .collection("wallet_transactions")
+      .where("userId", "==", userId)
+      .where("idempotencyKey", "==", idempotencyKey)
+      .limit(1)
+      .get();
+
+    if (!existingTxnSnapshot.empty) {
+      // This transaction was already processed!
+      const existingTxn = existingTxnSnapshot.docs[0].data();
+
+      // Return the original successful result
+      return {
+        success: true,
+        enrollmentId: existingTxn.metadata?.enrollmentId,
+        newBalance: existingTxn.balanceAfter,
+        message: "تم الشراء بالفعل", // "Already purchased"
+        isDuplicate: true, // ← Flag so client knows this was a duplicate
+      };
+    }
 
     // Get course details
     const courseDoc = await db.collection("courses").doc(courseId).get();
@@ -147,7 +168,7 @@ export async function purchaseCourseWithWallet(
       return { success: false, error: "أنت مسجل بالفعل في هذه الدورة" };
     }
 
-    // ATOMIC TRANSACTION: Deduct wallet + create enrollment
+    // ✅ ATOMIC TRANSACTION with idempotency key
     const result = await db.runTransaction(async (transaction) => {
       const walletRef = db.collection("wallets").doc(userId);
       const walletDoc = await transaction.get(walletRef);
@@ -184,9 +205,10 @@ export async function purchaseCourseWithWallet(
         enrolledAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        transactionId: idempotencyKey, // ← Store reference
       });
 
-      // Log transaction
+      // Log transaction WITH idempotency key
       const txnRef = db.collection("wallet_transactions").doc();
       transaction.set(txnRef, {
         userId,
@@ -195,7 +217,12 @@ export async function purchaseCourseWithWallet(
         balanceBefore: wallet.balance,
         balanceAfter: newBalance,
         description: `شراء دورة: ${courseData?.title || courseId}`,
-        metadata: { courseId, courseTitle: courseData?.title },
+        metadata: {
+          courseId,
+          courseTitle: courseData?.title,
+          enrollmentId, // Store for duplicate check return
+        },
+        idempotencyKey, // ← CRITICAL: Store the key
         createdAt: new Date().toISOString(),
       });
 
@@ -214,12 +241,12 @@ export async function purchaseCourseWithWallet(
       enrollmentId: result.enrollmentId,
       newBalance: result.newBalance,
       message: "تم الشراء بنجاح!",
+      isDuplicate: false,
     };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
 }
-
 // ===== APPROVE TOPUP (ADMIN ONLY) =====
 export async function approveTopupRequest(
   token: string,
@@ -287,7 +314,7 @@ export async function approveTopupRequest(
         amount: topupData.amount,
         balanceBefore: wallet.balance,
         balanceAfter: newBalance,
-        description: `إيداع - ${topupData.method}`,
+        description: `إيداع `,
         metadata: { topupRequestId },
         createdAt: new Date().toISOString(),
       });
@@ -359,12 +386,39 @@ export async function getPendingTopupRequests(token: string) {
       .limit(50)
       .get();
 
-    const requests = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const requests: TopupRequest[] = snapshot.docs.map(
+      (doc) =>
+        ({
+          id: doc.id,
+          ...doc.data(),
+        } as TopupRequest)
+    );
 
     return { success: true, requests };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+export async function getPendingTopupRequestsUSER(token: string) {
+  try {
+    const verifiedToken = await adminAuth.verifyIdToken(token);
+    const userId = verifiedToken.uid;
+    const snapshot = await db
+      .collection("topup_requests")
+      .where("userId", "==", userId)
+      .where("status", "==", "pending")
+      .limit(20)
+      .get();
+
+    const PendingTransactions: TopupRequest[] = snapshot.docs.map(
+      (doc) =>
+        ({
+          id: doc.id,
+          ...doc.data(),
+        } as TopupRequest)
+    );
+
+    return { success: true, PendingTransactions };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

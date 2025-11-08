@@ -7,6 +7,8 @@ import { AuthButton } from "@/components/Authbutton";
 import { Toaster } from "sonner";
 import { BookOpen, PlusCircle, User } from "lucide-react";
 import WalletBalance from "@/components/WalletBalance";
+import localFont from "next/font/local";
+import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,6 +24,51 @@ export const metadata: Metadata = {
   title: "اقْرَأْ - منصة القراءة",
   description: "منصة القراءة العربية",
 };
+const zainFont = localFont({
+  src: [
+    {
+      path: "../public/fonts/Zain_ExtraLight.otf",
+      weight: "200",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/Zain_Light.otf",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/Zain_LightItalic.otf",
+      weight: "300",
+      style: "italic",
+    },
+    {
+      path: "../public/fonts/Zain_Regular.otf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/Zain_Italic.otf",
+      weight: "400",
+      style: "italic",
+    },
+    {
+      path: "../public/fonts/Zain_Bold.otf",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/Zain_ExtraBold.otf",
+      weight: "800",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/Zain_Black.otf",
+      weight: "900",
+      style: "normal",
+    },
+  ],
+  variable: "--font-zain",
+});
 
 export default function RootLayout({
   children,
@@ -29,7 +76,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ar" dir="rtl">
+    <html lang="ar" dir="rtl" className={zainFont.variable}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
       >

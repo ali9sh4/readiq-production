@@ -9,8 +9,6 @@ export type WalletTransactionType =
 
 export type TopupStatus = "pending" | "approved" | "rejected" | "expired";
 
-export type TopupMethod = "bank_transfer" | "zaincash" | "cash_agent";
-
 // Wallet
 export interface Wallet {
   userId: string;
@@ -39,6 +37,7 @@ export interface WalletTransaction {
     topupRequestId?: string;
   };
   createdAt: string;
+  protectionKey?: string;
 }
 
 // Topup request (user submits, admin approves)
@@ -48,10 +47,7 @@ export interface TopupRequest {
   userEmail: string;
   userName: string;
   amount: number;
-  method: TopupMethod;
   status: TopupStatus;
-
-  receiptUrl: string;
   transactionId?: string;
   senderName?: string;
   senderAccount?: string;

@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/authContext";
-import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,43 +11,65 @@ import {
   Gift,
   AlertTriangle,
 } from "lucide-react";
-import type { WalletTransaction } from "@/types/wallet";
+import { TopupRequest, WalletTransaction } from "@/types/wallets";
+import {
+  
+  getPendingTopupRequestsUSER,
+  getWalletTransactions,
+} from "@/app/actions/wallet_actions";
 
 export default function TransactionsPage() {
-  const { user, getToken } = useAuth();
-  const router = useRouter();
-
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
+  const [pendingTransactions, setPendingTransactions] = useState<
+    TopupRequest[]
+  >([]);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (user) {
-      fetchTransactions();
-    } else {
-      router.push("/login?redirect=/wallet/transactions");
-    }
-  }, [user]);
-
-  const fetchTransactions = async () => {
+  const auth = useAuth();
+  const previousTransactions = async () => {
     try {
-      const token = await getToken();
-      if (!token) return;
-
-      // Import and call server action
-      const { getWalletTransactions } = await import(
-        "@/app/actions/wallet_actions"
-      );
-      const result = await getWalletTransactions(token, 50);
-
-      if (result.success && result.transactions) {
-        setTransactions(result.transactions);
+      const token = await auth.user?.getIdToken();
+      if (!token) {
+        throw new Error("يرجى تسجيل الدخول أولاً");
       }
+      const result = await getWalletTransactions(token);
+      if (!result.success) {
+        setTransactions([]);
+        setLoading(false);
+        return;
+      }
+      setTransactions(result.transactions);
+      setLoading(false);
     } catch (error) {
-      console.error("Failed to fetch transactions:", error);
-    } finally {
+      console.error("خطأ في جلب المعاملات:", error);
       setLoading(false);
     }
   };
+  const pendingRequests = async () => {
+    try {
+      const token = await auth.user?.getIdToken();
+      if (!token) {
+        throw new Error("يرجى تسجيل الدخول أولاً");
+      }
+      const result = await getPendingTopupRequestsUSER(token);
+      if (!result.success) {
+        setPendingTransactions([]);
+        setLoading(false);
+        return;
+      }
+      setPendingTransactions(result.PendingTransactions ?? []);
+      setLoading(false);
+    } catch (error) {
+      console.error("خطأ في جلب المعاملات:", error);
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (auth.user) {
+      previousTransactions();
+      pendingRequests();
+    }
+  }, [auth.user]);
 
   const getTransactionIcon = (type: string) => {
     switch (type) {
@@ -89,10 +110,6 @@ export default function TransactionsPage() {
     }).format(date);
   };
 
-  if (!user) {
-    return null;
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
@@ -106,12 +123,46 @@ export default function TransactionsPage() {
               <div className="text-center py-8">
                 <p className="text-gray-500">جاري التحميل...</p>
               </div>
-            ) : transactions.length === 0 ? (
+            ) : transactions.length === 0 &&
+              pendingTransactions.length === 0 ? (
               <div className="text-center py-8">
                 <p className="text-gray-500">لا توجد عمليات بعد</p>
               </div>
             ) : (
               <div className="space-y-3">
+                {/* Pending requests first */}
+                {pendingTransactions.map((txn) => (
+                  <div
+                    key={txn.id}
+                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 bg-gray-100 rounded-lg">
+                        {getTransactionIcon("topup")}
+                      </div>
+
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {txn.amount.toLocaleString()} د.ع - قيد المعالجة
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {formatDate(txn.createdAt)}
+                        </p>
+                        <Badge variant="secondary" className="mt-1">
+                          قيد المراجعة
+                        </Badge>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-amber-600">
+                        +{txn.amount.toLocaleString()} د.ع
+                      </p>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Completed transactions */}
                 {transactions.map((txn) => (
                   <div
                     key={txn.id}

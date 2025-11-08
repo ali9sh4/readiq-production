@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Course } from "@/types/types";
 import {
@@ -24,12 +24,24 @@ import MuxPlayer from "@mux/mux-player-react";
 import EnrollButton from "./EnrollButton";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation"; // ✅ Only need this
+import { loadBundle } from "firebase/firestore";
+import { set } from "zod";
+import { generateProtectionKey } from "@/lib/purchaseProtection/protectionKey";
+import { useAuth } from "@/context/authContext";
+import { purchaseCourseWithWallet } from "@/app/actions/wallet_actions";
 interface CoursePreviewProps {
   course: Course;
 }
 
 export default function CoursePreview({ course }: CoursePreviewProps) {
   const searchParams = useSearchParams();
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(
+    new Set(["المقدمة"]) // Auto-expand intro section
+  );
+  const [showVideoPlayer, setShowVideoPlayer] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const auth = useAuth();
+  const user = auth.user;
 
   useEffect(() => {
     const paymentStatus = searchParams.get("payment");
@@ -45,11 +57,30 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
       window.history.replaceState(null, "", window.location.pathname);
     }
   }, [searchParams]);
+  const handlePurchaseWithWallet = async () => {
+    try {
+      if (!user) {
+        throw new Error("يرجى تسجيل الدخول أولاً");
+      }
 
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(["المقدمة"]) // Auto-expand intro section
-  );
-  const [showVideoPlayer, setShowVideoPlayer] = useState(false);
+      setIsLoading(true);
+      const protectionKey = generateProtectionKey(
+        user?.uid,
+        course.id,
+        "purchase"
+      );
+      const token = await auth.user?.getIdToken();
+      if (!token) {
+        throw new Error("يرجى تسجيل الدخول أولاً");
+      }
+      const result = await purchaseCourseWithWallet(token, course.id);
+      if (result.success) {
+        toast.success("تم شراء الدورة بنجاح!");
+      } else {
+        throw new Error(result.message || "فشل في شراء الدورة");
+      }
+    } catch (error) {}
+  };
 
   // Get the first free preview video (from المقدمة section)
   const freePreviewVideo = useMemo(() => {

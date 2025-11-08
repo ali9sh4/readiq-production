@@ -32,7 +32,6 @@ export default function TopUpPage() {
   // Form states
   const [amount, setAmount] = useState("");
   const [senderName, setSenderName] = useState("");
-  const [senderAccount, setSenderAccount] = useState("");
 
   // UI states
   const [loading, setLoading] = useState(false);

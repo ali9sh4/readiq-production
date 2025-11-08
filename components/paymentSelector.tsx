@@ -1,9 +1,15 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import { Smartphone, CreditCard, Clock, CheckCircle2 } from "lucide-react";
-
-type PaymentMethod = "zaincash" | "areeba";
+import {
+  Smartphone,
+  CreditCard,
+  Clock,
+  CheckCircle2,
+  Wallet,
+} from "lucide-react";
+import Image from "next/image";
+type PaymentMethod = "zaincash" | "areeba" | "wallet";
 
 interface PaymentSelectorProps {
   price: number;
@@ -20,10 +26,28 @@ export default function PaymentSelector({
 }: PaymentSelectorProps) {
   const methods = [
     {
+      id: "wallet" as PaymentMethod, // ✅ NEW
+      name: "المحفظة",
+      description: "ادفع من رصيد محفظتك",
+      icon: <Wallet className="w-8 h-8 text-white" />,
+      color: "from-green-600 to-green-700",
+      disabled: false,
+      badge: "فوري",
+      badgeColor: "bg-green-100 text-green-700",
+    },
+    {
       id: "zaincash" as PaymentMethod,
-      name: "زين كاش",
+      name: "ZainCash",
       description: "الدفع عبر المحفظة الإلكترونية",
-      icon: <Smartphone className="w-8 h-8" />,
+      icon: (
+        <Image
+          src="/ZainCashLogo.png"
+          alt="ZainCash"
+          width={120}
+          height={40}
+          className="object-contain"
+        />
+      ),
       color: "from-purple-600 to-purple-700",
       disabled: false, // ✅ ENABLED
       badge: "متاح الآن",
@@ -42,7 +66,7 @@ export default function PaymentSelector({
   ];
 
   return (
-    <div className="space-y-4" dir="rtl">
+    <div className="font-zain space-y-4" dir="rtl">
       <div className="text-center space-y-2">
         <h3 className="text-xl font-bold">اختر طريقة الدفع</h3>
         <p className="text-2xl font-bold text-blue-600">
@@ -65,26 +89,23 @@ export default function PaymentSelector({
           >
             <div className="flex items-center gap-4">
               {/* Icon */}
+
               <div
-                className={`w-12 h-12 rounded-lg bg-gradient-to-br ${
-                  method.disabled ? "from-gray-300 to-gray-400" : method.color
-                } flex items-center justify-center text-white flex-shrink-0 ${
+                className={`${
+                  method.id === "zaincash"
+                    ? "w-32 h-12" // ✅ Wider for logo
+                    : method.id === "wallet"
+                    ? "w-12 h-12 rounded-lg bg-gradient-to-br from-green-600 to-green-700" // Wallet gets green gradient
+                    : "w-12 h-12 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700"
+                } flex items-center justify-center flex-shrink-0 ${
                   method.disabled ? "grayscale" : ""
                 }`}
               >
                 {method.icon}
               </div>
-
               {/* Content */}
               <div className="flex-1 text-right">
                 <div className="flex items-center gap-2 justify-end">
-                  <h4
-                    className={`font-bold text-lg ${
-                      method.disabled ? "text-gray-500" : "text-gray-900"
-                    }`}
-                  >
-                    {method.name}
-                  </h4>
                   <span
                     className={`text-xs ${method.badgeColor} px-2 py-0.5 rounded-full flex items-center gap-1`}
                   >

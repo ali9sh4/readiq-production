@@ -1,19 +1,24 @@
 "use client";
 
-///// Add a modal for rejection reason
-//const handleReject = async (courseId: string) => {
-//const reason = prompt("سبب الرفض:");
-//await rejectCourse(courseId, token, reason);
-//};
-
 import { useState, useEffect } from "react";
-import { collection, query, onSnapshot, orderBy } from "firebase/firestore";
+import {
+  collection,
+  query,
+  onSnapshot,
+  orderBy,
+  where,
+} from "firebase/firestore";
 import { db } from "@/firebase/client";
 import { useAuth } from "@/context/authContext";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, Clock, Eye, Edit } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Eye, Edit, Wallet } from "lucide-react";
 import { approveCourse } from "./action";
+import {
+  approveTopupRequest,
+  rejectTopupRequest,
+} from "@/app/actions/wallet_actions";
 import { Course, FirestoreTimestamp } from "@/types/types";
+import type { TopupRequest } from "@/types/wallets";
 import Link from "next/link";
 
 export default function AdminDashboard() {
@@ -21,24 +26,21 @@ export default function AdminDashboard() {
   const [pendingCourses, setPendingCourses] = useState<Course[]>([]);
   const [approvedCourses, setApprovedCourses] = useState<Course[]>([]);
   const [rejectedCourses, setRejectedCourses] = useState<Course[]>([]);
+  const [topupRequests, setTopupRequests] = useState<TopupRequest[]>([]);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "pending" | "approved" | "rejected"
+    "pending" | "approved" | "rejected" | "topups"
   >("pending");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Initialize Firestore
-
-  // Real-time listeners for courses
+  // Real-time listener for courses
   useEffect(() => {
     if (!user || isLoading) return;
 
-    // Query for all courses since you don't use status field
     const allCoursesQuery = query(
       collection(db, "courses"),
       orderBy("createdAt", "desc")
     );
-    // Filter in JavaScript after getting all data
 
     const unsubscribe = onSnapshot(
       allCoursesQuery,
@@ -60,24 +62,48 @@ export default function AdminDashboard() {
       },
       (error) => {
         console.error("Error fetching courses:", error);
-      } // ✅ Fixed: removed the extra closing brace
+      }
     );
-    return () => {
-      unsubscribe();
-    };
-  }, [user, isLoading, db]);
+
+    return () => unsubscribe();
+  }, [user, isLoading]);
+
+  // Real-time listener for topup requests
+  useEffect(() => {
+    if (!user || isLoading) return;
+
+    const topupsQuery = query(
+      collection(db, "topup_requests"),
+      where("status", "==", "pending"),
+      orderBy("createdAt", "desc")
+    );
+    const unsubscribe = onSnapshot(
+      topupsQuery,
+      (snapshot) => {
+        const requests = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as TopupRequest[];
+        setTopupRequests(requests);
+      },
+      (error) => {
+        console.error("Error fetching topup requests:", error);
+        throw new Error("Error fetching topup requests");
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user, isLoading]);
 
   const formatDate = (timestamp: FirestoreTimestamp | Date | string | null) => {
     if (!timestamp) return "غير محدد";
 
-    // Handle ISO strings stored in some parts of the app
     if (typeof timestamp === "string") {
       const d = new Date(timestamp);
       if (isNaN(d.getTime())) return "غير محدد";
       return d.toLocaleDateString("en-US");
     }
 
-    // Firestore Timestamp-like object
     if (typeof timestamp === "object" && "toDate" in timestamp) {
       return timestamp.toDate().toLocaleDateString("ar-SA");
     }
@@ -87,26 +113,6 @@ export default function AdminDashboard() {
     }
 
     return "غير محدد";
-  };
-
-  const getLevelText = (level: string) => {
-    const levels = {
-      beginner: "مبتدئ",
-      intermediate: "متوسط",
-      advanced: "متقدم",
-      all_levels: "جميع المستويات",
-    };
-    return levels[level as keyof typeof levels] || level;
-  };
-
-  const getLanguageText = (language: string) => {
-    const languages = {
-      arabic: "العربية",
-      english: "الإنجليزية",
-      french: "الفرنسية",
-      spanish: "الإسبانية",
-    };
-    return languages[language as keyof typeof languages] || language;
   };
 
   const getCategoryText = (category: string) => {
@@ -135,6 +141,7 @@ export default function AdminDashboard() {
         return pendingCourses;
     }
   };
+
   const filteredCourses = getCurrentCourses().filter((course) =>
     course.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -166,7 +173,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
           <div className="flex items-center">
             <Clock className="h-8 w-8 text-yellow-600" />
@@ -202,16 +209,31 @@ export default function AdminDashboard() {
             </div>
           </div>
         </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <Wallet className="h-8 w-8 text-blue-600" />
+            <div className="mr-4">
+              <p className="text-2xl font-bold text-blue-900">
+                {topupRequests.length}
+              </p>
+              <p className="text-blue-700">طلبات إيداع</p>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="بحث في الدورات..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
+
+      {activeTab !== "topups" && (
+        <div className="mb-4">
+          <input
+            type="text"
+            placeholder="بحث في الدورات..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="border-b border-gray-200">
@@ -226,6 +248,7 @@ export default function AdminDashboard() {
           >
             قيد المراجعة ({pendingCourses.length})
           </button>
+
           <button
             onClick={() => setActiveTab("approved")}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -236,6 +259,7 @@ export default function AdminDashboard() {
           >
             معتمدة ({approvedCourses.length})
           </button>
+
           <button
             onClick={() => setActiveTab("rejected")}
             className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -246,12 +270,158 @@ export default function AdminDashboard() {
           >
             مرفوضة ({rejectedCourses.length})
           </button>
+
+          <button
+            onClick={() => setActiveTab("topups")}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === "topups"
+                ? "border-blue-500 text-blue-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            طلبات الإيداع ({topupRequests.length})
+          </button>
         </nav>
       </div>
 
-      {/* Course List */}
+      {/* Content Area */}
       <div className="space-y-6">
-        {filteredCourses.length === 0 ? (
+        {/* Topup Requests Tab */}
+        {activeTab === "topups" ? (
+          topupRequests.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <p className="text-gray-500">لا توجد طلبات إيداع معلقة</p>
+            </div>
+          ) : (
+            topupRequests.map((topupRequest) => (
+              <div
+                key={topupRequest.id}
+                className="bg-white border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-4">
+                      <p className="text-2xl font-bold text-blue-600">
+                        {topupRequest.amount.toLocaleString()} د.ع
+                      </p>
+                      <Badge className="bg-blue-100 text-blue-800">
+                        طلب إيداع
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                      <div>
+                        <span className="font-medium text-gray-500">
+                          المستخدم:
+                        </span>
+                        <p className="text-gray-900">{topupRequest.userName}</p>
+                        <p className="text-xs text-gray-400">
+                          {topupRequest.userEmail}
+                        </p>
+                      </div>
+
+                      {topupRequest.senderName && (
+                        <div>
+                          <span className="font-medium text-gray-500">
+                            اسم المرسل:
+                          </span>
+                          <p className="text-gray-900">
+                            {topupRequest.senderName}
+                          </p>
+                        </div>
+                      )}
+
+                      <div>
+                        <span className="font-medium text-gray-500">
+                          تاريخ الطلب:
+                        </span>
+                        <p className="text-gray-900">
+                          {formatDate(topupRequest.createdAt)}
+                        </p>
+                      </div>
+
+                      <div>
+                        <span className="font-medium text-gray-500">
+                          الحالة:
+                        </span>
+                        <p className="text-gray-900">{topupRequest.status}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+                  <Button
+                    onClick={async () => {
+                      if (!confirm("هل تريد الموافقة على هذا الطلب؟")) return;
+                      setActionLoading(topupRequest.id);
+                      try {
+                        const token = await user.getIdToken();
+                        const result = await approveTopupRequest(
+                          token,
+                          topupRequest.id,
+                          ""
+                        );
+
+                        if (result.error) {
+                          alert(result.error);
+                        } else {
+                          alert("تمت الموافقة على الطلب بنجاح!");
+                        }
+                      } catch (error) {
+                        console.error("Error:", error);
+                        alert("حدث خطأ أثناء الموافقة");
+                      } finally {
+                        setActionLoading(null);
+                      }
+                    }}
+                    disabled={actionLoading === topupRequest.id}
+                    className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+                  >
+                    <CheckCircle className="h-4 w-4 ml-2" />
+                    موافقة
+                  </Button>
+
+                  <Button
+                    onClick={async () => {
+                      const reason = prompt("سبب الرفض:");
+                      if (!reason) return;
+
+                      setActionLoading(topupRequest.id);
+                      try {
+                        const token = await user.getIdToken();
+                        const result = await rejectTopupRequest(
+                          token,
+                          topupRequest.id,
+                          reason
+                        );
+
+                        if (result.error) {
+                          alert(result.error);
+                        } else {
+                          alert("تم رفض الطلب");
+                        }
+                      } catch (error) {
+                        console.error("Error:", error);
+                        alert("حدث خطأ أثناء الرفض");
+                      } finally {
+                        setActionLoading(null);
+                      }
+                    }}
+                    disabled={actionLoading === topupRequest.id}
+                    variant="destructive"
+                    className="disabled:opacity-50"
+                  >
+                    <XCircle className="h-4 w-4 ml-2" />
+                    رفض
+                  </Button>
+                </div>
+              </div>
+            ))
+          )
+        ) : /* Course Tabs */
+        filteredCourses.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <p className="text-gray-500">
               {activeTab === "pending" && "لا توجد دورات قيد المراجعة"}
@@ -292,9 +462,8 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <span className="font-medium text-gray-500">السعر:</span>
-                      <p className="text-gray-900">${course.price}</p>
+                      <p className="text-gray-900">{course.price} د.ع</p>
                     </div>
-
                     <div>
                       <span className="font-medium text-gray-500">المدة:</span>
                       <p className="text-gray-900">{course.duration} ساعة</p>
@@ -323,12 +492,6 @@ export default function AdminDashboard() {
                       <p className="text-gray-900">
                         {formatDate(course.createdAt)}
                       </p>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-500">
-                        حالة الدوره{" "}
-                      </span>
-                      <p className="text-gray-900">{course.status}</p>
                     </div>
                   </div>
 
@@ -363,6 +526,7 @@ export default function AdminDashboard() {
                         </ul>
                       </div>
                     )}
+
                   {course.rejectionReason && (
                     <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4">
                       <h4 className="font-medium text-red-800 mb-2 flex items-center gap-2">
@@ -416,7 +580,7 @@ export default function AdminDashboard() {
                     onClick={async () => {
                       if (!confirm("هل أنت متأكد من رفض هذه الدورة؟")) return;
                       const reason = prompt("سبب الرفض (اختياري):");
-                      if (reason === null) return; // User cancelled
+                      if (reason === null) return;
                       setActionLoading(course.id);
                       try {
                         const token = await user.getIdToken();
@@ -424,7 +588,7 @@ export default function AdminDashboard() {
                           course.id,
                           false,
                           token,
-                          reason || undefined // ✅ Pass reason
+                          reason || undefined
                         );
 
                         if (result.error) {
@@ -468,7 +632,7 @@ export default function AdminDashboard() {
                     onClick={async () => {
                       if (!confirm("هل أنت متأكد من رفض هذه الدورة؟")) return;
                       const reason = prompt("سبب الرفض (اختياري):");
-                      if (reason === null) return; // User cancelled
+                      if (reason === null) return;
 
                       setActionLoading(course.id);
                       try {
@@ -568,5 +732,24 @@ export default function AdminDashboard() {
         )}
       </div>
     </div>
+  );
+}
+
+// Helper component for Badge (if not already imported)
+function Badge({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+        className || "bg-gray-100 text-gray-800"
+      }`}
+    >
+      {children}
+    </span>
   );
 }

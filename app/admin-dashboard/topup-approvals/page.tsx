@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import {
+  collection,
+  query,
+  onSnapshot,
+  orderBy,
+  where,
+} from "firebase/firestore";
 import { useAuth } from "@/context/authContext";
-import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,16 +23,16 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { CheckCircle2, XCircle, Eye, Clock } from "lucide-react";
-import type { TopupRequest } from "@/types/wallet";
+import type { TopupRequest } from "@/types/wallets";
 import {
-  getPendingTopupRequests,
   approveTopupRequest,
   rejectTopupRequest,
 } from "@/app/actions/wallet_actions";
+import { db } from "@/firebase/client";
 
 export default function AdminTopupApprovalPage() {
-  const { user, getToken } = useAuth();
-  const router = useRouter();
+  const auth = useAuth();
+  const user = auth.user;
 
   const [requests, setRequests] = useState<TopupRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,45 +47,38 @@ export default function AdminTopupApprovalPage() {
   const [adminNotes, setAdminNotes] = useState("");
 
   useEffect(() => {
-    if (user) {
-      
-      fetchRequests();
-    } else {
-      router.push("/login?redirect=/admin/topup-approvals");
-    }
-  }, [user]);
-
-  const fetchRequests = async () => {
-    try {
-      setLoading(true);
-      const token = await getToken();
-      if (!token) return;
-
-      const result = await getPendingTopupRequests(token);
-
-      if (result.success && result.requests) {
-        setRequests(result.requests);
-      } else if (result.error) {
-        console.error(result.error);
-        // If not admin, redirect
-        if (result.error === "غير مصرح") {
-          alert("أنت لست مسؤولاً. سيتم إعادة التوجيه.");
-          router.push("/");
-        }
+    if (!user) return;
+    const allTopUpRequestsQuery = query(
+      collection(db, "topup_requests"),
+      where("status", "==", "pending"),
+      orderBy("createdAt", "desc")
+    );
+    const unsubscribe = onSnapshot(
+      allTopUpRequestsQuery,
+      (snapshot) => {
+        const topupRequest = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as TopupRequest[];
+        setRequests(topupRequest);
+        setLoading(false);
+      },
+      (error) => {
+        console.log("errro fetching toUpRequests"); // Typo + missing setLoading
+        setLoading(false); // ADD THIS
       }
-    } catch (error) {
-      console.error("Failed to fetch requests:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    );
+    return () => {
+      unsubscribe();
+    };
+  }, [user]);
 
   const handleApprove = async (requestId: string) => {
     if (!confirm("هل تريد الموافقة على هذا الطلب؟")) return;
 
     try {
       setProcessingId(requestId);
-      const token = await getToken();
+      const token = await user?.getIdToken();
       if (!token) return;
 
       const result = await approveTopupRequest(token, requestId, adminNotes);
@@ -111,7 +110,7 @@ export default function AdminTopupApprovalPage() {
 
     try {
       setProcessingId(selectedRequest.id);
-      const token = await getToken();
+      const token = await user?.getIdToken();
       if (!token) return;
 
       const result = await rejectTopupRequest(
@@ -147,15 +146,6 @@ export default function AdminTopupApprovalPage() {
       hour: "2-digit",
       minute: "2-digit",
     }).format(date);
-  };
-
-  const getMethodLabel = (method: string) => {
-    const labels: Record<string, string> = {
-      bank_transfer: "تحويل بنكي",
-      zaincash: "زين كاش",
-      cash_agent: "وكيل نقدي",
-    };
-    return labels[method] || method;
   };
 
   if (!user) {
@@ -196,7 +186,7 @@ export default function AdminTopupApprovalPage() {
                           <p className="font-bold text-lg text-blue-600">
                             {request.amount.toLocaleString()} د.ع
                           </p>
-                          <Badge>{getMethodLabel(request.method)}</Badge>
+                          <Badge>{"topup requests"}</Badge>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4 text-sm">
@@ -207,52 +197,13 @@ export default function AdminTopupApprovalPage() {
                               {request.userEmail}
                             </p>
                           </div>
-
-                          <div>
-                            <p className="text-gray-500">رقم العملية:</p>
-                            <p className="font-medium">
-                              {request.transactionId || "غير محدد"}
-                            </p>
-                          </div>
-
-                          {request.senderName && (
-                            <div>
-                              <p className="text-gray-500">اسم المرسل:</p>
-                              <p className="font-medium">
-                                {request.senderName}
-                              </p>
-                            </div>
-                          )}
-
-                          {request.senderAccount && (
-                            <div>
-                              <p className="text-gray-500">رقم الحساب:</p>
-                              <p className="font-medium">
-                                {request.senderAccount}
-                              </p>
-                            </div>
-                          )}
                         </div>
 
                         <p className="text-xs text-gray-400">
                           تاريخ الطلب: {formatDate(request.createdAt)}
                         </p>
                       </div>
-
                       <div className="flex flex-col gap-2 ml-4">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedRequest(request);
-                            setShowReceiptModal(true);
-                          }}
-                          className="gap-2"
-                        >
-                          <Eye className="w-4 h-4" />
-                          الإيصال
-                        </Button>
-
                         <Button
                           size="sm"
                           onClick={() => handleApprove(request.id)}
@@ -278,25 +229,6 @@ export default function AdminTopupApprovalPage() {
                         </Button>
                       </div>
                     </div>
-
-                    {/* Admin Notes Input */}
-                    <div className="mt-4 space-y-2">
-                      <Label htmlFor={`notes-${request.id}`}>
-                        ملاحظات (اختياري)
-                      </Label>
-                      <Input
-                        id={`notes-${request.id}`}
-                        type="text"
-                        placeholder="أضف ملاحظات للسجل..."
-                        value={
-                          selectedRequest?.id === request.id ? adminNotes : ""
-                        }
-                        onChange={(e) => {
-                          setSelectedRequest(request);
-                          setAdminNotes(e.target.value);
-                        }}
-                      />
-                    </div>
                   </div>
                 ))}
               </div>
@@ -304,36 +236,6 @@ export default function AdminTopupApprovalPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Receipt Modal */}
-      <Dialog open={showReceiptModal} onOpenChange={setShowReceiptModal}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>إيصال التحويل</DialogTitle>
-          </DialogHeader>
-          {selectedRequest && (
-            <div className="space-y-4">
-              <img
-                src={selectedRequest.receiptUrl}
-                alt="Receipt"
-                className="w-full h-auto border rounded-lg"
-              />
-              <div className="text-sm text-gray-600">
-                <p>المبلغ: {selectedRequest.amount.toLocaleString()} د.ع</p>
-                <p>رقم العملية: {selectedRequest.transactionId}</p>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowReceiptModal(false)}
-            >
-              إغلاق
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Reject Modal */}
       <Dialog open={showRejectModal} onOpenChange={setShowRejectModal}>

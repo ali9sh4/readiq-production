@@ -1,19 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
+
 } from "@/components/ui/dialog";
 import { enrollInFreeCourse } from "@/app/actions/enrollment_action";
 import { Loader2, CheckCircle, ShoppingCart, LogIn } from "lucide-react";
 import { useAuth } from "@/context/authContext";
 import PaymentSelector from "@/components/paymentSelector";
+import { generateProtectionKey } from "@/lib/purchaseProtection/protectionKey";
+import { purchaseCourseWithWallet } from "@/app/actions/wallet_actions";
 
 interface EnrollButtonProps {
   courseId: string;
@@ -34,6 +35,7 @@ export default function EnrollButton({
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const router = useRouter();
   const auth = useAuth();
+  const protectionKeyRef = useRef<string | null>(null);
 
   const handleEnroll = async () => {
     if (loading) return;
@@ -69,12 +71,18 @@ export default function EnrollButton({
         setLoading(false);
       }
     } else {
-      // ✅ NEW: Show payment dialog for paid courses
+      protectionKeyRef.current = generateProtectionKey(
+        user.uid,
+        courseId,
+        "purchase"
+      );
       setShowPaymentDialog(true);
     }
   };
 
-  const handlePaymentSelect = async (method: "zaincash" | "areeba") => {
+  const handlePaymentSelect = async (
+    method: "zaincash" | "areeba" | "wallet"
+  ) => {
     setLoading(true);
     const user = auth?.user;
 
@@ -86,6 +94,37 @@ export default function EnrollButton({
       }
 
       const token = await user.getIdToken();
+      if (method === "wallet") {
+        if (!protectionKeyRef.current) {
+          throw new Error("Protection key not generated");
+        }
+
+        const result = await purchaseCourseWithWallet(
+          token,
+          courseId,
+          protectionKeyRef.current
+        );
+
+        if (result.success) {
+          if (result.isDuplicate) {
+            toast.info("لقد قمت بشراء هذه الدورة مسبقاً");
+          } else {
+            toast.success("تم شراء الدورة بنجاح!");
+          }
+
+          setShowPaymentDialog(false);
+
+          // Redirect to course page or refresh
+          setTimeout(() => {
+            router.push(`/learn/${courseId}`); // Or wherever enrolled courses go
+            router.refresh();
+          }, 1500);
+        } else {
+          throw new Error(result.error || "فشل في شراء الدورة");
+        }
+
+        return;
+      }
 
       const response = await fetch(`/api/payments/${method}/init`, {
         method: "POST",
