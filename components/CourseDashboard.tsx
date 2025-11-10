@@ -8,7 +8,6 @@ import { storage } from "@/firebase/client";
 import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
 
 import {
-  ChevronLeft,
   Save,
   Upload,
   FileText,
@@ -159,6 +158,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
     resolver: zodResolver(PricingSchema),
     defaultValues: {
       price: defaultValues.price || 0,
+      salePrice: defaultValues.salePrice || undefined,
     },
   });
 
@@ -176,6 +176,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
     });
     pricingForm.reset({
       price: defaultValues.price || 0,
+      salePrice: defaultValues.salePrice || undefined,
     });
     setCourse(defaultValues);
     form.reset({
@@ -252,6 +253,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
         setCourse((prev) => ({
           ...prev,
           price: data.price,
+          salePrice: data.salePrice,
         }));
         toast.success("تم الحفظ  السعر بنجاح");
       } else {
@@ -584,7 +586,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                 <div className="text-right flex-1">
                   <p className="text-sm text-gray-600">السعر</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    ${course.price || 0}
+                    {course.price || 0} د.ع
                   </p>
                 </div>
               </div>
@@ -826,7 +828,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel className="text-right block">
-                                السعر (دولار) *
+                                السعر (دينار) *
                               </FormLabel>
                               <FormControl>
                                 <Input
@@ -874,6 +876,99 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                   className="h-12 text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500 text-right"
                                 />
                               </FormControl>
+                              <div className="text-sm">
+                                {field.value === 0 ? (
+                                  <span className="text-green-600 font-medium">
+                                    ✓ دورة مجانية (السعر = 0 د.ع){" "}
+                                    {/* Changed from $0.00 */}
+                                  </span>
+                                ) : (
+                                  <span className="text-blue-600 font-medium">
+                                    السعر:{" "}
+                                    {Number(field.value).toLocaleString()} د.ع{" "}
+                                    {/* Changed from $ and added toLocaleString for thousands separator */}
+                                  </span>
+                                )}
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={pricingForm.control}
+                          name="salePrice"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="text-right block">
+                                السعر المخفض (اختياري)
+                              </FormLabel>
+                              <FormControl>
+                                <Input
+                                  {...field}
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={
+                                    field.value === undefined ||
+                                    field.value === 0
+                                      ? ""
+                                      : String(field.value)
+                                  }
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+
+                                    if (val === "") {
+                                      field.onChange(0);
+                                      return;
+                                    }
+
+                                    if (/^\d*\.?\d{0,2}$/.test(val)) {
+                                      const numVal = parseFloat(val);
+                                      field.onChange(
+                                        isNaN(numVal) ? 0 : numVal
+                                      );
+                                    }
+                                  }}
+                                  onBlur={(e) => {
+                                    const val = e.target.value;
+
+                                    if (val === "") {
+                                      field.onChange(0);
+                                      return;
+                                    }
+
+                                    const numValue = parseFloat(val);
+
+                                    if (isNaN(numValue) || numValue < 0) {
+                                      // ✅ Allow 0
+                                      field.onChange(0);
+                                      return;
+                                    }
+                                    if (numValue === 0) {
+                                      field.onChange(undefined);
+                                      return;
+                                    }
+
+                                    field.onChange(
+                                      Math.round(numValue * 100) / 100
+                                    );
+                                  }}
+                                  placeholder="اتركه فارغًا إذا لم يكن هناك خصم"
+                                  className="h-12 text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500 text-right"
+                                />
+                              </FormControl>
+
+                              <div className="text-sm">
+                                {!field.value ? (
+                                  <span className="text-gray-500">
+                                    لا يوجد خصم
+                                  </span>
+                                ) : (
+                                  <span className="text-orange-600 font-medium">
+                                    السعر المخفض:{" "}
+                                    {Number(field.value).toLocaleString()} د.ع
+                                  </span>
+                                )}
+                              </div>
                               <FormMessage />
                             </FormItem>
                           )}

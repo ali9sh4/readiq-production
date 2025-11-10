@@ -58,7 +58,7 @@ export async function updateCourseBasicInfo(
 // ===== UPDATE COURSE PRICING =====
 export async function updateCoursePricing(
   courseId: string,
-  pricing: { price?: number; discountPrice?: number; currency?: string },
+  pricing: { price?: number; salePrice?: number; currency?: string },
   token: string
 ) {
   try {

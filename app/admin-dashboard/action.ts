@@ -16,7 +16,7 @@ export const approveCourse = async (
         error: true,
         message: "غير مخول لك اعتماد الدورات",
       };
-    }
+    } 
 
     // Update course with approval status
     await db

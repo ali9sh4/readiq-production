@@ -27,10 +27,15 @@ export async function POST(req: NextRequest) {
     if (!courseDoc.exists) {
       return NextResponse.json({ error: "الدورة غير موجودة" }, { status: 404 });
     }
+    const courseData = courseDoc.data();
 
-    const actualPrice = courseDoc.data()?.price || 0;
+    let coursePrice = courseData?.price || 0;
+    const salePrice = courseData?.salePrice ?? 0;
+    if (salePrice > 0 && salePrice < coursePrice) {
+      coursePrice = salePrice;
+    }
 
-    if (actualPrice !== amount) {
+    if (coursePrice !== amount) {
       return NextResponse.json({ error: "سعر غير صحيح" }, { status: 400 });
     }
 
@@ -77,7 +82,11 @@ export async function POST(req: NextRequest) {
 
     // 4️⃣ ✅ NOW create ZainCash transaction (only if checks passed)
     const orderId = `zc_${courseId}_${userId}_${Date.now()}`;
-    const zaincashResponse = await zaincash.createTransaction(amount, orderId,courseTitle);
+    const zaincashResponse = await zaincash.createTransaction(
+      amount,
+      orderId,
+      courseTitle
+    );
 
     if (!zaincashResponse.id || !zaincashResponse.url) {
       return NextResponse.json(

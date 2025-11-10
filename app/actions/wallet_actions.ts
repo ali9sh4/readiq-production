@@ -4,44 +4,15 @@
 import { adminAuth, db } from "@/firebase/service";
 import { FieldValue } from "firebase-admin/firestore";
 import type { TopupRequest, Wallet, WalletTransaction } from "@/types/wallets";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
-// ===== GET WALLET BALANCE =====
-export async function getWalletBalance(token: string) {
-  try {
-    const verifiedToken = await adminAuth.verifyIdToken(token);
-    const userId = verifiedToken.uid;
-
-    const walletRef = db.collection("wallets").doc(userId);
-    const walletDoc = await walletRef.get();
-
-    if (walletDoc.exists) {
-      return {
-        success: true,
-        balance: walletDoc.data()?.balance || 0,
-        wallet: walletDoc.data() as Wallet,
-      };
-    }
-
-    // Create new wallet if doesn't exist
-    const newWallet: Wallet = {
-      userId,
-      balance: 0,
-      totalTopups: 0,
-      totalSpent: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      isActive: true,
-      dailyLimit: 10000000000, // 🔧 CHANGE THIS: Daily limit for new users
-      isVerified: false,
-    };
-
-    await walletRef.set(newWallet);
-
-    return { success: true, balance: 0, wallet: newWallet };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(10, "1 h"),
+  analytics: true,
+  prefix: "topup_request",
+});
 
 // ===== CREATE TOPUP REQUEST =====
 export async function createTopupRequest(
@@ -55,14 +26,36 @@ export async function createTopupRequest(
     const verifiedToken = await adminAuth.verifyIdToken(token);
     const userId = verifiedToken.uid;
     const userRecord = await adminAuth.getUser(userId);
+    const { success: rateLimitOk } = await ratelimit.limit(userId);
 
-    // 🔧 CHANGE THESE: Min/max amounts
+    if (!rateLimitOk) {
+      return {
+        success: false,
+        error: "لقد تجاوزت الحد المسموح. حاول مرة أخرى لاحقاً",
+      };
+    }
     if (data.amount < 1000) {
       return { success: false, error: "الحد الأدنى للإيداع 1,000 د.ع" };
     }
 
     if (data.amount > 5000000) {
       return { success: false, error: "الحد الأقصى للإيداع 5,000,000 د.ع" };
+    }
+    const walletRef = db.collection("wallets").doc(userId);
+    const walletSnap = await walletRef.get();
+    if (!walletSnap.exists) {
+      const newWallet: Wallet = {
+        userName: userRecord.displayName || "مستخدم",
+        userId,
+        balance: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        dailyLimit: 5000000,
+        totalTopups: 0,
+        totalSpent: 0,
+      };
+
+      await walletRef.set(newWallet);
     }
 
     // Check for pending requests
@@ -107,13 +100,10 @@ export async function createTopupRequest(
   }
 }
 
-// ===== PURCHASE COURSE WITH WALLET =====
-// app/actions/wallet_actions.ts
-
 export async function purchaseCourseWithWallet(
   token: string,
   courseId: string,
-  idempotencyKey: string // ← ADD THIS PARAMETER
+  protectionKey: string // ← ADD THIS PARAMETER
 ) {
   try {
     const verifiedToken = await adminAuth.verifyIdToken(token);
@@ -123,7 +113,7 @@ export async function purchaseCourseWithWallet(
     const existingTxnSnapshot = await db
       .collection("wallet_transactions")
       .where("userId", "==", userId)
-      .where("idempotencyKey", "==", idempotencyKey)
+      .where("protectionKey", "==", protectionKey)
       .limit(1)
       .get();
 
@@ -148,7 +138,13 @@ export async function purchaseCourseWithWallet(
     }
 
     const courseData = courseDoc.data();
-    const coursePrice = courseData?.price || 0;
+
+    // ✅ FIX: Check for sale price first, then regular price
+    let coursePrice = courseData?.price || 0;
+    const salePrice = courseData?.salePrice ?? 0;
+    if (salePrice > 0 && salePrice < coursePrice) {
+      coursePrice = salePrice;
+    }
 
     if (courseData?.isFree) {
       return { success: false, error: "هذه دورة مجانية" };
@@ -205,7 +201,7 @@ export async function purchaseCourseWithWallet(
         enrolledAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        transactionId: idempotencyKey, // ← Store reference
+        transactionId: protectionKey, // ← Store reference
       });
 
       // Log transaction WITH idempotency key
@@ -220,9 +216,9 @@ export async function purchaseCourseWithWallet(
         metadata: {
           courseId,
           courseTitle: courseData?.title,
-          enrollmentId, // Store for duplicate check return
+          enrollmentId,
         },
-        idempotencyKey, // ← CRITICAL: Store the key
+        protectionKey: protectionKey,
         createdAt: new Date().toISOString(),
       });
 
@@ -266,20 +262,21 @@ export async function approveTopupRequest(
     }
 
     const topupRef = db.collection("topup_requests").doc(topupRequestId);
-    const topupDoc = await topupRef.get();
-
-    if (!topupDoc.exists) {
-      return { success: false, error: "الطلب غير موجود" };
-    }
-
-    const topupData = topupDoc.data();
-
-    if (topupData?.status !== "pending") {
-      return { success: false, error: "الطلب تمت معالجته مسبقاً" };
-    }
 
     // ATOMIC: Update wallet + update request + log transaction
     await db.runTransaction(async (transaction) => {
+      const topupDoc = await transaction.get(topupRef);
+
+      if (!topupDoc.exists) {
+        throw new Error("الطلب غير موجود");
+      }
+
+      const topupData = topupDoc.data();
+
+      // ✅ Check status INSIDE transaction (prevents race condition)
+      if (topupData?.status !== "pending") {
+        throw new Error("الطلب تمت معالجته مسبقاً");
+      }
       const walletRef = db.collection("wallets").doc(topupData.userId);
       const walletDoc = await transaction.get(walletRef);
 
@@ -350,6 +347,10 @@ export async function rejectTopupRequest(
     if (!topupDoc.exists) {
       return { success: false, error: "الطلب غير موجود" };
     }
+    const topupData = topupDoc.data();
+    if (topupData?.status !== "pending") {
+      return { success: false, error: "الطلب تمت معالجته مسبقاً" };
+    }
 
     await topupRef.update({
       status: "rejected",
@@ -366,7 +367,11 @@ export async function rejectTopupRequest(
 }
 
 // ===== GET PENDING REQUESTS (ADMIN) =====
-export async function getPendingTopupRequests(token: string) {
+export async function getPendingTopupRequests(
+  token: string,
+  limit: number = 50,
+  lastDocId?: string
+) {
   try {
     const verifiedToken = await adminAuth.verifyIdToken(token);
     const userRecord = await adminAuth.getUser(verifiedToken.uid);
@@ -379,12 +384,24 @@ export async function getPendingTopupRequests(token: string) {
       return { success: false, error: "غير مصرح" };
     }
 
-    const snapshot = await db
+    let topupsQuery = db
       .collection("topup_requests")
       .where("status", "==", "pending")
       .orderBy("createdAt", "asc")
-      .limit(50)
-      .get();
+      .limit(limit);
+
+    if (lastDocId) {
+      const lastDoc = await db
+        .collection("topup_requests")
+        .doc(lastDocId)
+        .get();
+
+      if (lastDoc.exists) {
+        topupsQuery = topupsQuery.startAfter(lastDoc);
+      }
+    }
+
+    const snapshot = await topupsQuery.get();
 
     const requests: TopupRequest[] = snapshot.docs.map(
       (doc) =>
@@ -394,7 +411,14 @@ export async function getPendingTopupRequests(token: string) {
         } as TopupRequest)
     );
 
-    return { success: true, requests };
+    const lastVisible = snapshot.docs[snapshot.docs.length - 1];
+
+    return {
+      success: true,
+      requests,
+      hasMore: snapshot.size === limit,
+      lastDocId: lastVisible?.id || null,
+    };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -425,17 +449,34 @@ export async function getPendingTopupRequestsUSER(token: string) {
 }
 // Add this to app/actions/wallet_actions.ts
 
-export async function getWalletTransactions(token: string, limit: number = 20) {
+export async function getWalletTransactions(
+  token: string,
+  limit: number = 20,
+  lastDocId?: string // ← Cursor for pagination
+) {
   try {
     const verifiedToken = await adminAuth.verifyIdToken(token);
     const userId = verifiedToken.uid;
 
-    const transactionsSnapshot = await db
+    let transactionsQuery = db
       .collection("wallet_transactions")
       .where("userId", "==", userId)
       .orderBy("createdAt", "desc")
-      .limit(limit)
-      .get();
+      .limit(limit);
+
+    // If cursor provided, start after that document
+    if (lastDocId) {
+      const lastDoc = await db
+        .collection("wallet_transactions")
+        .doc(lastDocId)
+        .get();
+
+      if (lastDoc.exists) {
+        transactionsQuery = transactionsQuery.startAfter(lastDoc);
+      }
+    }
+
+    const transactionsSnapshot = await transactionsQuery.get();
 
     const transactions: WalletTransaction[] = transactionsSnapshot.docs.map(
       (doc) =>
@@ -445,10 +486,15 @@ export async function getWalletTransactions(token: string, limit: number = 20) {
         } as WalletTransaction)
     );
 
+    // Get last document ID for next page
+    const lastVisible =
+      transactionsSnapshot.docs[transactionsSnapshot.docs.length - 1];
+
     return {
       success: true,
       transactions,
       hasMore: transactionsSnapshot.size === limit,
+      lastDocId: lastVisible?.id || null,
     };
   } catch (error: any) {
     console.error("getWalletTransactions error:", error);
@@ -456,6 +502,8 @@ export async function getWalletTransactions(token: string, limit: number = 20) {
       success: false,
       error: error.message || "فشل في جلب العمليات",
       transactions: [],
+      hasMore: false,
+      lastDocId: null,
     };
   }
 }

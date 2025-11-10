@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import { TopupRequest, WalletTransaction } from "@/types/wallets";
 import {
-  
   getPendingTopupRequestsUSER,
   getWalletTransactions,
 } from "@/app/actions/wallet_actions";
@@ -23,18 +22,29 @@ export default function TransactionsPage() {
   const [pendingTransactions, setPendingTransactions] = useState<
     TopupRequest[]
   >([]);
+  const [lastDocId, setLastDocId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+
   const auth = useAuth();
-  const previousTransactions = async () => {
+  const previousTransactions = async (isLoadMore = false) => {
     try {
       const token = await auth.user?.getIdToken();
       if (!token) {
         throw new Error("يرجى تسجيل الدخول أولاً");
       }
-      const result = await getWalletTransactions(token);
-      if (!result.success) {
-        setTransactions([]);
-        setLoading(false);
+      const result = await getWalletTransactions(
+        token!,
+        20,
+        isLoadMore ? lastDocId! : undefined
+      );
+
+      if (result.success) {
+        setTransactions((prev) =>
+          isLoadMore ? [...prev, ...result.transactions] : result.transactions
+        );
+        setHasMore(result.hasMore);
+        setLastDocId(result.lastDocId);
         return;
       }
       setTransactions(result.transactions);
@@ -44,6 +54,7 @@ export default function TransactionsPage() {
       setLoading(false);
     }
   };
+
   const pendingRequests = async () => {
     try {
       const token = await auth.user?.getIdToken();
@@ -206,6 +217,14 @@ export default function TransactionsPage() {
                     </div>
                   </div>
                 ))}
+                {hasMore && (
+                  <button
+                    onClick={() => previousTransactions(true)}
+                    disabled={loading}
+                  >
+                    {loading ? "جاري التحميل..." : "تحميل المزيد"}
+                  </button>
+                )}
               </div>
             )}
           </CardContent>

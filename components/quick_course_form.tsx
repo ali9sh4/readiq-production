@@ -236,7 +236,7 @@ export default function QuickCourseForm({
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-base font-bold text-gray-900">
-                        4. السعر (دولار)
+                        4. السعر (دينار عراقي){" "}
                         <span className="ms-2 text-sm text-gray-500">
                           يمكنك تغييره لاحقًا
                         </span>
@@ -279,14 +279,17 @@ export default function QuickCourseForm({
                         />
                       </FormControl>
                       {/* ✅ IMPROVED FEEDBACK */}
+
                       <div className="text-sm">
                         {field.value === 0 ? (
                           <span className="text-green-600 font-medium">
-                            ✓ دورة مجانية (السعر = $0.00)
+                            ✓ دورة مجانية (السعر = 0 د.ع){" "}
+                            {/* Changed from $0.00 */}
                           </span>
                         ) : (
                           <span className="text-blue-600 font-medium">
-                            السعر: ${Number(field.value).toFixed(2)}
+                            السعر: {Number(field.value).toLocaleString()} د.ع{" "}
+                            {/* Changed from $ and added toLocaleString for thousands separator */}
                           </span>
                         )}
                       </div>

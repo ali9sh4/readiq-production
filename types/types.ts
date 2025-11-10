@@ -58,6 +58,7 @@ export interface Course {
   level?: CourseLevel;
   language?: CourseLanguage;
   price?: number;
+  salePrice?: number;
   duration?: number;
 
   // ===== Status & Approval =====

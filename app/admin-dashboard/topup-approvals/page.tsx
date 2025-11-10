@@ -41,7 +41,6 @@ export default function AdminTopupApprovalPage() {
   const [selectedRequest, setSelectedRequest] = useState<TopupRequest | null>(
     null
   );
-  const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [adminNotes, setAdminNotes] = useState("");

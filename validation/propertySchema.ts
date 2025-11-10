@@ -85,9 +85,23 @@ export const BasicInfoSchema = z.object({
 });
 
 // Pricing Schema
-export const PricingSchema = z.object({
-  price: z.coerce.number().min(0, "السعر يجب أن يكون صفر أو أكثر"),
-});
+export const PricingSchema = z
+  .object({
+    price: z.coerce.number().min(0, "السعر يجب أن يكون صفر أو أكثر"),
+    salePrice: z.coerce.number().min(0).optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.salePrice && data.salePrice >= data.price) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "يجب أن يكون سعر البيع أقل من السعر الأصلي",
+      path: ["salePrice"],
+    }
+  );
 
 export const CourseDataSchema = CourseSchema.and(ImageSchema);
 export const QuickCourseSchemaThumbNail = QuickCourseSchema.and(

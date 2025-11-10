@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Course } from "@/types/types";
 import {
@@ -24,24 +24,25 @@ import MuxPlayer from "@mux/mux-player-react";
 import EnrollButton from "./EnrollButton";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation"; // ✅ Only need this
-import { loadBundle } from "firebase/firestore";
-import { set } from "zod";
-import { generateProtectionKey } from "@/lib/purchaseProtection/protectionKey";
-import { useAuth } from "@/context/authContext";
-import { purchaseCourseWithWallet } from "@/app/actions/wallet_actions";
 interface CoursePreviewProps {
   course: Course;
 }
 
 export default function CoursePreview({ course }: CoursePreviewProps) {
   const searchParams = useSearchParams();
+  const actualPrice = useMemo(() => {
+    if (
+      (course.salePrice ?? 0) > 0 &&
+      course.salePrice! < (course.price ?? 0)
+    ) {
+      return course.salePrice!;
+    }
+    return course.price ?? 0;
+  }, [course.price, course.salePrice]);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(["المقدمة"]) // Auto-expand intro section
   );
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const auth = useAuth();
-  const user = auth.user;
 
   useEffect(() => {
     const paymentStatus = searchParams.get("payment");
@@ -57,30 +58,6 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
       window.history.replaceState(null, "", window.location.pathname);
     }
   }, [searchParams]);
-  const handlePurchaseWithWallet = async () => {
-    try {
-      if (!user) {
-        throw new Error("يرجى تسجيل الدخول أولاً");
-      }
-
-      setIsLoading(true);
-      const protectionKey = generateProtectionKey(
-        user?.uid,
-        course.id,
-        "purchase"
-      );
-      const token = await auth.user?.getIdToken();
-      if (!token) {
-        throw new Error("يرجى تسجيل الدخول أولاً");
-      }
-      const result = await purchaseCourseWithWallet(token, course.id);
-      if (result.success) {
-        toast.success("تم شراء الدورة بنجاح!");
-      } else {
-        throw new Error(result.message || "فشل في شراء الدورة");
-      }
-    } catch (error) {}
-  };
 
   // Get the first free preview video (from المقدمة section)
   const freePreviewVideo = useMemo(() => {
@@ -170,8 +147,6 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
   }, [course.videos]);
 
   const totalVideos = course.videos?.length || 0;
-  const originalPrice =
-    course.price && course.price > 0 ? course.price * 5.83 : 0;
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
@@ -290,27 +265,28 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
               <div className="lg:hidden">
                 <Card className="bg-white/10 backdrop-blur-sm border-white/20">
                   <CardContent className="p-6 space-y-4">
-                    <div>
-                      {course.price === 0 ? (
-                        <p className="text-3xl font-bold text-green-400">
-                          مجاني
-                        </p>
-                      ) : (
-                        <div className="flex items-baseline gap-3">
-                          <span className="text-3xl font-bold">
-                            ${course.price}
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      {" "}
+                      {(course.salePrice ?? 0) > 0 &&
+                      course.salePrice! < (course.price ?? 0) ? (
+                        <>
+                          <span className="text-2xl sm:text-3xl font-bold text-green-600">
+                            ${course.salePrice!.toFixed(2)}
                           </span>
-                          {originalPrice > 0 && (
-                            <span className="text-lg text-gray-400 line-through">
-                              ${originalPrice.toFixed(2)}
-                            </span>
-                          )}
-                        </div>
+                          <span className="text-base sm:text-lg text-gray-400 line-through">
+                            ${(course.price ?? 0).toFixed(2)}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-2xl sm:text-3xl font-bold">
+                          ${(course.price ?? 0).toFixed(2)}
+                        </span>
                       )}
                     </div>
+
                     <EnrollButton
                       courseTitle={course.title}
-                      price={course.price}
+                      price={actualPrice}
                       courseId={course.id}
                       isFree={course.price === 0}
                       fullWidth
@@ -372,41 +348,41 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
                 </div>
 
                 {/* Price Card (Desktop Only - Below Video) */}
+                {/* Desktop Price Card */}
                 <div className="hidden lg:block">
                   <CardContent className="p-6 space-y-4 bg-white">
                     <div className="text-center">
-                      {course.price === 0 ? (
+                      {/* ✅ CORRECT ORDER: Show salePrice if available */}
+                      {(course.salePrice ?? 0) > 0 &&
+                      course.salePrice! < (course.price ?? 0) ? (
+                        <div className="flex items-baseline justify-center gap-3">
+                          {/* Sale price - BIGGER, GREEN */}
+                          <span className="text-4xl font-bold text-green-600">
+                            {course.salePrice!.toLocaleString()} د.ع
+                          </span>
+                          {/* Original price - SMALLER, CROSSED */}
+                          <span className="text-xl text-gray-400 line-through">
+                            {course.price!.toLocaleString()} د.ع
+                          </span>
+                        </div>
+                      ) : course.price === 0 ? (
                         <p className="text-4xl font-bold text-green-600">
                           مجاني
                         </p>
                       ) : (
-                        <div className="flex items-baseline justify-center gap-3">
-                          <span className="text-4xl font-bold text-gray-900">
-                            {course.price} IQD
-                          </span>
-                          {/* {originalPrice > 0 && (
-                            <span className="text-xl text-gray-400 line-through">
-                              ${originalPrice.toFixed(2)}
-                            </span>
-                          )} */}
-                        </div>
+                        <span className="text-4xl font-bold text-gray-900">
+                          {course.price!.toLocaleString()} د.ع
+                        </span>
                       )}
-                      {/* {(course.price ?? 0) > 0 && (
-                        <p className="text-sm text-red-600 font-medium mt-2">
-                          خصم محدود!
-                        </p>
-                      )} */}
                     </div>
+
                     <EnrollButton
                       courseTitle={course.title}
-                      price={course.price}
+                      price={actualPrice}
                       courseId={course.id}
                       isFree={course.price === 0}
                       fullWidth
                     />
-                    {/* <p className="text-xs text-center text-gray-600">
-                      ضمان استرداد الأموال لمدة 30 يوماً
-                    </p> */}
                   </CardContent>
                 </div>
               </Card>
@@ -670,7 +646,7 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
                 <div className="pt-4 border-t">
                   <EnrollButton
                     courseTitle={course.title}
-                    price={course.price}
+                    price={actualPrice}
                     courseId={course.id}
                     isFree={course.price === 0}
                     fullWidth

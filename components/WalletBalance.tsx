@@ -1,53 +1,52 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/authContext";
-import { getWalletBalance } from "@/app/actions/wallet_actions";
 import { Wallet } from "lucide-react";
-import { adminAuth } from "@/firebase/service";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "@/firebase/client";
 
 export default function WalletBalance() {
-  const { user, getToken } = useAuth();
+  const { user } = useAuth();
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const auth = useAuth();
-  useEffect(() => {}, []);
 
   useEffect(() => {
-    if (user) {
-      fetchBalance();
-    }
-  }, [user]);
-
-  const fetchBalance = async () => {
-    try {
-      const token = await auth.user?.getIdToken();
-      if (!token) {
-        throw new Error("يرجى تسجيل الدخول أولاً");
-      }
-      const result = await getWalletBalance(token);
-
-      if (result.success) {
-        setBalance(result.balance || 0);
-      }
-    } catch (error) {
-      console.error("Failed to fetch balance:", error);
-    } finally {
+    if (!user) {
       setLoading(false);
+      return;
     }
-  };
+
+    const unsubscribe = onSnapshot(
+      doc(db, "wallets", user.uid),
+      (doc) => {
+        setBalance(doc.data()?.balance || 0);
+        setLoading(false);
+      },
+      (error) => {
+        console.error("Error fetching wallet balance:", error);
+        setBalance(0);
+        setLoading(false);
+      }
+    );
+
+    // Return cleanup function from useEffect, not from onSnapshot
+    return () => unsubscribe();
+  }, [user]);
 
   if (!user) return null;
 
   return (
-    <>
-      <span>محفظتي</span>
-      <Wallet className="h-4 w-4" />
+    <div className="flex items-center gap-2">
+      <Wallet className="h-4 w-4 text-blue-600" />
+      <span>محفظتي:</span>
       {loading ? (
         <span>...</span>
       ) : (
-        <span>{balance?.toLocaleString() || 0} د.ع</span>
+        <span className="font-semibold">
+          {balance?.toLocaleString() || 0} د.ع
+        </span>
       )}
-    </>
+    </div>
   );
 }

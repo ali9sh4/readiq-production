@@ -1,14 +1,9 @@
 "use client";
 
 import { Card } from "@/components/ui/card";
-import {
-  Smartphone,
-  CreditCard,
-  Clock,
-  CheckCircle2,
-  Wallet,
-} from "lucide-react";
+import { CreditCard, Clock, CheckCircle2, Wallet } from "lucide-react";
 import Image from "next/image";
+import WalletBalance from "./WalletBalance";
 type PaymentMethod = "zaincash" | "areeba" | "wallet";
 
 interface PaymentSelectorProps {
@@ -34,6 +29,7 @@ export default function PaymentSelector({
       disabled: false,
       badge: "فوري",
       badgeColor: "bg-green-100 text-green-700",
+      component: <WalletBalance />,
     },
     {
       id: "zaincash" as PaymentMethod,
@@ -103,6 +99,7 @@ export default function PaymentSelector({
               >
                 {method.icon}
               </div>
+
               {/* Content */}
               <div className="flex-1 text-right">
                 <div className="flex items-center gap-2 justify-end">
@@ -117,12 +114,18 @@ export default function PaymentSelector({
                     {method.badge}
                   </span>
                 </div>
+
                 <p
                   className={`text-sm ${
                     method.disabled ? "text-gray-400" : "text-gray-600"
                   }`}
                 >
                   {method.description}
+                  {method.id === "wallet" && (
+                    <span className="block mt-1">
+                      <WalletBalance />
+                    </span>
+                  )}
                 </p>
               </div>
 

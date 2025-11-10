@@ -4,11 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { enrollInFreeCourse } from "@/app/actions/enrollment_action";
 import { Loader2, CheckCircle, ShoppingCart, LogIn } from "lucide-react";
 import { useAuth } from "@/context/authContext";
@@ -113,10 +109,11 @@ export default function EnrollButton({
           }
 
           setShowPaymentDialog(false);
+          setLoading(false);
 
           // Redirect to course page or refresh
           setTimeout(() => {
-            router.push(`/learn/${courseId}`); // Or wherever enrolled courses go
+            router.push(`/Course/${courseId}`); // Or wherever enrolled courses go
             router.refresh();
           }, 1500);
         } else {
@@ -182,11 +179,15 @@ export default function EnrollButton({
       }
     } catch (error) {
       console.error("Payment error:", error);
-      toast.error("خطأ في الاتصال", {
-        description:
-          "حدث خطأ أثناء معالجة الدفع. يرجى التحقق من اتصال الإنترنت",
+
+      // ✅ Show the actual error message
+      const errorMessage =
+        error instanceof Error ? error.message : "حدث خطأ أثناء معالجة الدفع";
+
+      toast.error(errorMessage, {
         duration: 5000,
       });
+
       setLoading(false);
       setShowPaymentDialog(false);
     }
@@ -235,7 +236,7 @@ export default function EnrollButton({
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <PaymentSelector
-            price={price ?? 0}
+            price={price || 0}
             onSelect={handlePaymentSelect}
             loading={loading}
           />

@@ -82,14 +82,15 @@ const CourseCard = memo(
     const rating = course.rating || 4.7;
     const studentsCount = course.studentsCount || 235305;
     const instructor = course.instructor || "Academind by Maximilian";
-    const price = course.price ?? 11.99;
-    const originalPrice = price > 0 ? price * 5.83 : 69.99; // Calculate to show ~$69.99
+    const originalPrice = course.price ?? 99.99;
+    const salePrice = course.salePrice || null;
+    const currentPrice = salePrice || originalPrice;
 
     // ✅ BEST PRACTICE: Determine which badges to show
     const showBestseller =
       course.status === "published" || studentsCount > 10000;
-    const showPremium = price > 0;
-    const showFree = price === 0;
+    const showPremium = originalPrice > 0;
+    const showFree = originalPrice === 0;
 
     // Admin View - Not wrapped in Link
     if (isAdminView) {
@@ -229,12 +230,17 @@ const CourseCard = memo(
 
           {/* ✅ YOUR IMPROVEMENT: Clean price display */}
           <div className="flex justify-end items-baseline gap-2">
+            {/* Show the current price (sale or regular) */}
             <span className="text-base font-bold text-gray-900">
-              {price === 0 ? "مجاني" : `$${price.toFixed(2)}`}
+              {currentPrice === 0
+                ? "مجاني"
+                : `${currentPrice.toLocaleString()} د.ع`}
             </span>
-            {price > 0 && (
+
+            {/* Show strikethrough original price only if there's a discount */}
+            {salePrice && salePrice < originalPrice && (
               <span className="text-xs text-gray-400 line-through">
-                ${originalPrice.toFixed(2)}
+                {originalPrice.toLocaleString()} د.ع
               </span>
             )}
           </div>

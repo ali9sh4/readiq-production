@@ -12,14 +12,13 @@ export type TopupStatus = "pending" | "approved" | "rejected" | "expired";
 // Wallet
 export interface Wallet {
   userId: string;
+  userName?: string;
   balance: number;
   totalTopups: number;
   totalSpent: number;
   createdAt: string;
   updatedAt: string;
-  isActive: boolean;
   dailyLimit: number;
-  isVerified: boolean;
 }
 
 // Transaction record

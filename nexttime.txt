@@ -95,14 +95,19 @@ sectioning //// done
 GENERAL STYLING  improvments  /// done 
   FOOTER  improvments  /// 
  how to add the payment functionality // done 
- course Platform wallet // 
-  adding the wallet to dashoard and approval // 
- wallet ui colors and poistion in the navbar // 
+ course Platform wallet //  done 
+ المحفظة غير موجودة // done 
+  adding the wallet to dashoard and approval // done
+ wallet ui colors and poistion in the navbar // done
+  Enroll/Purchase button//!done
  student report // 
  how to protect your code .// 
- files button  that is attached to the video section /// 
+ files button  that is attached to the video section /// done
+  enrollments collection in Firestore// done
+ Enroll button functionality//done
+ Student dashboard to view enrolled courses//done
  file download // 
-  Enroll/Purchase button//!
+ 
   Implement Course Deletion//
  Create server action deleteCourse(courseId, token)//
  Delete from Firestore//
@@ -119,22 +124,11 @@ GENERAL STYLING  improvments  /// done
  URL params for shareable filters//
  5. Student Enrollment System//
 
- enrollments collection in Firestore//
- Enroll button functionality//
- Student dashboard to view enrolled courses//
- Progress tracking//
- 6. Payment Integration (Stripe)//
-
- Stripe checkout for paid courses//
- Webhook to handle successful payments//
- Free course instant enrollment///
- Receipt/invoice generation//
- enrollment system, payment integration, progress tracking, certificates///
-
 after launching :
 sectioning improvments //
 migration plan // for firebase and the videos // 
 send credit to a friends // 
+pagination for the admin dashboard // 
 
 
 
