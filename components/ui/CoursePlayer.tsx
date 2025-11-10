@@ -499,7 +499,7 @@ export default function CoursePlayer({
                 {course.title}
               </h1>
               <p className="text-xs text-gray-600 truncate">
-                {course.instructor || "مدرب غير معروف"} •{" "}
+                {course.instructorName || "مدرب غير معروف"} •{" "}
                 {course.level ? translateLevel(course.level) : "جميع المستويات"}
               </p>
             </div>
@@ -725,7 +725,7 @@ export default function CoursePlayer({
                     </p>
                   </div>
                   <p className="font-bold text-gray-900 text-lg">
-                    {course.instructor || "غير محدد"}
+                    {course.instructorName || "غير محدد"}
                   </p>
                 </div>
 

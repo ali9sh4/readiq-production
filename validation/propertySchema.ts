@@ -78,6 +78,7 @@ export const FileSchema = z.object({
 export const BasicInfoSchema = z.object({
   title: z.string().min(1, "العنوان مطلوب").min(10, "العنوان قصير جداً"),
   subtitle: z.string().optional(),
+  instructorName: z.string().optional(),
   description: z.string().optional(),
   category: z.string().min(1, "التصنيف مطلوب"),
   level: z.enum(["beginner", "intermediate", "advanced", "all_levels"]),

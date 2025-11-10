@@ -223,7 +223,7 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
               </div>
 
               {/* Instructor */}
-              {course.instructor && (
+              {course.instructorName && (
                 <div className="flex items-center gap-3 bg-white/10 rounded-xl p-4 backdrop-blur-sm">
                   <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                     <Award className="w-6 h-6 text-white" />
@@ -231,7 +231,7 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
                   <div>
                     <p className="text-xs text-gray-400">أنشأها</p>
                     <p className="font-semibold text-base">
-                      {course.instructor}
+                      {course.instructorName}
                     </p>
                   </div>
                 </div>

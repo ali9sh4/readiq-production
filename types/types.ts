@@ -76,7 +76,7 @@ export interface Course {
   requirements?: string[];
 
   // ===== Metadata =====
-  instructor?: string;
+  instructorName?: string;
   createdBy?: string;
   rating?: number;
   studentsCount?: number;

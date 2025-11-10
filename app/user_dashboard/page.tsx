@@ -180,7 +180,7 @@ export default function DashboardHome() {
                         {course.title || "دورة بدون عنوان"}
                       </h4>
                       <p className="text-sm text-gray-600">
-                        {course.instructor || "بدون مدرس"} •{" "}
+                        {course.instructorName || "بدون مدرس"} •{" "}
                         {course.level || "جميع المستويات"}
                       </p>
                     </div>

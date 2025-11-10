@@ -106,8 +106,11 @@ GENERAL STYLING  improvments  /// done
   enrollments collection in Firestore// done
  Enroll button functionality//done
  Student dashboard to view enrolled courses//done
+ with every login update studentCount // 
+ instructor name // done 
+ userdashboard cleanup  // 
+ button check//
  file download // 
- 
   Implement Course Deletion//
  Create server action deleteCourse(courseId, token)//
  Delete from Firestore//

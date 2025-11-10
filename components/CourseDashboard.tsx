@@ -138,6 +138,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
       subtitle: defaultValues.subtitle || "",
       description: defaultValues.description || "",
       category: defaultValues.category || "",
+      instructorName: defaultValues.instructorName || "",
       level: (defaultValues.level as "beginner") || "beginner",
       language: (defaultValues.language as "arabic") || "arabic",
     },
@@ -686,6 +687,25 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                 {...field}
                                 placeholder="وصف تفصيلي للدورة"
                                 rows={4}
+                                className="resize-none text-right"
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={basicInfoForm.control}
+                        name="instructorName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-right">
+                              اسم المحاضر
+                            </FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                rows={1}
                                 className="resize-none text-right"
                               />
                             </FormControl>

@@ -80,15 +80,14 @@ const CourseCard = memo(
 
     // ✅ YOUR IMPROVEMENT: Better default values
     const rating = course.rating || 4.7;
-    const studentsCount = course.studentsCount || 235305;
-    const instructor = course.instructor || "Academind by Maximilian";
+    const studentsCount = course.studentsCount || 0;
+    const instructor = course.instructorName || " مدرب غير معروف";
     const originalPrice = course.price ?? 99.99;
     const salePrice = course.salePrice || null;
     const currentPrice = salePrice || originalPrice;
 
     // ✅ BEST PRACTICE: Determine which badges to show
-    const showBestseller =
-      course.status === "published" || studentsCount > 10000;
+    const showBestseller = studentsCount > 20;
     const showPremium = originalPrice > 0;
     const showFree = originalPrice === 0;
 
