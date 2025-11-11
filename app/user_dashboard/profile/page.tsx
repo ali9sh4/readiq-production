@@ -24,11 +24,25 @@ import {
   AlertCircle,
 } from "lucide-react";
 import Image from "next/image";
+import { updateProfile } from "firebase/auth";
+import { updateUserProfile } from "@/lib/services/userService";
 
 export default function DashboardProfile() {
   const auth = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(auth.user?.displayName || "");
+  const handleSave = async () => {
+    if (!auth.user) return;
+    try {
+      await updateProfile(auth.user, { displayName });
+      await updateUserProfile(auth.user.uid, { displayName });
+      setIsEditing(false);
+      alert("✅ تم تحديث الاسم المعروض بنجاح");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      alert("Failed to update profile. Please try again.");
+    }
+  };
 
   if (!auth.isClient) {
     return (
@@ -63,13 +77,6 @@ export default function DashboardProfile() {
     );
   }
 
-  const handleSave = async () => {
-    // For now, just update local state
-    // In a real app, you'd call an API to update the user profile
-    console.log("Saving profile changes:", { displayName });
-    setIsEditing(false);
-  };
-
   const handleCancel = () => {
     setDisplayName(auth.user?.displayName || "");
     setIsEditing(false);
@@ -77,11 +84,7 @@ export default function DashboardProfile() {
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "غير محدد";
-    return new Date(dateString).toLocaleDateString("ar-SA", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    return new Date(dateString).toLocaleDateString("en-US");
   };
 
   return (

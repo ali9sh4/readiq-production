@@ -153,71 +153,7 @@ export default function DashboardHome() {
           />
         </div>
       </section>
-      {/* Enrolled Courses */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-xl">دوراتي المسجلة</CardTitle>
-          <CardDescription>
-            {enrolledCourses.length > 0
-              ? `${enrolledCourses.length} دورة`
-              : "لا توجد دورات"}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {enrolledCourses.length > 0 ? (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {displayedCourses.map((course) => (
-                  <div
-                    key={course.id}
-                    className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <BookOpen className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-gray-900 truncate">
-                        {course.title || "دورة بدون عنوان"}
-                      </h4>
-                      <p className="text-sm text-gray-600">
-                        {course.instructorName || "بدون مدرس"} •{" "}
-                        {course.level || "جميع المستويات"}
-                      </p>
-                    </div>
-                    <Link href={`/Course/${course.id}`}>
-                      <Button size="sm" variant="outline">
-                        <Play className="w-4 h-4 ml-1" />
-                        متابعة
-                      </Button>
-                    </Link>
-                  </div>
-                ))}
-              </div>
 
-              {enrolledCourses.length > 6 && (
-                <div className="mt-4 text-center">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowAllCourses(!showAllCourses)}
-                  >
-                    {showAllCourses
-                      ? "عرض أقل"
-                      : `عرض الكل (${enrolledCourses.length - 6} أخرى)`}
-                  </Button>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="text-center py-8">
-              <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600 mb-4">لم تسجل في أي دورة بعد</p>
-              <Link href="/">
-                <Button>استكشف الدورات</Button>
-              </Link>
-            </div>
-          )}
-        </CardContent>
-      </Card>
       {/* Quick Actions */}
       <Card className="border-0 shadow-lg bg-gradient-to-l from-gray-50 to-white">
         <CardHeader>

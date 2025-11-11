@@ -15,6 +15,7 @@ import React, { useContext, useEffect } from "react";
 import { createContext, useState } from "react";
 import { ParsedToken } from "firebase/auth";
 import { removeToken, setToken } from "./actions";
+import { createOrUpdateUser } from "@/lib/services/userService"; // ✅ Import
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -75,6 +76,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
+        try {
+          await createOrUpdateUser(currentUser);
+        } catch (error) {
+          console.error("Failed to sync user with Firestore:", error);
+        }
         const tokenResult = await currentUser.getIdTokenResult();
         const token = tokenResult.token;
         const refreshToken = currentUser.refreshToken;

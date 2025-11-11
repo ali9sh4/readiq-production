@@ -236,12 +236,6 @@ export default function DashboardCertificates() {
                 مع أصحاب العمل.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button asChild>
-                  <Link href="/">
-                    <BookOpen className="w-4 h-4 ml-2" />
-                    استكشف الدورات
-                  </Link>
-                </Button>
                 <Button variant="outline" asChild>
                   <a href="/user_dashboard">العودة للوحة التحكم</a>
                 </Button>
