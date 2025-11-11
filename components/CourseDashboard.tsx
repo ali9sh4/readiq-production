@@ -724,13 +724,61 @@ export default function CourseDashboard({ defaultValues }: Props) {
                               <FormLabel className="text-right block">
                                 التصنيف
                               </FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  placeholder="مثال: البرمجة"
-                                  className="text-right"
-                                />
-                              </FormControl>
+                              <Select
+                                value={field.value ?? ""}
+                                onValueChange={field.onChange}
+                                dir="rtl"
+                              >
+                                <FormControl>
+                                  <SelectTrigger className="text-right">
+                                    <SelectValue placeholder="اختر التصنيف" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent
+                                  align="end"
+                                  className="text-base"
+                                >
+                                  <SelectItem value="programming">
+                                    البرمجة
+                                  </SelectItem>
+                                  <SelectItem value="design">
+                                    التصميم
+                                  </SelectItem>
+                                  <SelectItem value="business">
+                                    الأعمال
+                                  </SelectItem>
+                                  <SelectItem value="marketing">
+                                    التسويق
+                                  </SelectItem>
+                                  <SelectItem value="photography">
+                                    التصوير
+                                  </SelectItem>
+                                  <SelectItem value="music">
+                                    الموسيقى
+                                  </SelectItem>
+                                  <SelectItem value="health_fitness">
+                                    الصحة واللياقة
+                                  </SelectItem>
+                                  <SelectItem value="medicine">
+                                    الطب والصحة
+                                  </SelectItem>
+                                  <SelectItem value="teaching">
+                                    التعليم والتدريس
+                                  </SelectItem>
+                                  <SelectItem value="languages">
+                                    اللغات
+                                  </SelectItem>
+                                  <SelectItem value="personal_development">
+                                    التنمية الذاتية
+                                  </SelectItem>
+                                  <SelectItem value="science">
+                                    العلوم
+                                  </SelectItem>
+                                  <SelectItem value="technology">
+                                    التقنية
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
                               <FormMessage />
                             </FormItem>
                           )}

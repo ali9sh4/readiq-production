@@ -24,11 +24,16 @@ import MuxPlayer from "@mux/mux-player-react";
 import EnrollButton from "./EnrollButton";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation"; // ✅ Only need this
+import FavoriteButton from "./favoritesButton";
 interface CoursePreviewProps {
   course: Course;
+  initialIsFavorited: boolean;
 }
 
-export default function CoursePreview({ course }: CoursePreviewProps) {
+export default function CoursePreview({
+  course,
+  initialIsFavorited: initialIsFavorite = false,
+}: CoursePreviewProps) {
   const searchParams = useSearchParams();
   const actualPrice = useMemo(() => {
     if (
@@ -291,6 +296,13 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
                       isFree={course.price === 0}
                       fullWidth
                     />
+                    <FavoriteButton
+                      courseId={course.id}
+                      courseTitle={course.title}
+                      courseThumbnail={course.thumbnailUrl}
+                      initialIsFavorited={initialIsFavorite}
+                      showLabel={false}
+                    />
                   </CardContent>
                 </Card>
               </div>
@@ -382,6 +394,13 @@ export default function CoursePreview({ course }: CoursePreviewProps) {
                       courseId={course.id}
                       isFree={course.price === 0}
                       fullWidth
+                    />
+                    <FavoriteButton
+                      courseId={course.id}
+                      courseTitle={course.title}
+                      courseThumbnail={course.thumbnailUrl}
+                      initialIsFavorited={initialIsFavorite} // ✅ Pass the prop
+                      showLabel={false}
                     />
                   </CardContent>
                 </div>

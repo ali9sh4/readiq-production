@@ -108,30 +108,30 @@ GENERAL STYLING  improvments  /// done
  Student dashboard to view enrolled courses//done
  with every login update studentCount // 
  instructor name // done 
- userdashboard cleanup  // 
- button check//
+ userdashboard cleanup  // done 
+ fav .button /// done 
+ search // done
+ categrires and filter  // done 
+ instructor search param // done 
+ button check// done
  file download // 
   Implement Course Deletion//
  Create server action deleteCourse(courseId, token)//
  Delete from Firestore//
+  Sort by: newest, price, rating//
  Delete thumbnail from Storage//
  Delete all videos from Storage//
  Delete all files from R2//
  Add confirmation dialog//
  Show toast notifications//
- 4. Search & Filtering
-
- Search by title/description//
- Filter by category, level, price range//
- Sort by: newest, price, rating//
  URL params for shareable filters//
- 5. Student Enrollment System//
 
 after launching :
 sectioning improvments //
 migration plan // for firebase and the videos // 
 send credit to a friends // 
 pagination for the admin dashboard // 
+isfav is taking time to appear  //
 
 
 

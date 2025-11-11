@@ -11,9 +11,9 @@ type SearchParams = {
 };
 
 export default async function Courses({
-  searchParams = {},
+  searchParams,
 }: {
-  searchParams?: SearchParams;
+  searchParams: Promise<SearchParams>;
 }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">

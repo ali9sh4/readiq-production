@@ -55,7 +55,7 @@ export const AuthButton = () => {
               <Link href="/">حسابي</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-                <Link href="/user_dashboard"> دوراتي المشترك بها</Link>
+              <Link href="/user_dashboard"> دوراتي المشترك بها</Link>
             </DropdownMenuItem>
 
             {!!auth.CustomClaims?.admin && (
@@ -63,11 +63,7 @@ export const AuthButton = () => {
                 <Link href="/admin-dashboard">لوحة الإدارة</Link>
               </DropdownMenuItem>
             )}
-            {!auth.CustomClaims?.admin && (
-              <DropdownMenuItem asChild>
-                <Link href="/account/my-favourites">المفضلة</Link>
-              </DropdownMenuItem>
-            )}
+
             <DropdownMenuItem asChild>
               <Link href="/course-upload">إضافة دورة جديدة</Link>
             </DropdownMenuItem>

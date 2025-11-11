@@ -10,6 +10,8 @@ import { Star, Edit, Trash2, BookOpen, AlertCircle } from "lucide-react";
 import { Course, CourseResponse } from "@/types/types";
 import { checkUserEnrollments } from "@/app/actions/enrollment_action";
 import { useAuth } from "@/context/authContext";
+import FavoriteButton from "./favoritesButton";
+import { checkUserFavorites } from "@/app/actions/favorites_actions";
 
 // ===== TYPES =====
 
@@ -67,10 +69,14 @@ const CourseCard = memo(
     course,
     isAdminView,
     onDelete,
+    isEnrolled = false,
+    isFavorited = false,
   }: {
     course: Course;
     isAdminView: boolean;
     onDelete?: (id: string) => void;
+    isEnrolled?: boolean;
+    isFavorited?: boolean;
   }) => {
     const [imageError, setImageError] = useState(false);
     const imageUrl = useMemo(
@@ -95,7 +101,6 @@ const CourseCard = memo(
     if (isAdminView) {
       return (
         <div className="group block rounded-xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1">
-          {/* Image */}
           {/* Image with Preview Overlay */}
           <Link href={`/Course/${course.id}`} className="relative block">
             <div className="relative h-40 sm:h-44 bg-gray-100 overflow-hidden group/image">
@@ -185,6 +190,17 @@ const CourseCard = memo(
               <BookOpen className="w-10 h-10 text-gray-400" />
             </div>
           )}
+          {!isAdminView && (
+            <div className="absolute top-2 right-2 z-10">
+              <FavoriteButton
+                courseId={course.id}
+                courseTitle={course.title}
+                courseThumbnail={course.thumbnailUrl}
+                variant="ghost"
+                initialIsFavorited={isFavorited}
+              />
+            </div>
+          )}
 
           {/* ✅ YOUR IMPROVEMENT: Badges ON the image (bottom-left) - Very Udemy! */}
           <div className="absolute bottom-2 left-2 flex gap-2">
@@ -201,6 +217,11 @@ const CourseCard = memo(
             {showPremium && (
               <Badge className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-md shadow-sm">
                 مميز
+              </Badge>
+            )}
+            {isEnrolled && (
+              <Badge className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-md shadow-sm">
+                مسجل
               </Badge>
             )}
           </div>
@@ -262,6 +283,10 @@ export default function CoursesCardList({
   const [enrollmentStatus, setEnrollmentStatus] = useState<
     Record<string, boolean>
   >({});
+  const [favoriteStatus, setFavoriteStatus] = useState<Record<string, boolean>>(
+    {}
+  ); // ✅ Add this
+
   const [loading, setLoading] = useState(true);
 
   // Check enrollments on mount
@@ -273,10 +298,17 @@ export default function CoursesCardList({
 
     try {
       const courseIds = data.courses.map((course) => course.id);
-      const result = await checkUserEnrollments(auth.user.uid, courseIds);
+      const token = await auth.user.getIdToken();
+      const [enrollmentResult, favoriteResult] = await Promise.all([
+        checkUserEnrollments(auth.user.uid, courseIds),
+        checkUserFavorites(token, courseIds),
+      ]);
+      if (enrollmentResult.success) {
+        setEnrollmentStatus(enrollmentResult.enrollments);
+      }
 
-      if (result.success) {
-        setEnrollmentStatus(result.enrollments);
+      if (favoriteResult.success) {
+        setFavoriteStatus(favoriteResult.favorites);
       }
     } catch (error) {
       console.error("Error fetching enrollments:", error);
@@ -307,6 +339,8 @@ export default function CoursesCardList({
             course={course}
             isAdminView={isAdminView}
             onDelete={onDeleteCourse}
+            isEnrolled={enrollmentStatus[course.id]}
+            isFavorited={favoriteStatus[course.id]}
           />
         ))}
       </div>

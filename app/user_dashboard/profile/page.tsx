@@ -287,32 +287,6 @@ export default function DashboardProfile() {
               <span>إعدادات الخصوصية</span>
             </Button>
           </div>
-
-          {/* Danger Zone */}
-          <div className="border-t pt-6 mt-6">
-            <h3 className="text-lg font-semibold text-red-700 mb-4">
-              المنطقة الخطرة
-            </h3>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                if (
-                  confirm(
-                    "هل أنت متأكد من رغبتك في حذف حسابك؟ هذا الإجراء لا يمكن التراجع عنه."
-                  )
-                ) {
-                  // Handle account deletion
-                  alert("سيتم إضافة هذه الميزة قريباً");
-                }
-              }}
-            >
-              <AlertCircle className="w-4 h-4 ml-2" />
-              حذف الحساب نهائياً
-            </Button>
-            <p className="text-sm text-gray-500 mt-2">
-              سيتم حذف جميع بياناتك بشكل نهائي ولا يمكن استردادها.
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

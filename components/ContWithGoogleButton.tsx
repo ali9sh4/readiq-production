@@ -33,11 +33,7 @@ export default function LoginPage() {
           <Button
             onClick={async () => {
               await handleGoogleSignIn();
-              if (redirect) {
-                router.push(redirect); // ✅ Go back to course
-              } else {
-                router.push("/"); // ✅ Default redirect
-              }
+              router.push("/"); // ✅ Default redirect
             }}
             disabled={isLoading}
             className="w-full flex items-center justify-center space-x-2"

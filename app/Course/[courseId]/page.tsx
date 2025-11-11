@@ -1,5 +1,6 @@
 "use server";
 import { checkUserEnrollments } from "@/app/actions/enrollment_action";
+import { checkIfFavorited } from "@/app/actions/favorites_actions";
 import { getCourseById } from "@/app/course-upload/action";
 import CoursePreview from "@/components/CoursePreview";
 import CoursePlayer from "@/components/ui/CoursePlayer";
@@ -62,18 +63,22 @@ export default async function WatchCoursePage({
   // 2. Get authentication
   const cookieStore = await cookies();
   const token = cookieStore.get("firebaseAuthToken")?.value;
+  let isFavorited = false;
 
   if (!token) {
     // ✅ No token - show preview for guests
-    return <CoursePreview course={cleanedCourse} />;
+    return <CoursePreview course={cleanedCourse} initialIsFavorited={false} />;
   }
 
   const authResult = await getCurrentUser({ token });
 
   if (!authResult.success || !authResult.user) {
     // ✅ Invalid token - show preview
-    return <CoursePreview course={cleanedCourse} />;
+    return <CoursePreview course={cleanedCourse} initialIsFavorited={false} />;
   }
+  const favResult = await checkIfFavorited(token, courseId);
+
+  isFavorited = favResult.isFavorited;
 
   // 3. Check enrollment
   const user = authResult.user;
@@ -96,5 +101,7 @@ export default async function WatchCoursePage({
   }
 
   // ✅ Not enrolled - show preview with enroll option
-  return <CoursePreview course={cleanedCourse} />;
+  return (
+    <CoursePreview course={cleanedCourse} initialIsFavorited={isFavorited} />
+  );
 }

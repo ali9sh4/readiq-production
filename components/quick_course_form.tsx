@@ -182,10 +182,23 @@ export default function QuickCourseForm({
                                 التصوير
                               </SelectItem>
                               <SelectItem value="music">الموسيقى</SelectItem>
-                              <SelectItem value="health">
+                              <SelectItem value="health_fitness">
                                 الصحة واللياقة
                               </SelectItem>
-                              <SelectItem value="teaching">التدريس</SelectItem>
+                              <SelectItem value="medicine">
+                                الطب والصحة
+                              </SelectItem>
+                              <SelectItem value="teaching">
+                                التعليم والتدريس
+                              </SelectItem>
+                              <SelectItem value="languages">اللغات</SelectItem>
+                              <SelectItem value="personal_development">
+                                التنمية الذاتية
+                              </SelectItem>
+                              <SelectItem value="science">العلوم</SelectItem>
+                              <SelectItem value="technology">
+                                التقنية
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </FormControl>

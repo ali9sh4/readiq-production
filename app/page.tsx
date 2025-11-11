@@ -1,18 +1,21 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, Users, Star, PlusCircle } from "lucide-react";
-import PublicCoursesCardList from "@/components/publicCoursesCardList";
-type SearchParams = Promise<{
-  cursor?: string;
-  category?: string;
-  level?: string;
-}>;
+import { BookOpen, Users, Star } from "lucide-react";
+import { getCourses } from "@/data/courses";
+import HomeCoursesSection from "@/components/HomeCoursesSection";
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams?: SearchParams;
-}) {
+export default async function Home() {
+  const data = await getCourses({
+    pagination: {
+      pageSize: 1000,
+    },
+    filters: {
+      isApproved: true,
+      isRejected: false,
+      status: "published",
+    },
+  });
+  const courses = data.courses ? data.courses || [] : [];
   // ✅ Get featured courses for homepage
 
   return (
@@ -81,7 +84,7 @@ export default async function Home({
           {/* Display Courses */}
 
           <>
-            <PublicCoursesCardList searchParams={searchParams} />
+            <HomeCoursesSection initialCourses={courses} />{" "}
           </>
         </div>
       </section>
