@@ -29,6 +29,9 @@ import Link from "next/link";
 import { translateLevel } from "@/utils/translation";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { useVideoProtection } from "@/hooks/useVideoProtection";
+import { useAuth } from "@/context/authContext";
+import VideoWatermark from "../VideoWatermark";
 
 // --- Types ---
 interface VideoProgress {
@@ -79,6 +82,19 @@ export default function CoursePlayer({
   onProgressUpdate?: (videoId: string, completed: boolean) => Promise<void>;
 }) {
   const searchParams = useSearchParams();
+  // Add this hook
+  const { videoContainerProps } = useVideoProtection({
+    onScreenCaptureDetected: () => {
+      toast.error("⚠️ Warning", {
+        description: "Screen recording attempt detected.",
+        duration: 3000,
+      });
+    },
+    enableContextMenu: false,
+  });
+  const auth = useAuth();
+  const watermarkText =
+    auth?.user?.email || auth?.user?.displayName || "ReadIQ - اقْرَأْ";
   useEffect(() => {
     const paymentStatus = searchParams.get("payment");
 
@@ -201,6 +217,64 @@ export default function CoursePlayer({
       setExpandedSections((prev) => new Set(prev).add(section));
     }
   }, [currentVideo]);
+  // Add this after your existing useEffect hooks (around line 280)
+  // Replace the existing fullscreen useEffect with this:
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const watermark = document.querySelector(
+        ".watermark-container"
+      ) as HTMLElement;
+
+      if (!watermark) return;
+
+      // Check if we're in fullscreen
+      const fullscreenElement =
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement ||
+        (document as any).mozFullScreenElement ||
+        (document as any).msFullscreenElement;
+
+      if (fullscreenElement) {
+        // Entering fullscreen - append watermark to fullscreen element
+        fullscreenElement.appendChild(watermark);
+        watermark.style.position = "fixed";
+        watermark.style.bottom = "6rem";
+        watermark.style.right = "2rem";
+        watermark.style.zIndex = "2147483647";
+      } else {
+        // Exiting fullscreen - return watermark to original container
+        const videoContainer = document.querySelector(".video-container");
+        if (videoContainer) {
+          videoContainer.appendChild(watermark);
+          watermark.style.position = "absolute";
+          watermark.style.bottom = "1.5rem";
+          watermark.style.right = "1.5rem";
+          watermark.style.zIndex = "50";
+        }
+      }
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange
+      );
+      document.removeEventListener(
+        "mozfullscreenchange",
+        handleFullscreenChange
+      );
+      document.removeEventListener(
+        "MSFullscreenChange",
+        handleFullscreenChange
+      );
+    };
+  }, []);
 
   // ✅ Handle video completion
   const handleVideoComplete = useCallback(async () => {
@@ -513,7 +587,10 @@ export default function CoursePlayer({
         </header>
 
         {/* Video Player */}
-        <div className="relative bg-black flex justify-center items-center min-h-[400px]">
+        <div
+          className="relative bg-black flex justify-center items-center min-h-[400px]"
+          {...videoContainerProps}
+        >
           {/* Loading State */}
           {isLoadingVideo && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
@@ -542,17 +619,6 @@ export default function CoursePlayer({
           {/* Video Player - When User Has Access */}
           {!videoError && currentVideo && canAccessVideo && (
             <>
-              {/* 🔍 Debug Console Log */}
-              {console.log("🎥 Video Debug:", {
-                videoId: currentVideo.videoId,
-                title: currentVideo.title,
-                playbackId: currentVideo.playbackId,
-                muxPlaybackId: currentVideo.muxPlaybackId,
-                hasPlaybackId: !!(
-                  currentVideo.playbackId || currentVideo.muxPlaybackId
-                ),
-              })}
-
               {/* Check if playback ID exists */}
               {!currentVideo.playbackId && !currentVideo.muxPlaybackId ? (
                 <div className="aspect-video flex flex-col items-center justify-center text-center p-6">
@@ -565,19 +631,24 @@ export default function CoursePlayer({
                   </p>
                 </div>
               ) : (
-                <MuxPlayer
-                  playbackId={currentVideo.playbackId}
-                  streamType="on-demand"
-                  metadata={{
-                    video_id: currentVideo.videoId,
-                    video_title: currentVideo.title,
-                  }}
-                  className="w-full h-full aspect-video bg-black"
-                  onEnded={() => {
-                    handleVideoComplete();
-                    goToNextVideo();
-                  }}
-                />
+                <div className="relative w-full aspect-video video-container">
+                  <MuxPlayer
+                    playbackId={currentVideo.playbackId}
+                    streamType="on-demand"
+                    metadata={{
+                      video_id: currentVideo.videoId,
+                      video_title: currentVideo.title,
+                    }}
+                    className="w-full h-full aspect-video bg-black"
+                    onEnded={() => {
+                      handleVideoComplete();
+                      goToNextVideo();
+                    }}
+                  />
+
+                  {/* Move watermark AFTER MuxPlayer */}
+                  {isEnrolled && <VideoWatermark text={watermarkText} />}
+                </div>
               )}
             </>
           )}
@@ -826,7 +897,7 @@ export default function CoursePlayer({
           width: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f3f4f6; // track
+          background: #f3f4f6;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
           background: #d1d5db;
@@ -834,6 +905,16 @@ export default function CoursePlayer({
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: #9ca3af;
+        }
+
+        /* Watermark in fullscreen */
+        .video-container:fullscreen .watermark-container,
+        .video-container:-webkit-full-screen .watermark-container,
+        .video-container:-moz-full-screen .watermark-container {
+          position: fixed !important;
+          bottom: 4rem !important;
+          right: 1.5rem !important;
+          z-index: 2147483647 !important;
         }
       `}</style>
     </div>

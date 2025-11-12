@@ -115,7 +115,7 @@ GENERAL STYLING  improvments  /// done
  instructor search param // done 
  button check// done
  file download // 
-  Implement Course Deletion//
+  Implement  fake Course Deletion  for instructor //
  Create server action deleteCourse(courseId, token)//
  Delete from Firestore//
   Sort by: newest, price, rating//

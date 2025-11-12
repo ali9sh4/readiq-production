@@ -1,4 +1,4 @@
 
-firebase storage rules //
+firebase storage rules // done 
 file viruses //
-ui and check all the buttons  so that website will not crash /// 
+ui and check all the buttons  so that website will not crash /// done

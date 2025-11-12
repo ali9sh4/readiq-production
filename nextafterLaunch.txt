@@ -1,0 +1,49 @@
+Option 1111111111: Add Tracking (Backend work)
+Track video watching patterns to detect suspicious behavior:
+What to track:
+
+Who watched what video
+How many times
+Download attempts
+Multiple simultaneous sessions
+Sharing account signs
+
+Where to store:
+typescript// Firebase structure:
+/video-analytics/{userId}/{courseId}/{videoId}
+  - watchCount: number
+  - lastWatched: timestamp
+  - devices: string[]
+  - ipAddresses: string[]
+  - suspiciousActivity: boolean
+When to flag as suspicious:
+
+Same account watching from 5+ different IPs in one day
+10+ watches of same video
+Multiple simultaneous sessions
+Rapid course completion (1 hour for 10-hour course)
+
+Want me to build the tracking system? It needs:
+
+Firebase function to log video plays
+Dashboard to view analytics
+Alert system for suspicious patterns
+
+Priority 2: Add Basic Tracking (2-3 hours)
+
+Track video views in Firebase
+Simple analytics dashboard
+Flag suspicious patterns
+
+Priority 3: Legal Terms (30 minutes)
+
+Add terms of service page
+Link from footer
+Checkbox on enrollment
+
+Priority 4 (Optional): Advanced Features
+
+Device limits (max 3 devices per account)
+IP location tracking
+Auto-suspend suspicious accounts
+Email alerts to instructors
