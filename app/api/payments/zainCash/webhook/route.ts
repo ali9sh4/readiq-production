@@ -74,6 +74,7 @@ export async function GET(req: NextRequest) {
     const courseId = enrollmentData.courseId;
 
     // ✅ 5. Process payment based on status
+    // ✅ 5. Process payment based on status
     if (finalStatus === "success" || finalStatus === "completed") {
       // ✅ Payment successful
       await db.runTransaction(async (transaction) => {
@@ -94,13 +95,18 @@ export async function GET(req: NextRequest) {
           transactionId: transactionId,
         });
 
-        // Update course count
+        // ✅ FIX: Update course count with correct field name
         const courseRef = db.collection("courses").doc(courseId);
+        const courseDoc = await transaction.get(courseRef);
+        const courseData = courseDoc.data();
+
         transaction.update(courseRef, {
-          studentsEnrolled: FieldValue.increment(1),
+          enrollmentCount: (courseData?.enrollmentCount || 0) + 1, // ✅ Consistent field name
           updatedAt: new Date().toISOString(),
         });
       });
+
+      // Rest of the code...
 
       // ✅ Update audit log
       await db

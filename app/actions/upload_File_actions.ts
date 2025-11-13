@@ -170,7 +170,7 @@ export async function deleteCourseFileFromR2({
       return {
         success: false,
         error: "Permission denied",
-      };  
+      };
     }
 
     // 5. Verify file belongs to this course
@@ -221,109 +221,97 @@ export async function getFileSignedUrl({
   filename,
   courseId,
   token,
-  expiresIn = 3600, // 1 hour default
+  expiresIn = 3600,
   isDownload = false,
 }: {
   filename: string;
-  courseId: string; // ✅ Required for ownership check
-  token: string; // ✅ Required for authentication
+  courseId: string;
+  token: string;
   expiresIn?: number;
-  isDownload?: boolean; // ✅ For download vs view
+  isDownload?: boolean;
 }): Promise<{ success: boolean; url?: string; error?: string }> {
   try {
-    // ✅ 1. Verify user authentication
-    if (!token) {
-      return {
-        success: false,
-        error: "Authentication required",
-      };
+    // ✅ 1. Validate inputs
+    if (!courseId || !filename || !token) {
+      return { success: false, error: "معلومات مفقودة" };
     }
 
+    // ✅ 2. Verify authentication
     const verifiedToken = await adminAuth.verifyIdToken(token);
     if (!verifiedToken) {
-      return {
-        success: false,
-        error: "Invalid authentication",
-      };
+      return { success: false, error: "Invalid authentication" };
     }
 
-    // ✅ 2. Verify course ownership/access
+    // ✅ 3. Get course data
     const courseDoc = await db.collection("courses").doc(courseId).get();
 
     if (!courseDoc.exists) {
-      return {
-        success: false,
-        error: "Course not found",
-      };
+      return { success: false, error: "الدورة غير موجودة" };
     }
 
     const courseData = courseDoc.data();
 
-    // Check if user owns the course OR has access (you can expand this logic)
+    // ✅ 4. Check if user is owner or admin
     const isOwner = courseData?.createdBy === verifiedToken.uid;
     const isAdmin = verifiedToken.admin === true;
-    const isStudent = courseData?.students?.includes(verifiedToken.uid);
-    const isInstructor = courseData?.instructors?.includes(verifiedToken.uid);
 
-    const hasAccess = isOwner || isAdmin || isStudent || isInstructor;
+    // ✅ 5. Check enrollment - CORRECT FORMAT
+    const enrollmentId = `${verifiedToken.uid}_${courseId}`; // ✅ userId_courseId
+    const enrollmentDoc = await db
+      .collection("enrollments")
+      .doc(enrollmentId) // ✅ Use the correct document ID
+      .get();
+
+    const isEnrolled = enrollmentDoc.exists; // ✅ Simple existence check
+
+    // ✅ 6. Check if it's a free course
+    const isFree = courseData?.price === 0;
+
+    // ✅ 7. Grant access
+    const hasAccess = isOwner || isAdmin || isEnrolled || isFree;
 
     if (!hasAccess) {
       return {
         success: false,
-        error: "Access denied to this course",
+        error: "يجب التسجيل في الدورة للوصول إلى الملفات",
       };
     }
 
-    // ✅ 3. Verify file belongs to this course
+    // ✅ 8. Verify file exists in course
     const fileExists = courseData?.files?.some(
       (file: CourseFile) => file.filename === filename
     );
 
     if (!fileExists) {
-      return {
-        success: false,
-        error: "File not found in this course",
-      };
+      return { success: false, error: "الملف غير موجود في هذه الدورة" };
     }
 
-    // ✅ 4. Validate filename security
-    if (!filename || filename.includes("..")) {
-      return {
-        success: false,
-        error: "Invalid filename",
-      };
+    // ✅ 9. Security check
+    if (filename.includes("..")) {
+      return { success: false, error: "Invalid filename" };
     }
 
-    // ✅ 5. Generate signed URL
+    // ✅ 10. Generate signed URL
     const getObjectCommand = new GetObjectCommand({
       Bucket: R2_BUCKET_NAME,
       Key: filename,
       ResponseContentDisposition: isDownload
         ? `attachment; filename="${filename.split("/").pop()}"`
-        : undefined, // For download vs inline view
+        : undefined,
     });
 
     const signedUrl = await getSignedUrl(r2Client, getObjectCommand, {
       expiresIn,
     });
 
-    // ✅ 6. Log access for audit trail
-    console.log(`File accessed: ${filename}`, {
-      userId: verifiedToken.uid,
-      courseId,
-      action: isDownload ? "download" : "view",
-      timestamp: new Date().toISOString(),
-    });
+    console.log("✅ File access granted");
 
-    return {
-      success: true,
-      url: signedUrl,
-    };
+    return { success: true, url: signedUrl };
   } catch (error) {
-    console.error("Failed to generate signed URL:", error);
+    console.error("❌ Failed to generate signed URL:", error);
     return {
       success: false,
-      error: "Failed to generate access URL",
+      error: "فشل في إنشاء رابط الوصول",
     };
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 import "@mux/mux-player/themes/minimal";
 
-import React, { useState, useMemo, useCallback, useEffect, use } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import MuxPlayer from "@mux/mux-player-react";
 import {
   X,
@@ -32,6 +32,11 @@ import { toast } from "sonner";
 import { useVideoProtection } from "@/hooks/useVideoProtection";
 import { useAuth } from "@/context/authContext";
 import VideoWatermark from "../VideoWatermark";
+import {
+  downloadCourseFile,
+  viewCourseFile,
+} from "@/app/actions/upload_File_actions";
+import { CourseFile } from "../fileUplaodtoR2";
 
 // --- Types ---
 interface VideoProgress {
@@ -317,21 +322,6 @@ export default function CoursePlayer({
     }
   }, [currentVideoIndex]);
 
-  // ✅ Download file helper
-  const handleDownload = useCallback(
-    (filename: string, originalName: string) => {
-      const link = document.createElement("a");
-      link.href = `/api/files/download?filename=${encodeURIComponent(
-        filename
-      )}`;
-      link.download = originalName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    },
-    []
-  );
-
   // ✅ Toggle section
   const toggleSection = useCallback((section: string) => {
     setExpandedSections((prev) => {
@@ -350,7 +340,6 @@ export default function CoursePlayer({
     return allVideos.reduce((sum, v) => sum + (v.duration || 0), 0);
   }, [allVideos]);
 
-  // --- UI ---
   return (
     <div className="flex min-h-screen bg-gray-50 text-gray-900" dir="rtl">
       {/* Sidebar */}
@@ -860,7 +849,7 @@ export default function CoursePlayer({
                           <FileCard
                             key={file.id}
                             file={file}
-                            onDownload={handleDownload}
+                            courseId={course.id}
                           />
                         ))}
                       </div>
@@ -878,7 +867,7 @@ export default function CoursePlayer({
                           <FileCard
                             key={file.id}
                             file={file}
-                            onDownload={handleDownload}
+                            courseId={course.id}
                           />
                         ))}
                       </div>
@@ -922,43 +911,132 @@ export default function CoursePlayer({
 }
 
 // --- File Card Component ---
-function FileCard({
-  file,
-  onDownload,
-}: {
-  file: any;
-  onDownload: (filename: string, originalName: string) => void;
-}) {
+// Replace your entire FileCard component with this:
+function FileCard({ file, courseId }: { file: CourseFile; courseId: string }) {
+  const auth = useAuth();
+
+  const [error, setError] = useState<string>("");
+  const [isViewing, setIsViewing] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const viewFile = async (filename: string, originalName: string) => {
+    if (!auth?.user) {
+      toast.error("يرجى تسجيل الدخول لعرض الملفات");
+      return;
+    }
+
+    setIsViewing(true);
+    setError("");
+
+    try {
+      const token = await auth.user.getIdToken();
+
+      const result = await viewCourseFile({
+        filename,
+        courseId,
+        token,
+      });
+
+      if (result.success && result.url) {
+        window.open(result.url, "_blank");
+        toast.success("تم فتح الملف");
+      } else {
+        toast.error(result.error || "فشل في فتح الملف");
+        setError(result.error || "فشل في فتح الملف");
+      }
+    } catch (error) {
+      console.error("Error accessing file:", error);
+      toast.error("حدث خطأ أثناء فتح الملف");
+      setError("حدث خطأ أثناء فتح الملف");
+    } finally {
+      setIsViewing(false);
+    }
+  };
+
+  const downloadFile = async (filename: string, originalName: string) => {
+    if (!auth?.user) {
+      toast.error("يرجى تسجيل الدخول لتحميل الملفات");
+      return;
+    }
+
+    setIsDownloading(true);
+    setError("");
+
+    try {
+      const token = await auth.user.getIdToken();
+
+      const result = await downloadCourseFile({
+        filename,
+        courseId,
+        token,
+      });
+
+      if (result.success && result.url) {
+        const link = document.createElement("a");
+        link.href = result.url;
+        link.download = originalName;
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toast.success("تم بدء التحميل");
+      } else {
+        toast.error(result.error || "فشل في تحميل الملف");
+        setError(result.error || "فشل في تحميل الملف");
+      }
+    } catch (error) {
+      console.error("Error downloading file:", error);
+      toast.error("حدث خطأ أثناء تحميل الملف");
+      setError("حدث خطأ أثناء تحميل الملف");
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   return (
-    <div className="flex items-center justify-between p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors mb-2">
-      <div className="flex items-center gap-3 min-w-0 flex-1">
-        {getFileIcon(file.originalName)}
-        <div className="min-w-0">
-          <p className="font-medium truncate">{file.originalName}</p>
-          <p className="text-sm text-gray-500">{formatFileSize(file.size)}</p>
+    <>
+      <div className="flex items-center justify-between p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          {getFileIcon(file.originalName)}
+          <div className="min-w-0">
+            <p className="font-medium truncate">{file.originalName}</p>
+            <p className="text-sm text-gray-500">{formatFileSize(file.size)}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={() => viewFile(file.filename, file.originalName)}
+            disabled={isViewing || isDownloading}
+            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition disabled:opacity-50"
+            title="عرض"
+          >
+            {isViewing ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Eye className="w-5 h-5" />
+            )}
+          </button>
+          <button
+            onClick={() => downloadFile(file.filename, file.originalName)}
+            disabled={isViewing || isDownloading}
+            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition disabled:opacity-50"
+            title="تحميل"
+          >
+            {isDownloading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Download className="w-5 h-5" />
+            )}
+          </button>
         </div>
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <button
-          onClick={() =>
-            window.open(
-              `/api/files/view?filename=${encodeURIComponent(file.filename)}`,
-              "_blank"
-            )
-          }
-          className="p-2 text-blue-400 hover:bg-gray-700 rounded-lg transition"
-          title="عرض"
-        >
-          <Eye className="w-5 h-5" />
-        </button>
-        <button
-          onClick={() => onDownload(file.filename, file.originalName)}
-          className="p-2 text-green-400 hover:bg-gray-700 rounded-lg transition"
-          title="تحميل"
-        >
-          <Download className="w-5 h-5" />
-        </button>
-      </div>
-    </div>
+
+      {/* ✅ Show error if any */}
+      {error && (
+        <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+    </>
   );
 }

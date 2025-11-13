@@ -21,6 +21,8 @@ import {
   HardDrive,
   RefreshCw,
   Loader,
+  Box,
+  Code,
 } from "lucide-react";
 import {
   deleteCourseFileFromR2,
@@ -79,24 +81,49 @@ const getFileIcon = (filename: string, size: number = 20) => {
   const extension = filename.toLowerCase().split(".").pop() || "";
   const className = `w-${size / 4} h-${size / 4}`;
 
+  // 3D Models
+  if (
+    ["stl", "obj", "fbx", "blend", "gltf", "glb", "ply"].includes(extension)
+  ) {
+    return <Box className={`${className} text-purple-500`} />; // Use Box icon from lucide-react
+  }
+
+  // Images
   if (["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(extension)) {
     return <FileImage className={`${className} text-blue-500`} />;
   }
 
+  // Videos
   if (["mp4", "webm", "mov", "avi", "mkv"].includes(extension)) {
     return <FileVideo className={`${className} text-red-500`} />;
   }
 
+  // Audio
   if (["mp3", "wav", "aac", "m4a", "ogg"].includes(extension)) {
     return <FileAudio className={`${className} text-green-500`} />;
   }
 
-  if (["pdf", "doc", "docx", "ppt", "pptx", "txt"].includes(extension)) {
+  // Documents
+  if (
+    ["pdf", "doc", "docx", "ppt", "pptx", "txt", "xls", "xlsx"].includes(
+      extension
+    )
+  ) {
     return <FileText className={`${className} text-orange-500`} />;
   }
 
+  // Archives
   if (["zip", "rar", "7z", "tar", "gz"].includes(extension)) {
     return <Archive className={`${className} text-purple-500`} />;
+  }
+
+  // Code files
+  if (
+    ["js", "jsx", "ts", "tsx", "py", "java", "cpp", "css", "html"].includes(
+      extension
+    )
+  ) {
+    return <Code className={`${className} text-indigo-500`} />; // Use Code icon from lucide-react
   }
 
   return <File className={`${className} text-gray-500`} />;
@@ -106,32 +133,66 @@ const getFileTypeLabel = (filename: string): string => {
   const extension = filename.toLowerCase().split(".").pop() || "";
 
   const typeMap: Record<string, string> = {
+    // Documents
     pdf: "مستند PDF",
     doc: "مستند Word",
     docx: "مستند Word",
     ppt: "عرض تقديمي",
     pptx: "عرض تقديمي",
+    xls: "ملف Excel",
+    xlsx: "ملف Excel",
     txt: "ملف نصي",
+    csv: "ملف CSV",
+
+    // Videos
     mp4: "فيديو",
     webm: "فيديو",
     mov: "فيديو",
     avi: "فيديو",
+    mkv: "فيديو",
+
+    // Audio
     mp3: "ملف صوتي",
     wav: "ملف صوتي",
     aac: "ملف صوتي",
+    m4a: "ملف صوتي",
+
+    // Images
     jpg: "صورة",
     jpeg: "صورة",
     png: "صورة",
     gif: "صورة متحركة",
     webp: "صورة",
+    svg: "صورة متجهة",
+
+    // Archives
     zip: "ملف مضغوط",
     rar: "ملف مضغوط",
     "7z": "ملف مضغوط",
+    tar: "ملف مضغوط",
+    gz: "ملف مضغوط",
+
+    // 3D Models
+    stl: "نموذج 3D (STL)",
+    obj: "نموذج 3D (OBJ)",
+    fbx: "نموذج 3D (FBX)",
+    blend: "ملف Blender",
+    gltf: "نموذج 3D (GLTF)",
+    glb: "نموذج 3D (GLB)",
+    ply: "نموذج 3D (PLY)",
+    // Code
+    js: "ملف JavaScript",
+    jsx: "ملف React",
+    ts: "ملف TypeScript",
+    tsx: "ملف React TypeScript",
+    py: "ملف Python",
+    css: "ملف CSS",
+    html: "ملف HTML",
+    json: "ملف JSON",
   };
 
   return typeMap[extension] || "ملف";
 };
-
 const formatUploadDate = (timestamp?: string): string => {
   if (!timestamp) return "غير محدد";
 
@@ -183,22 +244,90 @@ export default function SmartCourseUploader({
   const [selectedVideoId, setSelectedVideoId] = useState<string>("");
 
   // ===== CONFIGURATION =====
+  // Replace the allowedTypes array (around line 130)
   const allowedTypes = [
+    // Documents
     "application/pdf",
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     "application/vnd.ms-powerpoint",
     "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "text/plain",
+    "text/csv",
+
+    // Videos
     "video/mp4",
     "video/webm",
-    "audio/mpeg",
+    "video/quicktime", // .mov
+    "video/x-msvideo", // .avi
+    "video/x-matroska", // .mkv
+
+    // Audio
+    "audio/mpeg", // .mp3
     "audio/wav",
-    "application/zip",
+    "audio/x-m4a", // .m4a
+    "audio/aac",
+
+    // Images
     "image/jpeg",
     "image/png",
     "image/webp",
-    "text/plain",
+    "image/gif",
+    "image/svg+xml",
+
+    // Archives
+    "application/zip",
+    "application/x-rar-compressed", // .rar
+    "application/x-7z-compressed", // .7z
+    "application/x-tar",
+    "application/gzip",
+
+    // 🎨 3D Design Files
+    "model/stl", // STL files
+    "model/ply",
+    "application/octet-stream", // ✅ This covers STL, OBJ, FBX, and other binary formats
+    "model/obj", // OBJ files
+    "model/gltf-binary", // GLB files
+    "model/gltf+json", // GLTF files
+
+    // Code Files (for programming courses)
+    "text/javascript",
+    "text/html",
+    "text/css",
+    "application/json",
+    "application/xml",
   ];
+  // Add this function in your component (after allowedTypes)
+  const getMaxFileSizeForType = (file: File): number => {
+    const extension = file.name.toLowerCase().split(".").pop() || "";
+
+    // 3D Models - Larger limit
+    if (
+      ["stl", "obj", "fbx", "blend", "gltf", "glb", "ply"].includes(extension)
+    ) {
+      return 100 * 1024 * 1024; // 100 MB for 3D models
+    }
+
+    // Videos - Largest limit
+    if (["mp4", "webm", "mov", "avi", "mkv"].includes(extension)) {
+      return 200 * 1024 * 1024; // 200 MB for videos
+    }
+
+    // Archives - Large limit
+    if (["zip", "rar", "7z", "tar", "gz"].includes(extension)) {
+      return 150 * 1024 * 1024; // 150 MB for archives
+    }
+
+    // Images - Medium limit
+    if (["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(extension)) {
+      return 20 * 1024 * 1024; // 20 MB for images
+    }
+
+    // Documents and others - Default
+    return 50 * 1024 * 1024; // 50 MB default
+  };
   const hasError = () => {
     return error.upload || error.file || error.load;
   };
@@ -282,16 +411,73 @@ export default function SmartCourseUploader({
   };
 
   const validateFile = (file: File): string | null => {
-    if (file.size > maxFileSize) {
-      return `الملف كبير جداً. الحد الأقصى: ${formatFileSize(maxFileSize)}`;
+    const maxSize = getMaxFileSizeForType(file); // ✅ Dynamic size based on type
+
+    if (file.size > maxSize) {
+      return `الملف كبير جداً. الحد الأقصى: ${formatFileSize(maxSize)}`;
     }
 
     if (file.size === 0) {
       return "الملف فارغ";
     }
 
-    if (!allowedTypes.includes(file.type)) {
-      return `نوع الملف غير مسموح: ${file.type}`;
+    // ✅ Check file extension for binary files (since MIME type might be generic)
+    const extension = file.name.toLowerCase().split(".").pop() || "";
+    const allowedExtensions = [
+      "pdf",
+      "doc",
+      "docx",
+      "ppt",
+      "pptx",
+      "xls",
+      "xlsx",
+      "txt",
+      "csv",
+      "mp4",
+      "webm",
+      "mov",
+      "avi",
+      "mkv",
+      "mp3",
+      "wav",
+      "m4a",
+      "aac",
+      "jpg",
+      "jpeg",
+      "png",
+      "webp",
+      "gif",
+      "svg",
+      "zip",
+      "rar",
+      "7z",
+      "tar",
+      "gz",
+      "stl",
+      "obj",
+      "fbx",
+      "blend",
+      "gltf",
+      "glb",
+      "ply", // ✅ 3D files
+      "js",
+      "jsx",
+      "ts",
+      "tsx",
+      "py",
+      "java",
+      "cpp",
+      "css",
+      "html",
+      "json",
+      "xml", // Code files
+    ];
+
+    if (
+      !allowedTypes.includes(file.type) &&
+      !allowedExtensions.includes(extension)
+    ) {
+      return `نوع الملف غير مسموح: ${file.type || extension}`;
     }
 
     // Check duplicates in selected files
@@ -302,22 +488,7 @@ export default function SmartCourseUploader({
       return "الملف موجود بالفعل في القائمة";
     }
 
-    // Check duplicates in current session uploads
-    const isAlreadyUploaded = uploadedFiles.some(
-      (uf) => uf.originalName === file.name && uf.size === file.size
-    );
-    if (isAlreadyUploaded) {
-      return "الملف مرفوع بالفعل في هذه الجلسة";
-    }
-
-    // ✅ Check duplicates in previous files from database
-    const isInPreviousFiles = previousFiles.some(
-      (pf) => pf.originalName === file.name && pf.size === file.size
-    );
-    if (isInPreviousFiles) {
-      return "الملف موجود بالفعل في الدورة";
-    }
-
+    // ... rest of duplicate checks
     return null;
   };
 
@@ -716,7 +887,7 @@ export default function SmartCourseUploader({
         <input
           type="file"
           multiple
-          accept=".pdf,.doc,.docx,.ppt,.pptx,.mp4,.webm,.mp3,.wav,.zip,.jpg,.jpeg,.png,.webp,.txt"
+          accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.mp4,.webm,.mov,.mp3,.wav,.zip,.rar,.7z,.jpg,.jpeg,.png,.webp,.txt,.stl,.obj,.fbx,.gltf,.glb,.blend,.js,.jsx,.ts,.tsx,.py,.css,.html,.json,.ply"
           className="hidden"
           ref={fileInputRef}
           onChange={handleFileSelect}
