@@ -196,6 +196,7 @@ export async function purchaseCourseWithWallet(
         userId,
         courseId,
         paymentMethod: "wallet",
+        enrollmentType: "paid",
         amount: coursePrice,
         status: "completed",
         enrolledAt: new Date().toISOString(),
@@ -225,7 +226,7 @@ export async function purchaseCourseWithWallet(
       // Update course enrollment count
       const courseRef = db.collection("courses").doc(courseId);
       transaction.update(courseRef, {
-        studentsEnrolled: FieldValue.increment(1),
+        enrollmentCount: FieldValue.increment(1),
         updatedAt: new Date().toISOString(),
       });
 

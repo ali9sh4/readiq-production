@@ -18,19 +18,8 @@ export async function checkUserEnrollments(
 
     const enrollments: Record<string, boolean> = {};
     enrollmentDocs.forEach((doc, index) => {
-      if (!doc.exists) {
-        enrollments[courseIds[index]] = false;
-        return;
-      }
-
-      const data = doc.data();
-
-      // ✅ Check enrollment is valid
-      const isValidEnrollment =
-        data?.enrollmentType === "free" || // Free course enrollment
-        data?.status === "completed"; // Paid course completed
-
-      enrollments[courseIds[index]] = isValidEnrollment;
+      // ✅ Simpler check - if document exists, user is enrolled
+      enrollments[courseIds[index]] = doc.exists;
     });
 
     return {
@@ -38,6 +27,7 @@ export async function checkUserEnrollments(
       enrollments,
     };
   } catch (error) {
+    console.error("Error checking enrollments:", error);
     return {
       success: false,
       enrollments: {},
@@ -45,29 +35,25 @@ export async function checkUserEnrollments(
     };
   }
 }
-
 export async function enrollInFreeCourse(courseId: string, token: string) {
   if (!token || !courseId) {
     return { success: false, message: "معلومات ناقصة" };
   }
-  const verifyToken = await adminAuth.verifyIdToken(token);
-  const userId = verifyToken.uid;
-  const courseDoc = await db.collection("courses").doc(courseId).get();
-  if (!courseDoc.exists) {
-    return {
-      success: false,
-      message: "Course not found",
-    };
-  }
-  const courseData = courseDoc.data();
-  if (courseData?.price !== 0) {
-    return {
-      success: false,
-      message: "This course is not free",
-    };
-  }
 
   try {
+    const verifyToken = await adminAuth.verifyIdToken(token);
+    const userId = verifyToken.uid;
+
+    const courseDoc = await db.collection("courses").doc(courseId).get();
+    if (!courseDoc.exists) {
+      return { success: false, message: "Course not found" };
+    }
+
+    const courseData = courseDoc.data();
+    if (courseData?.price !== 0) {
+      return { success: false, message: "This course is not free" };
+    }
+
     const enrollmentRef = db
       .collection("enrollments")
       .doc(`${userId}_${courseId}`);
@@ -77,18 +63,32 @@ export async function enrollInFreeCourse(courseId: string, token: string) {
       return {
         success: true,
         message: "User already enrolled in this course",
+        alreadyEnrolled: true, // ✅ Add this flag
       };
     }
 
-    await enrollmentRef.set({
+    // ✅ Use a batch write for atomicity
+    const batch = db.batch();
+
+    // Create enrollment
+    batch.set(enrollmentRef, {
       userId,
       courseId,
       enrolledAt: new Date().toISOString(),
       enrollmentType: "free",
-      status: "completed", // ✅ Add this for consistency
+      status: "completed",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
+
+    // ✅ Increment enrollment count directly
+    const courseRef = db.collection("courses").doc(courseId);
+    batch.update(courseRef, {
+      enrollmentCount: (courseData.enrollmentCount || 0) + 1,
+      updatedAt: new Date().toISOString(),
+    });
+
+    await batch.commit();
 
     return {
       success: true,
@@ -102,6 +102,56 @@ export async function enrollInFreeCourse(courseId: string, token: string) {
     };
   }
 }
+// ✅ Count enrollments for a course
+export async function updateCourseEnrollmentCount(courseId: string) {
+  try {
+    // Count all valid enrollments for this course
+    const enrollmentsSnapshot = await db
+      .collection("enrollments")
+      .where("courseId", "==", courseId)
+      .where("status", "==", "completed")
+      .get();
 
-export async function getUserCourses(token: string, userId: string) {}
-export async function initiatePurchase(courseId: string, token: string) {}
+    const enrollmentCount = enrollmentsSnapshot.size;
+
+    // Update course document
+    await db.collection("courses").doc(courseId).update({
+      enrollmentCount,
+      updatedAt: new Date().toISOString(),
+    });
+
+    return {
+      success: true,
+      enrollmentCount,
+    };
+  } catch (error: any) {
+    console.error("Error updating enrollment count:", error);
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+}
+
+// ✅ Sync enrollment counts for all courses (run once to backfill)
+export async function syncAllCourseEnrollmentCounts() {
+  try {
+    const coursesSnapshot = await db.collection("courses").get();
+    const updatePromises = coursesSnapshot.docs.map((doc) =>
+      updateCourseEnrollmentCount(doc.id)
+    );
+
+    await Promise.all(updatePromises);
+
+    return {
+      success: true,
+      message: `Updated enrollment counts for ${coursesSnapshot.size} courses`,
+    };
+  } catch (error: any) {
+    console.error("Error syncing enrollment counts:", error);
+    return {
+      success: false,
+      message: error.message,
+    };
+  }
+}

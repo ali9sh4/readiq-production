@@ -1,27 +1,18 @@
-//first you need to create context then AuthProvider
-//value will contain all the functions and the user
-//al the work is inside the AuthProvider
-//first you create variable to store the user in which is [user,setUser]
-//because using typescript you need to specify the type for the authContext
-//for the current user you need to specify the type which is either null of firebase User
-//when setting the current user you need to call the onAuthStateChanged function and then grab the user and set it correctly
-//For every resource you create, plan how you'll clean it up in useEffect.
-
 "use client";
 import { auth } from "@/firebase/client";
 import { GoogleAuthProvider, signInWithPopup, User } from "firebase/auth";
-
 import React, { useContext, useEffect } from "react";
 import { createContext, useState } from "react";
 import { ParsedToken } from "firebase/auth";
 import { removeToken, setToken } from "./actions";
-import { createOrUpdateUser } from "@/lib/services/userService"; // ✅ Import
+import { createOrUpdateUser } from "@/lib/services/userService";
+import { useRouter } from "next/navigation"; // ✅ Changed from "next/router"
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 type AuthContextType = {
   user: User | null;
-  handleGoogleSignIn: () => Promise<void>;
+  handleGoogleSignIn: () => Promise<boolean>; // ✅ Now returns boolean
   logOut: () => Promise<void>;
   isLoading: boolean;
   error: string | null;
@@ -37,9 +28,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
   const [CustomClaims, setCustomClaims] = useState<ParsedToken | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const router = useRouter(); // ✅ Hook inside component
+
   useEffect(() => {
     setIsClient(true);
   }, []);
+
   // Check token expiration and refresh if needed
   useEffect(() => {
     if (!user) return;
@@ -50,7 +44,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const expirationTime = new Date(tokenResult.expirationTime).getTime();
         const now = Date.now();
 
-        // If token expires in less than 5 minutes, refresh it
         if (expirationTime - now < 5 * 60 * 1000) {
           const newToken = await user.getIdToken(true);
           const newTokenResult = await user.getIdTokenResult();
@@ -66,43 +59,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
 
-    // Check every minute
     const interval = setInterval(checkAndRefreshToken, 60 * 1000);
     return () => clearInterval(interval);
   }, [user]);
 
+  // ✅ Consolidated auth state change handler with redirect logic
   useEffect(() => {
     if (!isClient) return;
+
     const unsubscribe = auth.onAuthStateChanged(async (currentUser) => {
       setUser(currentUser);
+
       if (currentUser) {
         try {
           await createOrUpdateUser(currentUser);
         } catch (error) {
           console.error("Failed to sync user with Firestore:", error);
         }
+
         const tokenResult = await currentUser.getIdTokenResult();
         const token = tokenResult.token;
         const refreshToken = currentUser.refreshToken;
         const claims = tokenResult.claims;
         setCustomClaims(claims);
+        setIsAdmin(claims.admin === true); // ✅ Set isAdmin here too
+
         if (token && refreshToken) {
           await setToken({ token, refreshToken });
+        }
+
+        // ✅ Redirect to home if on login page
+        if (window.location.pathname === "/login") {
+          router.push("/");
         }
       } else {
         await removeToken();
       }
+
       setIsLoading(false);
     });
+
     return () => unsubscribe();
-  }, [isClient]);
-  const handleGoogleSignIn = async () => {
+  }, [isClient, router]);
+
+  const handleGoogleSignIn = async (): Promise<boolean> => {
     try {
       setIsLoading(true);
       setError(null);
-
-      console.log("Current URL:", window.location.href);
-      console.log("Auth domain from config:", auth.app.options.authDomain);
 
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({
@@ -111,6 +114,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       const result = await signInWithPopup(auth, provider);
       console.log("Sign-in successful:", result.user.email);
+      return true; // ✅ Return success
     } catch (error) {
       console.error("Full error object:", error);
 
@@ -119,10 +123,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       } else {
         setError("An unknown error occurred");
       }
+      return false; // ✅ Return failure
     } finally {
       setIsLoading(false);
     }
   };
+
   const logOut = async () => {
     const confirmLogout = window.confirm("Are you sure you want to log out?");
     if (!confirmLogout) {

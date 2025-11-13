@@ -138,7 +138,8 @@ export default function CourseDashboard({ defaultValues }: Props) {
       subtitle: defaultValues.subtitle || "",
       description: defaultValues.description || "",
       category: defaultValues.category || "",
-      instructorName: defaultValues.instructorName || "",
+      instructorName:
+        defaultValues.instructorName || auth?.user?.displayName || "",
       level: (defaultValues.level as "beginner") || "beginner",
       language: (defaultValues.language as "arabic") || "arabic",
     },
@@ -170,6 +171,8 @@ export default function CourseDashboard({ defaultValues }: Props) {
       subtitle: defaultValues.subtitle || "",
       description: defaultValues.description || "",
       category: defaultValues.category || "",
+      instructorName:
+        defaultValues.instructorName || auth?.user?.displayName || "",
       level:
         (defaultValues.level as "beginner" | "intermediate" | "advanced") ||
         "beginner",

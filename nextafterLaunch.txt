@@ -47,3 +47,8 @@ Device limits (max 3 devices per account)
 IP location tracking
 Auto-suspend suspicious accounts
 Email alerts to instructors
+
+444444444444
+If you DO want to fix it, here's the rule:
+- **Use `error`** for error messages: `{ success: false, error: "..." }`
+- **Use `message`** for success messages: `{ success: true, message: "..." }`

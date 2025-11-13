@@ -79,6 +79,8 @@ export interface Course {
   instructorName?: string;
   createdBy?: string;
   rating?: number;
+  ratingCount?: number;
+  enrollmentCount?: number;
   studentsCount?: number;
 }
 

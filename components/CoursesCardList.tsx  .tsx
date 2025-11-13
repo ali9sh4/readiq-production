@@ -6,7 +6,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, Edit, Trash2, BookOpen, AlertCircle } from "lucide-react";
+import { Star, Edit, Trash2, BookOpen, AlertCircle, Users } from "lucide-react";
 import { Course, CourseResponse } from "@/types/types";
 import { checkUserEnrollments } from "@/app/actions/enrollment_action";
 import { useAuth } from "@/context/authContext";
@@ -136,6 +136,14 @@ const CourseCard = memo(
               {course.title}
             </h3>
             <p className="text-xs text-gray-600 truncate">{instructor}</p>
+            {/* ✅ ADD THIS: Enrollment Count */}
+            {course.enrollmentCount !== undefined &&
+              course.enrollmentCount > 0 && (
+                <div className="flex items-center gap-1 text-xs text-gray-600">
+                  <Users className="w-4 h-4" />
+                  <span>{course.enrollmentCount} طالب مسجل</span>
+                </div>
+              )}
 
             {/* Admin Actions */}
             <div className="flex gap-2 pt-2 border-t border-gray-100">
@@ -236,6 +244,13 @@ const CourseCard = memo(
 
           {/* Instructor */}
           <p className="text-xs text-gray-600 truncate">{instructor}</p>
+          {course.enrollmentCount !== undefined &&
+            course.enrollmentCount > 0 && (
+              <div className="flex items-center gap-1 text-xs text-gray-600">
+                <Users className="w-4 h-4" />
+                <span>{course.enrollmentCount} طالب مسجل</span>
+              </div>
+            )}
 
           {/* ✅ YOUR IMPROVEMENT: Single star + rating (cleaner than 5 stars) */}
           <div className="flex justify-end items-center gap-1 text-xs">
@@ -279,6 +294,8 @@ export default function CoursesCardList({
   isAdminView = false,
   onDeleteCourse,
 }: CoursesCardListProps) {
+  // Add this after fetching enrollments
+
   const auth = useAuth();
   const [enrollmentStatus, setEnrollmentStatus] = useState<
     Record<string, boolean>
