@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { CreditCard, Clock, CheckCircle2, Wallet } from "lucide-react";
 import Image from "next/image";
 import WalletBalance from "./WalletBalance";
+
 type PaymentMethod = "zaincash" | "areeba" | "wallet";
 
 interface PaymentSelectorProps {
@@ -21,15 +22,14 @@ export default function PaymentSelector({
 }: PaymentSelectorProps) {
   const methods = [
     {
-      id: "wallet" as PaymentMethod, // ✅ NEW
+      id: "wallet" as PaymentMethod,
       name: "المحفظة",
       description: "ادفع من رصيد محفظتك",
       icon: <Wallet className="w-8 h-8 text-white" />,
       color: "from-green-600 to-green-700",
-      disabled: false,
-      badge: "فوري",
+      disabled: false, // ✅ ONLY THIS IS ENABLED
+      badge: "متاح الآن",
       badgeColor: "bg-green-100 text-green-700",
-      component: <WalletBalance />,
     },
     {
       id: "zaincash" as PaymentMethod,
@@ -45,9 +45,9 @@ export default function PaymentSelector({
         />
       ),
       color: "from-purple-600 to-purple-700",
-      disabled: false, // ✅ ENABLED
-      badge: "متاح الآن",
-      badgeColor: "bg-green-100 text-green-700",
+      disabled: true, // ❌ DISABLED
+      badge: "قريباً",
+      badgeColor: "bg-yellow-100 text-yellow-700",
     },
     {
       id: "areeba" as PaymentMethod,
@@ -55,7 +55,7 @@ export default function PaymentSelector({
       description: "فيزا • ماستركارد",
       icon: <CreditCard className="w-8 h-8" />,
       color: "from-blue-600 to-blue-700",
-      disabled: true, // ❌ Still disabled
+      disabled: true, // ❌ DISABLED
       badge: "قريباً",
       badgeColor: "bg-yellow-100 text-yellow-700",
     },
@@ -79,19 +79,18 @@ export default function PaymentSelector({
               method.disabled
                 ? "opacity-50 cursor-not-allowed bg-gray-50"
                 : selectedMethod === method.id
-                ? "ring-2 ring-purple-500 shadow-lg cursor-pointer"
-                : "cursor-pointer hover:shadow-lg hover:ring-2 hover:ring-purple-200"
+                ? "ring-2 ring-green-500 shadow-lg cursor-pointer"
+                : "cursor-pointer hover:shadow-lg hover:ring-2 hover:ring-green-200"
             } ${loading ? "pointer-events-none opacity-70" : ""}`}
           >
             <div className="flex items-center gap-4">
               {/* Icon */}
-
               <div
                 className={`${
                   method.id === "zaincash"
-                    ? "w-32 h-12" // ✅ Wider for logo
+                    ? "w-32 h-12"
                     : method.id === "wallet"
-                    ? "w-12 h-12 rounded-lg bg-gradient-to-br from-green-600 to-green-700" // Wallet gets green gradient
+                    ? "w-12 h-12 rounded-lg bg-gradient-to-br from-green-600 to-green-700"
                     : "w-12 h-12 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700"
                 } flex items-center justify-center flex-shrink-0 ${
                   method.disabled ? "grayscale" : ""
@@ -132,7 +131,7 @@ export default function PaymentSelector({
               {/* Selected indicator */}
               {selectedMethod === method.id && !loading && (
                 <div className="flex-shrink-0">
-                  <div className="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center">
+                  <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center">
                     <CheckCircle2 className="w-4 h-4 text-white" />
                   </div>
                 </div>
@@ -141,7 +140,7 @@ export default function PaymentSelector({
               {/* Loading spinner */}
               {loading && selectedMethod === method.id && (
                 <div className="flex-shrink-0">
-                  <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
             </div>
@@ -151,17 +150,17 @@ export default function PaymentSelector({
 
       {/* Info notices */}
       <div className="space-y-2">
-        {/* ZainCash info */}
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-          <p className="text-sm text-purple-800 font-medium text-center">
-            ✅ زين كاش متاح الآن - ادفع بأمان عبر محفظتك الإلكترونية
+        {/* Wallet info */}
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <p className="text-sm text-green-800 font-medium text-center">
+            ✅ الدفع عبر المحفظة متاح الآن - رصيد آمن وسريع
           </p>
         </div>
 
-        {/* Coming soon for cards */}
+        {/* Coming soon for other methods */}
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
           <p className="text-sm text-yellow-800 text-center">
-            ⏳ الدفع بالبطاقات البنكية قيد التفعيل
+            ⏳ طرق الدفع الأخرى (زين كاش والبطاقات البنكية) قيد التفعيل
           </p>
         </div>
       </div>
