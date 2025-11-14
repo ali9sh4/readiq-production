@@ -36,10 +36,8 @@ import {
 } from "@/app/course-upload/action";
 import { useAuth } from "@/context/authContext";
 import { deleteCourseFileFromFireStore } from "@/app/course-upload/edit/action";
-import {
-  CourseVideo,
-  getCourseVideos,
-} from "@/app/actions/upload_video_actions";
+import { getCourseVideos } from "@/app/actions/upload_video_actions";
+import { CourseVideo } from "@/types/types";
 
 // ===== INTERFACES =====
 interface SelectedFile {

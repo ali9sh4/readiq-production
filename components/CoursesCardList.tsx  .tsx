@@ -12,6 +12,7 @@ import { checkUserEnrollments } from "@/app/actions/enrollment_action";
 import { useAuth } from "@/context/authContext";
 import FavoriteButton from "./favoritesButton";
 import { checkUserFavorites } from "@/app/actions/favorites_actions";
+import { requestCourseDeletion } from "@/app/actions/course_deletion_action";
 
 // ===== TYPES =====
 
@@ -78,6 +79,7 @@ const CourseCard = memo(
     isEnrolled?: boolean;
     isFavorited?: boolean;
   }) => {
+    const auth = useAuth();
     const [imageError, setImageError] = useState(false);
     const imageUrl = useMemo(
       () => getImageUrl(course.thumbnailUrl),
@@ -162,13 +164,44 @@ const CourseCard = memo(
                 size="sm"
                 variant="destructive"
                 className="text-xs"
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
-                  onDelete?.(course.id);
+
+                  if (
+                    !confirm(
+                      "هل تريد طلب حذف هذه الدورة؟ سيتم مراجعة الطلب من قبل الإدارة."
+                    )
+                  ) {
+                    return;
+                  }
+
+                  try {
+                    // ✅ Fixed: Use auth.user instead of user prop
+                    if (!auth?.user) {
+                      alert("يرجى تسجيل الدخول");
+                      return;
+                    }
+
+                    const token = await auth.user.getIdToken();
+
+                    const result = await requestCourseDeletion(
+                      course.id,
+                      token
+                    );
+
+                    if (result.success) {
+                      alert(result.message);
+                    } else {
+                      alert(result.error || "حدث خطأ");
+                    }
+                  } catch (error) {
+                    console.error("Error requesting deletion:", error);
+                    alert("حدث خطأ أثناء طلب الحذف");
+                  }
                 }}
               >
                 <Trash2 className="w-3 h-3 ml-1" />
-                حذف
+                طلب حذف
               </Button>
             </div>
           </div>
@@ -371,3 +404,19 @@ export default function CoursesCardList({
     </div>
   );
 }
+
+/*
+delete button
+    <Button
+                size="sm"
+                variant="destructive"
+                className="text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete?.(course.id);
+                }}
+              >
+                <Trash2 className="w-3 h-3 ml-1" />
+                حذف
+              </Button> 
+              */

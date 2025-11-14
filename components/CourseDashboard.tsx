@@ -46,7 +46,11 @@ import {
 } from "@/app/actions/basic_info_actions";
 import VideoUploader from "./video_uploader";
 import SmartCourseUploader from "./fileUplaodtoR2";
-import { ThumbnailUpdateSchema } from "@/validation/propertySchema";
+import {
+  ThumbnailUpdateSchema,
+  BasicInfoSchema,
+  PricingSchema,
+} from "@/validation/propertySchema";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -59,7 +63,6 @@ import {
   FormLabel,
   FormMessage,
 } from "./ui/form";
-import { BasicInfoSchema, PricingSchema } from "@/validation/propertySchema";
 import { Course } from "@/types/types";
 import { toast } from "sonner";
 

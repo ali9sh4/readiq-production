@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { zaincash } from "@/lib/payments/zaincash";
 import { db } from "@/firebase/service";
-import { FieldValue } from "firebase-admin/firestore";
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
@@ -105,8 +105,6 @@ export async function GET(req: NextRequest) {
           updatedAt: new Date().toISOString(),
         });
       });
-
-      // Rest of the code...
 
       // ✅ Update audit log
       await db

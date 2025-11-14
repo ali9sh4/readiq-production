@@ -1,42 +1,68 @@
-"use client";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
+"use server";
 
-export default function SyncEnrollmentsPage() {
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<string>("");
+import { adminAuth, db } from "@/firebase/service";
 
-  const handleSync = async () => {
-    setLoading(true);
-    setResult("");
+export async function migrateCourses(token: string) {
+  try {
+    // Verify admin
+    const verifiedToken = await adminAuth.verifyIdToken(token);
+    const adminUser = await adminAuth.getUser(verifiedToken.uid);
 
-    try {
-      const response = await fetch("/api/admin/sync-enrollments", {
-        method: "POST",
-      });
-      const data = await response.json();
-      setResult(data.message || "تم التحديث بنجاح");
-    } catch (error) {
-      setResult("حدث خطأ أثناء المزامنة");
-    } finally {
-      setLoading(false);
+    const isAdmin =
+      adminUser.customClaims?.admin ||
+      process.env.FIREBASE_ADMIN_EMAIL === adminUser.email;
+
+    if (!isAdmin) {
+      return { success: false, error: "غير مصرح - المدراء فقط" };
     }
-  };
 
-  return (
-    <div className="container mx-auto p-8">
-      <h1 className="text-2xl font-bold mb-4">مزامنة أعداد التسجيلات</h1>
-      <p className="mb-4 text-gray-600">
-        هذه الأداة تحدث عدد الطلاب المسجلين لجميع الدورات
-      </p>
-      <Button onClick={handleSync} disabled={loading}>
-        {loading ? "جاري المزامنة..." : "مزامنة الآن"}
-      </Button>
-      {result && (
-        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded">
-          {result}
-        </div>
-      )}
-    </div>
-  );
+    // Get all courses
+    const coursesSnapshot = await db.collection("courses").get();
+
+    // Use batch for atomic updates (max 500 per batch)
+    let batch = db.batch();
+    let count = 0;
+    let batchCount = 0;
+
+    for (const doc of coursesSnapshot.docs) {
+      const data = doc.data();
+
+      // Only update if isDeleted doesn't exist
+      if (data.isDeleted === undefined) {
+        batch.update(doc.ref, {
+          isDeleted: false,
+          deletionStatus: "none",
+        });
+        count++;
+        batchCount++;
+
+        // Commit every 500 operations (Firestore limit)
+        if (batchCount === 500) {
+          await batch.commit();
+          batch = db.batch();
+          batchCount = 0;
+        }
+      }
+    }
+
+    // Commit remaining operations
+    if (batchCount > 0) {
+      await batch.commit();
+    }
+
+    console.log(`✅ Migration complete: Updated ${count} courses`);
+
+    return {
+      success: true,
+      count,
+      message: `تم تحديث ${count} دورة بنجاح`,
+    };
+  } catch (error: any) {
+    console.error("Migration failed:", error);
+    return {
+      success: false,
+      error: error.message || "حدث خطأ أثناء التحديث",
+      count: 0,
+    };
+  }
 }

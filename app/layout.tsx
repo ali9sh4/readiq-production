@@ -8,7 +8,6 @@ import { Toaster } from "sonner";
 import { BookOpen, PlusCircle, User } from "lucide-react";
 import WalletBalance from "@/components/WalletBalance";
 import localFont from "next/font/local";
-import "./globals.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

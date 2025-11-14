@@ -41,6 +41,10 @@ const courseRepository = {
         console.warn("Course document has no data for ID:", id);
         return null;
       }
+      if (docData.isDeleted === true) {
+        console.warn("Attempted access to deleted course:", id);
+        return null;
+      }
       const { id: dataFieldId, ...cleanData } = docData;
       if (dataFieldId && dataFieldId !== doc.id) {
         console.warn(`ID conflict detected for course "${cleanData.title}"`);
@@ -91,6 +95,7 @@ export const getCourses = async (
       userId,
       isApproved,
       isRejected,
+      isDeleted,
     } = options?.filters || {};
 
     let CoursesQuery = courseRepository.query().orderBy("updatedAt", "desc");
@@ -107,6 +112,12 @@ export const getCourses = async (
     if (isRejected !== undefined) {
       CoursesQuery = CoursesQuery.where("isRejected", "==", isRejected);
     }
+    if (isDeleted !== undefined) {
+      CoursesQuery = CoursesQuery.where("isDeleted", "==", isDeleted);
+    } else {
+      // ✅ Use equality - no index needed!
+      CoursesQuery = CoursesQuery.where("isDeleted", "==", false);
+    }   
 
     if (category) {
       CoursesQuery = CoursesQuery.where("category", "==", category);

@@ -11,7 +11,15 @@ import {
 import { db } from "@/firebase/client";
 import { useAuth } from "@/context/authContext";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, XCircle, Clock, Eye, Edit, Wallet } from "lucide-react";
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  Eye,
+  Edit,
+  Wallet,
+  Trash2,
+} from "lucide-react";
 import { approveCourse } from "./action";
 import {
   approveTopupRequest,
@@ -20,6 +28,12 @@ import {
 import { Course, FirestoreTimestamp } from "@/types/types";
 import type { TopupRequest } from "@/types/wallets";
 import Link from "next/link";
+import {
+  approveDeletion,
+  rejectDeletionRequest,
+  restoreDeletedCourse,
+} from "../actions/course_deletion_action";
+import { migrateCourses } from "../admin/sync-enrollments/page";
 
 export default function AdminDashboard() {
   const { user, isLoading } = useAuth();
@@ -27,12 +41,51 @@ export default function AdminDashboard() {
   const [approvedCourses, setApprovedCourses] = useState<Course[]>([]);
   const [rejectedCourses, setRejectedCourses] = useState<Course[]>([]);
   const [topupRequests, setTopupRequests] = useState<TopupRequest[]>([]);
+  const [deletedCourses, setDeletedCourses] = useState<Course[]>([]); // ✅ ADD THIS
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "pending" | "approved" | "rejected" | "topups"
+    "pending" | "approved" | "rejected" | "topups" | "deletions" | "deleted"
   >("pending");
   const [searchQuery, setSearchQuery] = useState("");
+  const [deletionRequests, setDeletionRequests] = useState<Course[]>([]);
+  const [migrationLoading, setMigrationLoading] = useState(false);
+  const [migrationResult, setMigrationResult] = useState<string | null>(null);
+  const handleMigration = async () => {
+    if (
+      !confirm(
+        "هل تريد إضافة حقل isDeleted لجميع الدورات؟\n\nهذا آمن ويجب تشغيله مرة واحدة فقط."
+      )
+    ) {
+      return;
+    }
 
+    setMigrationLoading(true);
+    setMigrationResult(null);
+
+    try {
+      const token = await user?.getIdToken();
+      if (!token) {
+        alert("يرجى تسجيل الدخول");
+        return;
+      }
+
+      const result = await migrateCourses(token);
+
+      if (result.success) {
+        setMigrationResult(`✅ تم تحديث ${result.count} دورة بنجاح!`);
+        alert(`✅ تم تحديث ${result.count} دورة بنجاح!`);
+      } else {
+        setMigrationResult(`❌ فشل: ${result.error}`);
+        alert(`❌ فشل: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Migration error:", error);
+      setMigrationResult("❌ حدث خطأ");
+      alert("حدث خطأ أثناء التحديث");
+    } finally {
+      setMigrationLoading(false);
+    }
+  };
   // Real-time listener for courses
   useEffect(() => {
     if (!user || isLoading) return;
@@ -67,6 +120,30 @@ export default function AdminDashboard() {
 
     return () => unsubscribe();
   }, [user, isLoading]);
+  useEffect(() => {
+    if (!user || isLoading) return;
+
+    const deletionsQuery = query(
+      collection(db, "courses"),
+      where("deletionStatus", "==", "requested")
+    );
+
+    const unsubscribe = onSnapshot(
+      deletionsQuery,
+      (snapshot) => {
+        const requests = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Course[];
+        setDeletionRequests(requests);
+      },
+      (error) => {
+        console.error("Error fetching deletion requests:", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user, isLoading]);
 
   // Real-time listener for topup requests
   useEffect(() => {
@@ -94,8 +171,42 @@ export default function AdminDashboard() {
 
     return () => unsubscribe();
   }, [user, isLoading]);
+  useEffect(() => {
+    if (!user || isLoading) return;
 
-  const formatDate = (timestamp: FirestoreTimestamp | Date | string | null) => {
+    const deletedQuery = query(
+      collection(db, "courses"),
+      where("isDeleted", "==", true)
+    );
+
+    const unsubscribe = onSnapshot(
+      deletedQuery,
+      (snapshot) => {
+        const courses = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Course[];
+
+        // Sort by deletion date (newest first)
+        const sortedCourses = courses.sort((a, b) => {
+          const dateA = new Date(a.deletedAt || 0).getTime();
+          const dateB = new Date(b.deletedAt || 0).getTime();
+          return dateB - dateA;
+        });
+
+        setDeletedCourses(sortedCourses);
+      },
+      (error) => {
+        console.error("Error fetching deleted courses:", error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [user, isLoading]);
+
+  const formatDate = (
+    timestamp: FirestoreTimestamp | Date | string | null | undefined
+  ) => {
     if (!timestamp) return "غير محدد";
 
     if (typeof timestamp === "string") {
@@ -171,6 +282,14 @@ export default function AdminDashboard() {
           لوحة التحكم الإدارية
         </h1>
       </div>
+      <Button
+        onClick={handleMigration}
+        disabled={migrationLoading}
+        variant="outline"
+        className="bg-purple-50 border-purple-600 text-purple-600 hover:bg-purple-100"
+      >
+        {migrationLoading ? "جاري التحديث..." : "🔧 إضافة حقل isDeleted"}
+      </Button>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -218,6 +337,28 @@ export default function AdminDashboard() {
                 {topupRequests.length}
               </p>
               <p className="text-blue-700">طلبات إيداع</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
+          <div className="flex items-center">
+            <Trash2 className="h-8 w-8 text-orange-600" />
+            <div className="mr-4">
+              <p className="text-2xl font-bold text-orange-900">
+                {deletionRequests.length}
+              </p>
+              <p className="text-orange-700">طلبات حذف</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-gray-100 border border-gray-300 rounded-lg p-6">
+          <div className="flex items-center">
+            <Trash2 className="h-8 w-8 text-gray-600" />
+            <div className="mr-4">
+              <p className="text-2xl font-bold text-gray-900">
+                {deletedCourses.length}
+              </p>
+              <p className="text-gray-700">دورات محذوفة</p>
             </div>
           </div>
         </div>
@@ -280,6 +421,26 @@ export default function AdminDashboard() {
             }`}
           >
             طلبات الإيداع ({topupRequests.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("deletions")}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === "deletions"
+                ? "border-orange-500 text-orange-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            طلبات الحذف ({deletionRequests.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("deleted")}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              activeTab === "deleted"
+                ? "border-gray-500 text-gray-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            محذوفة ({deletedCourses.length})
           </button>
         </nav>
       </div>
@@ -420,8 +581,286 @@ export default function AdminDashboard() {
               </div>
             ))
           )
-        ) : /* Course Tabs */
-        filteredCourses.length === 0 ? (
+        ) : activeTab === "deletions" ? (
+          deletionRequests.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <p className="text-gray-500">لا توجد طلبات حذف</p>
+            </div>
+          ) : (
+            deletionRequests.map((course) => (
+              <div
+                key={course.id}
+                className="bg-white border border-orange-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-4">
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        {course.title}
+                      </h3>
+                      <Badge className="bg-orange-100 text-orange-800">
+                        طلب حذف
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                      <div>
+                        <span className="font-medium text-gray-500">
+                          التصنيف:
+                        </span>
+                        <p className="text-gray-900">
+                          {getCategoryText(course.category)}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-500">
+                          السعر:
+                        </span>
+                        <p className="text-gray-900">{course.price} د.ع</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-500">
+                          المحتوى:
+                        </span>
+                        <p className="text-gray-900">
+                          {course.videos?.length || 0} فيديو •{" "}
+                          {course.files?.length || 0} ملف
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-500">
+                          الطلاب المسجلين:
+                        </span>
+                        <p className="text-gray-900">
+                          {course.enrollmentCount || 0}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-500">
+                          تاريخ الطلب:
+                        </span>
+                        <p className="text-gray-900">
+                          {formatDate(course.deletionRequestedAt)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Warning if students enrolled */}
+                    {course.enrollmentCount && course.enrollmentCount > 0 && (
+                      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                        <p className="text-yellow-800 text-sm font-medium">
+                          ⚠️ تحذير: {course.enrollmentCount} طالب مسجل في هذه
+                          الدورة
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+                  <Button
+                    onClick={async () => {
+                      if (
+                        !confirm(
+                          `هل تريد الموافقة على حذف "${course.title}"؟\n\nسيتم إخفاء الدورة وإيقاف الوصول للطلاب.`
+                        )
+                      )
+                        return;
+
+                      setActionLoading(course.id);
+                      try {
+                        const token = await user.getIdToken();
+                        const result = await approveDeletion(course.id, token);
+
+                        if (result.error) {
+                          alert(result.error);
+                        } else {
+                          alert("تم حذف الدورة بنجاح!");
+                        }
+                      } catch (error) {
+                        console.error("Error:", error);
+                        alert("حدث خطأ أثناء الحذف");
+                      } finally {
+                        setActionLoading(null);
+                      }
+                    }}
+                    disabled={actionLoading === course.id}
+                    className="bg-red-600 hover:bg-red-700 text-white disabled:opacity-50"
+                  >
+                    <CheckCircle className="h-4 w-4 ml-2" />
+                    موافقة على الحذف
+                  </Button>
+
+                  <Button
+                    onClick={async () => {
+                      const reason = prompt("سبب رفض طلب الحذف:");
+                      if (!reason) return;
+
+                      setActionLoading(course.id);
+                      try {
+                        const token = await user.getIdToken();
+                        const result = await rejectDeletionRequest(
+                          course.id,
+                          token,
+                          reason
+                        );
+
+                        if (result.error) {
+                          alert(result.error);
+                        } else {
+                          alert("تم رفض طلب الحذف");
+                        }
+                      } catch (error) {
+                        console.error("Error:", error);
+                        alert("حدث خطأ");
+                      } finally {
+                        setActionLoading(null);
+                      }
+                    }}
+                    disabled={actionLoading === course.id}
+                    variant="outline"
+                    className="disabled:opacity-50"
+                  >
+                    <XCircle className="h-4 w-4 ml-2" />
+                    رفض الطلب
+                  </Button>
+
+                  <Button variant="outline" asChild>
+                    <Link href={`/Course/${course.id}`}>
+                      <Eye className="h-4 w-4 ml-2" />
+                      عرض التفاصيل
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            ))
+          )
+        ) : activeTab === "deleted" ? (
+          deletedCourses.length === 0 ? (
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <p className="text-gray-500">لا توجد دورات محذوفة</p>
+            </div>
+          ) : (
+            deletedCourses.map((course) => (
+              <div
+                key={course.id}
+                className="bg-white border border-gray-300 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-4">
+                      <h3 className="text-xl font-semibold text-gray-900">
+                        {course.title}
+                      </h3>
+                      <Badge className="bg-gray-100 text-gray-800">
+                        محذوفة
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                      <div>
+                        <span className="font-medium text-gray-500">
+                          التصنيف:
+                        </span>
+                        <p className="text-gray-900">
+                          {getCategoryText(course.category)}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-500">
+                          السعر:
+                        </span>
+                        <p className="text-gray-900">{course.price} د.ع</p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-500">
+                          المحتوى:
+                        </span>
+                        <p className="text-gray-900">
+                          {course.videos?.length || 0} فيديو •{" "}
+                          {course.files?.length || 0} ملف
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-500">
+                          الطلاب المسجلين:
+                        </span>
+                        <p className="text-gray-900">
+                          {course.enrollmentCount || 0}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="font-medium text-gray-500">
+                          تاريخ الحذف:
+                        </span>
+                        <p className="text-gray-900">
+                          {formatDate(course.deletedAt)}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Info about restoration */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                      <p className="text-blue-800 text-sm">
+                        💡 استعادة الدورة ستعيدها إلى حالة "مسودة" ويمكن للمدرب
+                        إعادة نشرها
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
+                  <Button
+                    onClick={async () => {
+                      if (
+                        !confirm(
+                          `هل تريد استعادة الدورة "${course.title}"؟\n\nسيتم إعادتها كمسودة.`
+                        )
+                      )
+                        return;
+
+                      setActionLoading(course.id);
+                      try {
+                        const token = await user.getIdToken();
+                        const result = await restoreDeletedCourse(
+                          course.id,
+                          token
+                        );
+
+                        if (result.error) {
+                          alert(result.error);
+                        } else {
+                          alert("تم استعادة الدورة بنجاح!");
+                        }
+                      } catch (error) {
+                        console.error("Error:", error);
+                        alert("حدث خطأ أثناء الاستعادة");
+                      } finally {
+                        setActionLoading(null);
+                      }
+                    }}
+                    disabled={actionLoading === course.id}
+                    className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
+                  >
+                    <CheckCircle className="h-4 w-4 ml-2" />
+                    استعادة الدورة
+                  </Button>
+
+                  <Button variant="outline" asChild>
+                    <Link href={`/Course/${course.id}`}>
+                      <Eye className="h-4 w-4 ml-2" />
+                      عرض التفاصيل
+                    </Link>
+                  </Button>
+
+                  {/* TODO: Add permanent delete button later */}
+                </div>
+              </div>
+            ))
+          )
+        ) : filteredCourses.length === 0 ? (
           <div className="text-center py-12 bg-gray-50 rounded-lg">
             <p className="text-gray-500">
               {activeTab === "pending" && "لا توجد دورات قيد المراجعة"}

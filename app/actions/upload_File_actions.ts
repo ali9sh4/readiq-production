@@ -14,7 +14,7 @@ import { R2_BUCKET_NAME, r2Client } from "@/lib/R2/r2_client";
 import { adminAuth, db } from "@/firebase/service";
 import { Redis } from "@upstash/redis";
 import { CourseFile } from "@/components/fileUplaodtoR2";
-
+  
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
   limiter: Ratelimit.slidingWindow(10, "1 m"), // 10 uploads per minute
@@ -199,7 +199,7 @@ export async function deleteCourseFileFromR2({
       .collection("courses")
       .doc(courseId)
       .update({
-        files: courseData.files.filter(
+        files: courseData?.files.filter(
           (file: CourseFile) => file.filename !== filename
         ),
       });

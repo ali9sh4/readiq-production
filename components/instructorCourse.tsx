@@ -1,23 +1,22 @@
 import { getCourses } from "@/data/courses";
-import { cookies } from "next/headers";
-import CoursesCardList from "./CoursesCardList.tsx  ";
+import { cookies } from "next/headers"; // ✅ ADD THIS IMPORT
 import { getCurrentUser } from "@/data/auth-server";
 import NextBackButton from "./loadMoreButoon";
 import { CourseResponse } from "@/types/types";
+import CoursesCardList from "./CoursesCardList.tsx  ";
+
 type CourseLevel = "beginner" | "intermediate" | "advanced" | "all_levels";
 
 export default async function InstructorCourse({
   searchParams,
 }: {
   searchParams?: Promise<{
-    // ✅ Changed to Promise
     cursor?: string;
     category?: string;
     level?: string;
     isAdminView?: boolean;
   }>;
 }) {
-  // ✅ Await searchParams
   const params = await searchParams;
 
   const cookieStore = await cookies();
@@ -38,17 +37,17 @@ export default async function InstructorCourse({
 
   const data: CourseResponse = await getCourses({
     pagination: {
-      lastDocId: params?.cursor || undefined, // ✅ Use params
+      lastDocId: params?.cursor || undefined,
       pageSize: 8,
     },
     filters: {
-      category: params?.category || undefined, // ✅ Use params
-      level: (params?.level as CourseLevel) || undefined, // ✅ Use params
+      category: params?.category || undefined,
+      level: (params?.level as CourseLevel) || undefined,
       userId: isAdmin ? undefined : currentUserId,
+      isDeleted: false,
     },
   });
 
-  // ✅ Add error handling
   if (!data.success || data.error) {
     return (
       <div className="flex items-center justify-center p-8 text-xl font-medium text-red-600 bg-red-50 rounded-lg shadow-sm border border-red-200">
@@ -65,10 +64,10 @@ export default async function InstructorCourse({
           <NextBackButton
             nextCursor={data.nextCursor || ""}
             hasMore={data.hasMore}
-            currentParams={params || {}} // ✅ Use params
+            currentParams={params || {}}
           />
         </div>
       )}
     </>
   );
-}
+} // ✅ REMOVE THE EXTRA 's' - Just close with }

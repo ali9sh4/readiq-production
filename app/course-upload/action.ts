@@ -78,6 +78,8 @@ export const SaveNewProperty = async (
       status: "draft", // Initial status
       hasFiles: false,
       filesCount: 0,
+      isDeleted: false, // ✅ ADD THIS
+      deletionStatus: "none", // ✅ ADD THIS
     };
 
     // Save to Firestore using v8 Admin SDK syntax
@@ -132,6 +134,8 @@ export const SaveQuickCourseCreation = async (
       status: "draft",
       hasFiles: false,
       filesCount: 0,
+      isDeleted: false,
+      deletionStatus: "none",
     };
 
     // Save to Firestore using v8 Admin SDK syntax

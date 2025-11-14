@@ -82,6 +82,17 @@ export interface Course {
   ratingCount?: number;
   enrollmentCount?: number;
   studentsCount?: number;
+  // ===== Deletion Fields =====
+  deletionStatus?: "none" | "requested" | "approved" | "rejected";
+  deletionRequestedAt?: string | null;
+  deletionRequestedBy?: string; // instructor userId
+  deletionRejectedAt?: string | null;
+  deletionRejectionReason?: string | null;
+  deletedAt?: string | null;
+  deletedBy?: string; // admin userId
+  isDeleted?: boolean; // Quick check flag
+  restoredAt?: string | null;
+  restoredBy?: string;
 }
 
 // ===== API RESPONSE TYPES =====
@@ -105,6 +116,7 @@ export interface GetCourseOptions {
     userId?: string;
     status?: CourseStatus;
     enrolledUserId?: string;
+    isDeleted?: boolean;
   };
   pagination?: {
     pageSize?: number;

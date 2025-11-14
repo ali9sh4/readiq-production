@@ -19,8 +19,19 @@ export class ZainCash {
       msisdn: this.msisdn ? "✅ Set" : "❌ Missing",
       baseUrl: this.baseUrl,
     });
+
+    // ✅ REMOVED: Don't throw error in constructor
+    // if (!this.merchantId || !this.secretKey || !this.msisdn) {
+    //   throw new Error("ZainCash credentials missing");
+    // }
+  }
+
+  // ✅ ADD: Validate credentials when actually used
+  private validateCredentials(): void {
     if (!this.merchantId || !this.secretKey || !this.msisdn) {
-      throw new Error("ZainCash credentials missing");
+      throw new Error(
+        "ZainCash credentials not configured. Please set ZAINCASH_MERCHANT_ID, ZAINCASH_SECRET_KEY, and ZAINCASH_MSISDN environment variables."
+      );
     }
   }
 
@@ -28,12 +39,14 @@ export class ZainCash {
    * ✅ Generate JWT token with expiration
    */
   private generateToken(data: any): string {
+    this.validateCredentials(); // ✅ Check here
+
     const now = Math.floor(Date.now() / 1000);
 
     const payload = {
       ...data,
-      iat: now, // ✅ Issued at
-      exp: now + 60 * 60 * 4, // ✅ Expires in 4 hours
+      iat: now,
+      exp: now + 60 * 60 * 4,
     };
 
     const header = Buffer.from(
@@ -56,6 +69,8 @@ export class ZainCash {
    * ✅ Verify JWT token
    */
   public verifyToken(token: string): any {
+    this.validateCredentials(); // ✅ Check here
+
     try {
       const [header, payload, signature] = token.split(".");
 
@@ -74,7 +89,6 @@ export class ZainCash {
 
       const decoded = JSON.parse(Buffer.from(payload, "base64url").toString());
 
-      // ✅ Check expiration
       if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) {
         throw new Error("Token expired");
       }
@@ -93,6 +107,8 @@ export class ZainCash {
     orderId: string,
     serviceType: string = "Course Payment"
   ): Promise<any> {
+    this.validateCredentials(); // ✅ Check here
+
     console.log("🔵 Creating ZainCash transaction...");
 
     if (amount < 250) {
@@ -106,7 +122,7 @@ export class ZainCash {
       serviceType: serviceType.substring(0, 50),
       msisdn: this.msisdn,
       orderId: orderId,
-      redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/zaincash/callback`,
+      redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/zaincash/webhook`,
     };
 
     console.log("📦 Token data:", tokenData);
@@ -137,7 +153,6 @@ export class ZainCash {
         JSON.stringify(response.data, null, 2)
       );
 
-      // ✅ Check for error in response
       if (response.data.err) {
         const errorMsg =
           response.data.err.msg ||
@@ -166,7 +181,6 @@ export class ZainCash {
         url: paymentUrl,
       };
     } catch (error: any) {
-      // Better error handling for ZainCash errors
       if (error.response?.data?.err) {
         const zaincashError =
           error.response.data.err.msg || error.response.data.err.message;
@@ -192,16 +206,15 @@ export class ZainCash {
    * ✅ Check transaction status - POST /transaction/get
    */
   public async getTransactionStatus(transactionId: string): Promise<any> {
-    // ✅ JWT payload with id and msisdn
+    this.validateCredentials(); // ✅ Check here
+
     const tokenData = {
       id: transactionId,
-      msisdn: this.msisdn, // ✅ Required for /get endpoint
-      // iat and exp added automatically
+      msisdn: this.msisdn,
     };
 
     const token = this.generateToken(tokenData);
 
-    // ✅ POST data as form-urlencoded
     const formData = new URLSearchParams();
     formData.append("token", token);
     formData.append("merchantId", this.merchantId);
