@@ -7,6 +7,9 @@ import CoursePlayer from "@/components/ui/CoursePlayer";
 import { getCurrentUser } from "@/data/auth-server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, BookOpen } from "lucide-react";
+import Link from "next/link";
 
 // ✅ Helper function to clean Firestore data
 function cleanCourseData(course: any) {
@@ -55,7 +58,12 @@ export default async function WatchCoursePage({
   // 1. Get course
   const result = await getCourseById(courseId);
   if (!result.success || !result.course) {
-    redirect("/courses");
+    return <CourseNotFound />;
+  }
+
+  // ✅ NEW: Check if course is deleted
+  if (result.course.isDeleted === true) {
+    return <CourseDeleted />;
   }
 
   const cleanedCourse = cleanCourseData(result.course);
@@ -103,5 +111,60 @@ export default async function WatchCoursePage({
   // ✅ Not enrolled - show preview with enroll option
   return (
     <CoursePreview course={cleanedCourse} initialIsFavorited={isFavorited} />
+  );
+}
+
+// ✅ NEW: Error component for deleted courses
+function CourseDeleted() {
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center bg-gray-50"
+      dir="rtl"
+    >
+      <div className="text-center p-8 max-w-md">
+        <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <AlertCircle className="w-10 h-10 text-red-600" />
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          الدورة غير متاحة
+        </h1>
+        <p className="text-gray-600 mb-8">
+          هذه الدورة لم تعد متاحة. تم حذفها من قبل المدرب.
+        </p>
+        <div className="flex gap-3 justify-center">
+          <Button asChild className="bg-blue-600 hover:bg-blue-700">
+            <Link href="/">تصفح الدورات</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/user_dashboard">لوحة التحكم</Link>
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ✅ NEW: Error component for non-existent courses
+function CourseNotFound() {
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center bg-gray-50"
+      dir="rtl"
+    >
+      <div className="text-center p-8 max-w-md">
+        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <BookOpen className="w-10 h-10 text-gray-400" />
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          الدورة غير موجودة
+        </h1>
+        <p className="text-gray-600 mb-8">
+          لا يمكن العثور على هذه الدورة. ربما تم حذفها أو الرابط غير صحيح.
+        </p>
+        <Button asChild className="bg-blue-600 hover:bg-blue-700">
+          <Link href="/">تصفح جميع الدورات</Link>
+        </Button>
+      </div>
+    </div>
   );
 }

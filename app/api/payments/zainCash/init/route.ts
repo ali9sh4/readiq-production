@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { zaincash } from "@/lib/payments/zaincash";
 import { adminAuth, db } from "@/firebase/service";
-export const dynamic = 'force-dynamic';
-
 
 export async function POST(req: NextRequest) {
   try {

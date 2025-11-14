@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { zaincash } from "@/lib/payments/zaincash";
 import { db } from "@/firebase/service";
-export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {

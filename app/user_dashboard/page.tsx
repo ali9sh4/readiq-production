@@ -41,7 +41,7 @@ export default function DashboardHome() {
         setError(null);
         const token = await auth.user.getIdToken();
         const [enrolledData, favoritesResult] = await Promise.all([
-          getUserEnrolledCoursesWithStats(token, 6), // ✅ Limit to 6 for speed
+          getUserEnrolledCoursesWithStats(token, 20), // ✅ Limit to 6 for speed
           getUserFavorites(token, 6),
         ]);
 

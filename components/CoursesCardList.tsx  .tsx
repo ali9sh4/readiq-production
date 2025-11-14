@@ -12,7 +12,7 @@ import { checkUserEnrollments } from "@/app/actions/enrollment_action";
 import { useAuth } from "@/context/authContext";
 import FavoriteButton from "./favoritesButton";
 import { checkUserFavorites } from "@/app/actions/favorites_actions";
-import { requestCourseDeletion } from "@/app/actions/course_deletion_action";
+import { softDeleteCourse } from "@/app/actions/course_deletion_action";
 
 // ===== TYPES =====
 
@@ -167,11 +167,7 @@ const CourseCard = memo(
                 onClick={async (e) => {
                   e.stopPropagation();
 
-                  if (
-                    !confirm(
-                      "هل تريد طلب حذف هذه الدورة؟ سيتم مراجعة الطلب من قبل الإدارة."
-                    )
-                  ) {
+                  if (!confirm("هل تريد طلب حذف هذه الدورة؟")) {
                     return;
                   }
 
@@ -184,10 +180,7 @@ const CourseCard = memo(
 
                     const token = await auth.user.getIdToken();
 
-                    const result = await requestCourseDeletion(
-                      course.id,
-                      token
-                    );
+                    const result = await softDeleteCourse(course.id, token);
 
                     if (result.success) {
                       alert(result.message);
@@ -201,7 +194,7 @@ const CourseCard = memo(
                 }}
               >
                 <Trash2 className="w-3 h-3 ml-1" />
-                طلب حذف
+                حذف الدوره
               </Button>
             </div>
           </div>

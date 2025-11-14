@@ -59,15 +59,14 @@ export default async function InstructorCourse({
   return (
     <>
       <CoursesCardList data={data} isAdminView={true} />
-      {data.hasMore && (
-        <div className="mt-8">
-          <NextBackButton
-            nextCursor={data.nextCursor || ""}
-            hasMore={data.hasMore}
-            currentParams={params || {}}
-          />
-        </div>
-      )}
+
+      <div className="mt-8">
+        <NextBackButton
+          nextCursor={data.nextCursor || ""}
+          hasMore={data.hasMore}
+          currentParams={params || {}}
+        />
+      </div>
     </>
   );
 } // ✅ REMOVE THE EXTRA 's' - Just close with }

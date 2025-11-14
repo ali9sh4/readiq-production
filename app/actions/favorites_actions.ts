@@ -139,12 +139,17 @@ export async function getUserFavorites(
         }
 
         const data = courseDoc.data();
+
+        // ✅ NEW: Check if deleted
+        if (data?.isDeleted === true) {
+          return null; // Filter out deleted courses
+        }
+
         return {
           id: courseDoc.id,
           ...data,
           title: data?.title || "",
           category: data?.category || "",
-          // ✅ Convert ALL timestamps to ISO strings (same as getUserEnrolledCourses)
           createdAt: data?.createdAt?.toDate?.()?.toISOString() || null,
           updatedAt: data?.updatedAt?.toDate?.()?.toISOString() || null,
           publishedAt: data?.publishedAt?.toDate?.()?.toISOString() || null,
@@ -154,7 +159,7 @@ export async function getUserFavorites(
       })
     );
 
-    // Filter out deleted courses
+    // Filter out deleted courses and null values
     const favorites = favoritesWithCourseData.filter(Boolean);
 
     const lastVisible = snapshot.docs[snapshot.docs.length - 1];

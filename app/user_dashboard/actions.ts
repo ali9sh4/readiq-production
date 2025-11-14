@@ -67,22 +67,25 @@ export async function getUserEnrolledCoursesWithStats(
 
     // ✅ Calculate stats while mapping courses (single pass)
     let totalLearningTime = 0;
-    const courses = courseDocs.map((doc) => {
-      const data = doc.data();
-      totalLearningTime += data?.duration ?? 0;
+    const courses = courseDocs
+      .map((doc) => {
+        const data = doc.data();
+        totalLearningTime += data?.duration ?? 0;
 
-      return {
-        id: doc.id,
-        ...data,
-        title: data.title || "",
-        category: data.category || "",
-        createdAt: data?.createdAt?.toDate?.()?.toISOString() || null,
-        updatedAt: data?.updatedAt?.toDate?.()?.toISOString() || null,
-        publishedAt: data?.publishedAt?.toDate?.()?.toISOString() || null,
-        approvedAt: data?.approvedAt?.toDate?.()?.toISOString() || null,
-        rejectedAt: data?.rejectedAt?.toDate?.()?.toISOString() || null,
-      } as Course;
-    });
+        return {
+          id: doc.id,
+          ...data,
+          title: data.title || "",
+          category: data.category || "",
+          createdAt: data?.createdAt?.toDate?.()?.toISOString() || null,
+          updatedAt: data?.updatedAt?.toDate?.()?.toISOString() || null,
+          publishedAt: data?.publishedAt?.toDate?.()?.toISOString() || null,
+          approvedAt: data?.approvedAt?.toDate?.()?.toISOString() || null,
+          rejectedAt: data?.rejectedAt?.toDate?.()?.toISOString() || null,
+        } as Course;
+      })
+      // ✅ NEW: Filter out deleted courses
+      .filter((course) => !course.isDeleted);
 
     return {
       success: true,
