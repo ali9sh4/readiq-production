@@ -61,11 +61,6 @@ export default async function WatchCoursePage({
     return <CourseNotFound />;
   }
 
-  // ✅ NEW: Check if course is deleted
-  if (result.course.isDeleted === true) {
-    return <CourseDeleted />;
-  }
-
   const cleanedCourse = cleanCourseData(result.course);
 
   // 2. Get authentication
@@ -74,41 +69,52 @@ export default async function WatchCoursePage({
   let isFavorited = false;
 
   if (!token) {
-    // ✅ No token - show preview for guests
+    // ✅ Check if deleted for guests
+    if (cleanedCourse.isDeleted === true) {
+      return <CourseDeleted />;
+    }
     return <CoursePreview course={cleanedCourse} initialIsFavorited={false} />;
   }
 
   const authResult = await getCurrentUser({ token });
 
   if (!authResult.success || !authResult.user) {
-    // ✅ Invalid token - show preview
+    // ✅ Check if deleted for invalid tokens
+    if (cleanedCourse.isDeleted === true) {
+      return <CourseDeleted />;
+    }
     return <CoursePreview course={cleanedCourse} initialIsFavorited={false} />;
   }
-  const favResult = await checkIfFavorited(token, courseId);
 
+  const favResult = await checkIfFavorited(token, courseId);
   isFavorited = favResult.isFavorited;
 
   // 3. Check enrollment
   const user = authResult.user;
   const isAdmin = authResult.isAdmin || false;
   const isInstructor = cleanedCourse.createdBy === user.uid;
-  const enrollmentResult = await checkUserEnrollments(user.uid, [courseId]);
-  const isEnrolled = enrollmentResult.enrollments?.[courseId] || false;
+
+  // ✅ Admin bypass - full access even to deleted courses
   if (isAdmin) {
-    // ✅ Admin has full access to ALL courses
     return <CoursePlayer course={cleanedCourse} isEnrolled={true} />;
   }
+
+  // ✅ Now check if deleted (after admin check)
+  if (cleanedCourse.isDeleted === true) {
+    return <CourseDeleted />;
+  }
+
+  const enrollmentResult = await checkUserEnrollments(user.uid, [courseId]);
+  const isEnrolled = enrollmentResult.enrollments?.[courseId] || false;
 
   // 4. Render based on enrollment status
   if (isInstructor) {
     return <CoursePlayer course={cleanedCourse} isEnrolled={true} />;
   }
   if (isEnrolled) {
-    // ✅ Enrolled - full access
     return <CoursePlayer course={cleanedCourse} isEnrolled={true} />;
   }
 
-  // ✅ Not enrolled - show preview with enroll option
   return (
     <CoursePreview course={cleanedCourse} initialIsFavorited={isFavorited} />
   );

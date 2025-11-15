@@ -46,44 +46,7 @@ export default function AdminDashboard() {
     "pending" | "approved" | "rejected" | "topups" | "deleted"
   >("pending");
   const [searchQuery, setSearchQuery] = useState("");
-  const [migrationLoading, setMigrationLoading] = useState(false);
-  const [migrationResult, setMigrationResult] = useState<string | null>(null);
-  const handleMigration = async () => {
-    if (
-      !confirm(
-        "هل تريد إضافة حقل isDeleted لجميع الدورات؟\n\nهذا آمن ويجب تشغيله مرة واحدة فقط."
-      )
-    ) {
-      return;
-    }
 
-    setMigrationLoading(true);
-    setMigrationResult(null);
-
-    try {
-      const token = await user?.getIdToken();
-      if (!token) {
-        alert("يرجى تسجيل الدخول");
-        return;
-      }
-
-      const result = await migrateCourses(token);
-
-      if (result.success) {
-        setMigrationResult(`✅ تم تحديث ${result.count} دورة بنجاح!`);
-        alert(`✅ تم تحديث ${result.count} دورة بنجاح!`);
-      } else {
-        setMigrationResult(`❌ فشل: ${result.error}`);
-        alert(`❌ فشل: ${result.error}`);
-      }
-    } catch (error) {
-      console.error("Migration error:", error);
-      setMigrationResult("❌ حدث خطأ");
-      alert("حدث خطأ أثناء التحديث");
-    } finally {
-      setMigrationLoading(false);
-    }
-  };
   // Real-time listener for courses
   useEffect(() => {
     if (!user || isLoading) return;
@@ -256,14 +219,6 @@ export default function AdminDashboard() {
           لوحة التحكم الإدارية
         </h1>
       </div>
-      <Button
-        onClick={handleMigration}
-        disabled={migrationLoading}
-        variant="outline"
-        className="bg-purple-50 border-purple-600 text-purple-600 hover:bg-purple-100"
-      >
-        {migrationLoading ? "جاري التحديث..." : "🔧 إضافة حقل isDeleted"}
-      </Button>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
