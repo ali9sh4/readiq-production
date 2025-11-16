@@ -31,9 +31,6 @@ export default function LoginPage() {
           <Button
             onClick={async () => {
               const success = await handleGoogleSignIn();
-              if (success) {
-                router.push("/");
-              }
             }}
             disabled={isLoading}
             className="w-full flex items-center justify-center space-x-2"
