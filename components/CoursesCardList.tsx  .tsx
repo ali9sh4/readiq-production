@@ -155,7 +155,7 @@ const CourseCard = memo(
                 className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50 text-xs"
                 asChild
               >
-                <Link href={`/course-upload/edit/${course.id}`}>
+                <Link href={`/course-upload/edit/anVKnYHlsyx8nTvwsZdt`}>
                   <Edit className="w-3 h-3 ml-1" />
                   تعديل
                 </Link>
