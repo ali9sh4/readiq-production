@@ -33,14 +33,12 @@ export const setToken = async ({
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax", // ADD THIS
     maxAge: 60 * 60, // ADD THIS - 1 hour to match Firebase token expiry
-    path: "/", // ADD THIS
   });
   cookieStore.set("firebaseAuthRefreshToken", refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax", // ADD THIS (use 'lax' not 'strict' for OAuth)
     maxAge: 60 * 60 * 24 * 30, // ADD THIS - 30 days
-    path: "/", // ADD THIS
   });
   return {
     success: true,
