@@ -1,20 +1,62 @@
 import { fetchCourseDetails } from "@/data/courses";
 import CourseDashboard from "@/components/CourseDashboard";
-import { requireAuth } from "@/data/routeGuards";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
 export default async function EditCoursePage({
   params,
 }: {
-  params: Promise<{ courseId: string }>; // ✅ Promise type
+  params: Promise<{ courseId: string }>;
 }) {
+  // ✅ Get user info from middleware headers
+  const headersList = await headers();
+  const userId = headersList.get("x-user-id");
+  const userEmail = headersList.get("x-user-email");
+
+  // ✅ Redirect if not authenticated
+  if (!userId) {
+    redirect("/login");
+  }
+
   try {
-    const auth = await requireAuth();
     const { courseId } = await params;
-    // ✅ Use the actual courseId from params
+
+    // ✅ Fetch course
     const Course = await fetchCourseDetails(courseId);
+
     if (!Course) {
-      throw new Error("Course not found");
+      return (
+        <div className="container mx-auto px-4 py-8">
+          <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+            <h1 className="text-xl font-bold text-red-800 mb-2">
+              لم يتم العثور على الدورة
+            </h1>
+            <p className="text-red-600">معرف الدورة: {courseId}</p>
+            <p className="text-sm text-red-500 mt-2">
+              تأكد من صحة الرابط وحاول مرة أخرى
+            </p>
+          </div>
+        </div>
+      );
     }
+
+    // ✅ Check if user owns this course
+    if (Course.createdBy !== userId) {
+      return (
+        <div className="container mx-auto px-4 py-8">
+          <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <h1 className="text-xl font-bold text-yellow-800 mb-2">
+              غير مصرح
+            </h1>
+            <p className="text-yellow-600">
+              ليس لديك صلاحية لتعديل هذه الدورة
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    // ✅ Clean course data (your old way)
     function cleanCourseData(course: any) {
       return {
         ...course,
@@ -33,16 +75,14 @@ export default async function EditCoursePage({
           : course.rejectedAt || null,
       };
     }
+
     const CleanCourse = cleanCourseData(Course);
 
     return (
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mt-6 mb-4">تعديل الدورة</h1>
 
-        {/* ✅ Optional: Show user info */}
-        <p className="text-sm text-gray-600 mb-4">
-          المستخدم: {auth.user?.email}
-        </p>
+        <p className="text-sm text-gray-600 mb-4">المستخدم: {userEmail}</p>
 
         <div className="bg-white rounded-lg shadow-md p-6">
           <CourseDashboard defaultValues={CleanCourse} />
@@ -53,36 +93,16 @@ export default async function EditCoursePage({
     console.error("Failed to load course:", error);
 
     return (
-      <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
-        <h1 className="text-xl font-bold text-red-800 mb-2">
-          Error Loading Course
-        </h1>
-        <p className="text-red-600">
-          Could not find course with ID: {(await params).courseId}
-        </p>
-        <p className="text-sm text-red-500 mt-2">
-          Please check the URL and try again.
-        </p>
+      <div className="container mx-auto px-4 py-8">
+        <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+          <h1 className="text-xl font-bold text-red-800 mb-2">
+            خطأ في التحميل
+          </h1>
+          <p className="text-red-600">
+            حدث خطأ أثناء تحميل الدورة. حاول مرة أخرى لاحقاً.
+          </p>
+        </div>
       </div>
     );
   }
 }
-
-/*
-the old way 
-<EditCourseForm
-            id={params.courseId}
-            title={Course.title}
-            subtitle={Course?.subtitle}
-            category={Course?.category}
-            price={Course?.price}
-            description={Course?.description}
-            level={Course?.level}
-            language={Course?.language}
-            duration={Course?.duration}
-            requirements={Course?.requirements}
-            learningPoints={Course?.learningPoints}
-            images={Course?.images}
-          />
-
-*/
