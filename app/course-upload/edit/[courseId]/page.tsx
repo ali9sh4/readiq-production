@@ -9,6 +9,7 @@ export default async function EditCoursePage({
 }: {
   params: Promise<{ courseId: string }>;
 }) {
+  console.log("🔥🔥🔥 EDIT PAGE SERVER RENDERED 🔥🔥🔥");
   // ✅ Get user info from const cookieStore = await cookies();
   const cookieStore = await cookies();
   const token = cookieStore.get("firebaseAuthToken")?.value;
