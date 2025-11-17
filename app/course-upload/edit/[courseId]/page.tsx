@@ -1,17 +1,26 @@
 import { fetchCourseDetails } from "@/data/courses";
 import CourseDashboard from "@/components/CourseDashboard";
-import { headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { adminAuth } from "@/firebase/service";
 
 export default async function EditCoursePage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
 }) {
-  // ✅ Get user info from middleware headers
-  const headersList = await headers();
-  const userId = headersList.get("x-user-id");
-  const userEmail = headersList.get("x-user-email");
+  // ✅ Get user info from const cookieStore = await cookies();
+  const cookieStore = await cookies();
+  const token = cookieStore.get("firebaseAuthToken")?.value;
+  if (!token) {
+    redirect("/login");
+  }
+  console.log("🔍 SERVER - Has token:", !!token);
+  console.log("🔍 SERVER - Token length:", token?.length || 0);
+  console.log("🔍 SERVER - Token preview:", token?.substring(0, 50));
+
+  const decodedToken = await adminAuth.verifyIdToken(token);
+  const userId = decodedToken.uid; // ✅ Direct cookie reading
 
   // ✅ Redirect if not authenticated
   if (!userId) {
@@ -77,8 +86,6 @@ export default async function EditCoursePage({
     return (
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mt-6 mb-4">تعديل الدورة</h1>
-
-        <p className="text-sm text-gray-600 mb-4">المستخدم: {userEmail}</p>
 
         <div className="bg-white rounded-lg shadow-md p-6">
           <CourseDashboard defaultValues={CleanCourse} />
