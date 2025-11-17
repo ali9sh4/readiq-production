@@ -162,17 +162,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               hasRefreshToken: !!refreshToken,
             });
           }
-
-          // Redirect to home if on login page
-          if (
-            typeof window !== "undefined" &&
-            window.location.pathname === "/login"
-          ) {
-            console.log(
-              "[AuthContext] User authenticated on login page, redirecting to home..."
-            );
-            router.push("/");
-          }
         } catch (error) {
           console.error("[AuthContext] Error processing token:", error);
           console.error("[AuthContext] Token error details:", {
