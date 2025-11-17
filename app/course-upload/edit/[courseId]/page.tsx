@@ -1,3 +1,4 @@
+"use client";
 import { fetchCourseDetails } from "@/data/courses";
 import CourseDashboard from "@/components/CourseDashboard";
 
