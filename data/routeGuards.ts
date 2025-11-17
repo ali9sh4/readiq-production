@@ -42,9 +42,5 @@ export async function requireAuth() {
 export async function requireAdmin() {
   const auth = await requireAuth();
 
-  if (!auth.user?.admin) {
-    redirect("/");
-  }
-
   return auth;
 }
