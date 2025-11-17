@@ -10,6 +10,10 @@ export default async function EditCoursePage({
 }) {
   // ✅ Get user info from const cookieStore = await cookies();
 const token = cookieStore.get("firebaseAuthToken")?.value;
+console.log("🔍 SERVER - Has token:", !!token);
+  console.log("🔍 SERVER - Token length:", token?.length || 0);
+  console.log("🔍 SERVER - Token preview:", token?.substring(0, 50));
+  
 const decodedToken = await adminAuth.verifyIdToken(token);
 const userId = decodedToken.uid;  // ✅ Direct cookie reading
 
