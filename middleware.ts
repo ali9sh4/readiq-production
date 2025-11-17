@@ -15,6 +15,18 @@ export async function middleware(request: NextRequest) {
     const cookie = await cookies();
     const token = cookie.get("firebaseAuthToken")?.value;
 
+    if (token) {
+      try {
+        await jwtVerify(token, JWKS, {
+          issuer: `https://securetoken.google.com/readiq-1f109`,
+          audience: "readiq-1f109",
+        });
+        return NextResponse.redirect(new URL("/", request.url));
+      } catch (error) {
+        console.log(error);
+        return NextResponse.next();
+      }
+    }
     return NextResponse.next();
   }
 
@@ -23,7 +35,7 @@ export async function middleware(request: NextRequest) {
     const token = cookie.get("firebaseAuthToken")?.value;
 
     if (!token) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      return NextResponse.redirect(new URL("/", request.url));
     }
 
     const { payload } = await jwtVerify(token, JWKS, {
@@ -44,9 +56,11 @@ export async function middleware(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.log(error);  }
+    console.log(error);
+    return NextResponse.redirect(new URL("/", request.url));
+  }
 }
 
 export const config = {
-  matcher: ["/admin-dashboard/:path*"],
+  matcher: ["/admin-dashboard/:path*", "/login", "/course-upload/:path*"],
 };

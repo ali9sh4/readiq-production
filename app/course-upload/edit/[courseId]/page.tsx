@@ -1,68 +1,18 @@
 import { fetchCourseDetails } from "@/data/courses";
 import CourseDashboard from "@/components/CourseDashboard";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { adminAuth } from "@/firebase/service";
 
 export default async function EditCoursePage({
   params,
 }: {
-  params: Promise<{ courseId: string }>;
+  params: { courseId: string };
 }) {
-  console.log("🔥🔥🔥 EDIT PAGE SERVER RENDERED 🔥🔥🔥");
-  // ✅ Get user info from const cookieStore = await cookies();
-  const cookieStore = await cookies();
-  const token = cookieStore.get("firebaseAuthToken")?.value;
-  if (!token) {
-    redirect("/login");
-  }
-  console.log("🔍 SERVER - Has token:", !!token);
-  console.log("🔍 SERVER - Token length:", token?.length || 0);
-  console.log("🔍 SERVER - Token preview:", token?.substring(0, 50));
-
-  const decodedToken = await adminAuth.verifyIdToken(token);
-  const userId = decodedToken.uid; // ✅ Direct cookie reading
-
-  // ✅ Redirect if not authenticated
-  if (!userId) {
-    redirect("/login");
-  }
-
   try {
     const { courseId } = await params;
-
-    // ✅ Fetch course
+    // ✅ Use the actual courseId from params
     const Course = await fetchCourseDetails(courseId);
-
     if (!Course) {
-      return (
-        <div className="container mx-auto px-4 py-8">
-          <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
-            <h1 className="text-xl font-bold text-red-800 mb-2">
-              لم يتم العثور على الدورة
-            </h1>
-            <p className="text-red-600">معرف الدورة: {courseId}</p>
-            <p className="text-sm text-red-500 mt-2">
-              تأكد من صحة الرابط وحاول مرة أخرى
-            </p>
-          </div>
-        </div>
-      );
+      throw new Error("Course not found");
     }
-
-    // ✅ Check if user owns this course
-    if (Course.createdBy !== userId) {
-      return (
-        <div className="container mx-auto px-4 py-8">
-          <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h1 className="text-xl font-bold text-yellow-800 mb-2">غير مصرح</h1>
-            <p className="text-yellow-600">ليس لديك صلاحية لتعديل هذه الدورة</p>
-          </div>
-        </div>
-      );
-    }
-
-    // ✅ Clean course data (your old way)
     function cleanCourseData(course: any) {
       return {
         ...course,
@@ -81,7 +31,6 @@ export default async function EditCoursePage({
           : course.rejectedAt || null,
       };
     }
-
     const CleanCourse = cleanCourseData(Course);
 
     return (
@@ -97,16 +46,36 @@ export default async function EditCoursePage({
     console.error("Failed to load course:", error);
 
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
-          <h1 className="text-xl font-bold text-red-800 mb-2">
-            خطأ في التحميل
-          </h1>
-          <p className="text-red-600">
-            حدث خطأ أثناء تحميل الدورة. حاول مرة أخرى لاحقاً.
-          </p>
-        </div>
+      <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+        <h1 className="text-xl font-bold text-red-800 mb-2">
+          Error Loading Course
+        </h1>
+        <p className="text-red-600">
+          Could not find course with ID: {params.courseId}
+        </p>
+        <p className="text-sm text-red-500 mt-2">
+          Please check the URL and try again.
+        </p>
       </div>
     );
   }
 }
+
+/*
+the old way 
+<EditCourseForm
+            id={params.courseId}
+            title={Course.title}
+            subtitle={Course?.subtitle}
+            category={Course?.category}
+            price={Course?.price}
+            description={Course?.description}
+            level={Course?.level}
+            language={Course?.language}
+            duration={Course?.duration}
+            requirements={Course?.requirements}
+            learningPoints={Course?.learningPoints}
+            images={Course?.images}
+          />
+
+*/

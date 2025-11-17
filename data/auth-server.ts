@@ -1,14 +1,12 @@
- import { adminAuth } from "@/firebase/service";
+import { adminAuth } from "@/firebase/service";
 
-// ✅ Consistent return structure - always includes success field
+// ✅ Simplified - only takes token since that's what you use
 export const getCurrentUser = async ({ token }: { token: string }) => {
   try {
     const verifyAuthToken = await adminAuth.verifyIdToken(token);
     if (!verifyAuthToken) {
       return {
-        success: false,
-        user: null,
-        isAdmin: false,
+        error: true,
         message: "please login first",
       };
     }
@@ -16,9 +14,7 @@ export const getCurrentUser = async ({ token }: { token: string }) => {
     const userRecord = await adminAuth.getUser(verifyAuthToken.uid);
     if (!userRecord) {
       return {
-        success: false,
-        user: null,
-        isAdmin: false,
+        error: true,
         message: "user not found",
       };
     }
@@ -33,9 +29,7 @@ export const getCurrentUser = async ({ token }: { token: string }) => {
   } catch (error) {
     console.error("getCurrentUser error:", error);
     return {
-      success: false,
-      user: null,
-      isAdmin: false,
+      error: true,
       message: "Authentication failed",
     };
   }

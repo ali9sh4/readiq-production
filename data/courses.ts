@@ -117,7 +117,7 @@ export const getCourses = async (
     } else {
       // ✅ Use equality - no index needed!
       CoursesQuery = CoursesQuery.where("isDeleted", "==", false);
-    }
+    }   
 
     if (category) {
       CoursesQuery = CoursesQuery.where("category", "==", category);

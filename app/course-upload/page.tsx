@@ -2,9 +2,6 @@ import InstructorCourse from "@/components/instructorCourse";
 import { Button } from "@/components/ui/button";
 import { PlusCircleIcon, BookOpen } from "lucide-react";
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { adminAuth } from "@/firebase/service";
-import { redirect } from "next/navigation";
 
 type SearchParams = {
   cursor?: string;
@@ -18,43 +15,6 @@ export default async function Courses({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  // 🔥 ADD THIS: Check authentication
-  const cookieStore = await cookies();
-  const token = cookieStore.get("firebaseAuthToken")?.value;
-
-  // If no token, show login message
-  if (!token) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            يرجى تسجيل الدخول
-          </h1>
-          <p className="text-gray-600 mb-6">
-            يجب عليك تسجيل الدخول لعرض دوراتك
-          </p>
-          <Button asChild>
-            <Link href="/sign-in">تسجيل الدخول</Link>
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Verify token and get user
-  let decodedToken;
-  try {
-    decodedToken = await adminAuth.verifyIdToken(token);
-  } catch (error) {
-    // Invalid token, redirect to login
-    redirect("/sign-in");
-  }
-
-  const userId = decodedToken.uid;
-
-  // NOW we have the user ID! Pass it to InstructorCourse
-  const params = await searchParams;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
@@ -97,7 +57,7 @@ export default async function Courses({
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
           <div className="h-2 bg-gradient-to-r from-sky-900 via-sky-700 to-sky-950" />
           <div className="p-6">
-            <InstructorCourse searchParams={params} userId={userId} />
+            <InstructorCourse searchParams={searchParams} />
           </div>
         </div>
       </div>
