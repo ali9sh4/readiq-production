@@ -153,6 +153,14 @@ const CourseCard = memo(
                 size="sm"
                 variant="outline"
                 className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50 text-xs"
+                onClick={() => {
+                  console.log("🔍 Navigating to edit page");
+                  console.log("🔍 Course ID:", course.id);
+                  console.log(
+                    "🔍 Full URL:",
+                    `/course-upload/edit/${course.id}`
+                  );
+                }}
                 asChild
               >
                 <Link href={`/course-upload/edit/${course.id}`}>
