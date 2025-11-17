@@ -8,10 +8,10 @@ export default async function EditCoursePage({
 }: {
   params: Promise<{ courseId: string }>;
 }) {
-  // ✅ Get user info from middleware headers
-  const headersList = await headers();
-  const userId = headersList.get("x-user-id");
-  const userEmail = headersList.get("x-user-email");
+  // ✅ Get user info from const cookieStore = await cookies();
+const token = cookieStore.get("firebaseAuthToken")?.value;
+const decodedToken = await adminAuth.verifyIdToken(token);
+const userId = decodedToken.uid;  // ✅ Direct cookie reading
 
   // ✅ Redirect if not authenticated
   if (!userId) {
