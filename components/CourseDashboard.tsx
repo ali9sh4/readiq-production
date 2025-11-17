@@ -1,5 +1,4 @@
 "use client";
-//const publishedVideosCount = videos.filter((v) => v.isPublished).length;
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/authContext";
 import { Textarea } from "@/components/ui/textarea";

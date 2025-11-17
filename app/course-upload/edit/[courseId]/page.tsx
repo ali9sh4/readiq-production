@@ -1,13 +1,14 @@
-"use client";
 import { fetchCourseDetails } from "@/data/courses";
 import CourseDashboard from "@/components/CourseDashboard";
+import { requireAuth } from "@/data/routeGuards";
 
 export default async function EditCoursePage({
   params,
 }: {
-  params: { courseId: string };
+  params: Promise<{ courseId: string }>; // ✅ Promise type
 }) {
   try {
+    const auth = await requireAuth();
     const { courseId } = await params;
     // ✅ Use the actual courseId from params
     const Course = await fetchCourseDetails(courseId);
@@ -38,6 +39,11 @@ export default async function EditCoursePage({
       <div className="container mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold mt-6 mb-4">تعديل الدورة</h1>
 
+        {/* ✅ Optional: Show user info */}
+        <p className="text-sm text-gray-600 mb-4">
+          المستخدم: {auth.user?.email}
+        </p>
+
         <div className="bg-white rounded-lg shadow-md p-6">
           <CourseDashboard defaultValues={CleanCourse} />
         </div>
@@ -52,7 +58,7 @@ export default async function EditCoursePage({
           Error Loading Course
         </h1>
         <p className="text-red-600">
-          Could not find course with ID: {params.courseId}
+          Could not find course with ID: {(await params).courseId}
         </p>
         <p className="text-sm text-red-500 mt-2">
           Please check the URL and try again.
