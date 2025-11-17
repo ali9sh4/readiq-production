@@ -45,12 +45,8 @@ export default async function EditCoursePage({
       return (
         <div className="container mx-auto px-4 py-8">
           <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h1 className="text-xl font-bold text-yellow-800 mb-2">
-              غير مصرح
-            </h1>
-            <p className="text-yellow-600">
-              ليس لديك صلاحية لتعديل هذه الدورة
-            </p>
+            <h1 className="text-xl font-bold text-yellow-800 mb-2">غير مصرح</h1>
+            <p className="text-yellow-600">ليس لديك صلاحية لتعديل هذه الدورة</p>
           </div>
         </div>
       );
