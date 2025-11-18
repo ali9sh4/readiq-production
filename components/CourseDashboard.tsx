@@ -421,40 +421,39 @@ export default function CourseDashboard({ defaultValues }: Props) {
 
   return (
     <div
-      className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6"
+      className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8"
       dir="rtl"
       lang="ar"
     >
       <div className="mx-auto max-w-7xl">
         {/* ===== RESPONSIVE HEADER ===== */}
-        <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
+        <div className="flex flex-col gap-4 mb-6">
           {/* Title Section - Always full width */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             {/* Title + Badge */}
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 truncate">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 truncate">
                 {course.title}
               </h1>
               <StatusBadge status={status} />
             </div>
 
-            {/* Action Buttons - Stack on mobile */}
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            {/* Action Buttons - Stack on mobile, row on tablet+ */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
               {canPublish && (
                 <Button
                   onClick={handlePublish}
                   disabled={publishing || videos.length === 0}
-                  className="gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md hover:shadow-lg transition-all h-11 sm:h-12 text-sm sm:text-base w-full sm:w-auto"
+                  className="gap-2 bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg transition-all h-12 text-base font-medium w-full sm:w-auto sm:min-w-[160px]"
                 >
                   {publishing ? (
                     <>
-                      <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                      <span className="hidden xs:inline">جاري النشر...</span>
-                      <span className="xs:hidden">نشر...</span>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>جاري النشر...</span>
                     </>
                   ) : (
                     <>
-                      <Upload className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <Upload className="h-5 w-5" />
                       نشر الدورة
                     </>
                   )}
@@ -466,17 +465,16 @@ export default function CourseDashboard({ defaultValues }: Props) {
                   onClick={handleUnPublish}
                   disabled={unpublishing}
                   variant="destructive"
-                  className="gap-2 shadow-md hover:shadow-lg transition-all h-11 sm:h-12 text-sm sm:text-base w-full sm:w-auto"
+                  className="gap-2 shadow-md hover:shadow-lg transition-all h-12 text-base font-medium w-full sm:w-auto sm:min-w-[160px]"
                 >
                   {unpublishing ? (
                     <>
-                      <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                      <span className="hidden xs:inline">جاري الإيقاف...</span>
-                      <span className="xs:hidden">إيقاف...</span>
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span>جاري الإيقاف...</span>
                     </>
                   ) : (
                     <>
-                      <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <EyeOff className="h-5 w-5" />
                       إيقاف الدورة
                     </>
                   )}
@@ -487,17 +485,17 @@ export default function CourseDashboard({ defaultValues }: Props) {
 
           {/* Rejection Reason - Responsive padding and text */}
           {course.rejectionReason && (
-            <div className="bg-gradient-to-r from-red-50 to-rose-50 border-r-4 border-red-500 rounded-lg p-3 sm:p-4 md:p-5 shadow-sm">
-              <h4 className="font-bold text-red-900 mb-2 flex items-center gap-2 text-base sm:text-lg">
-                <div className="bg-red-100 p-1 sm:p-1.5 rounded-lg flex-shrink-0">
-                  <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
+            <div className="bg-red-50 border-r-4 border-red-500 rounded-lg p-4 md:p-5 shadow-sm">
+              <h4 className="font-bold text-red-900 mb-2 flex items-center gap-2 text-lg">
+                <div className="bg-red-100 p-1.5 rounded-lg flex-shrink-0">
+                  <XCircle className="w-5 h-5 text-red-600" />
                 </div>
                 سبب رفض الدورة
               </h4>
-              <p className="text-red-800 leading-relaxed text-sm sm:text-base">
+              <p className="text-red-800 leading-relaxed text-base">
                 {course.rejectionReason}
               </p>
-              <p className="text-red-600 text-xs sm:text-sm mt-2 sm:mt-3 flex items-center gap-2">
+              <p className="text-red-600 text-sm mt-3 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-red-600 rounded-full flex-shrink-0"></span>
                 يرجى تعديل الدورة وإعادة تقديمها للمراجعة
               </p>
@@ -506,10 +504,10 @@ export default function CourseDashboard({ defaultValues }: Props) {
 
           {/* Warning if can't publish */}
           {canPublish && videos.length === 0 && (
-            <div className="bg-yellow-50 border-r-4 border-yellow-500 rounded-lg p-3 sm:p-4 shadow-sm">
-              <p className="text-yellow-800 flex items-center gap-2 text-sm sm:text-base">
-                <div className="bg-yellow-100 p-1 rounded-lg flex-shrink-0">
-                  <AlertCircle className="w-4 h-4 text-yellow-600" />
+            <div className="bg-yellow-50 border-r-4 border-yellow-500 rounded-lg p-4 shadow-sm">
+              <p className="text-yellow-800 flex items-center gap-2 text-base">
+                <div className="bg-yellow-100 p-1.5 rounded-lg flex-shrink-0">
+                  <AlertCircle className="w-5 h-5 text-yellow-600" />
                 </div>
                 <span className="font-medium">
                   يجب إضافة فيديو واحد على الأقل قبل النشر
@@ -521,32 +519,32 @@ export default function CourseDashboard({ defaultValues }: Props) {
 
         {/* ===== RESPONSIVE ALERTS ===== */}
         {error && (
-          <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2 sm:gap-3">
-            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-red-700 text-xs sm:text-sm">{error}</p>
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-red-700 text-sm">{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2 sm:gap-3">
-            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
-            <p className="text-green-700 text-xs sm:text-sm">{success}</p>
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
+            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <p className="text-green-700 text-sm">{success}</p>
           </div>
         )}
 
         {/* ===== RESPONSIVE KPI CARDS ===== */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
-          <Card>
-            <CardContent className="pt-4 sm:pt-6 p-3 sm:p-6">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-2 sm:p-3 bg-green-100 rounded-lg">
-                  <FileText className="h-4 w-4 sm:h-6 sm:w-6 text-green-600" />
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
+          <Card className="shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="pt-5 p-4 md:p-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 md:p-3 bg-green-100 rounded-lg flex-shrink-0">
+                  <FileText className="h-5 w-5 md:h-6 md:w-6 text-green-600" />
                 </div>
                 <div className="text-right flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm text-gray-600 truncate">
+                  <p className="text-sm text-gray-600 truncate">
                     الملفات
                   </p>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">
                     {files.length}
                   </p>
                 </div>
@@ -554,17 +552,17 @@ export default function CourseDashboard({ defaultValues }: Props) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-4 sm:pt-6 p-3 sm:p-6">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-2 sm:p-3 bg-purple-100 rounded-lg">
-                  <Clock className="h-4 w-4 sm:h-6 sm:w-6 text-purple-600" />
+          <Card className="shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="pt-5 p-4 md:p-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 md:p-3 bg-purple-100 rounded-lg flex-shrink-0">
+                  <Clock className="h-5 w-5 md:h-6 md:w-6 text-purple-600" />
                 </div>
                 <div className="text-right flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm text-gray-600 truncate">
+                  <p className="text-sm text-gray-600 truncate">
                     مدة الدورة
                   </p>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
+                  <p className="text-xl md:text-2xl font-bold text-gray-900">
                     {formatDuration(totalVideoDuration)}
                   </p>
                 </div>
@@ -572,17 +570,17 @@ export default function CourseDashboard({ defaultValues }: Props) {
             </CardContent>
           </Card>
 
-          <Card className="col-span-2 lg:col-span-1">
-            <CardContent className="pt-4 sm:pt-6 p-3 sm:p-6">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="p-2 sm:p-3 bg-orange-100 rounded-lg">
-                  <DollarSign className="h-4 w-4 sm:h-6 sm:w-6 text-orange-600" />
+          <Card className="col-span-2 md:col-span-1 shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="pt-5 p-4 md:p-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 md:p-3 bg-orange-100 rounded-lg flex-shrink-0">
+                  <DollarSign className="h-5 w-5 md:h-6 md:w-6 text-orange-600" />
                 </div>
                 <div className="text-right flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm text-gray-600 truncate">
+                  <p className="text-sm text-gray-600 truncate">
                     السعر
                   </p>
-                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">
+                  <p className="text-xl md:text-2xl font-bold text-gray-900 truncate">
                     {course.price || 0} د.ع
                   </p>
                 </div>
@@ -592,59 +590,59 @@ export default function CourseDashboard({ defaultValues }: Props) {
         </div>
 
         {/* ===== RESPONSIVE TABS ===== */}
-        <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl h-12 sm:h-14 md:h-16 p-1 sm:p-1.5 shadow-sm">
+        <Tabs defaultValue="overview" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2 bg-white border border-gray-200 rounded-xl h-14 md:h-16 p-1.5 shadow-sm">
             <TabsTrigger
               value="overview"
-              className="text-sm sm:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
+              className="text-base md:text-lg font-semibold text-gray-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
             >
               نظرة عامة
             </TabsTrigger>
             <TabsTrigger
               value="content"
-              className="text-sm sm:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-green-700 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
+              className="text-base md:text-lg font-semibold text-gray-600 data-[state=active]:bg-green-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
             >
               المحتوى
             </TabsTrigger>
           </TabsList>
 
           {/* ===== OVERVIEW TAB - RESPONSIVE ===== */}
-          <TabsContent value="overview" className="space-y-4 sm:space-y-6">
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
-              {/* Basic Info Form - Full width on mobile, 2/3 on xl */}
-              <Card className="xl:col-span-2">
-                <CardHeader className="p-4 sm:p-6">
-                  <CardTitle className="text-right text-lg sm:text-xl">
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Basic Info Form - Full width on mobile/tablet, 2/3 on lg */}
+              <Card className="lg:col-span-2 shadow-sm border-gray-200">
+                <CardHeader className="p-5 md:p-6">
+                  <CardTitle className="text-right text-xl md:text-2xl">
                     المعلومات الأساسية
                   </CardTitle>
-                  <CardDescription className="text-right text-xs sm:text-sm">
+                  <CardDescription className="text-right text-sm md:text-base">
                     تحديث تفاصيل الدورة الرئيسية
                   </CardDescription>
                 </CardHeader>
-                <CardContent dir="rtl" className="p-4 sm:p-6 pt-0">
+                <CardContent dir="rtl" className="p-5 md:p-6 pt-0">
                   <Form {...basicInfoForm}>
                     <form
                       onSubmit={basicInfoForm.handleSubmit(onSubmitBasicInfo)}
-                      className="space-y-3 sm:space-y-4"
+                      className="space-y-4"
                     >
-                      {/* Title and Subtitle - Stack on mobile */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                      {/* Title and Subtitle - Stack on mobile, row on md+ */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
                           control={basicInfoForm.control}
                           name="title"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block text-sm sm:text-base">
+                              <FormLabel className="text-right block text-base">
                                 العنوان *
                               </FormLabel>
                               <FormControl>
                                 <Input
                                   {...field}
                                   placeholder="عنوان الدورة"
-                                  className="text-right h-10 sm:h-11 text-sm sm:text-base"
+                                  className="text-right h-11 md:h-12 text-base"
                                 />
                               </FormControl>
-                              <FormMessage className="text-xs sm:text-sm" />
+                              <FormMessage className="text-sm" />
                             </FormItem>
                           )}
                         />
@@ -653,17 +651,17 @@ export default function CourseDashboard({ defaultValues }: Props) {
                           name="subtitle"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block text-sm sm:text-base">
+                              <FormLabel className="text-right block text-base">
                                 العنوان الفرعي
                               </FormLabel>
                               <FormControl>
                                 <Input
                                   {...field}
                                   placeholder="وصف قصير"
-                                  className="text-right h-10 sm:h-11 text-sm sm:text-base"
+                                  className="text-right h-11 md:h-12 text-base"
                                 />
                               </FormControl>
-                              <FormMessage className="text-xs sm:text-sm" />
+                              <FormMessage className="text-sm" />
                             </FormItem>
                           )}
                         />
@@ -675,7 +673,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                         name="description"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-right block text-sm sm:text-base">
+                            <FormLabel className="text-right block text-base">
                               الوصف
                             </FormLabel>
                             <FormControl>
@@ -683,10 +681,10 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                 {...field}
                                 placeholder="وصف تفصيلي للدورة"
                                 rows={4}
-                                className="resize-none text-right text-sm sm:text-base"
+                                className="resize-none text-right text-base"
                               />
                             </FormControl>
-                            <FormMessage className="text-xs sm:text-sm" />
+                            <FormMessage className="text-sm" />
                           </FormItem>
                         )}
                       />
@@ -697,29 +695,29 @@ export default function CourseDashboard({ defaultValues }: Props) {
                         name="instructorName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-right text-sm sm:text-base">
+                            <FormLabel className="text-right text-base">
                               اسم المحاضر
                             </FormLabel>
                             <FormControl>
                               <Textarea
                                 {...field}
                                 rows={1}
-                                className="resize-none text-right text-sm sm:text-base"
+                                className="resize-none text-right text-base"
                               />
                             </FormControl>
-                            <FormMessage className="text-xs sm:text-sm" />
+                            <FormMessage className="text-sm" />
                           </FormItem>
                         )}
                       />
 
-                      {/* Category, Level, Language - Stack on mobile, 2 cols on tablet */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                      {/* Category, Level, Language - Stack on mobile, row on tablet */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <FormField
                           control={basicInfoForm.control}
                           name="category"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block text-sm sm:text-base">
+                              <FormLabel className="text-right block text-base">
                                 التصنيف
                               </FormLabel>
                               <Select
@@ -728,13 +726,13 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                 dir="rtl"
                               >
                                 <FormControl>
-                                  <SelectTrigger className="text-right h-10 sm:h-11 text-sm sm:text-base">
+                                  <SelectTrigger className="text-right h-11 md:h-12 text-base">
                                     <SelectValue placeholder="اختر التصنيف" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent
                                   align="end"
-                                  className="text-sm sm:text-base"
+                                  className="text-base"
                                 >
                                   <SelectItem value="programming">
                                     البرمجة
@@ -777,7 +775,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
-                              <FormMessage className="text-xs sm:text-sm" />
+                              <FormMessage className="text-sm" />
                             </FormItem>
                           )}
                         />
@@ -786,7 +784,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                           name="level"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block text-sm sm:text-base">
+                              <FormLabel className="text-right block text-base">
                                 المستوى
                               </FormLabel>
                               <Select
@@ -794,11 +792,11 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                 defaultValue={field.value}
                               >
                                 <FormControl>
-                                  <SelectTrigger className="text-right h-10 sm:h-11 text-sm sm:text-base">
+                                  <SelectTrigger className="text-right h-11 md:h-12 text-base">
                                     <SelectValue />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent className="text-sm sm:text-base">
+                                <SelectContent className="text-base">
                                   <SelectItem value="beginner">
                                     مبتدئ
                                   </SelectItem>
@@ -813,7 +811,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
-                              <FormMessage className="text-xs sm:text-sm" />
+                              <FormMessage className="text-sm" />
                             </FormItem>
                           )}
                         />
@@ -821,8 +819,8 @@ export default function CourseDashboard({ defaultValues }: Props) {
                           control={basicInfoForm.control}
                           name="language"
                           render={({ field }) => (
-                            <FormItem className="sm:col-span-2 lg:col-span-1">
-                              <FormLabel className="text-right block text-sm sm:text-base">
+                            <FormItem>
+                              <FormLabel className="text-right block text-base">
                                 اللغة
                               </FormLabel>
                               <Select
@@ -830,11 +828,11 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                 defaultValue={field.value}
                               >
                                 <FormControl>
-                                  <SelectTrigger className="text-right h-10 sm:h-11 text-sm sm:text-base">
+                                  <SelectTrigger className="text-right h-11 md:h-12 text-base">
                                     <SelectValue />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent className="text-sm sm:text-base">
+                                <SelectContent className="text-base">
                                   <SelectItem value="arabic">
                                     العربية
                                   </SelectItem>
@@ -849,7 +847,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
-                              <FormMessage className="text-xs sm:text-sm" />
+                              <FormMessage className="text-sm" />
                             </FormItem>
                           )}
                         />
@@ -859,12 +857,12 @@ export default function CourseDashboard({ defaultValues }: Props) {
                       <Button
                         type="submit"
                         disabled={basicInfoForm.formState.isSubmitting}
-                        className="w-full gap-2 h-10 sm:h-11 text-sm sm:text-base"
+                        className="w-full gap-2 h-12 text-base font-medium"
                       >
                         {basicInfoForm.formState.isSubmitting ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <Loader2 className="h-5 w-5 animate-spin" />
                         ) : (
-                          <Save className="h-4 w-4" />
+                          <Save className="h-5 w-5" />
                         )}
                         حفظ المعلومات الأساسية
                       </Button>
@@ -873,30 +871,30 @@ export default function CourseDashboard({ defaultValues }: Props) {
                 </CardContent>
               </Card>
 
-              {/* RIGHT COLUMN - Pricing - Full width on mobile */}
-              <div className="space-y-4 sm:space-y-6">
+              {/* RIGHT COLUMN - Pricing - Full width on mobile/tablet */}
+              <div className="space-y-6">
                 {/* Pricing Form */}
-                <Card>
-                  <CardHeader className="p-4 sm:p-6">
-                    <CardTitle className="text-right text-lg sm:text-xl">
+                <Card className="shadow-sm border-gray-200">
+                  <CardHeader className="p-5 md:p-6">
+                    <CardTitle className="text-right text-xl md:text-2xl">
                       التسعير
                     </CardTitle>
-                    <CardDescription className="text-right text-xs sm:text-sm">
+                    <CardDescription className="text-right text-sm md:text-base">
                       تحديد سعر الدورة
                     </CardDescription>
                   </CardHeader>
-                  <CardContent dir="rtl" className="p-4 sm:p-6 pt-0">
+                  <CardContent dir="rtl" className="p-5 md:p-6 pt-0">
                     <Form {...pricingForm}>
                       <form
                         onSubmit={pricingForm.handleSubmit(onSubmitPricing)}
-                        className="space-y-3 sm:space-y-4"
+                        className="space-y-4"
                       >
                         <FormField
                           control={pricingForm.control}
                           name="price"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block text-sm sm:text-base">
+                              <FormLabel className="text-right block text-base">
                                 السعر (دينار) *
                               </FormLabel>
                               <FormControl>
@@ -942,10 +940,10 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                     );
                                   }}
                                   placeholder="اتركه فارغًا للدورة المجانية"
-                                  className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500 text-right"
+                                  className="h-11 md:h-12 text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500 text-right"
                                 />
                               </FormControl>
-                              <div className="text-xs sm:text-sm">
+                              <div className="text-sm">
                                 {field.value === 0 ? (
                                   <span className="text-green-600 font-medium">
                                     ✓ دورة مجانية (السعر = 0 د.ع)
@@ -957,7 +955,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                   </span>
                                 )}
                               </div>
-                              <FormMessage className="text-xs sm:text-sm" />
+                              <FormMessage className="text-sm" />
                             </FormItem>
                           )}
                         />
@@ -966,7 +964,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                           name="salePrice"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block text-sm sm:text-base">
+                              <FormLabel className="text-right block text-base">
                                 السعر المخفض (اختياري)
                               </FormLabel>
                               <FormControl>
@@ -1019,11 +1017,11 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                     );
                                   }}
                                   placeholder="اتركه فارغًا إذا لم يكن هناك خصم"
-                                  className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500 text-right"
+                                  className="h-11 md:h-12 text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500 text-right"
                                 />
                               </FormControl>
 
-                              <div className="text-xs sm:text-sm">
+                              <div className="text-sm">
                                 {!field.value ? (
                                   <span className="text-gray-500">
                                     لا يوجد خصم
@@ -1035,19 +1033,19 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                   </span>
                                 )}
                               </div>
-                              <FormMessage className="text-xs sm:text-sm" />
+                              <FormMessage className="text-sm" />
                             </FormItem>
                           )}
                         />
                         <Button
                           type="submit"
                           disabled={pricingForm.formState.isSubmitting}
-                          className="w-full gap-2 h-10 sm:h-11 text-sm sm:text-base"
+                          className="w-full gap-2 h-12 text-base font-medium"
                         >
                           {pricingForm.formState.isSubmitting ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <Loader2 className="h-5 w-5 animate-spin" />
                           ) : (
-                            <Save className="h-4 w-4" />
+                            <Save className="h-5 w-5" />
                           )}
                           حفظ السعر
                         </Button>
@@ -1059,34 +1057,34 @@ export default function CourseDashboard({ defaultValues }: Props) {
             </div>
 
             {/* Thumbnail Section - Full width */}
-            <Card>
-              <CardHeader className="text-right space-y-1 p-4 sm:p-6">
-                <CardTitle className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800">
+            <Card className="shadow-sm border-gray-200">
+              <CardHeader className="text-right space-y-1 p-5 md:p-6">
+                <CardTitle className="text-xl md:text-2xl font-semibold text-gray-800">
                   🖼️ صورة الغلاف
                 </CardTitle>
-                <CardDescription className="text-xs sm:text-sm md:text-base text-gray-500">
+                <CardDescription className="text-sm md:text-base text-gray-500">
                   قم بتحميل صورة جذابة لتكون غلاف الدورة التعليمية
                 </CardDescription>
               </CardHeader>
-              <CardContent dir="rtl" className="p-4 sm:p-6 pt-0">
+              <CardContent dir="rtl" className="p-5 md:p-6 pt-0">
                 <Form {...form}>
                   <form
                     onSubmit={form.handleSubmit(onImageSubmit)}
-                    className="space-y-3 sm:space-y-4"
+                    className="space-y-4"
                   >
                     <FormField
                       control={form.control}
                       name="image"
                       render={({ field }) => (
                         <FormItem>
-                          <FormDescription className="text-xs sm:text-sm md:text-base text-gray-600 mt-2 sm:mt-3 leading-relaxed bg-gray-50 border border-gray-100 rounded-lg p-3 sm:p-4">
+                          <FormDescription className="text-sm md:text-base text-gray-600 mt-2 leading-relaxed bg-gray-50 border border-gray-100 rounded-lg p-4">
                             📸 اختر{" "}
                             <span className="font-medium text-gray-800">
                               صورة واحدة عالية الجودة
                             </span>{" "}
                             لتكون غلاف الدورة
                             <br />
-                            <span className="text-xs text-gray-500">
+                            <span className="text-sm text-gray-500">
                               (يُفضل 1280×720 بكسل)
                             </span>
                           </FormDescription>
@@ -1098,19 +1096,19 @@ export default function CourseDashboard({ defaultValues }: Props) {
                               isDeleting={deletingThumbnail}
                             />
                           </FormControl>
-                          <FormMessage className="text-xs sm:text-sm" />
+                          <FormMessage className="text-sm" />
                         </FormItem>
                       )}
                     />
                     <Button
                       type="submit"
                       disabled={uploadingThumbnail}
-                      className="w-full gap-2 h-10 sm:h-11 text-sm sm:text-base"
+                      className="w-full gap-2 h-12 text-base font-medium"
                     >
                       {uploadingThumbnail ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <Loader2 className="h-5 w-5 animate-spin" />
                       ) : (
-                        <Upload className="h-4 w-4" />
+                        <Upload className="h-5 w-5" />
                       )}
                       حفظ صورة الغلاف
                     </Button>
@@ -1121,7 +1119,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
           </TabsContent>
 
           {/* ===== CONTENT TAB - RESPONSIVE ===== */}
-          <TabsContent value="content" className="space-y-4 sm:space-y-6">
+          <TabsContent value="content" className="space-y-6">
             <VideoUploader courseId={course.id} disabled={isAnyActionRunning} />
             <SmartCourseUploader id={course.id} disabled={isAnyActionRunning} />
           </TabsContent>
