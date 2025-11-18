@@ -53,17 +53,16 @@ export default async function Home() {
               <div className="text-center md:text-right space-y-5 md:space-y-6">
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm font-medium text-sky-100 backdrop-blur-md">
                   <Sparkles className="h-4 w-4 text-amber-300" />
-                  <span>منصة عربية حديثة للتعلم أونلاين</span>
-                </div>
+                  <span>منصة عربية حديثة للتعلم </div>
 
                 <div className="space-y-4">
                   <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight">
                     استثمر في{" "}
                     <span className="text-transparent bg-clip-text bg-gradient-to-l from-emerald-300 to-cyan-200">
-                      مهاراتك
+                 {" "} مهاراتك
                     </span>
                     <br className="hidden sm:block" />
-                    وتعلّم بذكاء ومرونة
+                    
                   </h1>
                   <p className="text-base md:text-lg text-sky-100/90 max-w-xl mx-auto md:mx-0 leading-relaxed">
                     دورات عالية الجودة من محاضرين متميزين، مع دعم محلي وطرق دفع
