@@ -37,6 +37,9 @@ export default async function Home() {
     <div className="min-h-screen bg-gray-50">
       {/* ================= HERO ================= */}
       <section className="relative overflow-hidden bg-gradient-to-b from-sky-900 via-sky-900 to-sky-950 text-white">
+        {/* Darker overlay for tablets to improve text contrast */}
+        <div className="absolute inset-0 bg-sky-950/30 md:bg-sky-950/50 lg:bg-sky-950/0" />
+
         {/* Subtle background shapes */}
         <div className="pointer-events-none absolute inset-0 opacity-20">
           <div className="absolute -top-24 -left-16 h-64 w-64 rounded-full bg-emerald-400 blur-3xl" />
@@ -88,9 +91,7 @@ export default async function Home() {
                     variant="outline"
                     className="w-full sm:w-auto rounded-xl border-2 border-white/80 bg-transparent text-white hover:bg-white hover:text-sky-900 font-semibold text-base px-8 h-12 transition-all"
                   >
-                    <Link href="/course-upload">
-                      إنشاء دورة جديدة
-                    </Link>
+                    <Link href="/course-upload">إنشاء دورة جديدة</Link>
                   </Button>
                 </div>
 
@@ -137,9 +138,7 @@ export default async function Home() {
                     <div className="grid grid-cols-3 gap-3 text-center text-sky-100">
                       <div className="rounded-2xl bg-sky-900/60 border border-sky-700/70 px-3 py-3">
                         <p className="text-xs text-sky-300 mb-1">عدد الدورات</p>
-                        <p className="text-xl font-bold">
-                          {totalCourses}+
-                        </p>
+                        <p className="text-xl font-bold">{totalCourses}+</p>
                       </div>
                       <div className="rounded-2xl bg-sky-900/60 border border-sky-700/70 px-3 py-3">
                         <p className="text-xs text-sky-300 mb-1">طلاب نشطون</p>
@@ -372,9 +371,7 @@ export default async function Home() {
 
             {/* Social + payments */}
             <div className="text-center md:text-right space-y-3">
-              <h4 className="text-base font-semibold mb-1">
-                تابعنا
-              </h4>
+              <h4 className="text-base font-semibold mb-1">تابعنا</h4>
               <div className="flex justify-center md:justify-start gap-3 mb-3">
                 <a
                   href="#"
