@@ -50,7 +50,7 @@ export default async function Home() {
               <div className="text-center md:text-right space-y-6">
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs sm:text-sm font-medium text-sky-100 backdrop-blur-md">
                   <Sparkles className="h-4 w-4 text-amber-300" />
-                  <span>منصة عربية حديثة للتعلم أونلاين</span>
+                  <span>منصة عربية حديثة للتعلم 
                 </div>
 
                 <div className="space-y-3 sm:space-y-4">
