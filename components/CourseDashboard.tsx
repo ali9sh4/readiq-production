@@ -67,10 +67,9 @@ import { toast } from "sonner";
 
 import ThumbNailUploader from "./thumb_nail_uploder";
 import { DeleteThumbnail, SaveThumbnail } from "@/app/course-upload/action";
-// Types
 
 interface Props {
-  defaultValues: Course; // ✅ Changed to receive full Course object
+  defaultValues: Course;
 }
 
 type CourseStatus = "draft" | "published" | "archived";
@@ -116,7 +115,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
   const router = useRouter();
   const auth = useAuth();
 
-  // ✅ Initialize course state properly
   const [course, setCourse] = useState<Course>(defaultValues);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
@@ -132,7 +130,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
     uploadingThumbnail ||
     deletingThumbnail;
 
-  // ✅ Initialize forms with proper default values
   const basicInfoForm = useForm<z.infer<typeof BasicInfoSchema>>({
     resolver: zodResolver(BasicInfoSchema),
     defaultValues: {
@@ -146,6 +143,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
       language: (defaultValues.language as "arabic") || "arabic",
     },
   });
+
   const form = useForm<z.infer<typeof ThumbnailUpdateSchema>>({
     resolver: zodResolver(ThumbnailUpdateSchema),
     defaultValues: {
@@ -166,7 +164,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
     },
   });
 
-  // ✅ Update forms when defaultValues change (for refresh scenarios)
   useEffect(() => {
     basicInfoForm.reset({
       title: defaultValues.title || "",
@@ -190,7 +187,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
         ? {
             id: "existing-thumbnail",
             url: defaultValues.thumbnailUrl,
-            isExisting: true, // ✅ This is crucial!
+            isExisting: true,
           }
         : undefined,
     });
@@ -207,7 +204,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
   const canPublish = videos.length > 0 && !isPublished;
   const canUnpublish = isPublished;
 
-  // ✅ Updated handler for Basic Info
   const onSubmitBasicInfo = async (data: z.infer<typeof BasicInfoSchema>) => {
     if (!auth?.user) {
       setError("يرجى تسجيل الدخول");
@@ -225,7 +221,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
         success: "تم الحفظ بنجاح",
         error: (err) => {
           console.error(err);
-          // Rollback on error
           setCourse(defaultValues);
           return "فشل في الحفظ";
         },
@@ -239,7 +234,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
     }
   };
 
-  // ✅ Updated handler for Pricing
   const onSubmitPricing = async (data: z.infer<typeof PricingSchema>) => {
     if (!auth?.user) {
       setError("يرجى تسجيل الدخول");
@@ -255,7 +249,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
       const result = await updateCoursePricing(course.id, data, token);
 
       if (result.success) {
-        // ✅ Update local state with new price
         setCourse((prev) => ({
           ...prev,
           price: data.price,
@@ -281,7 +274,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
       return;
     }
 
-    // Check if image exists and has a file to upload
     if (!data.image || !data.image.file) {
       toast.error("يرجى اختيار صورة");
       return;
@@ -290,27 +282,18 @@ export default function CourseDashboard({ defaultValues }: Props) {
     try {
       setUploadingThumbnail(true);
 
-      // Create storage reference
       const path = `courses/${course.id}/thumbnail/${Date.now()}-${
         data.image.file.name
       }`;
       const storageRef = ref(storage, path);
       const uploadTask = uploadBytesResumable(storageRef, data.image.file);
 
-      // ✅ Wait for upload to complete (properly wrapped)
       await new Promise<void>((resolve, reject) => {
-        uploadTask.on(
-          "state_changed",
-          null, // No progress tracking needed
-          reject, // Handle errors
-          () => resolve() // Resolve on completion
-        );
+        uploadTask.on("state_changed", null, reject, () => resolve());
       });
 
-      // ✅ Get the full download URL
       const downloadURL = await getDownloadURL(storageRef);
 
-      // ✅ Save full URL to database
       const result = await SaveThumbnail(
         {
           courseId: course.id,
@@ -319,7 +302,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
         token
       );
 
-      // ✅ Only update state if save was successful
       if (result.success) {
         setCourse((prev) => ({
           ...prev,
@@ -327,7 +309,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
         }));
 
         toast.success("تم حفظ صورة الغلاف بنجاح!");
-        await new Promise((resolve) => setTimeout(resolve, 100)); // Small delay to ensure consistency
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         router.refresh();
       } else {
@@ -340,15 +322,14 @@ export default function CourseDashboard({ defaultValues }: Props) {
       setUploadingThumbnail(false);
     }
   };
-  // CourseDashboard - REMOVE deleteObject from client
+
   const handleDeleteThumbnail = async () => {
     const token = await auth?.user?.getIdToken();
     if (!token || !course.thumbnailUrl) {
-      toast.error("لا توجد صورة لحذفها"); // ✅ Better error message
+      toast.error("لا توجد صورة لحذفها");
       return;
     }
 
-    // ✅ Small warning dialog
     if (
       !confirm(
         "⚠️ هل أنت متأكد من حذف صورة الغلاف؟\nلا يمكن التراجع عن هذا الإجراء."
@@ -363,10 +344,10 @@ export default function CourseDashboard({ defaultValues }: Props) {
 
       if (result.success) {
         toast.success("تم حذف صورة الغلاف بنجاح!");
-        await new Promise((resolve) => setTimeout(resolve, 100)); // Small delay to ensure consistency
-        router.refresh(); // ✅ ADD THIS LINE!
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        router.refresh();
       } else {
-        toast.error(result.message || "فشل في حذف صورة الغلاف"); // ✅ Show error from server
+        toast.error(result.message || "فشل في حذف صورة الغلاف");
       }
     } catch (error) {
       console.error("Error deleting thumbnail:", error);
@@ -439,37 +420,41 @@ export default function CourseDashboard({ defaultValues }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6" dir="rtl" lang="ar">
+    <div
+      className="min-h-screen bg-gray-50 p-3 sm:p-4 md:p-6"
+      dir="rtl"
+      lang="ar"
+    >
       <div className="mx-auto max-w-7xl">
-        {/* HEADER */}
-        {/* Header Row - Title + Status */}
-        <div className="flex flex-col gap-4 mb-6">
-          {/* Top Row: Title, Badge, Actions */}
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <h1 className="text-3xl font-bold text-gray-900 truncate">
+        {/* ===== RESPONSIVE HEADER ===== */}
+        <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
+          {/* Title Section - Always full width */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+            {/* Title + Badge */}
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 truncate">
                 {course.title}
               </h1>
               <StatusBadge status={status} />
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+            {/* Action Buttons - Stack on mobile */}
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
               {canPublish && (
                 <Button
                   onClick={handlePublish}
                   disabled={publishing || videos.length === 0}
-                  className="gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md hover:shadow-lg transition-all"
-                  size="lg"
+                  className="gap-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md hover:shadow-lg transition-all h-11 sm:h-12 text-sm sm:text-base w-full sm:w-auto"
                 >
                   {publishing ? (
                     <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      جاري النشر...
+                      <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                      <span className="hidden xs:inline">جاري النشر...</span>
+                      <span className="xs:hidden">نشر...</span>
                     </>
                   ) : (
                     <>
-                      <Upload className="h-5 w-5" />
+                      <Upload className="h-4 w-4 sm:h-5 sm:w-5" />
                       نشر الدورة
                     </>
                   )}
@@ -481,17 +466,17 @@ export default function CourseDashboard({ defaultValues }: Props) {
                   onClick={handleUnPublish}
                   disabled={unpublishing}
                   variant="destructive"
-                  className="gap-2 shadow-md hover:shadow-lg transition-all"
-                  size="lg"
+                  className="gap-2 shadow-md hover:shadow-lg transition-all h-11 sm:h-12 text-sm sm:text-base w-full sm:w-auto"
                 >
                   {unpublishing ? (
                     <>
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      جاري الإيقاف...
+                      <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
+                      <span className="hidden xs:inline">جاري الإيقاف...</span>
+                      <span className="xs:hidden">إيقاف...</span>
                     </>
                   ) : (
                     <>
-                      <EyeOff className="h-5 w-5" />
+                      <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" />
                       إيقاف الدورة
                     </>
                   )}
@@ -500,30 +485,30 @@ export default function CourseDashboard({ defaultValues }: Props) {
             </div>
           </div>
 
-          {/* ✅ Rejection Reason - Outside flex, full width */}
+          {/* Rejection Reason - Responsive padding and text */}
           {course.rejectionReason && (
-            <div className="bg-gradient-to-r from-red-50 to-rose-50 border-r-4 border-red-500 rounded-lg p-5 shadow-sm">
-              <h4 className="font-bold text-red-900 mb-2 flex items-center gap-2 text-lg">
-                <div className="bg-red-100 p-1.5 rounded-lg">
-                  <XCircle className="w-5 h-5 text-red-600" />
+            <div className="bg-gradient-to-r from-red-50 to-rose-50 border-r-4 border-red-500 rounded-lg p-3 sm:p-4 md:p-5 shadow-sm">
+              <h4 className="font-bold text-red-900 mb-2 flex items-center gap-2 text-base sm:text-lg">
+                <div className="bg-red-100 p-1 sm:p-1.5 rounded-lg flex-shrink-0">
+                  <XCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
                 </div>
                 سبب رفض الدورة
               </h4>
-              <p className="text-red-800 leading-relaxed">
+              <p className="text-red-800 leading-relaxed text-sm sm:text-base">
                 {course.rejectionReason}
               </p>
-              <p className="text-red-600 text-sm mt-3 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-red-600 rounded-full"></span>
+              <p className="text-red-600 text-xs sm:text-sm mt-2 sm:mt-3 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-red-600 rounded-full flex-shrink-0"></span>
                 يرجى تعديل الدورة وإعادة تقديمها للمراجعة
               </p>
             </div>
           )}
 
-          {/* ✅ Warning if can't publish */}
+          {/* Warning if can't publish */}
           {canPublish && videos.length === 0 && (
-            <div className="bg-yellow-50 border-r-4 border-yellow-500 rounded-lg p-4 shadow-sm">
-              <p className="text-yellow-800 flex items-center gap-2">
-                <div className="bg-yellow-100 p-1 rounded-lg">
+            <div className="bg-yellow-50 border-r-4 border-yellow-500 rounded-lg p-3 sm:p-4 shadow-sm">
+              <p className="text-yellow-800 flex items-center gap-2 text-sm sm:text-base">
+                <div className="bg-yellow-100 p-1 rounded-lg flex-shrink-0">
                   <AlertCircle className="w-4 h-4 text-yellow-600" />
                 </div>
                 <span className="font-medium">
@@ -534,32 +519,34 @@ export default function CourseDashboard({ defaultValues }: Props) {
           )}
         </div>
 
-        {/* ALERTS */}
+        {/* ===== RESPONSIVE ALERTS ===== */}
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-red-700 text-sm">{error}</p>
+          <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2 sm:gap-3">
+            <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <p className="text-red-700 text-xs sm:text-sm">{error}</p>
           </div>
         )}
 
         {success && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-            <p className="text-green-700 text-sm">{success}</p>
+          <div className="mb-3 sm:mb-4 p-3 sm:p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2 sm:gap-3">
+            <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            <p className="text-green-700 text-xs sm:text-sm">{success}</p>
           </div>
         )}
 
-        {/* KPI CARDS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {/* ===== RESPONSIVE KPI CARDS ===== */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4 mb-4 sm:mb-6">
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-green-100 rounded-lg">
-                  <FileText className="h-6 w-6 text-green-600" />
+            <CardContent className="pt-4 sm:pt-6 p-3 sm:p-6">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 bg-green-100 rounded-lg">
+                  <FileText className="h-4 w-4 sm:h-6 sm:w-6 text-green-600" />
                 </div>
-                <div className="text-right flex-1">
-                  <p className="text-sm text-gray-600">الملفات</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="text-right flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm text-gray-600 truncate">
+                    الملفات
+                  </p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
                     {files.length}
                   </p>
                 </div>
@@ -568,14 +555,16 @@ export default function CourseDashboard({ defaultValues }: Props) {
           </Card>
 
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-purple-100 rounded-lg">
-                  <Clock className="h-6 w-6 text-purple-600" />
+            <CardContent className="pt-4 sm:pt-6 p-3 sm:p-6">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 bg-purple-100 rounded-lg">
+                  <Clock className="h-4 w-4 sm:h-6 sm:w-6 text-purple-600" />
                 </div>
-                <div className="text-right flex-1">
-                  <p className="text-sm text-gray-600">مدة الدورة</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="text-right flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm text-gray-600 truncate">
+                    مدة الدورة
+                  </p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">
                     {formatDuration(totalVideoDuration)}
                   </p>
                 </div>
@@ -583,15 +572,17 @@ export default function CourseDashboard({ defaultValues }: Props) {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-orange-100 rounded-lg">
-                  <DollarSign className="h-6 w-6 text-orange-600" />
+          <Card className="col-span-2 lg:col-span-1">
+            <CardContent className="pt-4 sm:pt-6 p-3 sm:p-6">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-2 sm:p-3 bg-orange-100 rounded-lg">
+                  <DollarSign className="h-4 w-4 sm:h-6 sm:w-6 text-orange-600" />
                 </div>
-                <div className="text-right flex-1">
-                  <p className="text-sm text-gray-600">السعر</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                <div className="text-right flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm text-gray-600 truncate">
+                    السعر
+                  </p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">
                     {course.price || 0} د.ع
                   </p>
                 </div>
@@ -600,60 +591,60 @@ export default function CourseDashboard({ defaultValues }: Props) {
           </Card>
         </div>
 
-        {/* TABS */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl h-16 p-1.5 shadow-sm">
+        {/* ===== RESPONSIVE TABS ===== */}
+        <Tabs defaultValue="overview" className="space-y-4 sm:space-y-6">
+          <TabsList className="grid w-full grid-cols-2 bg-gradient-to-r from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl h-12 sm:h-14 md:h-16 p-1 sm:p-1.5 shadow-sm">
             <TabsTrigger
               value="overview"
-              className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
+              className="text-sm sm:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
             >
               نظرة عامة
             </TabsTrigger>
             <TabsTrigger
               value="content"
-              className="text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-green-700 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
+              className="text-sm sm:text-base font-semibold data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-600 data-[state=active]:to-green-700 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
             >
               المحتوى
             </TabsTrigger>
           </TabsList>
-          {/* OVERVIEW TAB */}
-          <TabsContent value="overview" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {" "}
-              {/* Basic Info Form - LEFT COLUMN */}
-              <Card className="lg:col-span-3">
-                <CardHeader>
-                  <CardTitle className="text-right">
+
+          {/* ===== OVERVIEW TAB - RESPONSIVE ===== */}
+          <TabsContent value="overview" className="space-y-4 sm:space-y-6">
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+              {/* Basic Info Form - Full width on mobile, 2/3 on xl */}
+              <Card className="xl:col-span-2">
+                <CardHeader className="p-4 sm:p-6">
+                  <CardTitle className="text-right text-lg sm:text-xl">
                     المعلومات الأساسية
                   </CardTitle>
-                  <CardDescription className="text-right">
+                  <CardDescription className="text-right text-xs sm:text-sm">
                     تحديث تفاصيل الدورة الرئيسية
                   </CardDescription>
                 </CardHeader>
-                <CardContent dir="rtl">
+                <CardContent dir="rtl" className="p-4 sm:p-6 pt-0">
                   <Form {...basicInfoForm}>
                     <form
                       onSubmit={basicInfoForm.handleSubmit(onSubmitBasicInfo)}
-                      className="space-y-4"
+                      className="space-y-3 sm:space-y-4"
                     >
-                      {/* Title and Subtitle */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Title and Subtitle - Stack on mobile */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                         <FormField
                           control={basicInfoForm.control}
                           name="title"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block">
+                              <FormLabel className="text-right block text-sm sm:text-base">
                                 العنوان *
                               </FormLabel>
                               <FormControl>
                                 <Input
                                   {...field}
                                   placeholder="عنوان الدورة"
-                                  className="text-right"
+                                  className="text-right h-10 sm:h-11 text-sm sm:text-base"
                                 />
                               </FormControl>
-                              <FormMessage />
+                              <FormMessage className="text-xs sm:text-sm" />
                             </FormItem>
                           )}
                         />
@@ -662,17 +653,17 @@ export default function CourseDashboard({ defaultValues }: Props) {
                           name="subtitle"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block">
+                              <FormLabel className="text-right block text-sm sm:text-base">
                                 العنوان الفرعي
                               </FormLabel>
                               <FormControl>
                                 <Input
                                   {...field}
                                   placeholder="وصف قصير"
-                                  className="text-right"
+                                  className="text-right h-10 sm:h-11 text-sm sm:text-base"
                                 />
                               </FormControl>
-                              <FormMessage />
+                              <FormMessage className="text-xs sm:text-sm" />
                             </FormItem>
                           )}
                         />
@@ -684,7 +675,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                         name="description"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-right block">
+                            <FormLabel className="text-right block text-sm sm:text-base">
                               الوصف
                             </FormLabel>
                             <FormControl>
@@ -692,41 +683,43 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                 {...field}
                                 placeholder="وصف تفصيلي للدورة"
                                 rows={4}
-                                className="resize-none text-right"
+                                className="resize-none text-right text-sm sm:text-base"
                               />
                             </FormControl>
-                            <FormMessage />
+                            <FormMessage className="text-xs sm:text-sm" />
                           </FormItem>
                         )}
                       />
+
+                      {/* Instructor Name */}
                       <FormField
                         control={basicInfoForm.control}
                         name="instructorName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-right">
+                            <FormLabel className="text-right text-sm sm:text-base">
                               اسم المحاضر
                             </FormLabel>
                             <FormControl>
                               <Textarea
                                 {...field}
                                 rows={1}
-                                className="resize-none text-right"
+                                className="resize-none text-right text-sm sm:text-base"
                               />
                             </FormControl>
-                            <FormMessage />
+                            <FormMessage className="text-xs sm:text-sm" />
                           </FormItem>
                         )}
                       />
 
-                      {/* Category, Level, Language */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {/* Category, Level, Language - Stack on mobile, 2 cols on tablet */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         <FormField
                           control={basicInfoForm.control}
                           name="category"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block">
+                              <FormLabel className="text-right block text-sm sm:text-base">
                                 التصنيف
                               </FormLabel>
                               <Select
@@ -735,13 +728,13 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                 dir="rtl"
                               >
                                 <FormControl>
-                                  <SelectTrigger className="text-right">
+                                  <SelectTrigger className="text-right h-10 sm:h-11 text-sm sm:text-base">
                                     <SelectValue placeholder="اختر التصنيف" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent
                                   align="end"
-                                  className="text-base"
+                                  className="text-sm sm:text-base"
                                 >
                                   <SelectItem value="programming">
                                     البرمجة
@@ -784,7 +777,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
-                              <FormMessage />
+                              <FormMessage className="text-xs sm:text-sm" />
                             </FormItem>
                           )}
                         />
@@ -793,7 +786,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                           name="level"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block">
+                              <FormLabel className="text-right block text-sm sm:text-base">
                                 المستوى
                               </FormLabel>
                               <Select
@@ -801,11 +794,11 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                 defaultValue={field.value}
                               >
                                 <FormControl>
-                                  <SelectTrigger className="text-right">
+                                  <SelectTrigger className="text-right h-10 sm:h-11 text-sm sm:text-base">
                                     <SelectValue />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent>
+                                <SelectContent className="text-sm sm:text-base">
                                   <SelectItem value="beginner">
                                     مبتدئ
                                   </SelectItem>
@@ -820,7 +813,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
-                              <FormMessage />
+                              <FormMessage className="text-xs sm:text-sm" />
                             </FormItem>
                           )}
                         />
@@ -828,8 +821,8 @@ export default function CourseDashboard({ defaultValues }: Props) {
                           control={basicInfoForm.control}
                           name="language"
                           render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-right block">
+                            <FormItem className="sm:col-span-2 lg:col-span-1">
+                              <FormLabel className="text-right block text-sm sm:text-base">
                                 اللغة
                               </FormLabel>
                               <Select
@@ -837,11 +830,11 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                 defaultValue={field.value}
                               >
                                 <FormControl>
-                                  <SelectTrigger className="text-right">
+                                  <SelectTrigger className="text-right h-10 sm:h-11 text-sm sm:text-base">
                                     <SelectValue />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent>
+                                <SelectContent className="text-sm sm:text-base">
                                   <SelectItem value="arabic">
                                     العربية
                                   </SelectItem>
@@ -856,17 +849,17 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
-                              <FormMessage />
+                              <FormMessage className="text-xs sm:text-sm" />
                             </FormItem>
                           )}
                         />
                       </div>
 
-                      {/* Submit Button for Basic Info */}
+                      {/* Submit Button */}
                       <Button
                         type="submit"
                         disabled={basicInfoForm.formState.isSubmitting}
-                        className="w-full gap-2"
+                        className="w-full gap-2 h-10 sm:h-11 text-sm sm:text-base"
                       >
                         {basicInfoForm.formState.isSubmitting ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -879,33 +872,36 @@ export default function CourseDashboard({ defaultValues }: Props) {
                   </Form>
                 </CardContent>
               </Card>
-              {/* RIGHT COLUMN - Pricing and Thumbnail */}
-              <div>
+
+              {/* RIGHT COLUMN - Pricing - Full width on mobile */}
+              <div className="space-y-4 sm:space-y-6">
                 {/* Pricing Form */}
-                <Card className="h-full">
-                  <CardHeader>
-                    <CardTitle className="text-right">التسعير</CardTitle>
-                    <CardDescription className="text-right">
+                <Card>
+                  <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="text-right text-lg sm:text-xl">
+                      التسعير
+                    </CardTitle>
+                    <CardDescription className="text-right text-xs sm:text-sm">
                       تحديد سعر الدورة
                     </CardDescription>
                   </CardHeader>
-                  <CardContent dir="rtl">
+                  <CardContent dir="rtl" className="p-4 sm:p-6 pt-0">
                     <Form {...pricingForm}>
                       <form
                         onSubmit={pricingForm.handleSubmit(onSubmitPricing)}
-                        className="space-y-4"
+                        className="space-y-3 sm:space-y-4"
                       >
                         <FormField
                           control={pricingForm.control}
                           name="price"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block">
+                              <FormLabel className="text-right block text-sm sm:text-base">
                                 السعر (دينار) *
                               </FormLabel>
                               <FormControl>
                                 <Input
-                                  {...field} // ✅ Includes name, ref, and base handlers
+                                  {...field}
                                   type="text"
                                   inputMode="decimal"
                                   value={
@@ -946,24 +942,22 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                     );
                                   }}
                                   placeholder="اتركه فارغًا للدورة المجانية"
-                                  className="h-12 text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500 text-right"
+                                  className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500 text-right"
                                 />
                               </FormControl>
-                              <div className="text-sm">
+                              <div className="text-xs sm:text-sm">
                                 {field.value === 0 ? (
                                   <span className="text-green-600 font-medium">
-                                    ✓ دورة مجانية (السعر = 0 د.ع){" "}
-                                    {/* Changed from $0.00 */}
+                                    ✓ دورة مجانية (السعر = 0 د.ع)
                                   </span>
                                 ) : (
                                   <span className="text-blue-600 font-medium">
                                     السعر:{" "}
-                                    {Number(field.value).toLocaleString()} د.ع{" "}
-                                    {/* Changed from $ and added toLocaleString for thousands separator */}
+                                    {Number(field.value).toLocaleString()} د.ع
                                   </span>
                                 )}
                               </div>
-                              <FormMessage />
+                              <FormMessage className="text-xs sm:text-sm" />
                             </FormItem>
                           )}
                         />
@@ -972,7 +966,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                           name="salePrice"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block">
+                              <FormLabel className="text-right block text-sm sm:text-base">
                                 السعر المخفض (اختياري)
                               </FormLabel>
                               <FormControl>
@@ -1012,7 +1006,6 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                     const numValue = parseFloat(val);
 
                                     if (isNaN(numValue) || numValue < 0) {
-                                      // ✅ Allow 0
                                       field.onChange(0);
                                       return;
                                     }
@@ -1026,11 +1019,11 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                     );
                                   }}
                                   placeholder="اتركه فارغًا إذا لم يكن هناك خصم"
-                                  className="h-12 text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500 text-right"
+                                  className="h-10 sm:h-12 text-sm sm:text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500 text-right"
                                 />
                               </FormControl>
 
-                              <div className="text-sm">
+                              <div className="text-xs sm:text-sm">
                                 {!field.value ? (
                                   <span className="text-gray-500">
                                     لا يوجد خصم
@@ -1042,14 +1035,14 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                   </span>
                                 )}
                               </div>
-                              <FormMessage />
+                              <FormMessage className="text-xs sm:text-sm" />
                             </FormItem>
                           )}
                         />
                         <Button
                           type="submit"
                           disabled={pricingForm.formState.isSubmitting}
-                          className="w-full gap-2"
+                          className="w-full gap-2 h-10 sm:h-11 text-sm sm:text-base"
                         >
                           {pricingForm.formState.isSubmitting ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -1064,34 +1057,36 @@ export default function CourseDashboard({ defaultValues }: Props) {
                 </Card>
               </div>
             </div>
+
+            {/* Thumbnail Section - Full width */}
             <Card>
-              <CardHeader className="text-right space-y-1">
-                <CardTitle className="text-2xl font-semibold text-gray-800">
+              <CardHeader className="text-right space-y-1 p-4 sm:p-6">
+                <CardTitle className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-800">
                   🖼️ صورة الغلاف
                 </CardTitle>
-                <CardDescription className="text-base text-gray-500">
+                <CardDescription className="text-xs sm:text-sm md:text-base text-gray-500">
                   قم بتحميل صورة جذابة لتكون غلاف الدورة التعليمية
                 </CardDescription>
               </CardHeader>
-              <CardContent dir="rtl">
+              <CardContent dir="rtl" className="p-4 sm:p-6 pt-0">
                 <Form {...form}>
                   <form
                     onSubmit={form.handleSubmit(onImageSubmit)}
-                    className="space-y-4"
+                    className="space-y-3 sm:space-y-4"
                   >
                     <FormField
                       control={form.control}
                       name="image"
                       render={({ field }) => (
                         <FormItem>
-                          <FormDescription className="text-base text-gray-600 mt-3 leading-relaxed bg-gray-50 border border-gray-100 rounded-lg p-4">
+                          <FormDescription className="text-xs sm:text-sm md:text-base text-gray-600 mt-2 sm:mt-3 leading-relaxed bg-gray-50 border border-gray-100 rounded-lg p-3 sm:p-4">
                             📸 اختر{" "}
                             <span className="font-medium text-gray-800">
                               صورة واحدة عالية الجودة
                             </span>{" "}
                             لتكون غلاف الدورة
                             <br />
-                            <span className="text-sm text-gray-500">
+                            <span className="text-xs text-gray-500">
                               (يُفضل 1280×720 بكسل)
                             </span>
                           </FormDescription>
@@ -1103,14 +1098,14 @@ export default function CourseDashboard({ defaultValues }: Props) {
                               isDeleting={deletingThumbnail}
                             />
                           </FormControl>
-                          <FormMessage />
+                          <FormMessage className="text-xs sm:text-sm" />
                         </FormItem>
                       )}
                     />
                     <Button
                       type="submit"
                       disabled={uploadingThumbnail}
-                      className="w-full gap-2"
+                      className="w-full gap-2 h-10 sm:h-11 text-sm sm:text-base"
                     >
                       {uploadingThumbnail ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -1123,14 +1118,13 @@ export default function CourseDashboard({ defaultValues }: Props) {
                 </Form>
               </CardContent>
             </Card>
-            {/* End space-y-6 wrapper */}
           </TabsContent>
-          {/* CONTENT TAB */}
-          <TabsContent value="content" className="space-y-6">
+
+          {/* ===== CONTENT TAB - RESPONSIVE ===== */}
+          <TabsContent value="content" className="space-y-4 sm:space-y-6">
             <VideoUploader courseId={course.id} disabled={isAnyActionRunning} />
             <SmartCourseUploader id={course.id} disabled={isAnyActionRunning} />
           </TabsContent>
-          {/* SETTINGS TAB */}
         </Tabs>
       </div>
     </div>
