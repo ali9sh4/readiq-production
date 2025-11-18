@@ -70,7 +70,7 @@ export default async function Home() {
                 </div>
 
                 {/* CTAs */}
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start pt-2">
+                {/* <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center md:justify-start pt-2">
                   <Button
                     asChild
                     size="lg"
@@ -93,7 +93,7 @@ export default async function Home() {
                       استكشف الدورات
                     </Link>
                   </Button>
-                </div>
+                </div> */}
 
                 {/* Trust row */}
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 sm:gap-6 pt-4 sm:pt-6 text-xs sm:text-sm text-sky-100/90">
@@ -155,7 +155,7 @@ export default async function Home() {
                       </div>
                     </div>
 
-                    <div className="rounded-2xl bg-sky-900/70 border border-sky-700/80 px-3 py-3 flex items-center justify-between gap-3 text-xs sm:text-sm">
+                    {/* <div className="rounded-2xl bg-sky-900/70 border border-sky-700/80 px-3 py-3 flex items-center justify-between gap-3 text-xs sm:text-sm">
                       <div className="space-y-0.5">
                         <p className="font-medium text-white">
                           ابدأ من الصفر أو طوّر مسارك المهني
@@ -170,7 +170,7 @@ export default async function Home() {
                       >
                         تصفح الدورات
                       </Link>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
               </div>
@@ -369,7 +369,7 @@ export default async function Home() {
 
           <HomeCoursesSection initialCourses={courses} />
 
-          <div className="mt-10 text-center">
+          {/* <div className="mt-10 text-center">
             <Button
               asChild
               size="lg"
@@ -380,7 +380,7 @@ export default async function Home() {
                 <ArrowLeft className="h-4 w-4" />
               </Link>
             </Button>
-          </div>
+          </div> */}
         </div>
       </section>
 
@@ -395,7 +395,7 @@ export default async function Home() {
               أنشئ حسابك خلال ثوانٍ، وابدأ بالتعلم من أفضل المحاضرين في العراق
               والعالم العربي، مع دعم كامل وواجهة عربية بسيطة.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-2">
+            {/* <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-2">
               <Button
                 asChild
                 size="lg"
@@ -414,7 +414,7 @@ export default async function Home() {
               >
                 <Link href="/courses">تصفح الدورات</Link>
               </Button>
-            </div>
+            </div> */}
           </div>
         </div>
       </section>
