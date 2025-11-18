@@ -30,8 +30,8 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Navigation - Show on tablets and up */}
-          <ul className="hidden md:flex items-center gap-3">
+          {/* Desktop Navigation - Show on large screens only */}
+          <ul className="hidden lg:flex items-center gap-3">
             <li>
               <Link
                 href="/wallet/topup"
@@ -76,10 +76,10 @@ export default function Navbar() {
             </li>
           </ul>
 
-          {/* Mobile Menu Button - Only show on small screens */}
+          {/* Mobile Menu Button - Show on tablets and mobile */}
           <button
             onClick={toggleMobileMenu}
-            className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
             aria-label="القائمة"
           >
             {mobileMenuOpen ? (
@@ -91,16 +91,16 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Sidebar Menu - Only show on small screens */}
+      {/* Mobile Sidebar Menu - Show on tablets and mobile */}
       <div
-        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${
           mobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         onClick={closeMobileMenu}
       />
 
       <div
-        className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-gradient-to-br from-sky-900 to-sky-950 shadow-2xl z-50 md:hidden transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-gradient-to-br from-sky-900 to-sky-950 shadow-2xl z-50 lg:hidden transform transition-transform duration-300 ease-in-out ${
           mobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >

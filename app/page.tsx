@@ -48,13 +48,13 @@ export default async function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
               {/* Text side */}
               <div className="text-center md:text-right space-y-5 md:space-y-6">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm font-medium text-sky-100 backdrop-blur-md">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm font-medium text-white backdrop-blur-md">
                   <Sparkles className="h-4 w-4 text-amber-300" />
                   <span>منصة عربية حديثة للتعلم أونلاين</span>
                 </div>
 
                 <div className="space-y-4">
-                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight">
+                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight text-white drop-shadow-lg">
                     استثمر في{" "}
                     <span className="text-transparent bg-clip-text bg-gradient-to-l from-emerald-300 to-cyan-200">
                       مهاراتك
@@ -62,7 +62,7 @@ export default async function Home() {
                     <br className="hidden sm:block" />
                     وتعلّم بذكاء ومرونة
                   </h1>
-                  <p className="text-base md:text-lg text-sky-100/90 max-w-xl mx-auto md:mx-0 leading-relaxed">
+                  <p className="text-base md:text-lg text-white max-w-xl mx-auto md:mx-0 leading-relaxed drop-shadow-md">
                     دورات عالية الجودة من محاضرين متميزين، مع دعم محلي وطرق دفع
                     تناسب العراق. تعلّم في الوقت الذي يناسبك وبالسرعة التي
                     تفضلها.
@@ -93,7 +93,7 @@ export default async function Home() {
                 </div>
 
                 {/* Trust row */}
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 pt-4 text-sm text-sky-100/90">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 pt-4 text-sm text-white drop-shadow-md">
                   <div className="flex items-center gap-1.5">
                     <CheckCircle className="h-4 w-4 text-emerald-300" />
                     <span>شهادات إنهاء لكل دورة</span>
