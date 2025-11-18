@@ -57,7 +57,7 @@ export default async function Home() {
                   <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight">
                     استثمر في{" "}
                     <span className="text-transparent bg-clip-text bg-gradient-to-l from-emerald-300 to-cyan-200">
-                      مهاراتك
+                 {" "} مهاراتك
                     </span>
                     <br className="hidden sm:block" />
                     وتعلّم بذكاء ومرونة
@@ -180,79 +180,7 @@ export default async function Home() {
       </section>
 
       {/* ================= STATS ================= */}
-      <section className="bg-white py-8 sm:py-12">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 max-w-5xl mx-auto">
-            <div className="rounded-2xl border border-sky-100 bg-sky-50/60 px-5 py-5 sm:px-6 sm:py-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-600 text-white">
-                  <BookOpen className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-xs text-sky-700/80">دورات متاحة</p>
-                  <p className="text-2xl sm:text-3xl font-extrabold text-sky-900">
-                    {totalCourses}+
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs sm:text-sm text-gray-600">
-                محتوى في مجالات متعددة مصمم للسوق العراقي والعربي.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-5 py-5 sm:px-6 sm:py-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-600 text-white">
-                  <Users className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-xs text-emerald-800/80">طلاب نشطون</p>
-                  <p className="text-2xl sm:text-3xl font-extrabold text-emerald-900">
-                    1,000+
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs sm:text-sm text-gray-600">
-                مجتمع متنامٍ من المتعلمين من مختلف المحافظات.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-amber-100 bg-amber-50/70 px-5 py-5 sm:px-6 sm:py-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500 text-white">
-                  <Star className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-xs text-amber-900/80">تقييم المنصة</p>
-                  <p className="text-2xl sm:text-3xl font-extrabold text-amber-900">
-                    4.9
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs sm:text-sm text-gray-600">
-                رضا عالٍ من الطلاب عن جودة المحتوى والتجربة.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-gray-100 bg-gray-50 px-5 py-5 sm:px-6 sm:py-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-900 text-white">
-                  <CheckCircle className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-700/80">جودة المحتوى</p>
-                  <p className="text-2xl sm:text-3xl font-extrabold text-gray-900">
-                    100%
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs sm:text-sm text-gray-600">
-                مراجعة يدوية للدورات قبل نشرها لضمان الجودة.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      
 
       {/* ================= FEATURES ================= */}
       <section className="bg-gray-50 py-10 sm:py-16">
