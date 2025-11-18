@@ -37,9 +37,6 @@ export default async function Home() {
     <div className="min-h-screen bg-gray-50">
       {/* ================= HERO ================= */}
       <section className="relative overflow-hidden bg-gradient-to-b from-sky-900 via-sky-900 to-sky-950 text-white">
-        {/* Darker overlay for tablets to improve text contrast */}
-        <div className="absolute inset-0 bg-sky-950/30 md:bg-sky-950/50 lg:bg-sky-950/0" />
-
         {/* Subtle background shapes */}
         <div className="pointer-events-none absolute inset-0 opacity-20">
           <div className="absolute -top-24 -left-16 h-64 w-64 rounded-full bg-emerald-400 blur-3xl" />
@@ -53,16 +50,17 @@ export default async function Home() {
               <div className="text-center md:text-right space-y-5 md:space-y-6">
                 <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-sm font-medium text-sky-100 backdrop-blur-md">
                   <Sparkles className="h-4 w-4 text-amber-300" />
-                  <span>منصة عربية حديثة للتعلم </div>
+                  <span>منصة عربية حديثة للتعلم أونلاين</span>
+                </div>
 
                 <div className="space-y-4">
                   <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight">
                     استثمر في{" "}
                     <span className="text-transparent bg-clip-text bg-gradient-to-l from-emerald-300 to-cyan-200">
-                 {" "} مهاراتك
+                      مهاراتك
                     </span>
                     <br className="hidden sm:block" />
-                    
+                    وتعلّم بذكاء ومرونة
                   </h1>
                   <p className="text-base md:text-lg text-sky-100/90 max-w-xl mx-auto md:mx-0 leading-relaxed">
                     دورات عالية الجودة من محاضرين متميزين، مع دعم محلي وطرق دفع
