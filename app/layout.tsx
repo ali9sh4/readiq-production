@@ -79,7 +79,7 @@ export default function RootLayout({
       >
         <AuthProvider>
           <Navbar />
-          <main className="min-h-screen">
+          <main className="min-h-screen pt-16 sm:pt-20">
             {children}
             <Toaster richColors closeButton />
           </main>
