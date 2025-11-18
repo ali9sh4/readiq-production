@@ -60,7 +60,7 @@ export default async function Home() {
                  {" "} مهاراتك
                     </span>
                     <br className="hidden sm:block" />
-                    وتعلّم بذكاء ومرونة
+                    
                   </h1>
                   <p className="text-sm sm:text-base md:text-lg text-sky-100/90 max-w-xl mx-auto md:mx-0 leading-relaxed">
                     دورات عالية الجودة من محاضرين متميزين، مع دعم محلي وطرق دفع
