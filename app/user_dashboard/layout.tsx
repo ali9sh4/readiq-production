@@ -150,7 +150,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               const isActive = pathname === item.href;
 
               return (
-                <Link key={item.href} href={item.href}>
+                <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)}
+                 >
                   <div
                     className={`
                     group flex items-center space-x-3 space-x-reverse px-4 py-3.5 rounded-2xl transition-all duration-200 cursor-pointer
@@ -194,7 +195,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Footer Actions */}
           <div className="p-3 sm:p-4 border-t bg-gray-50/50 space-y-2">
-            <Link href="/">
+            <Link href="/" onClick={() => setSidebarOpen(false)}>
               <Button
                 variant="ghost"
                 className="w-full justify-start space-x-reverse hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 group py-3 rounded-xl"
@@ -208,7 +209,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <Button
               variant="ghost"
               className="w-full justify-start space-x-reverse text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 group py-3 rounded-xl active:scale-95"
-              onClick={auth.logOut}
+              onClick={() => {
+                setSidebarOpen(false);
+                auth.logOut();
+              }}
             >
               <div className="p-1.5 rounded-lg group-hover:bg-red-100 transition-colors">
                 <LogOut className="h-4 w-4 ml-2" />
