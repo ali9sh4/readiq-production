@@ -15,7 +15,7 @@ export default function Navbar() {
   // Close mobile menu when screen size changes to tablet/desktop
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 768) {
+      if (window.innerWidth >= 640) {
         setMobileMenuOpen(false);
       }
     };
@@ -31,19 +31,19 @@ export default function Navbar() {
           {/* Logo Section */}
           <Link
             href="/"
-            className="flex items-center gap-2 md:gap-3 group"
+            className="flex items-center gap-2 lg:gap-3 group"
             onClick={closeMobileMenu}
           >
-            <span className="text-2xl md:text-4xl font-extrabold tracking-wide text-white group-hover:text-sky-200 transition-all duration-300 drop-shadow-lg">
+            <span className="text-2xl lg:text-4xl font-extrabold tracking-wide text-white group-hover:text-sky-200 transition-all duration-300 drop-shadow-lg">
               اقْرَأْ
             </span>
-            <span className="hidden sm:block text-xs md:text-sm text-sky-200 font-light opacity-80 group-hover:opacity-100 transition-opacity duration-300">
+            <span className="hidden sm:block text-xs lg:text-sm text-sky-200 font-light opacity-80 group-hover:opacity-100 transition-opacity duration-300">
               منصة القراءة العربية
             </span>
           </Link>
 
           {/* Desktop Navigation - Show on tablets and up */}
-          <ul className="hidden md:flex items-center gap-2 lg:gap-3">
+          <ul className="hidden tablet:flex items-center gap-2 lg:gap-3">
             <li>
               <Link
                 href="/wallet/topup"
@@ -91,7 +91,7 @@ export default function Navbar() {
           {/* Mobile Menu Button - Show on mobile only */}
           <button
             onClick={toggleMobileMenu}
-            className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
+            className="tablet:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
             aria-label="القائمة"
           >
             {mobileMenuOpen ? (
@@ -106,7 +106,7 @@ export default function Navbar() {
       {/* Mobile Sidebar Menu - Show on mobile only (screens < 768px) */}
       {/* Backdrop overlay - only visible on screens < 768px */}
       <div
-        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300 md:hidden ${
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300 tablet:hidden ${
           mobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         onClick={closeMobileMenu}
@@ -114,7 +114,7 @@ export default function Navbar() {
 
       {/* Sidebar panel - only visible on screens < 768px */}
       <div
-        className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-gradient-to-br from-sky-900 to-sky-950 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-gradient-to-br from-sky-900 to-sky-950 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out tablet:hidden ${
           mobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
