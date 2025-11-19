@@ -80,23 +80,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30 flex"
       dir="rtl"
     >
-      {/* Mobile Menu Overlay - CHANGED to md:hidden */}
+      {/* Mobile Menu Overlay - sm:hidden = hide at 640px+ */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 sm:hidden transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar - CHANGED to md: breakpoints */}
+      {/* Sidebar - sm:translate-x-0 = static at 640px+ */}
       <div
         className={`
-        fixed inset-y-0 right-0 z-50 w-[280px] sm:w-80 bg-white shadow-2xl transform transition-all duration-300 ease-out md:translate-x-0 md:static border-l border-gray-100
+        fixed inset-y-0 right-0 z-50 w-[280px] bg-white shadow-2xl transform transition-all duration-300 ease-out sm:translate-x-0 sm:static border-l border-gray-100
         ${sidebarOpen ? "translate-x-0" : "translate-x-full"}
       `}
       >
         <div className="flex flex-col h-full">
-          {/* Header - CHANGED button to md:hidden */}
+          {/* Header - sm:hidden = hide button at 640px+ */}
           <div className="flex items-center justify-between p-4 sm:p-6 border-b">
             <h1 className="text-lg sm:text-xl font-bold text-gray-900">
               لوحة التحكم
@@ -104,7 +104,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="md:hidden"
+              className="sm:hidden"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="h-5 w-5" />
@@ -231,8 +231,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header - CHANGED to md:hidden */}
-        <header className="md:hidden bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-100/50 px-4 py-3 sticky top-0 z-30">
+        {/* Mobile Header - sm:hidden = hide at 640px+ */}
+        <header className="sm:hidden bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-100/50 px-4 py-3 sticky top-0 z-30">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
