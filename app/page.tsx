@@ -73,23 +73,25 @@ export default async function Home() {
 
                 {/* CTAs */}
                 <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start pt-2">
-                  <Button
-                    size="lg"
-                    className="w-full sm:w-auto rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-base px-8 h-12 shadow-lg hover:shadow-xl transition-all flex items-center gap-2 justify-center"
-                    onClick={(e) => e.preventDefault()}
-                  >
-                    استكشف الدورات
-                    <ArrowLeft className="h-5 w-5" />
-                  </Button>
+                  <Link href="/courses">
+                    <Button
+                      size="lg"
+                      className="w-full sm:w-auto rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-base px-8 h-12 shadow-lg hover:shadow-xl transition-all flex items-center gap-2 justify-center"
+                    >
+                      استكشف الدورات
+                      <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                  </Link>
 
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full sm:w-auto rounded-xl border-2 border-white/80 bg-transparent text-white hover:bg-white hover:text-sky-900 font-semibold text-base px-8 h-12 transition-all"
-                    onClick={(e) => e.preventDefault()}
-                  >
-                    إنشاء دورة جديدة
-                  </Button>
+                  <Link href="/create-course">
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-full sm:w-auto rounded-xl border-2 border-white/80 bg-transparent text-white hover:bg-white hover:text-sky-900 font-semibold text-base px-8 h-12 transition-all"
+                    >
+                      إنشاء دورة جديدة
+                    </Button>
+                  </Link>
                 </div>
 
                 {/* Trust row */}
@@ -252,14 +254,15 @@ export default async function Home() {
           <HomeCoursesSection initialCourses={courses} />
 
           <div className="mt-10 text-center">
-            <Button
-              size="lg"
-              className="rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold px-8 h-12 text-base shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-2"
-              onClick={(e) => e.preventDefault()}
-            >
-              عرض جميع الدورات
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+            <Link href="/courses">
+              <Button
+                size="lg"
+                className="rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold px-8 h-12 text-base shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-2"
+              >
+                عرض جميع الدورات
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>
@@ -279,22 +282,24 @@ export default async function Home() {
               والعالم العربي، مع دعم كامل وواجهة عربية بسيطة.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-              <Button
-                size="lg"
-                className="w-full sm:w-auto rounded-xl bg-white text-sky-900 hover:bg-gray-100 font-bold text-base px-8 h-12 shadow-xl transition-all flex items-center gap-2 justify-center"
-                onClick={(e) => e.preventDefault()}
-              >
-                شحن المحفظة
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="w-full sm:w-auto rounded-xl border-2 border-white/80 bg-transparent text-white hover:bg-white hover:text-sky-900 font-semibold text-base px-8 h-12 transition-all"
-                onClick={(e) => e.preventDefault()}
-              >
-                تصفح الدورات
-              </Button>
+              <Link href="/wallet">
+                <Button
+                  size="lg"
+                  className="w-full sm:w-auto rounded-xl bg-white text-sky-900 hover:bg-gray-100 font-bold text-base px-8 h-12 shadow-xl transition-all flex items-center gap-2 justify-center"
+                >
+                  شحن المحفظة
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/courses">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="w-full sm:w-auto rounded-xl border-2 border-white/80 bg-transparent text-white hover:bg-white hover:text-sky-900 font-semibold text-base px-8 h-12 transition-all"
+                >
+                  تصفح الدورات
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
