@@ -15,7 +15,7 @@ export default function Navbar() {
   // Close mobile menu when screen size changes to sm/desktop
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 500) {
+      if (window.innerWidth >= 640) {
         setMobileMenuOpen(false);
       }
     };
