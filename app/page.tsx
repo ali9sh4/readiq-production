@@ -37,7 +37,7 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* ================= HERO ================= */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-sky-900 via-sky-900 to-sky-950 text-white">
+      <section className="relative overflow-hidden bg-sky-900 text-white">
         {/* Subtle background shapes - reduced opacity on tablets for better text clarity */}
         <div className="pointer-events-none absolute inset-0 opacity-20 md:opacity-10">
           <div className="absolute -top-24 -left-16 h-64 w-64 rounded-full bg-emerald-400 blur-3xl" />
@@ -59,10 +59,7 @@ export default async function Home() {
 
                 <div className="space-y-4">
                   <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight text-white drop-shadow-lg md:drop-shadow-2xl">
-                    استثمر في{" "}
-                    <span className="text-transparent bg-clip-text bg-gradient-to-l from-emerald-300 to-cyan-200 md:from-emerald-200 md:to-cyan-100">
-                      مهاراتك
-                    </span>
+                    استثمر في <span className="text-emerald-300">مهاراتك</span>
                     <br className="hidden sm:block" />
                   </h1>
                   <p className="text-base md:text-lg text-white/95 md:text-white max-w-xl mx-auto md:mx-0 leading-relaxed drop-shadow-md md:drop-shadow-xl">
@@ -119,7 +116,7 @@ export default async function Home() {
                   <div className="relative rounded-3xl bg-sky-950/50 border border-sky-800/70 shadow-2xl px-6 py-6 md:py-7 space-y-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-400 to-sky-400">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500">
                           <BookOpen className="h-6 w-6 text-sky-950" />
                         </div>
                         <div className="space-y-0.5">
@@ -269,7 +266,7 @@ export default async function Home() {
       </section>
 
       {/* ================= FINAL CTA ================= */}
-      <section className="relative bg-gradient-to-b from-sky-900 via-sky-900 to-sky-950 text-white py-12 md:py-16 overflow-hidden">
+      <section className="relative bg-sky-900 text-white py-12 md:py-16 overflow-hidden">
         {/* Dark overlay for better text contrast on tablets */}
         <div className="pointer-events-none absolute inset-0 bg-sky-950/30 md:bg-sky-950/50"></div>
 
@@ -303,7 +300,7 @@ export default async function Home() {
             {/* Brand */}
             <div className="text-center md:text-right space-y-3">
               <div className="flex items-center justify-center md:justify-start gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-emerald-500">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-600">
                   <BookOpen className="h-6 w-6 text-white" />
                 </div>
                 <h3 className="text-xl font-bold">اقْرَأْ</h3>
@@ -393,10 +390,10 @@ export default async function Home() {
                   طرق الدفع المتوفرة:
                 </p>
                 <div className="flex flex-wrap justify-center md:justify-start gap-2 text-sm">
-                  <span className="rounded-lg bg-gradient-to-l from-purple-600 to-pink-600 px-3 py-1 font-semibold">
+                  <span className="rounded-lg bg-purple-600 px-3 py-1 font-semibold">
                     ZainCash
                   </span>
-                  <span className="rounded-lg bg-gradient-to-l from-emerald-600 to-teal-600 px-3 py-1 font-semibold">
+                  <span className="rounded-lg bg-emerald-600 px-3 py-1 font-semibold">
                     المحفظة
                   </span>
                 </div>
