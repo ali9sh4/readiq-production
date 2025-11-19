@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/authContext";
@@ -46,6 +46,38 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const auth = useAuth();
 
+  // Force close sidebar when route changes
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [pathname]);
+
+  // Close sidebar on ESC key
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSidebarOpen(false);
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, []);
+
+  // Prevent body scroll when sidebar is open on mobile
+  useEffect(() => {
+    if (sidebarOpen && window.innerWidth < 640) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, [sidebarOpen]);
+
+  const closeSidebar = () => {
+    setSidebarOpen(false);
+  };
+
   if (!auth.isClient) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -80,35 +112,41 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30 flex"
       dir="rtl"
     >
-      {/* Mobile Menu Overlay - sm:hidden = hide at 640px+ */}
+      {/* Mobile Menu Overlay - CRITICAL: Add both onClick AND onTouchEnd */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 sm:hidden transition-opacity duration-300"
-          onClick={() => setSidebarOpen(false)}
+          onClick={closeSidebar}
+          onTouchEnd={closeSidebar}
+          style={{ cursor: "pointer" }}
         />
       )}
 
-      {/* Sidebar - sm:translate-x-0 = static at 640px+ */}
+      {/* Sidebar */}
       <div
         className={`
         fixed inset-y-0 right-0 z-50 w-[280px] bg-white shadow-2xl transform transition-all duration-300 ease-out sm:translate-x-0 sm:static border-l border-gray-100
-        ${sidebarOpen ? "translate-x-0" : "translate-x-full"}
+        ${sidebarOpen ? "translate-x-0" : "translate-x-full sm:translate-x-0"}
       `}
       >
         <div className="flex flex-col h-full">
-          {/* Header - sm:hidden = hide button at 640px+ */}
+          {/* Header */}
           <div className="flex items-center justify-between p-4 sm:p-6 border-b">
             <h1 className="text-lg sm:text-xl font-bold text-gray-900">
               لوحة التحكم
             </h1>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="sm:hidden"
-              onClick={() => setSidebarOpen(false)}
+            {/* CRITICAL: Add onTouchEnd to close button */}
+            <button
+              className="sm:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={closeSidebar}
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                closeSidebar();
+              }}
+              aria-label="إغلاق"
             >
               <X className="h-5 w-5" />
-            </Button>
+            </button>
           </div>
 
           {/* User Info */}
@@ -155,14 +193,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={() => setSidebarOpen(false)}
+                  onClick={closeSidebar}
+                  onTouchEnd={closeSidebar}
                 >
                   <div
                     className={`
                     group flex items-center space-x-3 space-x-reverse px-4 py-3.5 rounded-2xl transition-all duration-200 cursor-pointer
                     ${
                       isActive
-                        ? "bg-gradient-to-l from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 scale-[1.02]"
+                        ? "bg-gradient-to-l from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30"
                         : "text-gray-700 hover:bg-gradient-to-l hover:from-gray-50 hover:to-blue-50 hover:text-blue-600 hover:shadow-md active:scale-95"
                     }
                   `}
@@ -200,7 +239,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Footer Actions */}
           <div className="p-3 sm:p-4 border-t bg-gray-50/50 space-y-2">
-            <Link href="/">
+            <Link href="/" onClick={closeSidebar}>
               <Button
                 variant="ghost"
                 className="w-full justify-start space-x-reverse hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 group py-3 rounded-xl"
@@ -216,7 +255,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <Button
               variant="ghost"
               className="w-full justify-start space-x-reverse text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 group py-3 rounded-xl active:scale-95"
-              onClick={auth.logOut}
+              onClick={() => {
+                closeSidebar();
+                auth.logOut();
+              }}
             >
               <div className="p-1.5 rounded-lg group-hover:bg-red-100 transition-colors">
                 <LogOut className="h-4 w-4 ml-2" />
@@ -231,7 +273,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header - sm:hidden = hide at 640px+ */}
+        {/* Mobile Header */}
         <header className="sm:hidden bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-100/50 px-4 py-3 sticky top-0 z-30">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -240,14 +282,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </div>
               <h1 className="text-lg font-bold text-gray-900">لوحة التحكم</h1>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={() => setSidebarOpen(true)}
-              className="hover:bg-blue-50 active:scale-95 transition-all duration-200 rounded-xl p-2"
+              onTouchEnd={(e) => {
+                e.preventDefault();
+                setSidebarOpen(true);
+              }}
+              className="p-2 hover:bg-blue-50 active:scale-95 transition-all duration-200 rounded-xl"
+              aria-label="فتح القائمة"
             >
               <Menu className="h-5 w-5 text-gray-700" />
-            </Button>
+            </button>
           </div>
         </header>
 
