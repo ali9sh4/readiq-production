@@ -46,37 +46,34 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const auth = useAuth();
 
-  // Force close sidebar when route changes
+  // Auto-close on route change
   useEffect(() => {
     setSidebarOpen(false);
   }, [pathname]);
 
-  // Close sidebar on ESC key
+  // Close on ESC key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") setSidebarOpen(false);
     };
-
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
   }, []);
 
-  // Prevent body scroll when sidebar is open on mobile
+  // Prevent body scroll when sidebar open
   useEffect(() => {
     if (sidebarOpen && window.innerWidth < 640) {
       document.body.style.overflow = "hidden";
     } else {
       document.body.style.overflow = "unset";
     }
-
     return () => {
       document.body.style.overflow = "unset";
     };
   }, [sidebarOpen]);
 
-  const closeSidebar = () => {
-    setSidebarOpen(false);
-  };
+  const closeSidebar = () => setSidebarOpen(false);
+  const openSidebar = () => setSidebarOpen(true);
 
   if (!auth.isClient) {
     return (
@@ -112,12 +109,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30 flex"
       dir="rtl"
     >
-      {/* Mobile Menu Overlay - CRITICAL: Add both onClick AND onTouchEnd */}
+      {/* Overlay - Uses onPointerDown (works on ALL devices) */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 sm:hidden transition-opacity duration-300"
-          onClick={closeSidebar}
-          onTouchEnd={closeSidebar}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 sm:hidden transition-opacity duration-300 touch-none"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            closeSidebar();
+          }}
           style={{ cursor: "pointer" }}
         />
       )}
@@ -135,11 +134,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <h1 className="text-lg sm:text-xl font-bold text-gray-900">
               لوحة التحكم
             </h1>
-            {/* CRITICAL: Add onTouchEnd to close button */}
             <button
-              className="sm:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              onClick={closeSidebar}
-              onTouchEnd={(e) => {
+              className="sm:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors touch-none"
+              onPointerDown={(e) => {
                 e.preventDefault();
                 closeSidebar();
               }}
@@ -190,12 +187,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               const isActive = pathname === item.href;
 
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={closeSidebar}
-                  onTouchEnd={closeSidebar}
-                >
+                <Link key={item.href} href={item.href} onClick={closeSidebar}>
                   <div
                     className={`
                     group flex items-center space-x-3 space-x-reverse px-4 py-3.5 rounded-2xl transition-all duration-200 cursor-pointer
@@ -283,12 +275,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <h1 className="text-lg font-bold text-gray-900">لوحة التحكم</h1>
             </div>
             <button
-              onClick={() => setSidebarOpen(true)}
-              onTouchEnd={(e) => {
+              onPointerDown={(e) => {
                 e.preventDefault();
-                setSidebarOpen(true);
+                openSidebar();
               }}
-              className="p-2 hover:bg-blue-50 active:scale-95 transition-all duration-200 rounded-xl"
+              className="p-2 hover:bg-blue-50 active:scale-95 transition-all duration-200 rounded-xl touch-none"
               aria-label="فتح القائمة"
             >
               <Menu className="h-5 w-5 text-gray-700" />
