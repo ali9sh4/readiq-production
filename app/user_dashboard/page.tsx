@@ -114,37 +114,30 @@ export default function DashboardHome() {
 
   return (
     <div className="space-y-6 sm:space-y-8 lg:space-y-10">
-      {/* Welcome Header - Enhanced */}
-      <div className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-3xl p-6 sm:p-8 lg:p-10 text-white shadow-2xl overflow-hidden group">
-        {/* Animated Background Pattern */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,_rgba(120,119,198,0.3),_rgba(255,255,255,0))]"></div>
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
-        <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-blue-400/20 rounded-full blur-2xl"></div>
-
-        <div className="relative z-10">
-          <div className="flex items-start justify-between flex-wrap gap-4">
-            <div className="flex-1">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3 drop-shadow-lg">
-                مرحباً، {auth.user?.displayName || "عزيزي المتعلم"} 👋
-              </h1>
-              <p className="text-blue-50 text-sm sm:text-base lg:text-lg max-w-2xl">
-                استمر في رحلة التعلم وحقق أهدافك التعليمية اليوم
-              </p>
-            </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/30">
-              <p className="text-xs text-blue-50">📚 دوراتي</p>
-              <p className="text-2xl font-bold">{enrolledCourses.length}</p>
-            </div>
+      {/* Welcome Header */}
+      <div className="bg-blue-600 rounded-3xl p-6 sm:p-8 lg:p-10 text-white shadow-lg">
+        <div className="flex items-start justify-between flex-wrap gap-4">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3">
+              مرحباً، {auth.user?.displayName || "عزيزي المتعلم"} 👋
+            </h1>
+            <p className="text-blue-100 text-sm sm:text-base lg:text-lg max-w-2xl">
+              استمر في رحلة التعلم وحقق أهدافك التعليمية اليوم
+            </p>
+          </div>
+          <div className="bg-blue-700 rounded-2xl px-4 py-3 border border-blue-500">
+            <p className="text-xs text-blue-100">📚 دوراتي</p>
+            <p className="text-2xl font-bold">{enrolledCourses.length}</p>
           </div>
         </div>
       </div>
 
-      {/* Enrolled Courses - Enhanced */}
+      {/* Enrolled Courses */}
       <section className="relative">
         <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 px-6 py-8 sm:px-8 sm:py-10 border-b border-gray-100">
+          <div className="bg-gray-50 px-6 py-8 sm:px-8 sm:py-10 border-b border-gray-100">
             <div className="text-center">
-              <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg mb-4">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-500 rounded-2xl shadow-md mb-4">
                 <BookOpen className="w-7 h-7 text-white" />
               </div>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
@@ -169,13 +162,13 @@ export default function DashboardHome() {
         </div>
       </section>
 
-      {/* Favorites - Enhanced */}
+      {/* Favorites */}
       {favorites.length > 0 && (
         <section className="relative">
-          <div className="bg-gradient-to-br from-pink-50 via-red-50 to-orange-50 rounded-3xl shadow-lg border border-pink-100 overflow-hidden">
-            <div className="px-6 py-6 sm:px-8 sm:py-8 border-b border-pink-100">
+          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="bg-gray-50 px-6 py-6 sm:px-8 sm:py-8 border-b border-gray-100">
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
+                <div className="w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center shadow-md">
                   <span className="text-xl">❤️</span>
                 </div>
                 <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
@@ -200,11 +193,11 @@ export default function DashboardHome() {
         </section>
       )}
 
-      {/* Quick Actions - Enhanced */}
-      <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-        <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 px-6 py-6 sm:px-8 sm:py-8 border-b border-gray-100">
+      {/* Quick Actions */}
+      <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="bg-gray-50 px-6 py-6 sm:px-8 sm:py-8 border-b border-gray-100">
           <div className="text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg mb-3">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-green-500 rounded-2xl shadow-md mb-3">
               <span className="text-2xl">⚡</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">
@@ -218,9 +211,9 @@ export default function DashboardHome() {
         <div className="p-6 sm:p-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <Link href="/" className="group">
-              <div className="relative h-full bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-100 hover:border-blue-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-95 cursor-pointer">
+              <div className="relative h-full bg-blue-50 border-2 border-blue-100 hover:border-blue-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-95 cursor-pointer">
                 <div className="flex flex-col items-center text-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                     <BookOpen className="w-6 h-6 text-white" />
                   </div>
                   <span className="font-semibold text-gray-800 text-sm sm:text-base">
@@ -230,9 +223,9 @@ export default function DashboardHome() {
               </div>
             </Link>
             <Link href="/course-upload" className="group">
-              <div className="relative h-full bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-100 hover:border-green-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-95 cursor-pointer">
+              <div className="relative h-full bg-green-50 border-2 border-green-100 hover:border-green-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-95 cursor-pointer">
                 <div className="flex flex-col items-center text-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                     <Plus className="w-6 h-6 text-white" />
                   </div>
                   <span className="font-semibold text-gray-800 text-sm sm:text-base">
@@ -242,9 +235,9 @@ export default function DashboardHome() {
               </div>
             </Link>
             <Link href="/user_dashboard/certificates" className="group sm:col-span-2 lg:col-span-1">
-              <div className="relative h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-100 hover:border-amber-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-95 cursor-pointer">
+              <div className="relative h-full bg-amber-50 border-2 border-amber-100 hover:border-amber-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-95 cursor-pointer">
                 <div className="flex flex-col items-center text-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <div className="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
                     <Award className="w-6 h-6 text-white" />
                   </div>
                   <span className="font-semibold text-gray-800 text-sm sm:text-base">

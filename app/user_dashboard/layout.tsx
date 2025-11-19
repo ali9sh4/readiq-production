@@ -56,12 +56,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (!auth.user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="p-8 text-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <Card className="p-6 sm:p-8 text-center max-w-md w-full">
           <CardContent>
-            <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-            <h2 className="text-xl font-semibold mb-2">يرجى تسجيل الدخول</h2>
-            <p className="text-gray-600 mb-4">
+            <BookOpen className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-gray-400" />
+            <h2 className="text-lg sm:text-xl font-semibold mb-2">
+              يرجى تسجيل الدخول
+            </h2>
+            <p className="text-sm sm:text-base text-gray-600 mb-4">
               تحتاج إلى تسجيل الدخول للوصول إلى لوحة التحكم
             </p>
             <Link href="/login">
@@ -74,30 +76,35 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30 flex" dir="rtl">
-      {/* Mobile Menu Overlay */}
+    <div
+      className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30 flex"
+      dir="rtl"
+    >
+      {/* Mobile Menu Overlay - CHANGED to md:hidden */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar - CHANGED to md: breakpoints */}
       <div
         className={`
-        fixed inset-y-0 right-0 z-50 w-[280px] sm:w-80 lg:w-72 xl:w-80 bg-white shadow-2xl transform transition-all duration-300 ease-out lg:translate-x-0 lg:static lg:inset-0 border-l border-gray-100
+        fixed inset-y-0 right-0 z-50 w-[280px] sm:w-80 bg-white shadow-2xl transform transition-all duration-300 ease-out md:translate-x-0 md:static border-l border-gray-100
         ${sidebarOpen ? "translate-x-0" : "translate-x-full"}
       `}
       >
         <div className="flex flex-col h-full">
-          {/* Header */}
+          {/* Header - CHANGED button to md:hidden */}
           <div className="flex items-center justify-between p-4 sm:p-6 border-b">
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900">لوحة التحكم</h1>
+            <h1 className="text-lg sm:text-xl font-bold text-gray-900">
+              لوحة التحكم
+            </h1>
             <Button
               variant="ghost"
               size="sm"
-              className="lg:hidden"
+              className="md:hidden"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="h-5 w-5" />
@@ -145,7 +152,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               const isActive = pathname === item.href;
 
               return (
-                <Link key={item.href} href={item.href}>
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setSidebarOpen(false)}
+                >
                   <div
                     className={`
                     group flex items-center space-x-3 space-x-reverse px-4 py-3.5 rounded-2xl transition-all duration-200 cursor-pointer
@@ -156,12 +167,26 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     }
                   `}
                   >
-                    <div className={`p-1.5 rounded-lg ${isActive ? "bg-white/20" : "group-hover:bg-blue-50"}`}>
+                    <div
+                      className={`p-1.5 rounded-lg ${
+                        isActive ? "bg-white/20" : "group-hover:bg-blue-50"
+                      }`}
+                    >
                       <Icon
-                        className={`h-5 w-5 transition-transform group-hover:scale-110 ${isActive ? "text-white" : "text-gray-600 group-hover:text-blue-600"}`}
+                        className={`h-5 w-5 transition-transform group-hover:scale-110 ${
+                          isActive
+                            ? "text-white"
+                            : "text-gray-600 group-hover:text-blue-600"
+                        }`}
                       />
                     </div>
-                    <span className={`font-semibold text-sm sm:text-base ${isActive ? "text-white" : ""}`}>{item.label}</span>
+                    <span
+                      className={`font-semibold text-sm sm:text-base ${
+                        isActive ? "text-white" : ""
+                      }`}
+                    >
+                      {item.label}
+                    </span>
                     {isActive && (
                       <div className="mr-auto">
                         <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
@@ -183,7 +208,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <div className="p-1.5 rounded-lg group-hover:bg-blue-100 transition-colors">
                   <Settings className="h-4 w-4 ml-2" />
                 </div>
-                <span className="font-medium">العودة للموقع</span>
+                <span className="font-medium text-sm sm:text-base">
+                  العودة للموقع
+                </span>
               </Button>
             </Link>
             <Button
@@ -194,7 +221,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="p-1.5 rounded-lg group-hover:bg-red-100 transition-colors">
                 <LogOut className="h-4 w-4 ml-2" />
               </div>
-              <span className="font-medium">تسجيل الخروج</span>
+              <span className="font-medium text-sm sm:text-base">
+                تسجيل الخروج
+              </span>
             </Button>
           </div>
         </div>
@@ -202,8 +231,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header */}
-        <header className="lg:hidden bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-100/50 px-4 py-3 sticky top-0 z-30">
+        {/* Mobile Header - CHANGED to md:hidden */}
+        <header className="md:hidden bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-100/50 px-4 py-3 sticky top-0 z-30">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
@@ -223,7 +252,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">{children}</main>
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+          {children}
+        </main>
       </div>
     </div>
   );
