@@ -284,7 +284,7 @@ export default async function Home() {
               والعالم العربي، مع دعم كامل وواجهة عربية بسيطة.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-              <Link href="/wallet/topup">
+              <Link href="/register">
                 <Button
                   size="lg"
                   className="w-full sm:w-auto rounded-xl bg-white text-sky-900 hover:bg-gray-100 font-bold text-base px-8 h-12 shadow-xl transition-all flex items-center gap-2 justify-center"
