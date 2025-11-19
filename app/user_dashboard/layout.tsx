@@ -74,19 +74,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex" dir="rtl">
-      {/* Mobile Menu Overlay */}
+    <div className="min-h-screen bg-gray-50" dir="rtl">
+      {/* Mobile Menu Overlay - Only for mobile (< 768px) */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Mobile Sidebar - Only visible on mobile (< 768px) */}
       <div
         className={`
-        fixed inset-y-0 right-0 z-50 w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0
+        fixed inset-y-0 right-0 z-50 w-72 bg-white shadow-xl transform transition-transform duration-300 ease-in-out md:hidden
         ${sidebarOpen ? "translate-x-0" : "translate-x-full"}
       `}
       >
@@ -97,7 +97,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <Button
               variant="ghost"
               size="sm"
-              className="lg:hidden"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="h-5 w-5" />
@@ -144,7 +143,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               const isActive = pathname === item.href;
 
               return (
-                <Link key={item.href} href={item.href}>
+                <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)}>
                   <div
                     className={`
                     flex items-center space-x-3 space-x-reverse px-4 py-3 rounded-xl transition-all duration-200
@@ -188,25 +187,101 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header */}
-        <header className="lg:hidden bg-white shadow-sm border-b px-4 py-3">
+      {/* Tablet/Desktop Horizontal Navigation - Visible on tablets and up (>= 768px) */}
+      <div className="hidden md:block bg-white shadow-sm border-b sticky top-0 z-30">
+        <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-lg font-semibold text-gray-900">لوحة التحكم</h1>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-5 w-5" />
-            </Button>
-          </div>
-        </header>
+            {/* Title & User Info */}
+            <div className="flex items-center gap-4">
+              <h1 className="text-xl font-bold text-gray-900">لوحة التحكم</h1>
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg">
+                <Avatar className="h-8 w-8">
+                  {auth.user.photoURL && (
+                    <Image
+                      src={auth.user.photoURL}
+                      alt="صورة المستخدم"
+                      width={32}
+                      height={32}
+                      className="rounded-full object-cover"
+                    />
+                  )}
+                  <AvatarFallback className="text-sm">
+                    {auth.user.displayName?.charAt(0) || "ع"}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-medium text-gray-700">
+                  {auth.user.displayName || "مستخدم"}
+                </span>
+              </div>
+            </div>
 
-        {/* Page Content */}
-        <main className="flex-1 p-6">{children}</main>
+            {/* Horizontal Navigation */}
+            <nav className="flex items-center gap-2">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.href;
+
+                return (
+                  <Link key={item.href} href={item.href}>
+                    <Button
+                      variant={isActive ? "default" : "ghost"}
+                      size="sm"
+                      className={`flex items-center gap-2 ${
+                        isActive
+                          ? "bg-blue-600 text-white hover:bg-blue-700"
+                          : "text-gray-700 hover:text-blue-600 hover:bg-blue-50"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </Button>
+                  </Link>
+                );
+              })}
+
+              <div className="h-6 w-px bg-gray-200 mx-2"></div>
+
+              <Link href="/">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>الموقع</span>
+                </Button>
+              </Link>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+                onClick={auth.logOut}
+              >
+                <LogOut className="h-4 w-4" />
+                <span>خروج</span>
+              </Button>
+            </nav>
+          </div>
+        </div>
       </div>
+
+      {/* Mobile Header - Only visible on mobile (< 768px) */}
+      <header className="md:hidden bg-white shadow-sm border-b px-4 py-3 sticky top-0 z-30">
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-semibold text-gray-900">لوحة التحكم</h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        </div>
+      </header>
+
+      {/* Page Content */}
+      <main className="container mx-auto p-4 md:p-6">{children}</main>
     </div>
   );
 }
