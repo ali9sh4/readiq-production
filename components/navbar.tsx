@@ -1,39 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
-import { BookOpen, PlusCircle, User, Menu, X } from "lucide-react";
+import { BookOpen, PlusCircle, User } from "lucide-react";
 import { AuthButton } from "@/components/Authbutton";
 import WalletBalance from "@/components/WalletBalance";
 
 export default function Navbar() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
-  const closeMobileMenu = () => setMobileMenuOpen(false);
-
-  // Close mobile menu when screen size changes to sm/desktop
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 640) {
-        setMobileMenuOpen(false);
-      }
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
   return (
     <nav className="bg-gradient-to-r from-sky-900 to-sky-950 text-white shadow-xl border-b border-sky-800/50 sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo Section */}
-          <Link
-            href="/"
-            className="flex items-center gap-2 lg:gap-3 group"
-            onClick={closeMobileMenu}
-          >
+          <Link href="/" className="flex items-center gap-2 lg:gap-3 group">
             <span className="text-2xl lg:text-4xl font-extrabold tracking-wide text-white group-hover:text-sky-200 transition-all duration-300 drop-shadow-lg">
               اقْرَأْ
             </span>
@@ -42,8 +20,8 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Navigation - Show on sms and up */}
-          <ul className="hidden sm:flex items-center gap-2 lg:gap-3">
+          {/* Desktop Navigation - Always visible */}
+          <ul className="flex items-center gap-2 lg:gap-3">
             <li>
               <Link
                 href="/wallet/topup"
@@ -59,7 +37,7 @@ export default function Navbar() {
                 className="flex items-center gap-1.5 lg:gap-2 px-3 py-2 lg:px-5 lg:py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg lg:rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold border border-white/20 hover:border-white/30 hover:scale-105 text-sm lg:text-base"
               >
                 <BookOpen className="h-4 w-4" />
-                <span>دوراتي</span>
+                <span className="hidden sm:inline">دوراتي</span>
               </Link>
             </li>
 
@@ -69,7 +47,7 @@ export default function Navbar() {
                 className="flex items-center gap-1.5 lg:gap-2 px-3 py-2 lg:px-5 lg:py-2.5 bg-white text-sky-900 hover:bg-gray-100 rounded-lg lg:rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold hover:scale-105 text-sm lg:text-base"
               >
                 <PlusCircle className="h-4 w-4" />
-                <span>إنشاء دورة</span>
+                <span className="hidden sm:inline">إنشاء دورة</span>
               </Link>
             </li>
 
@@ -79,7 +57,7 @@ export default function Navbar() {
                 className="flex items-center gap-1.5 lg:gap-2 px-3 py-2 lg:px-5 lg:py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg lg:rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold border border-white/20 hover:border-white/30 hover:scale-105 text-sm lg:text-base"
               >
                 <User className="h-4 w-4" />
-                <span>ملفي الشخصي</span>
+                <span className="hidden sm:inline">ملفي الشخصي</span>
               </Link>
             </li>
 
@@ -87,108 +65,6 @@ export default function Navbar() {
               <AuthButton />
             </li>
           </ul>
-
-          {/* Mobile Menu Button - Show on mobile only */}
-          <button
-            onClick={toggleMobileMenu}
-            className="sm:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
-            aria-label="القائمة"
-          >
-            {mobileMenuOpen ? (
-              <X className="h-6 w-6" />
-            ) : (
-              <Menu className="h-6 w-6" />
-            )}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Sidebar Menu - Show on mobile only (screens < 768px) */}
-      {/* Backdrop overlay - only visible on screens < 768px */}
-      <div
-        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300 sm:hidden ${
-          mobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
-        onClick={closeMobileMenu}
-      />
-
-      {/* Sidebar panel - only visible on screens < 768px */}
-      <div
-        className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-gradient-to-br from-sky-900 to-sky-950 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out sm:hidden ${
-          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        <div className="flex flex-col h-full">
-          {/* Mobile Menu Header */}
-          <div className="flex items-center justify-between p-6 border-b border-sky-800/50">
-            <h2 className="text-2xl font-bold text-white">القائمة</h2>
-            <button
-              onClick={closeMobileMenu}
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-              aria-label="إغلاق"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-
-          {/* Mobile Navigation Links */}
-          <div className="flex-1 overflow-y-auto p-6">
-            <ul className="space-y-4">
-              <li>
-                <Link
-                  href="/wallet/topup"
-                  onClick={closeMobileMenu}
-                  className="flex items-center gap-3 px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300 font-semibold border border-white/20"
-                >
-                  <WalletBalance />
-                </Link>
-              </li>
-
-              <li>
-                <Link
-                  href="/user_dashboard"
-                  onClick={closeMobileMenu}
-                  className="flex items-center gap-3 px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300 font-semibold border border-white/20"
-                >
-                  <BookOpen className="h-5 w-5" />
-                  <span>دوراتي</span>
-                </Link>
-              </li>
-
-              <li>
-                <Link
-                  href="/course-upload"
-                  onClick={closeMobileMenu}
-                  className="flex items-center gap-3 px-4 py-3 bg-white text-sky-900 hover:bg-gray-100 rounded-xl transition-all duration-300 font-semibold"
-                >
-                  <PlusCircle className="h-5 w-5" />
-                  <span>إنشاء دورة</span>
-                </Link>
-              </li>
-
-              <li>
-                <Link
-                  href="/user_dashboard/profile"
-                  onClick={closeMobileMenu}
-                  className="flex items-center gap-3 px-4 py-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all duration-300 font-semibold border border-white/20"
-                >
-                  <User className="h-5 w-5" />
-                  <span>ملفي الشخصي</span>
-                </Link>
-              </li>
-
-              <li className="pt-4 border-t border-sky-800/50">
-                <AuthButton />
-              </li>
-            </ul>
-          </div>
-
-          {/* Mobile Menu Footer */}
-          <div className="p-6 border-t border-sky-800/50">
-            <p className="text-sm text-sky-200 text-center">
-              منصة القراءة العربية
-            </p>
-          </div>
         </div>
       </div>
     </nav>
