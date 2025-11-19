@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { BookOpen, PlusCircle, User, Menu, X } from "lucide-react";
 import { AuthButton } from "@/components/Authbutton";
@@ -11,6 +11,18 @@ export default function Navbar() {
 
   const toggleMobileMenu = () => setMobileMenuOpen(!mobileMenuOpen);
   const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  // Close mobile menu when screen size changes to tablet/desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <nav className="bg-gradient-to-r from-sky-900 to-sky-950 text-white shadow-xl border-b border-sky-800/50 sticky top-0 z-50">
