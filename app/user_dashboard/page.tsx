@@ -113,112 +113,149 @@ export default function DashboardHome() {
   }
 
   return (
-    <div className="space-y-8 sm:space-y-12 lg:space-y-16">
-      {/* Welcome Header - Responsive */}
-      <div className="bg-gradient-to-l from-blue-700 via-blue-600 to-indigo-700 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 text-white shadow-xl relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/patterns/waves.svg')] opacity-10"></div>
+    <div className="space-y-6 sm:space-y-8 lg:space-y-10">
+      {/* Welcome Header - Enhanced */}
+      <div className="relative bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 rounded-3xl p-6 sm:p-8 lg:p-10 text-white shadow-2xl overflow-hidden group">
+        {/* Animated Background Pattern */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_120%,_rgba(120,119,198,0.3),_rgba(255,255,255,0))]"></div>
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
+        <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-blue-400/20 rounded-full blur-2xl"></div>
+
         <div className="relative z-10">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3 drop-shadow">
-            مرحباً، {auth.user?.displayName || "عزيزي المتعلم"} 👋
-          </h1>
-          <p className="text-blue-100 text-sm sm:text-base lg:text-lg">
-            استمر في رحلة التعلم وحقق أهدافك التعليمية اليوم
-          </p>
+          <div className="flex items-start justify-between flex-wrap gap-4">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3 drop-shadow-lg">
+                مرحباً، {auth.user?.displayName || "عزيزي المتعلم"} 👋
+              </h1>
+              <p className="text-blue-50 text-sm sm:text-base lg:text-lg max-w-2xl">
+                استمر في رحلة التعلم وحقق أهدافك التعليمية اليوم
+              </p>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-4 py-3 border border-white/30">
+              <p className="text-xs text-blue-50">📚 دوراتي</p>
+              <p className="text-2xl font-bold">{enrolledCourses.length}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Enrolled Courses - Responsive */}
-      <section className="py-8 sm:py-12 lg:py-16 bg-gray-50 rounded-2xl sm:rounded-3xl">
-        <div className="container mx-auto px-4 sm:px-6">
-          <div className="text-center mb-8 sm:mb-10 lg:mb-12">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
-              📘 دوراتي المسجلة
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base lg:text-lg px-4">
-              تابع الدورات التي التحقت بها مؤخرًا واستمر بالتعلم
-            </p>
+      {/* Enrolled Courses - Enhanced */}
+      <section className="relative">
+        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 px-6 py-8 sm:px-8 sm:py-10 border-b border-gray-100">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg mb-4">
+                <BookOpen className="w-7 h-7 text-white" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
+                دوراتي المسجلة
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base lg:text-lg">
+                تابع الدورات التي التحقت بها مؤخرًا واستمر بالتعلم
+              </p>
+            </div>
           </div>
 
-          <CoursesCardList
-            data={{
-              success: true,
-              courses: enrolledCourses,
-              hasMore: false,
-              nextCursor: null,
-            }}
-          />
-        </div>
-      </section>
-
-      {/* Favorites - Responsive */}
-      {favorites.length > 0 && (
-        <section className="py-8 sm:py-12 lg:py-16 bg-white">
-          <div className="container mx-auto px-4 sm:px-6">
-            <div className="flex items-center justify-between mb-6 sm:mb-8 lg:mb-10">
-              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-2">
-                ❤️ المفضلة
-              </h2>
-            </div>
+          <div className="p-6 sm:p-8">
             <CoursesCardList
               data={{
                 success: true,
-                courses: favorites,
+                courses: enrolledCourses,
                 hasMore: false,
                 nextCursor: null,
               }}
             />
           </div>
+        </div>
+      </section>
+
+      {/* Favorites - Enhanced */}
+      {favorites.length > 0 && (
+        <section className="relative">
+          <div className="bg-gradient-to-br from-pink-50 via-red-50 to-orange-50 rounded-3xl shadow-lg border border-pink-100 overflow-hidden">
+            <div className="px-6 py-6 sm:px-8 sm:py-8 border-b border-pink-100">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
+                  <span className="text-xl">❤️</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
+                  المفضلة
+                </h2>
+              </div>
+              <p className="text-gray-600 text-sm sm:text-base">
+                الدورات التي قمت بحفظها في قائمة المفضلة
+              </p>
+            </div>
+            <div className="p-6 sm:p-8">
+              <CoursesCardList
+                data={{
+                  success: true,
+                  courses: favorites,
+                  hasMore: false,
+                  nextCursor: null,
+                }}
+              />
+            </div>
+          </div>
         </section>
       )}
 
-      {/* Quick Actions - Responsive */}
-      <Card className="border-0 shadow-xl bg-gradient-to-br from-gray-50 to-white rounded-2xl sm:rounded-3xl hover:shadow-2xl transition-all duration-300">
-        <CardHeader className="text-center px-4 sm:px-6">
-          <CardTitle className="text-xl sm:text-2xl font-semibold text-gray-800">
-            ⚡ الإجراءات السريعة
-          </CardTitle>
-          <CardDescription className="text-gray-500 mt-1 text-sm sm:text-base">
-            اختصارات لأهم الوظائف التي تحتاجها بسرعة
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-4 sm:px-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-            <Link href="/">
-              <Button
-                variant="outline"
-                className="w-full h-16 sm:h-20 flex flex-col justify-center items-center gap-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 rounded-lg sm:rounded-xl"
-              >
-                <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
-                <span className="font-medium text-gray-800 text-sm sm:text-base">
-                  استكشف الدورات
-                </span>
-              </Button>
+      {/* Quick Actions - Enhanced */}
+      <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+        <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 px-6 py-6 sm:px-8 sm:py-8 border-b border-gray-100">
+          <div className="text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg mb-3">
+              <span className="text-2xl">⚡</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">
+              الإجراءات السريعة
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base">
+              اختصارات لأهم الوظائف التي تحتاجها بسرعة
+            </p>
+          </div>
+        </div>
+        <div className="p-6 sm:p-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Link href="/" className="group">
+              <div className="relative h-full bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-100 hover:border-blue-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-95 cursor-pointer">
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <BookOpen className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="font-semibold text-gray-800 text-sm sm:text-base">
+                    استكشف الدورات
+                  </span>
+                </div>
+              </div>
             </Link>
-            <Link href="/course-upload">
-              <Button
-                variant="outline"
-                className="w-full h-16 sm:h-20 flex flex-col justify-center items-center gap-2 border-gray-200 hover:border-green-500 hover:bg-green-50 transition-all duration-300 rounded-lg sm:rounded-xl"
-              >
-                <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-                <span className="font-medium text-gray-800 text-sm sm:text-base">
-                  إنشاء دورة جديدة
-                </span>
-              </Button>
+            <Link href="/course-upload" className="group">
+              <div className="relative h-full bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-100 hover:border-green-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-95 cursor-pointer">
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <Plus className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="font-semibold text-gray-800 text-sm sm:text-base">
+                    إنشاء دورة جديدة
+                  </span>
+                </div>
+              </div>
             </Link>
-            <Link href="/user_dashboard/certificates">
-              <Button
-                variant="outline"
-                className="w-full h-16 sm:h-20 flex flex-col justify-center items-center gap-2 border-gray-200 hover:border-yellow-500 hover:bg-yellow-50 transition-all duration-300 rounded-lg sm:rounded-xl sm:col-span-2 lg:col-span-1"
-              >
-                <Award className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
-                <span className="font-medium text-gray-800 text-sm sm:text-base">
-                  عرض الشهادات
-                </span>
-              </Button>
+            <Link href="/user_dashboard/certificates" className="group sm:col-span-2 lg:col-span-1">
+              <div className="relative h-full bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-100 hover:border-amber-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-95 cursor-pointer">
+                <div className="flex flex-col items-center text-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <Award className="w-6 h-6 text-white" />
+                  </div>
+                  <span className="font-semibold text-gray-800 text-sm sm:text-base">
+                    عرض الشهادات
+                  </span>
+                </div>
+              </div>
             </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

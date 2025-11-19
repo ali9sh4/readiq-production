@@ -70,15 +70,15 @@ export default function DashboardCertificates() {
 
   if (!auth.isClient || loading) {
     return (
-      <div className="space-y-6">
-        <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="h-6 sm:h-8 bg-gray-200 rounded animate-pulse"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {[...Array(3)].map((_, i) => (
             <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="h-32 bg-gray-200 rounded mb-4"></div>
-                <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+              <CardContent className="p-4 sm:p-6">
+                <div className="h-24 sm:h-32 bg-gray-200 rounded mb-4"></div>
+                <div className="h-3 sm:h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 sm:h-4 bg-gray-200 rounded w-3/4"></div>
               </CardContent>
             </Card>
           ))}
@@ -89,233 +89,240 @@ export default function DashboardCertificates() {
 
   if (!auth.user) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <Card className="p-6 text-center">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-red-700 mb-2">
+      <div className="flex items-center justify-center p-4 sm:p-8">
+        <Card className="p-4 sm:p-6 text-center max-w-md w-full">
+          <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-red-500 mx-auto mb-3 sm:mb-4" />
+          <h3 className="text-base sm:text-lg font-semibold text-red-700 mb-2">
             غير مسجل الدخول
           </h3>
-          <p className="text-gray-600">يرجى تسجيل الدخول لعرض الشهادات</p>
+          <p className="text-sm sm:text-base text-gray-600">يرجى تسجيل الدخول لعرض الشهادات</p>
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-            شهاداتي
-          </h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">
-            جميع الشهادات التي حصلت عليها من الدورات المكتملة
-          </p>
-        </div>
-        <div className="flex items-center gap-2 text-amber-600">
-          <Trophy className="w-5 h-5 sm:w-6 sm:h-6" />
-          <span className="text-base sm:text-lg font-semibold">
-            {certificates.length} شهادة
-          </span>
-        </div>
-      </div>
-      {/* Achievement Banner */}
-      <Card className="border-0 shadow-lg bg-gradient-to-l from-amber-50 via-yellow-50 to-orange-50">
-        <CardContent className="p-4 sm:p-6 lg:p-8">
-          <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
-            <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-right">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center">
-                <Award className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+    <div className="space-y-6 sm:space-y-8">
+      {/* Page Header - Enhanced */}
+      <div className="relative bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-600 rounded-3xl p-6 sm:p-8 text-white shadow-2xl overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.2),_transparent)]"></div>
+        <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-orange-400/20 rounded-full blur-2xl"></div>
+
+        <div className="relative z-10">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-lg">
+                <Trophy className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
               </div>
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  إنجازاتك التعليمية
-                </h2>
-                <p className="text-sm sm:text-base text-gray-600">
-                  كل شهادة تمثل خطوة نحو تحقيق أهدافك المهنية
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold drop-shadow-lg">
+                  شهاداتي
+                </h1>
+                <p className="text-amber-50 mt-1 text-sm sm:text-base">
+                  جميع الشهادات التي حصلت عليها من الدورات المكتملة
                 </p>
               </div>
             </div>
-            <div className="text-center sm:text-right">
-              <p className="text-2xl sm:text-3xl font-bold text-amber-600">
-                {certificates.length}
-              </p>
-              <p className="text-sm sm:text-base text-amber-700 font-medium">
-                شهادة مكتملة
-              </p>
+            <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-5 py-3 border border-white/30 shadow-lg">
+              <p className="text-xs text-amber-50 mb-1">إجمالي الشهادات</p>
+              <p className="text-3xl font-bold">{certificates.length}</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Certificates Grid */}
       {certificates.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {certificates.map((certificate) => (
-            <Card
+            <div
               key={certificate.id}
-              className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 group"
+              className="group bg-white rounded-2xl border-2 border-gray-100 shadow-lg hover:shadow-2xl hover:border-blue-200 transition-all duration-300 overflow-hidden hover:scale-[1.02] active:scale-95"
             >
-              <CardHeader className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-purple-700 text-white">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/90 to-purple-700/90"></div>
+              {/* Certificate Header */}
+              <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-5 sm:p-6">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.2),_transparent)]"></div>
+                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
+
                 <div className="relative z-10">
-                  <div className="flex items-center justify-between mb-2">
-                    <Award className="w-8 h-8 text-amber-300" />
-                    <Badge className="bg-white/20 text-white border-0">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30 shadow-lg">
+                      <Award className="w-6 h-6 text-amber-300" />
+                    </div>
+                    <Badge className="bg-white/20 backdrop-blur-sm text-white border border-white/30 text-xs shadow-sm">
                       شهادة إتمام
                     </Badge>
                   </div>
-                  <CardTitle className="text-lg line-clamp-2 text-white">
+                  <h3 className="text-base sm:text-lg font-bold text-white line-clamp-2 mb-1">
                     {certificate.courseTitle}
-                  </CardTitle>
-                  <CardDescription className="text-blue-100">
+                  </h3>
+                  <p className="text-blue-100 text-xs sm:text-sm">
                     {certificate.instructor}
-                  </CardDescription>
+                  </p>
                 </div>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      تاريخ الإكمال: {formatDate(certificate.completionDate)}
-                    </span>
-                  </div>
+              </div>
 
-                  {certificate.grade && (
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">التقدير:</span>
-                      <Badge
-                        variant="outline"
-                        className="bg-green-50 text-green-700 border-green-200"
-                      >
-                        {certificate.grade}
-                      </Badge>
-                    </div>
-                  )}
+              {/* Certificate Body */}
+              <div className="p-4 sm:p-5 space-y-3">
+                <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-600 bg-gray-50 rounded-lg p-2">
+                  <Calendar className="w-4 h-4 text-gray-500" />
+                  <span className="font-medium">
+                    {formatDate(certificate.completionDate)}
+                  </span>
+                </div>
 
-                  <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                    <span>معرف الشهادة: {certificate.credentialId}</span>
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      size="sm"
-                      onClick={() => handleDownload(certificate)}
-                      className="flex-1"
-                    >
-                      <Download className="w-4 h-4 ml-1" />
-                      تحميل
-                    </Button>
-                    <Button
-                      size="sm"
+                {certificate.grade && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">التقدير:</span>
+                    <Badge
                       variant="outline"
-                      onClick={() => handleShare(certificate)}
+                      className="bg-green-50 text-green-700 border-green-200 text-xs font-semibold"
                     >
-                      <Share2 className="w-4 h-4 ml-1" />
-                      مشاركة
-                    </Button>
+                      {certificate.grade}
+                    </Badge>
                   </div>
+                )}
+
+                <div className="text-[10px] sm:text-xs text-gray-500 bg-blue-50 p-2.5 rounded-lg break-all border border-blue-100">
+                  <span className="font-mono">ID: {certificate.credentialId}</span>
                 </div>
-              </CardContent>
-            </Card>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => handleDownload(certificate)}
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl px-4 py-2.5 flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span className="text-sm font-semibold">تحميل</span>
+                  </button>
+                  <button
+                    onClick={() => handleShare(certificate)}
+                    className="bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-blue-300 text-gray-700 rounded-xl px-4 py-2.5 flex items-center justify-center gap-2 transition-all duration-200 active:scale-95"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    <span className="text-sm font-semibold">مشاركة</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       ) : (
-        // Empty State
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-12 text-center">
-            <div className="max-w-md mx-auto px-4">
-              <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Gift className="w-12 h-12 text-gray-400" />
+        // Empty State - Enhanced
+        <div className="bg-white rounded-3xl shadow-xl border-2 border-gray-100 overflow-hidden">
+          <div className="p-8 sm:p-12 lg:p-16 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="relative inline-block mb-6">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-br from-amber-100 to-orange-100 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
+                  <Gift className="w-12 h-12 sm:w-14 sm:h-14 text-amber-500" />
+                </div>
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                  <span className="text-sm">✨</span>
+                </div>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-4">
+              <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
                 لا توجد شهادات بعد
               </h3>
-              <p className="text-gray-600 mb-6 leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-600 mb-8 leading-relaxed">
                 أكمل دوراتك الأولى للحصول على شهادات رقمية تثبت إنجازاتك
                 التعليمية. كل دورة تكملها ستحصل على شهادة معتمدة يمكنك مشاركتها
                 مع أصحاب العمل.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button variant="outline" asChild>
-                  <a href="/user_dashboard">العودة للوحة التحكم</a>
-                </Button>
-              </div>
+              <a href="/user_dashboard">
+                <button className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-2xl px-8 py-4 font-semibold transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95">
+                  العودة للوحة التحكم
+                </button>
+              </a>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
-      {/* Coming Soon Features */}
-      <Card className="border-0 shadow-lg bg-gradient-to-l from-blue-50 to-indigo-50">
-        <CardHeader>
-          <CardTitle className="text-xl text-blue-900">ميزات قادمة</CardTitle>
-          <CardDescription className="text-blue-700">
+      {/* Coming Soon Features - Enhanced */}
+      <div className="bg-white rounded-3xl shadow-xl border-2 border-blue-100 overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 px-6 py-6 sm:px-8 sm:py-8 border-b border-blue-100">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+              <span className="text-lg">🚀</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+              ميزات قادمة
+            </h2>
+          </div>
+          <p className="text-gray-600 text-sm sm:text-base">
             ميزات جديدة ستتوفر قريباً لتحسين تجربة الشهادات
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <div className="flex items-start gap-3 p-4 bg-white rounded-lg">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Share2 className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900">
-                  مشاركة على LinkedIn
-                </h4>
-                <p className="text-sm text-gray-600">
-                  شارك شهاداتك مباشرة على ملفك المهني
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 p-4 bg-white rounded-lg">
-              <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <Award className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900">
-                  شهادات رقمية محققة
-                </h4>
-                <p className="text-sm text-gray-600">
-                  تحقق من صحة الشهادات عبر البلوك تشين
-                </p>
+          </p>
+        </div>
+        <div className="p-6 sm:p-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="group bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-100 hover:border-blue-300 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg cursor-pointer">
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform">
+                  <Share2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-1">
+                    مشاركة على LinkedIn
+                  </h4>
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    شارك شهاداتك مباشرة على ملفك المهني
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-4 bg-white rounded-lg">
-              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-900">
-                  نظام النقاط والإنجازات
-                </h4>
-                <p className="text-sm text-gray-600">
-                  اجمع نقاط واحصل على شارات خاصة
-                </p>
+            <div className="group bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-100 hover:border-green-300 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg cursor-pointer">
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform">
+                  <Award className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-1">
+                    شهادات رقمية محققة
+                  </h4>
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    تحقق من صحة الشهادات عبر البلوك تشين
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="flex items-start gap-3 p-4 bg-white rounded-lg">
-              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                <Download className="w-5 h-5 text-orange-600" />
+            <div className="group bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-100 hover:border-purple-300 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg cursor-pointer">
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform">
+                  <Trophy className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-1">
+                    نظام النقاط والإنجازات
+                  </h4>
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    اجمع نقاط واحصل على شارات خاصة
+                  </p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold text-gray-900">
-                  تصاميم شهادات متنوعة
-                </h4>
-                <p className="text-sm text-gray-600">
-                  اختر من بين تصاميم مختلفة للشهادات
-                </p>
+            </div>
+
+            <div className="group bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-100 hover:border-orange-300 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg cursor-pointer">
+              <div className="flex items-start gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform">
+                  <Download className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-gray-900 text-sm sm:text-base mb-1">
+                    تصاميم شهادات متنوعة
+                  </h4>
+                  <p className="text-xs sm:text-sm text-gray-600">
+                    اختر من بين تصاميم مختلفة للشهادات
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

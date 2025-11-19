@@ -1,15 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, PlusCircle, User, Menu, X } from "lucide-react";
+import { BookOpen, PlusCircle, User, Menu, X, Monitor } from "lucide-react";
 import { AuthButton } from "@/components/Authbutton";
 import WalletBalance from "@/components/WalletBalance";
 import { useAuth } from "@/context/authContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Navbar() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  const handleCreateCourseClick = (e: React.MouseEvent) => {
+    if (isMobile) {
+      e.preventDefault();
+      const confirmed = window.confirm(
+        "💡 للحصول على أفضل تجربة في إنشاء الدورات، يُنصح باستخدام جهاز iPad أو كمبيوتر محمول.\n\nهل تريد المتابعة على الهاتف؟"
+      );
+      if (confirmed) {
+        window.location.href = "/course-upload";
+      }
+    }
+  };
 
   return (
     <nav className="bg-sky-900 text-white shadow-xl border-b border-sky-800/50 sticky top-0 z-50">
@@ -51,7 +73,8 @@ export default function Navbar() {
             <li>
               <Link
                 href="/course-upload"
-                className="flex items-center gap-2 px-3 py-2 bg-white text-sky-900 
+                onClick={handleCreateCourseClick}
+                className="flex items-center gap-2 px-3 py-2 bg-white text-sky-900
                 rounded-lg shadow-md hover:bg-gray-100"
               >
                 <PlusCircle className="h-4 w-4 hidden sm:inline-block" />
@@ -109,7 +132,10 @@ export default function Navbar() {
             <Link
               href="/course-upload"
               className="flex items-center gap-2 px-3 py-3 bg-white text-sky-900 rounded-lg shadow-md"
-              onClick={() => setOpen(false)}
+              onClick={(e) => {
+                setOpen(false);
+                handleCreateCourseClick(e);
+              }}
             >
               <PlusCircle size={18} />
               إنشاء دورة

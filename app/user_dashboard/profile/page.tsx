@@ -92,76 +92,96 @@ export default function DashboardProfile() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      {/* Page Header - FIXED */}
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-          الملف الشخصي
-        </h1>
-        <p className="text-gray-600 mt-1 text-sm sm:text-base">
-          إدارة معلوماتك الشخصية وإعداداتك
-        </p>
+      {/* Page Header - Enhanced */}
+      <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-3xl p-6 sm:p-8 text-white shadow-2xl overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.2),_transparent)]"></div>
+        <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-purple-400/20 rounded-full blur-2xl"></div>
+
+        <div className="relative z-10 flex items-center gap-4">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-lg">
+            <User className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold drop-shadow-lg">
+              الملف الشخصي
+            </h1>
+            <p className="text-purple-50 mt-1 text-sm sm:text-base">
+              إدارة معلوماتك الشخصية وإعداداتك
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Profile Information Card */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="bg-gradient-to-l from-blue-50 to-indigo-50 px-4 sm:px-6">
+      <div className="bg-white rounded-3xl shadow-xl border-2 border-gray-100 overflow-hidden">
+        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 px-6 py-6 sm:px-8 sm:py-8 border-b border-gray-100">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <CardTitle className="text-lg sm:text-xl">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
                 المعلومات الشخصية
-              </CardTitle>
-              <CardDescription className="text-sm">
+              </h2>
+              <p className="text-gray-600 text-sm sm:text-base">
                 بياناتك الأساسية في المنصة
-              </CardDescription>
+              </p>
             </div>
             {!isEditing ? (
-              <Button
-                variant="outline"
-                size="sm"
+              <button
                 onClick={() => setIsEditing(true)}
-                className="self-start sm:self-auto"
+                className="self-start sm:self-auto bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl px-4 py-2.5 flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
               >
-                <Edit className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
-                <span className="text-sm">تعديل</span>
-              </Button>
+                <Edit className="w-4 h-4" />
+                <span className="text-sm font-semibold">تعديل</span>
+              </button>
             ) : (
               <div className="flex gap-2">
-                <Button size="sm" onClick={handleSave}>
-                  <Save className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
-                  <span className="text-sm">حفظ</span>
-                </Button>
-                <Button size="sm" variant="outline" onClick={handleCancel}>
-                  <X className="w-3 h-3 sm:w-4 sm:h-4 ml-2" />
-                  <span className="text-sm">إلغاء</span>
-                </Button>
+                <button
+                  onClick={handleSave}
+                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl px-4 py-2.5 flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
+                >
+                  <Save className="w-4 h-4" />
+                  <span className="text-sm font-semibold">حفظ</span>
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 text-gray-700 rounded-xl px-4 py-2.5 flex items-center gap-2 transition-all duration-200 active:scale-95"
+                >
+                  <X className="w-4 h-4" />
+                  <span className="text-sm font-semibold">إلغاء</span>
+                </button>
               </div>
             )}
           </div>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6 lg:p-8">
-          <div className="flex flex-col lg:flex-row gap-6 sm:gap-8">
+        </div>
+        <div className="p-6 sm:p-8 lg:p-10">
+          <div className="flex flex-col lg:flex-row gap-8 sm:gap-10">
             {/* Profile Picture */}
-            <div className="flex flex-col items-center space-y-3 sm:space-y-4">
-              <Avatar className="w-24 h-24 sm:w-32 sm:h-32 border-4 border-white shadow-lg">
-                {auth.user.photoURL && (
-                  <Image
-                    src={auth.user.photoURL}
-                    alt="صورة المستخدم"
-                    width={128}
-                    height={128}
-                    className="rounded-full object-cover"
-                  />
-                )}
-                <AvatarFallback className="text-2xl sm:text-3xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
-                  {auth.user.displayName?.charAt(0) || "ع"}
-                </AvatarFallback>
-              </Avatar>
+            <div className="flex flex-col items-center space-y-4">
+              <div className="relative group">
+                <Avatar className="w-28 h-28 sm:w-36 sm:h-36 ring-4 ring-blue-100 shadow-2xl transition-transform group-hover:scale-105">
+                  {auth.user.photoURL && (
+                    <Image
+                      src={auth.user.photoURL}
+                      alt="صورة المستخدم"
+                      width={144}
+                      height={144}
+                      className="rounded-full object-cover"
+                    />
+                  )}
+                  <AvatarFallback className="text-3xl sm:text-4xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold">
+                    {auth.user.displayName?.charAt(0) || "ع"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg border-4 border-white">
+                  <span className="text-white font-bold">✓</span>
+                </div>
+              </div>
               <div className="text-center">
                 {!!auth.CustomClaims?.admin && (
-                  <Badge className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-xs sm:text-sm">
-                    <Shield className="w-3 h-3 ml-1" />
+                  <div className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-full text-xs sm:text-sm font-semibold shadow-lg flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
                     مدير المنصة
-                  </Badge>
+                  </div>
                 )}
               </div>
             </div>
@@ -263,46 +283,60 @@ export default function DashboardProfile() {
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Account Actions */}
-      <Card className="border-0 shadow-lg">
-        <CardHeader className="px-4 sm:px-6">
-          <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
-            <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
-            إعدادات الحساب
-          </CardTitle>
-          <CardDescription className="text-sm">
-            إجراءات متقدمة لإدارة حسابك
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4 px-4 sm:px-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <Button
-              variant="outline"
-              className="h-14 sm:h-16 flex flex-col gap-1.5 sm:gap-2 text-center justify-center"
-              onClick={() => {
-                alert("سيتم إضافة هذه الميزة قريباً");
-              }}
-            >
-              <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="text-sm sm:text-base">تغيير كلمة المرور</span>
-            </Button>
-
-            <Button
-              variant="outline"
-              className="h-14 sm:h-16 flex flex-col gap-1.5 sm:gap-2 text-center justify-center"
-              onClick={() => {
-                alert("سيتم إضافة هذه الميزة قريباً");
-              }}
-            >
-              <Shield className="w-4 h-4 sm:w-5 sm:h-5" />
-              <span className="text-sm sm:text-base">إعدادات الخصوصية</span>
-            </Button>
+      {/* Account Actions - Enhanced */}
+      <div className="bg-white rounded-3xl shadow-xl border-2 border-gray-100 overflow-hidden">
+        <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 px-6 py-6 sm:px-8 sm:py-8 border-b border-gray-100">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Settings className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
+              إعدادات الحساب
+            </h2>
           </div>
-        </CardContent>
-      </Card>
+          <p className="text-gray-600 text-sm sm:text-base">
+            إجراءات متقدمة لإدارة حسابك
+          </p>
+        </div>
+        <div className="p-6 sm:p-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <button
+              onClick={() => {
+                alert("سيتم إضافة هذه الميزة قريباً");
+              }}
+              className="group bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-100 hover:border-blue-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg active:scale-95 cursor-pointer"
+            >
+              <div className="flex flex-col items-center text-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <Settings className="w-6 h-6 text-white" />
+                </div>
+                <span className="font-semibold text-gray-800 text-sm sm:text-base">
+                  تغيير كلمة المرور
+                </span>
+              </div>
+            </button>
+
+            <button
+              onClick={() => {
+                alert("سيتم إضافة هذه الميزة قريباً");
+              }}
+              className="group bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-100 hover:border-purple-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg active:scale-95 cursor-pointer"
+            >
+              <div className="flex flex-col items-center text-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <Shield className="w-6 h-6 text-white" />
+                </div>
+                <span className="font-semibold text-gray-800 text-sm sm:text-base">
+                  إعدادات الخصوصية
+                </span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
