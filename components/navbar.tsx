@@ -91,16 +91,18 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Sidebar Menu - Show on mobile only */}
+      {/* Mobile Sidebar Menu - Show on mobile only (screens < 768px) */}
+      {/* Backdrop overlay - explicitly hidden on md and up */}
       <div
-        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/50 backdrop-blur-sm z-40 transition-opacity duration-300 max-md:block hidden ${
           mobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         }`}
         onClick={closeMobileMenu}
       />
 
+      {/* Sidebar panel - explicitly hidden on md and up */}
       <div
-        className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-gradient-to-br from-sky-900 to-sky-950 shadow-2xl z-50 md:hidden transform transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-80 max-w-[85vw] bg-gradient-to-br from-sky-900 to-sky-950 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out max-md:block hidden ${
           mobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >

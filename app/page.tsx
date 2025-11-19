@@ -37,11 +37,14 @@ export default async function Home() {
     <div className="min-h-screen bg-gray-50">
       {/* ================= HERO ================= */}
       <section className="relative overflow-hidden bg-gradient-to-b from-sky-900 via-sky-900 to-sky-950 text-white">
-        {/* Subtle background shapes */}
-        <div className="pointer-events-none absolute inset-0 opacity-20">
+        {/* Subtle background shapes - reduced opacity on tablets for better text clarity */}
+        <div className="pointer-events-none absolute inset-0 opacity-20 md:opacity-10">
           <div className="absolute -top-24 -left-16 h-64 w-64 rounded-full bg-emerald-400 blur-3xl" />
           <div className="absolute bottom-0 right-0 h-72 w-72 rounded-full bg-sky-500 blur-3xl" />
         </div>
+
+        {/* Dark overlay for better text contrast on tablets */}
+        <div className="pointer-events-none absolute inset-0 bg-sky-950/30 md:bg-sky-950/50"></div>
 
         <div className="relative z-10">
           <div className="container mx-auto px-4 md:px-6 py-8 md:py-12 lg:py-16">
@@ -54,15 +57,14 @@ export default async function Home() {
                 </div>
 
                 <div className="space-y-4">
-                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight text-white drop-shadow-lg">
+                  <h1 className="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-tight text-white drop-shadow-lg md:drop-shadow-2xl">
                     استثمر في{" "}
-                    <span className="text-transparent bg-clip-text bg-gradient-to-l from-emerald-300 to-cyan-200">
+                    <span className="text-transparent bg-clip-text bg-gradient-to-l from-emerald-300 to-cyan-200 md:from-emerald-200 md:to-cyan-100">
                       مهاراتك
                     </span>
                     <br className="hidden sm:block" />
-                    وتعلّم بذكاء ومرونة
                   </h1>
-                  <p className="text-base md:text-lg text-white max-w-xl mx-auto md:mx-0 leading-relaxed drop-shadow-md">
+                  <p className="text-base md:text-lg text-white/95 md:text-white max-w-xl mx-auto md:mx-0 leading-relaxed drop-shadow-md md:drop-shadow-xl">
                     دورات عالية الجودة من محاضرين متميزين، مع دعم محلي وطرق دفع
                     تناسب العراق. تعلّم في الوقت الذي يناسبك وبالسرعة التي
                     تفضلها.
@@ -93,18 +95,18 @@ export default async function Home() {
                 </div>
 
                 {/* Trust row */}
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 pt-4 text-sm text-white drop-shadow-md">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 pt-4 text-sm text-white drop-shadow-md md:drop-shadow-xl">
                   <div className="flex items-center gap-1.5">
-                    <CheckCircle className="h-4 w-4 text-emerald-300" />
-                    <span>شهادات إنهاء لكل دورة</span>
+                    <CheckCircle className="h-4 w-4 text-emerald-300 md:text-emerald-200" />
+                    <span className="font-medium">شهادات إنهاء لكل دورة</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <CheckCircle className="h-4 w-4 text-emerald-300" />
-                    <span>دعم محلي باللغة العربية</span>
+                    <CheckCircle className="h-4 w-4 text-emerald-300 md:text-emerald-200" />
+                    <span className="font-medium">دعم محلي باللغة العربية</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <CheckCircle className="h-4 w-4 text-emerald-300" />
-                    <span>محتوى يتم تحديثه باستمرار</span>
+                    <CheckCircle className="h-4 w-4 text-emerald-300 md:text-emerald-200" />
+                    <span className="font-medium">محتوى يتم تحديثه باستمرار</span>
                   </div>
                 </div>
               </div>
