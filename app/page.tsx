@@ -73,7 +73,7 @@ export default async function Home() {
 
                 {/* CTAs */}
                 <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start pt-2">
-                  <Link href="/courses">
+                  <a href="#courses">
                     <Button
                       size="lg"
                       className="w-full sm:w-auto rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-base px-8 h-12 shadow-lg hover:shadow-xl transition-all flex items-center gap-2 justify-center"
@@ -81,9 +81,9 @@ export default async function Home() {
                       استكشف الدورات
                       <ArrowLeft className="h-5 w-5" />
                     </Button>
-                  </Link>
+                  </a>
 
-                  <Link href="/create-course">
+                  <Link href="/course-upload">
                     <Button
                       size="lg"
                       variant="outline"
@@ -106,7 +106,9 @@ export default async function Home() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <CheckCircle className="h-4 w-4 text-emerald-300 md:text-emerald-200" />
-                    <span className="font-medium">محتوى يتم تحديثه باستمرار</span>
+                    <span className="font-medium">
+                      محتوى يتم تحديثه باستمرار
+                    </span>
                   </div>
                 </div>
               </div>
@@ -235,7 +237,7 @@ export default async function Home() {
       </section>
 
       {/* ================= COURSES ================= */}
-      <section className="bg-white py-12 md:py-16">
+      <section id="courses" className="bg-white py-12 md:py-16">
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-10 md:mb-12">
             <div className="inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-1.5 text-sm font-medium text-emerald-900 mb-3">
@@ -254,12 +256,12 @@ export default async function Home() {
           <HomeCoursesSection initialCourses={courses} />
 
           <div className="mt-10 text-center">
-            <Link href="/courses">
+            <Link href="/user_dashboard">
               <Button
                 size="lg"
                 className="rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold px-8 h-12 text-base shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-2"
               >
-                عرض جميع الدورات
+                عرض دوراتي
                 <ArrowLeft className="h-5 w-5" />
               </Button>
             </Link>
@@ -282,22 +284,13 @@ export default async function Home() {
               والعالم العربي، مع دعم كامل وواجهة عربية بسيطة.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-              <Link href="/wallet">
+              <Link href="/wallet/topup">
                 <Button
                   size="lg"
                   className="w-full sm:w-auto rounded-xl bg-white text-sky-900 hover:bg-gray-100 font-bold text-base px-8 h-12 shadow-xl transition-all flex items-center gap-2 justify-center"
                 >
-                  شحن المحفظة
+                  إنشاء حساب
                   <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/courses">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="w-full sm:w-auto rounded-xl border-2 border-white/80 bg-transparent text-white hover:bg-white hover:text-sky-900 font-semibold text-base px-8 h-12 transition-all"
-                >
-                  تصفح الدورات
                 </Button>
               </Link>
             </div>
