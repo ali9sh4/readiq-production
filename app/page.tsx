@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { getCourses } from "@/data/courses";
 import HomeCoursesSection from "@/components/HomeCoursesSection";
+import NavigationButton from "@/components/NavigationButton";
 
 export default async function Home() {
   const data = await getCourses({
@@ -83,15 +84,14 @@ export default async function Home() {
                     </Button>
                   </a>
 
-                  <Link href="/course-upload">
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="w-full sm:w-auto rounded-xl border-2 border-white/80 bg-transparent text-white hover:bg-white hover:text-sky-900 font-semibold text-base px-8 h-12 transition-all"
-                    >
-                      إنشاء دورة جديدة
-                    </Button>
-                  </Link>
+                  <NavigationButton
+                    href="/course-upload"
+                    size="lg"
+                    variant="outline"
+                    className="w-full sm:w-auto rounded-xl border-2 border-white/80 bg-transparent text-white hover:bg-white hover:text-sky-900 font-semibold text-base px-8 h-12 transition-all"
+                  >
+                    إنشاء دورة جديدة
+                  </NavigationButton>
                 </div>
 
                 {/* Trust row */}
@@ -256,15 +256,14 @@ export default async function Home() {
           <HomeCoursesSection initialCourses={courses} />
 
           <div className="mt-10 text-center">
-            <Link href="/user_dashboard">
-              <Button
-                size="lg"
-                className="rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold px-8 h-12 text-base shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-2"
-              >
-                عرض دوراتي
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-            </Link>
+            <NavigationButton
+              href="/user_dashboard"
+              size="lg"
+              className="rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold px-8 h-12 text-base shadow-lg hover:shadow-xl transition-all inline-flex items-center gap-2"
+              icon={<ArrowLeft className="h-5 w-5" />}
+            >
+              عرض دوراتي
+            </NavigationButton>
           </div>
         </div>
       </section>
@@ -284,15 +283,14 @@ export default async function Home() {
               والعالم العربي، مع دعم كامل وواجهة عربية بسيطة.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-              <Link href="/register">
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto rounded-xl bg-white text-sky-900 hover:bg-gray-100 font-bold text-base px-8 h-12 shadow-xl transition-all flex items-center gap-2 justify-center"
-                >
-                  إنشاء حساب
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              </Link>
+              <NavigationButton
+                href="/register"
+                size="lg"
+                className="w-full sm:w-auto rounded-xl bg-white text-sky-900 hover:bg-gray-100 font-bold text-base px-8 h-12 shadow-xl transition-all flex items-center gap-2 justify-center"
+                icon={<ArrowLeft className="h-5 w-5" />}
+              >
+                إنشاء حساب
+              </NavigationButton>
             </div>
           </div>
         </div>
