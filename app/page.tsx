@@ -317,7 +317,7 @@ export default async function Home() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900">
                       <Phone className="h-4 w-4" />
                     </div>
-                    <span>0770 270 6976</span>
+                    <span dir="ltr">0770 270 6976</span>
                   </a>
                 </li>
                 <li>
@@ -328,7 +328,7 @@ export default async function Home() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900">
                       <Phone className="h-4 w-4" />
                     </div>
-                    <span>0788 655 2919</span>
+                    <span dir="ltr">0788 655 2919</span>
                   </a>
                 </li>
               </ul>

@@ -104,43 +104,46 @@ export default function DashboardCertificates() {
   return (
     <div className="space-y-8">
       {/* Page Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">شهاداتي</h1>
-          <p className="text-gray-600 mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            شهاداتي
+          </h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">
             جميع الشهادات التي حصلت عليها من الدورات المكتملة
           </p>
         </div>
         <div className="flex items-center gap-2 text-amber-600">
-          <Trophy className="w-6 h-6" />
-          <span className="text-lg font-semibold">
+          <Trophy className="w-5 h-5 sm:w-6 sm:h-6" />
+          <span className="text-base sm:text-lg font-semibold">
             {certificates.length} شهادة
           </span>
         </div>
       </div>
-
       {/* Achievement Banner */}
       <Card className="border-0 shadow-lg bg-gradient-to-l from-amber-50 via-yellow-50 to-orange-50">
-        <CardContent className="p-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center">
-                <Award className="w-8 h-8 text-white" />
+        <CardContent className="p-4 sm:p-6 lg:p-8">
+          <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
+            <div className="flex flex-col sm:flex-row items-center gap-4 text-center sm:text-right">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center">
+                <Award className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
                   إنجازاتك التعليمية
                 </h2>
-                <p className="text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600">
                   كل شهادة تمثل خطوة نحو تحقيق أهدافك المهنية
                 </p>
               </div>
             </div>
-            <div className="text-right">
-              <p className="text-3xl font-bold text-amber-600">
+            <div className="text-center sm:text-right">
+              <p className="text-2xl sm:text-3xl font-bold text-amber-600">
                 {certificates.length}
               </p>
-              <p className="text-amber-700 font-medium">شهادة مكتملة</p>
+              <p className="text-sm sm:text-base text-amber-700 font-medium">
+                شهادة مكتملة
+              </p>
             </div>
           </div>
         </CardContent>
@@ -223,7 +226,7 @@ export default function DashboardCertificates() {
         // Empty State
         <Card className="border-0 shadow-lg">
           <CardContent className="p-12 text-center">
-            <div className="max-w-md mx-auto">
+            <div className="max-w-md mx-auto px-4">
               <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Gift className="w-12 h-12 text-gray-400" />
               </div>
@@ -254,7 +257,7 @@ export default function DashboardCertificates() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="flex items-start gap-3 p-4 bg-white rounded-lg">
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                 <Share2 className="w-5 h-5 text-blue-600" />

@@ -41,7 +41,7 @@ export default function DashboardHome() {
         setError(null);
         const token = await auth.user.getIdToken();
         const [enrolledData, favoritesResult] = await Promise.all([
-          getUserEnrolledCoursesWithStats(token, 20), // ✅ Limit to 6 for speed
+          getUserEnrolledCoursesWithStats(token, 20),
           getUserFavorites(token, 6),
         ]);
 
@@ -74,14 +74,14 @@ export default function DashboardHome() {
 
   if (!auth.isClient || loading) {
     return (
-      <div className="space-y-8">
-        <div className="h-8 bg-gray-200 rounded-lg animate-pulse w-1/3"></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="space-y-6 sm:space-y-8">
+        <div className="h-6 sm:h-8 bg-gray-200 rounded-lg animate-pulse w-1/2 sm:w-1/3"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {[...Array(4)].map((_, i) => (
             <Card key={i} className="animate-pulse shadow-sm rounded-xl">
-              <CardContent className="p-6">
-                <div className="h-4 bg-gray-200 rounded mb-3"></div>
-                <div className="h-8 bg-gray-200 rounded"></div>
+              <CardContent className="p-4 sm:p-6">
+                <div className="h-3 sm:h-4 bg-gray-200 rounded mb-2 sm:mb-3"></div>
+                <div className="h-6 sm:h-8 bg-gray-200 rounded"></div>
               </CardContent>
             </Card>
           ))}
@@ -92,16 +92,18 @@ export default function DashboardHome() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Card className="p-8 text-center shadow-lg border border-red-100 rounded-2xl max-w-md">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-red-700 mb-2">
+      <div className="flex items-center justify-center min-h-[60vh] px-4">
+        <Card className="p-6 sm:p-8 text-center shadow-lg border border-red-100 rounded-2xl max-w-md w-full">
+          <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-red-500 mx-auto mb-3 sm:mb-4" />
+          <h3 className="text-lg sm:text-xl font-semibold text-red-700 mb-2">
             خطأ في التحميل
           </h3>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
+            {error}
+          </p>
           <Button
             onClick={() => window.location.reload()}
-            className="bg-red-600 hover:bg-red-700 text-white"
+            className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
           >
             إعادة المحاولة
           </Button>
@@ -111,28 +113,28 @@ export default function DashboardHome() {
   }
 
   return (
-    <div className="space-y-16">
-      {/* Welcome Header */}
-      <div className="bg-gradient-to-l from-blue-700 via-blue-600 to-indigo-700 rounded-3xl p-10 text-white shadow-xl relative overflow-hidden">
+    <div className="space-y-8 sm:space-y-12 lg:space-y-16">
+      {/* Welcome Header - Responsive */}
+      <div className="bg-gradient-to-l from-blue-700 via-blue-600 to-indigo-700 rounded-2xl sm:rounded-3xl p-6 sm:p-8 lg:p-10 text-white shadow-xl relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('/patterns/waves.svg')] opacity-10"></div>
         <div className="relative z-10">
-          <h1 className="text-4xl font-bold mb-3 drop-shadow">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3 drop-shadow">
             مرحباً، {auth.user?.displayName || "عزيزي المتعلم"} 👋
           </h1>
-          <p className="text-blue-100 text-lg">
+          <p className="text-blue-100 text-sm sm:text-base lg:text-lg">
             استمر في رحلة التعلم وحقق أهدافك التعليمية اليوم
           </p>
         </div>
       </div>
 
-      {/* Enrolled Courses */}
-      <section className="py-16 bg-gray-50 rounded-3xl">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-3">
+      {/* Enrolled Courses - Responsive */}
+      <section className="py-8 sm:py-12 lg:py-16 bg-gray-50 rounded-2xl sm:rounded-3xl">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8 sm:mb-10 lg:mb-12">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
               📘 دوراتي المسجلة
             </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto text-lg">
+            <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base lg:text-lg px-4">
               تابع الدورات التي التحقت بها مؤخرًا واستمر بالتعلم
             </p>
           </div>
@@ -148,12 +150,12 @@ export default function DashboardHome() {
         </div>
       </section>
 
-      {/* Favorites */}
+      {/* Favorites - Responsive */}
       {favorites.length > 0 && (
-        <section className="py-16 bg-white">
-          <div className="container mx-auto px-6">
-            <div className="flex items-center justify-between mb-10">
-              <h2 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+        <section className="py-8 sm:py-12 lg:py-16 bg-white">
+          <div className="container mx-auto px-4 sm:px-6">
+            <div className="flex items-center justify-between mb-6 sm:mb-8 lg:mb-10">
+              <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 flex items-center gap-2">
                 ❤️ المفضلة
               </h2>
             </div>
@@ -169,25 +171,25 @@ export default function DashboardHome() {
         </section>
       )}
 
-      {/* Quick Actions */}
-      <Card className="border-0 shadow-xl bg-gradient-to-br from-gray-50 to-white rounded-3xl hover:shadow-2xl transition-all duration-300">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-semibold text-gray-800">
+      {/* Quick Actions - Responsive */}
+      <Card className="border-0 shadow-xl bg-gradient-to-br from-gray-50 to-white rounded-2xl sm:rounded-3xl hover:shadow-2xl transition-all duration-300">
+        <CardHeader className="text-center px-4 sm:px-6">
+          <CardTitle className="text-xl sm:text-2xl font-semibold text-gray-800">
             ⚡ الإجراءات السريعة
           </CardTitle>
-          <CardDescription className="text-gray-500 mt-1">
+          <CardDescription className="text-gray-500 mt-1 text-sm sm:text-base">
             اختصارات لأهم الوظائف التي تحتاجها بسرعة
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <CardContent className="px-4 sm:px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
             <Link href="/">
               <Button
                 variant="outline"
-                className="w-full h-20 flex flex-col justify-center items-center gap-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 rounded-xl"
+                className="w-full h-16 sm:h-20 flex flex-col justify-center items-center gap-2 border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all duration-300 rounded-lg sm:rounded-xl"
               >
-                <BookOpen className="w-6 h-6 text-blue-600" />
-                <span className="font-medium text-gray-800">
+                <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                <span className="font-medium text-gray-800 text-sm sm:text-base">
                   استكشف الدورات
                 </span>
               </Button>
@@ -195,10 +197,10 @@ export default function DashboardHome() {
             <Link href="/course-upload">
               <Button
                 variant="outline"
-                className="w-full h-20 flex flex-col justify-center items-center gap-2 border-gray-200 hover:border-green-500 hover:bg-green-50 transition-all duration-300 rounded-xl"
+                className="w-full h-16 sm:h-20 flex flex-col justify-center items-center gap-2 border-gray-200 hover:border-green-500 hover:bg-green-50 transition-all duration-300 rounded-lg sm:rounded-xl"
               >
-                <Plus className="w-6 h-6 text-green-600" />
-                <span className="font-medium text-gray-800">
+                <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+                <span className="font-medium text-gray-800 text-sm sm:text-base">
                   إنشاء دورة جديدة
                 </span>
               </Button>
@@ -206,10 +208,12 @@ export default function DashboardHome() {
             <Link href="/user_dashboard/certificates">
               <Button
                 variant="outline"
-                className="w-full h-20 flex flex-col justify-center items-center gap-2 border-gray-200 hover:border-yellow-500 hover:bg-yellow-50 transition-all duration-300 rounded-xl"
+                className="w-full h-16 sm:h-20 flex flex-col justify-center items-center gap-2 border-gray-200 hover:border-yellow-500 hover:bg-yellow-50 transition-all duration-300 rounded-lg sm:rounded-xl sm:col-span-2 lg:col-span-1"
               >
-                <Award className="w-6 h-6 text-yellow-600" />
-                <span className="font-medium text-gray-800">عرض الشهادات</span>
+                <Award className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
+                <span className="font-medium text-gray-800 text-sm sm:text-base">
+                  عرض الشهادات
+                </span>
               </Button>
             </Link>
           </div>
