@@ -93,12 +93,8 @@ export default function DashboardProfile() {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Page Header - Enhanced */}
-      <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-3xl p-6 sm:p-8 text-white shadow-2xl overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.2),_transparent)]"></div>
-        <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-purple-400/20 rounded-full blur-2xl"></div>
-
-        <div className="relative z-10 flex items-center gap-4">
+      <div className="relative bg-blue-600 rounded-3xl p-6 sm:p-8 text-white shadow-2xl overflow-hidden">
+        <div className="flex items-center gap-4">
           <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-lg">
             <User className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
           </div>
@@ -115,7 +111,7 @@ export default function DashboardProfile() {
 
       {/* Profile Information Card */}
       <div className="bg-white rounded-3xl shadow-xl border-2 border-gray-100 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 px-6 py-6 sm:px-8 sm:py-8 border-b border-gray-100">
+        <div className="bg-blue-50 px-6 py-6 sm:px-8 sm:py-8 border-b border-gray-100">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
@@ -128,7 +124,7 @@ export default function DashboardProfile() {
             {!isEditing ? (
               <button
                 onClick={() => setIsEditing(true)}
-                className="self-start sm:self-auto bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl px-4 py-2.5 flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
+                className="self-start sm:self-auto bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-2.5 flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
               >
                 <Edit className="w-4 h-4" />
                 <span className="text-sm font-semibold">تعديل</span>
@@ -137,7 +133,7 @@ export default function DashboardProfile() {
               <div className="flex gap-2">
                 <button
                   onClick={handleSave}
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl px-4 py-2.5 flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
+                  className="bg-green-600 hover:bg-green-700 text-white rounded-xl px-4 py-2.5 flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
                 >
                   <Save className="w-4 h-4" />
                   <span className="text-sm font-semibold">حفظ</span>
@@ -168,17 +164,17 @@ export default function DashboardProfile() {
                       className="rounded-full object-cover"
                     />
                   )}
-                  <AvatarFallback className="text-3xl sm:text-4xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-bold">
+                  <AvatarFallback className="text-3xl sm:text-4xl bg-blue-600 text-white font-bold">
                     {auth.user.displayName?.charAt(0) || "ع"}
                   </AvatarFallback>
                 </Avatar>
-                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center shadow-lg border-4 border-white">
+                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-green-600 rounded-full flex items-center justify-center shadow-lg border-4 border-white">
                   <span className="text-white font-bold">✓</span>
                 </div>
               </div>
               <div className="text-center">
                 {!!auth.CustomClaims?.admin && (
-                  <div className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-full text-xs sm:text-sm font-semibold shadow-lg flex items-center gap-2">
+                  <div className="bg-purple-600 text-white px-4 py-2 rounded-full text-xs sm:text-sm font-semibold shadow-lg flex items-center gap-2">
                     <Shield className="w-4 h-4" />
                     مدير المنصة
                   </div>
@@ -288,9 +284,9 @@ export default function DashboardProfile() {
 
       {/* Account Actions - Enhanced */}
       <div className="bg-white rounded-3xl shadow-xl border-2 border-gray-100 overflow-hidden">
-        <div className="bg-gradient-to-r from-green-50 via-emerald-50 to-teal-50 px-6 py-6 sm:px-8 sm:py-8 border-b border-gray-100">
+        <div className="bg-green-50 px-6 py-6 sm:px-8 sm:py-8 border-b border-gray-100">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center shadow-lg">
               <Settings className="w-5 h-5 text-white" />
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
@@ -307,10 +303,10 @@ export default function DashboardProfile() {
               onClick={() => {
                 alert("سيتم إضافة هذه الميزة قريباً");
               }}
-              className="group bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-100 hover:border-blue-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg active:scale-95 cursor-pointer"
+              className="group bg-blue-50 border-2 border-blue-100 hover:border-blue-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg active:scale-95 cursor-pointer"
             >
               <div className="flex flex-col items-center text-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                   <Settings className="w-6 h-6 text-white" />
                 </div>
                 <span className="font-semibold text-gray-800 text-sm sm:text-base">
@@ -323,10 +319,10 @@ export default function DashboardProfile() {
               onClick={() => {
                 alert("سيتم إضافة هذه الميزة قريباً");
               }}
-              className="group bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-100 hover:border-purple-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg active:scale-95 cursor-pointer"
+              className="group bg-purple-50 border-2 border-purple-100 hover:border-purple-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg active:scale-95 cursor-pointer"
             >
               <div className="flex flex-col items-center text-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
                   <Shield className="w-6 h-6 text-white" />
                 </div>
                 <span className="font-semibold text-gray-800 text-sm sm:text-base">

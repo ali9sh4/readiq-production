@@ -95,7 +95,9 @@ export default function DashboardCertificates() {
           <h3 className="text-base sm:text-lg font-semibold text-red-700 mb-2">
             غير مسجل الدخول
           </h3>
-          <p className="text-sm sm:text-base text-gray-600">يرجى تسجيل الدخول لعرض الشهادات</p>
+          <p className="text-sm sm:text-base text-gray-600">
+            يرجى تسجيل الدخول لعرض الشهادات
+          </p>
         </Card>
       </div>
     );
@@ -104,30 +106,24 @@ export default function DashboardCertificates() {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Page Header - Enhanced */}
-      <div className="relative bg-gradient-to-br from-amber-500 via-yellow-500 to-orange-600 rounded-3xl p-6 sm:p-8 text-white shadow-2xl overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.2),_transparent)]"></div>
-        <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-10 -left-10 w-60 h-60 bg-orange-400/20 rounded-full blur-2xl"></div>
-
-        <div className="relative z-10">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-lg">
-                <Trophy className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold drop-shadow-lg">
-                  شهاداتي
-                </h1>
-                <p className="text-amber-50 mt-1 text-sm sm:text-base">
-                  جميع الشهادات التي حصلت عليها من الدورات المكتملة
-                </p>
-              </div>
+      <div className="relative bg-amber-600 rounded-3xl p-6 sm:p-8 text-white shadow-2xl overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-lg">
+              <Trophy className="w-7 h-7 sm:w-8 sm:h-8 text-white" />
             </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-5 py-3 border border-white/30 shadow-lg">
-              <p className="text-xs text-amber-50 mb-1">إجمالي الشهادات</p>
-              <p className="text-3xl font-bold">{certificates.length}</p>
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold drop-shadow-lg">
+                شهاداتي
+              </h1>
+              <p className="text-amber-50 mt-1 text-sm sm:text-base">
+                جميع الشهادات التي حصلت عليها من الدورات المكتملة
+              </p>
             </div>
+          </div>
+          <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-5 py-3 border border-white/30 shadow-lg">
+            <p className="text-xs text-amber-50 mb-1">إجمالي الشهادات</p>
+            <p className="text-3xl font-bold">{certificates.length}</p>
           </div>
         </div>
       </div>
@@ -141,26 +137,21 @@ export default function DashboardCertificates() {
               className="group bg-white rounded-2xl border-2 border-gray-100 shadow-lg hover:shadow-2xl hover:border-blue-200 transition-all duration-300 overflow-hidden hover:scale-[1.02] active:scale-95"
             >
               {/* Certificate Header */}
-              <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 p-5 sm:p-6">
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.2),_transparent)]"></div>
-                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500"></div>
-
-                <div className="relative z-10">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30 shadow-lg">
-                      <Award className="w-6 h-6 text-amber-300" />
-                    </div>
-                    <Badge className="bg-white/20 backdrop-blur-sm text-white border border-white/30 text-xs shadow-sm">
-                      شهادة إتمام
-                    </Badge>
+              <div className="relative overflow-hidden bg-blue-600 p-5 sm:p-6">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-white/30 shadow-lg">
+                    <Award className="w-6 h-6 text-amber-300" />
                   </div>
-                  <h3 className="text-base sm:text-lg font-bold text-white line-clamp-2 mb-1">
-                    {certificate.courseTitle}
-                  </h3>
-                  <p className="text-blue-100 text-xs sm:text-sm">
-                    {certificate.instructor}
-                  </p>
+                  <Badge className="bg-white/20 backdrop-blur-sm text-white border border-white/30 text-xs shadow-sm">
+                    شهادة إتمام
+                  </Badge>
                 </div>
+                <h3 className="text-base sm:text-lg font-bold text-white line-clamp-2 mb-1">
+                  {certificate.courseTitle}
+                </h3>
+                <p className="text-blue-100 text-xs sm:text-sm">
+                  {certificate.instructor}
+                </p>
               </div>
 
               {/* Certificate Body */}
@@ -185,14 +176,16 @@ export default function DashboardCertificates() {
                 )}
 
                 <div className="text-[10px] sm:text-xs text-gray-500 bg-blue-50 p-2.5 rounded-lg break-all border border-blue-100">
-                  <span className="font-mono">ID: {certificate.credentialId}</span>
+                  <span className="font-mono">
+                    ID: {certificate.credentialId}
+                  </span>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex gap-2 pt-2">
                   <button
                     onClick={() => handleDownload(certificate)}
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl px-4 py-2.5 flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-2.5 flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
                   >
                     <Download className="w-4 h-4" />
                     <span className="text-sm font-semibold">تحميل</span>
@@ -215,10 +208,10 @@ export default function DashboardCertificates() {
           <div className="p-8 sm:p-12 lg:p-16 text-center">
             <div className="max-w-md mx-auto">
               <div className="relative inline-block mb-6">
-                <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-br from-amber-100 to-orange-100 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 bg-amber-100 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
                   <Gift className="w-12 h-12 sm:w-14 sm:h-14 text-amber-500" />
                 </div>
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center shadow-lg">
+                <div className="absolute -top-2 -right-2 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shadow-lg">
                   <span className="text-sm">✨</span>
                 </div>
               </div>
@@ -231,7 +224,7 @@ export default function DashboardCertificates() {
                 مع أصحاب العمل.
               </p>
               <a href="/user_dashboard">
-                <button className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-2xl px-8 py-4 font-semibold transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95">
+                <button className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl px-8 py-4 font-semibold transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95">
                   العودة للوحة التحكم
                 </button>
               </a>
@@ -242,9 +235,9 @@ export default function DashboardCertificates() {
 
       {/* Coming Soon Features - Enhanced */}
       <div className="bg-white rounded-3xl shadow-xl border-2 border-blue-100 overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 px-6 py-6 sm:px-8 sm:py-8 border-b border-blue-100">
+        <div className="bg-blue-50 px-6 py-6 sm:px-8 sm:py-8 border-b border-blue-100">
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg">
               <span className="text-lg">🚀</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
@@ -257,9 +250,9 @@ export default function DashboardCertificates() {
         </div>
         <div className="p-6 sm:p-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="group bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-100 hover:border-blue-300 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg cursor-pointer">
+            <div className="group bg-blue-50 border-2 border-blue-100 hover:border-blue-300 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg cursor-pointer">
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform">
                   <Share2 className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -273,9 +266,9 @@ export default function DashboardCertificates() {
               </div>
             </div>
 
-            <div className="group bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-100 hover:border-green-300 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg cursor-pointer">
+            <div className="group bg-green-50 border-2 border-green-100 hover:border-green-300 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg cursor-pointer">
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 bg-green-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform">
                   <Award className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -289,9 +282,9 @@ export default function DashboardCertificates() {
               </div>
             </div>
 
-            <div className="group bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-100 hover:border-purple-300 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg cursor-pointer">
+            <div className="group bg-purple-50 border-2 border-purple-100 hover:border-purple-300 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg cursor-pointer">
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform">
                   <Trophy className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -305,9 +298,9 @@ export default function DashboardCertificates() {
               </div>
             </div>
 
-            <div className="group bg-gradient-to-br from-orange-50 to-amber-50 border-2 border-orange-100 hover:border-orange-300 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg cursor-pointer">
+            <div className="group bg-orange-50 border-2 border-orange-100 hover:border-orange-300 rounded-2xl p-4 transition-all duration-300 hover:shadow-lg cursor-pointer">
               <div className="flex items-start gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform">
+                <div className="w-12 h-12 bg-orange-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:scale-110 transition-transform">
                   <Download className="w-5 h-5 text-white" />
                 </div>
                 <div>
@@ -326,6 +319,3 @@ export default function DashboardCertificates() {
     </div>
   );
 }
-////<DropdownMenuItem asChild>
-//<Link href="/dashboard">لوحة التحكم</Link>
-///</DropdownMenuItem>

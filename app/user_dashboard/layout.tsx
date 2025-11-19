@@ -74,14 +74,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div
-      className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30 flex"
-      dir="rtl"
-    >
+    <div className="min-h-screen bg-gray-50 flex" dir="rtl">
       {/* Mobile Menu Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
+          className="fixed inset-0 bg-black/60 z-40 sm:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -89,9 +86,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Sidebar */}
       <div
         className={`
-        fixed inset-y-0 right-0 z-50 w-[280px] sm:w-80 lg:w-72 xl:w-80 bg-white shadow-2xl transform transition-all duration-300 ease-out lg:translate-x-0 lg:static lg:inset-0 border-l border-gray-100
-        ${sidebarOpen ? "translate-x-0" : "translate-x-full"}
-      `}
+    fixed inset-y-0 right-0 z-50 w-[280px] bg-white shadow-2xl 
+    transform transition-all duration-300 ease-out 
+    sm:translate-x-0 sm:static border-l border-gray-100
+    ${sidebarOpen ? "translate-x-0" : "translate-x-full"}
+  `}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -110,9 +109,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
 
           {/* User Info */}
-          <div className="p-4 sm:p-6 border-b bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-blue-100/50 via-transparent to-transparent"></div>
-            <div className="relative flex items-center space-x-3 space-x-reverse">
+          <div className="p-4 sm:p-6 border-b bg-blue-50">
+            <div className="flex items-center space-x-3 space-x-reverse">
               <Avatar className="h-12 w-12 sm:h-14 sm:w-14 ring-2 ring-white shadow-lg">
                 {auth.user.photoURL && (
                   <Image
@@ -123,7 +121,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     className="rounded-full object-cover"
                   />
                 )}
-                <AvatarFallback className="text-lg sm:text-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-semibold">
+                <AvatarFallback className="text-lg sm:text-xl bg-blue-600 text-white font-semibold">
                   {auth.user.displayName?.charAt(0) || "ع"}
                 </AvatarFallback>
               </Avatar>
@@ -135,7 +133,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   {auth.user.email}
                 </p>
                 {!!auth?.CustomClaims?.admin && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-500 to-indigo-600 text-white mt-1.5 shadow-sm">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white mt-1.5 shadow-sm">
                     👑 مدير
                   </span>
                 )}
@@ -150,15 +148,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               const isActive = pathname === item.href;
 
               return (
-                <Link key={item.href} href={item.href} onClick={() => setSidebarOpen(false)}
-                 >
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setSidebarOpen(false)}
+                >
                   <div
                     className={`
                     group flex items-center space-x-3 space-x-reverse px-4 py-3.5 rounded-2xl transition-all duration-200 cursor-pointer
                     ${
                       isActive
-                        ? "bg-gradient-to-l from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/30 scale-[1.02]"
-                        : "text-gray-700 hover:bg-gradient-to-l hover:from-gray-50 hover:to-blue-50 hover:text-blue-600 hover:shadow-md active:scale-95"
+                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-[1.02]"
+                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-600 hover:shadow-md active:scale-95"
                     }
                   `}
                   >
