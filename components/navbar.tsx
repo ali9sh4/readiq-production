@@ -31,11 +31,11 @@ export default function Navbar() {
           </Link>
 
           {/* Desktop Navigation - Show on tablets and up */}
-          <ul className="hidden md:flex items-center gap-3">
+          <ul className="hidden md:flex items-center gap-2 lg:gap-3">
             <li>
               <Link
                 href="/wallet/topup"
-                className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold border border-white/20 hover:border-white/30 hover:scale-105"
+                className="flex items-center gap-1.5 lg:gap-2 px-3 py-2 lg:px-5 lg:py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg lg:rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold border border-white/20 hover:border-white/30 hover:scale-105 text-sm lg:text-base"
               >
                 <WalletBalance />
               </Link>
@@ -44,7 +44,7 @@ export default function Navbar() {
             <li>
               <Link
                 href="/user_dashboard"
-                className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold border border-white/20 hover:border-white/30 hover:scale-105"
+                className="flex items-center gap-1.5 lg:gap-2 px-3 py-2 lg:px-5 lg:py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg lg:rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold border border-white/20 hover:border-white/30 hover:scale-105 text-sm lg:text-base"
               >
                 <BookOpen className="h-4 w-4" />
                 <span>دوراتي</span>
@@ -54,7 +54,7 @@ export default function Navbar() {
             <li>
               <Link
                 href="/course-upload"
-                className="flex items-center gap-2 px-5 py-2.5 bg-white text-sky-900 hover:bg-gray-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold hover:scale-105"
+                className="flex items-center gap-1.5 lg:gap-2 px-3 py-2 lg:px-5 lg:py-2.5 bg-white text-sky-900 hover:bg-gray-100 rounded-lg lg:rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold hover:scale-105 text-sm lg:text-base"
               >
                 <PlusCircle className="h-4 w-4" />
                 <span>إنشاء دورة</span>
@@ -64,7 +64,7 @@ export default function Navbar() {
             <li>
               <Link
                 href="/user_dashboard/profile"
-                className="flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold border border-white/20 hover:border-white/30 hover:scale-105"
+                className="flex items-center gap-1.5 lg:gap-2 px-3 py-2 lg:px-5 lg:py-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg lg:rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-semibold border border-white/20 hover:border-white/30 hover:scale-105 text-sm lg:text-base"
               >
                 <User className="h-4 w-4" />
                 <span>ملفي الشخصي</span>
