@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Course } from "@/types/types";
 
 import CoursesCardList from "./CoursesCardList.tsx  ";

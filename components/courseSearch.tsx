@@ -67,8 +67,7 @@ export default function CourseSearch({
   // ✅ Update parent with filtered results
   useEffect(() => {
     onFilteredResults(filteredCourses);
-  }, [filteredCourses, onFilteredResults]);
-
+  }, [filteredCourses]);
 
   return (
     <div className="space-y-4 mb-8">
