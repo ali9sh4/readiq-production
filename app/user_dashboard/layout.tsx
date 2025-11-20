@@ -9,7 +9,6 @@ import {
   User,
   Award,
   Menu,
-  X,
   BookOpen,
   Settings,
   LogOut,
@@ -17,6 +16,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import Image from "next/image";
 
 interface DashboardLayoutProps {
@@ -24,26 +30,102 @@ interface DashboardLayoutProps {
 }
 
 const navItems = [
-  {
-    href: "/user_dashboard",
-    label: "الرئيسية",
-    icon: Home,
-  },
-  {
-    href: "/user_dashboard/profile",
-    label: "الملف الشخصي",
-    icon: User,
-  },
-  {
-    href: "/user_dashboard/certificates",
-    label: "الشهادات",
-    icon: Award,
-  },
+  { href: "/user_dashboard", label: "الرئيسية", icon: Home },
+  { href: "/user_dashboard/profile", label: "الملف الشخصي", icon: User },
+  { href: "/user_dashboard/certificates", label: "الشهادات", icon: Award },
 ];
 
-export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+// Sidebar Content Component (reused for mobile and desktop)
+function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
+  const auth = useAuth();
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* User Info */}
+      <div className="p-6 border-b bg-blue-50">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-14 w-14 ring-2 ring-white shadow-lg">
+            {auth.user?.photoURL ? (
+              <Image
+                src={auth.user.photoURL}
+                alt="User"
+                width={56}
+                height={56}
+                className="rounded-full object-cover"
+              />
+            ) : (
+              <AvatarFallback className="text-xl bg-blue-600 text-white font-semibold">
+                {auth.user?.displayName?.charAt(0) || "ع"}
+              </AvatarFallback>
+            )}
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="text-base font-bold text-gray-900 truncate">
+              {auth.user?.displayName || "مستخدم"}
+            </p>
+            <p className="text-xs text-gray-600 truncate">{auth.user?.email}</p>
+            {!!auth?.CustomClaims?.admin && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white mt-1.5">
+                👑 مدير
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href;
+
+          return (
+            <Link key={item.href} href={item.href} onClick={onNavigate}>
+              <div
+                className={`
+                  flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 cursor-pointer
+                  ${
+                    isActive
+                      ? "bg-blue-600 text-white shadow-lg"
+                      : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                  }
+                `}
+              >
+                <Icon className="h-5 w-5" />
+                <span className="font-semibold text-sm">{item.label}</span>
+              </div>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div className="p-4 border-t space-y-2">
+        <Link href="/" onClick={onNavigate}>
+          <Button variant="ghost" className="w-full justify-start">
+            <Settings className="h-4 w-4 ml-2" />
+            العودة للموقع
+          </Button>
+        </Link>
+        <Button
+          variant="ghost"
+          className="w-full justify-start text-red-600"
+          onClick={() => {
+            onNavigate?.();
+            auth.logOut();
+          }}
+        >
+          <LogOut className="h-4 w-4 ml-2" />
+          تسجيل الخروج
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
+  const [open, setOpen] = useState(false);
   const auth = useAuth();
 
   if (!auth.isClient) {
@@ -56,8 +138,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (!auth.user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Card className="p-8 text-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <Card className="p-8 text-center max-w-md w-full">
           <CardContent>
             <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-400" />
             <h2 className="text-xl font-semibold mb-2">يرجى تسجيل الدخول</h2>
@@ -75,174 +157,40 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex" dir="rtl">
-      {/* Mobile Menu Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 z-40 sm:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div
-        className={`
-    fixed inset-y-0 right-0 z-50 w-[280px] bg-white shadow-2xl 
-    transform transition-all duration-300 ease-out 
-    sm:translate-x-0 sm:static border-l border-gray-100
-    ${sidebarOpen ? "translate-x-0" : "translate-x-full"}
-  `}
-      >
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 sm:p-6 border-b">
-            <h1 className="text-lg sm:text-xl font-bold text-gray-900">
-              لوحة التحكم
-            </h1>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="lg:hidden"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
+      {/* Desktop Sidebar - Hidden on mobile, visible on sm+ */}
+      <aside className="hidden sm:block w-[280px] bg-white border-l border-gray-100 shadow-xl">
+        <div className="sticky top-0 h-screen">
+          <div className="p-6 border-b">
+            <h1 className="text-xl font-bold text-gray-900">لوحة التحكم</h1>
           </div>
-
-          {/* User Info */}
-          <div className="p-4 sm:p-6 border-b bg-blue-50">
-            <div className="flex items-center space-x-3 space-x-reverse">
-              <Avatar className="h-12 w-12 sm:h-14 sm:w-14 ring-2 ring-white shadow-lg">
-                {auth.user.photoURL && (
-                  <Image
-                    src={auth.user.photoURL}
-                    alt="صورة المستخدم"
-                    width={56}
-                    height={56}
-                    className="rounded-full object-cover"
-                  />
-                )}
-                <AvatarFallback className="text-lg sm:text-xl bg-blue-600 text-white font-semibold">
-                  {auth.user.displayName?.charAt(0) || "ع"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm sm:text-base font-bold text-gray-900 truncate">
-                  {auth.user.displayName || "مستخدم"}
-                </p>
-                <p className="text-xs text-gray-600 truncate">
-                  {auth.user.email}
-                </p>
-                {!!auth?.CustomClaims?.admin && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white mt-1.5 shadow-sm">
-                    👑 مدير
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 p-3 sm:p-4 space-y-1.5 overflow-y-auto">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname === item.href;
-
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <div
-                    className={`
-                    group flex items-center space-x-3 space-x-reverse px-4 py-3.5 rounded-2xl transition-all duration-200 cursor-pointer
-                    ${
-                      isActive
-                        ? "bg-blue-600 text-white shadow-lg shadow-blue-500/30 scale-[1.02]"
-                        : "text-gray-700 hover:bg-blue-50 hover:text-blue-600 hover:shadow-md active:scale-95"
-                    }
-                  `}
-                  >
-                    <div
-                      className={`p-1.5 rounded-lg ${
-                        isActive ? "bg-white/20" : "group-hover:bg-blue-50"
-                      }`}
-                    >
-                      <Icon
-                        className={`h-5 w-5 transition-transform group-hover:scale-110 ${
-                          isActive
-                            ? "text-white"
-                            : "text-gray-600 group-hover:text-blue-600"
-                        }`}
-                      />
-                    </div>
-                    <span
-                      className={`font-semibold text-sm sm:text-base ${
-                        isActive ? "text-white" : ""
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-                    {isActive && (
-                      <div className="mr-auto">
-                        <div className="w-2 h-2 rounded-full bg-white animate-pulse"></div>
-                      </div>
-                    )}
-                  </div>
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Footer Actions */}
-          <div className="p-3 sm:p-4 border-t bg-gray-50/50 space-y-2">
-            <Link href="/" onClick={() => setSidebarOpen(false)}>
-              <Button
-                variant="ghost"
-                className="w-full justify-start space-x-reverse hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 group py-3 rounded-xl"
-              >
-                <div className="p-1.5 rounded-lg group-hover:bg-blue-100 transition-colors">
-                  <Settings className="h-4 w-4 ml-2" />
-                </div>
-                <span className="font-medium">العودة للموقع</span>
-              </Button>
-            </Link>
-            <Button
-              variant="ghost"
-              className="w-full justify-start space-x-reverse text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 group py-3 rounded-xl active:scale-95"
-              onClick={() => {
-                setSidebarOpen(false);
-                auth.logOut();
-              }}
-            >
-              <div className="p-1.5 rounded-lg group-hover:bg-red-100 transition-colors">
-                <LogOut className="h-4 w-4 ml-2" />
-              </div>
-              <span className="font-medium">تسجيل الخروج</span>
-            </Button>
-          </div>
+          <SidebarContent />
         </div>
-      </div>
+      </aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header */}
-        <header className="lg:hidden bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-100/50 px-4 py-3 sticky top-0 z-30">
+        {/* Mobile Header with Sheet */}
+        <header className="sm:hidden bg-white border-b px-4 py-3 sticky top-0 z-30">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg">
-                <BookOpen className="h-4 w-4 text-white" />
-              </div>
+              <BookOpen className="h-5 w-5 text-blue-600" />
               <h1 className="text-lg font-bold text-gray-900">لوحة التحكم</h1>
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarOpen(true)}
-              className="hover:bg-blue-50 active:scale-95 transition-all duration-200 rounded-xl p-2"
-            >
-              <Menu className="h-5 w-5 text-gray-700" />
-            </Button>
+
+            {/* Mobile Menu Sheet */}
+            <Sheet open={open} onOpenChange={setOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[280px] p-0">
+                <SheetHeader className="p-6 border-b">
+                  <SheetTitle>لوحة التحكم</SheetTitle>
+                </SheetHeader>
+                <SidebarContent onNavigate={() => setOpen(false)} />
+              </SheetContent>
+            </Sheet>
           </div>
         </header>
 
