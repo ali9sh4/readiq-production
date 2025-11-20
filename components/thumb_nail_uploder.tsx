@@ -179,7 +179,7 @@ export default function ThumbNailUploader({
       />
 
       <Button
-        className="w-full mb-5 h-14 text-lg font-medium bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white border-0 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5 disabled:opacity-60"
+        className="w-full gap-2 h-12 text-base font-medium bg-blue-600 hover:bg-blue-700 text-white"
         type="button"
         disabled={isProcessing || images.length >= 1}
         onClick={() => uploadInputRef?.current?.click()}
