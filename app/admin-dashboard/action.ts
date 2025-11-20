@@ -1,6 +1,7 @@
 "use server";
 
 import { adminAuth, db } from "@/firebase/service";
+import { revalidatePath } from "next/cache";
 
 export const approveCourse = async (
   courseId: string,
@@ -31,6 +32,7 @@ export const approveCourse = async (
         updatedAt: new Date(),
         rejectionReason: !approve && reason ? reason : null, // ✅ Add this
       });
+        revalidatePath('/');
 
     return {
       success: true,
@@ -70,6 +72,7 @@ export const resetCourseStatus = async (courseId: string, token: string) => {
       rejectionReason: null,
       updatedAt: new Date(),
     });
+    revalidatePath('/');  
 
     return {
       success: true,

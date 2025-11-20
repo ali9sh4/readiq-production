@@ -21,6 +21,7 @@ import { getCourses } from "@/data/courses";
 import HomeCoursesSection from "@/components/HomeCoursesSection";
 import NavigationButton from "@/components/NavigationButton";
 import CTASection from "@/components/CTASection";
+export const revalidate = 300; // Revalidate every 5 minutes
 
 export default async function Home() {
   const data = await getCourses({
@@ -33,6 +34,8 @@ export default async function Home() {
   });
 
   const courses = data.courses ?? [];
+  console.log("🔍 Server fetched courses:", courses.length); // Server logs
+
   const totalCourses = 20; // Hardcoded total courses for display
 
   return (
