@@ -1,6 +1,6 @@
 import InstructorCourse from "@/components/instructorCourse";
 import { Button } from "@/components/ui/button";
-import { PlusCircleIcon, BookOpen } from "lucide-react";
+import { PlusCircle, BookOpen } from "lucide-react";
 import Link from "next/link";
 
 type SearchParams = {
@@ -16,37 +16,19 @@ export default async function Courses({
   searchParams: Promise<SearchParams>;
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Action Bar */}
-        <div className="flex justify-center mb-8">
-          <Button
-            asChild
-            size="lg"
-            className="bg-gradient-to-r from-sky-200 via-blue-200 to-indigo-200 hover:from-sky-300 hover:via-blue-300 hover:to-indigo-300 text-sky-900 shadow-md transition-all duration-300 rounded-2xl border border-sky-300/50 hover:border-sky-400/60 group relative overflow-hidden"
-          >
-            <Link
-              href="/course-upload/new"
-              className="flex items-center gap-3 px-10 py-5 relative z-10"
-            >
-              <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-              <PlusCircleIcon className="h-6 w-6 group-hover:rotate-90 transition-transform duration-300" />
-              <span className="font-bold text-xl">إضافة دورة جديدة</span>
-            </Link>
-          </Button>
-        </div>
-
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-6 sm:py-8 max-w-7xl">
         {/* Header Section */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-12 w-12 bg-gradient-to-br from-sky-900 to-sky-950 rounded-xl flex items-center justify-center shadow-lg">
-              <BookOpen className="h-6 w-6 text-white" />
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
+              <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold text-gray-900">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
                 دوراتك المنشورة
               </h1>
-              <p className="text-gray-600 text-lg mt-1">
+              <p className="text-gray-600 text-sm sm:text-base lg:text-lg mt-0.5">
                 إدارة ومتابعة جميع الدورات التدريبية الخاصة بك
               </p>
             </div>
@@ -54,11 +36,30 @@ export default async function Courses({
         </div>
 
         {/* Courses List */}
-        <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-          <div className="h-2 bg-gradient-to-r from-sky-900 via-sky-700 to-sky-950" />
-          <div className="p-6">
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-6">
+          <div className="h-1 bg-blue-600" />
+          <div className="p-4 sm:p-6">
             <InstructorCourse searchParams={searchParams} />
           </div>
+        </div>
+
+        {/* Add New Course Button - At Bottom */}
+        <div className="flex justify-center pb-6">
+          <Button
+            asChild
+            size="lg"
+            className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200 rounded-xl"
+          >
+            <Link
+              href="/course-upload/new"
+              className="flex items-center gap-2 px-8 py-6"
+            >
+              <PlusCircle className="h-5 w-5" />
+              <span className="font-semibold text-base sm:text-lg">
+                إضافة دورة جديدة
+              </span>
+            </Link>
+          </Button>
         </div>
       </div>
     </div>
