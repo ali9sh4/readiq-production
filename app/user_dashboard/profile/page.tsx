@@ -22,13 +22,16 @@ import {
   Save,
   X,
   AlertCircle,
+  LogOut,
 } from "lucide-react";
 import Image from "next/image";
 import { updateProfile } from "firebase/auth";
 import { updateUserProfile } from "@/lib/services/userService";
+import { useRouter } from "next/navigation";
 
 export default function DashboardProfile() {
   const auth = useAuth();
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(auth.user?.displayName || "");
 
@@ -300,17 +303,20 @@ export default function DashboardProfile() {
         <div className="p-6 sm:p-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
-              onClick={() => {
-                alert("سيتم إضافة هذه الميزة قريباً");
+              onClick={async () => {
+                if (confirm("هل أنت متأكد من تسجيل الخروج؟")) {
+                  await auth.logOut();
+                  router.push("/");
+                }
               }}
-              className="group bg-blue-50 border-2 border-blue-100 hover:border-blue-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg active:scale-95 cursor-pointer"
+              className="group bg-red-50 border-2 border-red-100 hover:border-red-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg active:scale-95 cursor-pointer"
             >
               <div className="flex flex-col items-center text-center gap-3">
-                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Settings className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                  <LogOut className="w-6 h-6 text-white" />
                 </div>
                 <span className="font-semibold text-gray-800 text-sm sm:text-base">
-                  تغيير كلمة المرور
+                  تسجيل الخروج
                 </span>
               </div>
             </button>
