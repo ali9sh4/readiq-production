@@ -17,6 +17,7 @@ import {
   Loader2,
   EyeOff,
   XCircle,
+  Image as ImageIcon,
 } from "lucide-react";
 
 import {
@@ -79,22 +80,22 @@ function StatusBadge({ status }: { status: CourseStatus }) {
   const config: Record<CourseStatus, { label: string; className: string }> = {
     draft: {
       label: "مسودة",
-      className: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      className: "bg-yellow-50 text-yellow-700 border-2 border-yellow-200",
     },
     published: {
       label: "منشور",
-      className: "bg-green-100 text-green-800 border-green-200",
+      className: "bg-green-50 text-green-700 border-2 border-green-200",
     },
     archived: {
       label: "مؤرشف",
-      className: "bg-gray-100 text-gray-800 border-gray-200",
+      className: "bg-gray-100 text-gray-700 border-2 border-gray-200",
     },
   };
 
   const { label, className } = config[status] || config.draft;
   return (
     <Badge
-      className={`rounded-full px-3 py-1 text-xs font-medium border ${className}`}
+      className={`rounded-full px-4 py-1.5 text-sm font-semibold ${className}`}
     >
       {label}
     </Badge>
@@ -254,7 +255,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
           price: data.price,
           salePrice: data.salePrice,
         }));
-        toast.success("تم الحفظ  السعر بنجاح");
+        toast.success("تم حفظ السعر بنجاح");
       } else {
         setError(result.error || "فشل في الحفظ");
       }
@@ -373,7 +374,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
 
       if (result.success) {
         setCourse((prev) => ({ ...prev, status: "published" }));
-        toast.success("تم نشر الدوره بنجاح");
+        toast.success("تم نشر الدورة بنجاح");
         router.refresh();
       } else {
         setError(result.error || "فشل في نشر الدورة");
@@ -406,7 +407,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
 
       if (result.success) {
         setCourse((prev) => ({ ...prev, status: "draft" }));
-        toast.success("تم الغاء نشر الدوره بنجاح");
+        toast.success("تم إلغاء نشر الدورة بنجاح");
         router.refresh();
       } else {
         setError(result.error || "فشل في إلغاء النشر");
@@ -426,30 +427,27 @@ export default function CourseDashboard({ defaultValues }: Props) {
       lang="ar"
     >
       <div className="mx-auto max-w-7xl">
-        {/* ===== RESPONSIVE HEADER ===== */}
-        <div className="flex flex-col gap-4 mb-6">
-          {/* Title Section - Always full width */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            {/* Title + Badge */}
-            <div className="flex items-center gap-3 min-w-0 flex-1">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 truncate">
+        {/* ===== HEADER ===== */}
+        <div className="mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
                 {course.title}
               </h1>
               <StatusBadge status={status} />
             </div>
 
-            {/* Action Buttons - Stack on mobile, row on tablet+ */}
-            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <div className="flex flex-col sm:flex-row gap-3">
               {canPublish && (
                 <Button
                   onClick={handlePublish}
                   disabled={publishing || videos.length === 0}
-                  className="gap-2 bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg transition-all h-12 text-base font-medium w-full sm:w-auto sm:min-w-[160px]"
+                  className="gap-2 bg-green-600 hover:bg-green-700 text-white h-12 px-6 font-semibold"
                 >
                   {publishing ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      <span>جاري النشر...</span>
+                      جاري النشر...
                     </>
                   ) : (
                     <>
@@ -465,12 +463,12 @@ export default function CourseDashboard({ defaultValues }: Props) {
                   onClick={handleUnPublish}
                   disabled={unpublishing}
                   variant="destructive"
-                  className="gap-2 shadow-md hover:shadow-lg transition-all h-12 text-base font-medium w-full sm:w-auto sm:min-w-[160px]"
+                  className="gap-2 h-12 px-6 font-semibold"
                 >
                   {unpublishing ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      <span>جاري الإيقاف...</span>
+                      جاري الإيقاف...
                     </>
                   ) : (
                     <>
@@ -483,68 +481,73 @@ export default function CourseDashboard({ defaultValues }: Props) {
             </div>
           </div>
 
-          {/* Rejection Reason - Responsive padding and text */}
+          {/* Rejection Reason */}
           {course.rejectionReason && (
-            <div className="bg-red-50 border-r-4 border-red-500 rounded-lg p-4 md:p-5 shadow-sm">
-              <h4 className="font-bold text-red-900 mb-2 flex items-center gap-2 text-lg">
-                <div className="bg-red-100 p-1.5 rounded-lg flex-shrink-0">
+            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-5">
+              <div className="flex items-start gap-3">
+                <div className="bg-red-100 p-2 rounded-lg flex-shrink-0">
                   <XCircle className="w-5 h-5 text-red-600" />
                 </div>
-                سبب رفض الدورة
-              </h4>
-              <p className="text-red-800 leading-relaxed text-base">
-                {course.rejectionReason}
-              </p>
-              <p className="text-red-600 text-sm mt-3 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-red-600 rounded-full flex-shrink-0"></span>
-                يرجى تعديل الدورة وإعادة تقديمها للمراجعة
-              </p>
+                <div className="flex-1">
+                  <h4 className="font-bold text-red-900 mb-2 text-lg">
+                    سبب رفض الدورة
+                  </h4>
+                  <p className="text-red-800 leading-relaxed">
+                    {course.rejectionReason}
+                  </p>
+                  <p className="text-red-600 text-sm mt-3">
+                    يرجى تعديل الدورة وإعادة تقديمها للمراجعة
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
-          {/* Warning if can't publish */}
+          {/* Warning */}
           {canPublish && videos.length === 0 && (
-            <div className="bg-yellow-50 border-r-4 border-yellow-500 rounded-lg p-4 shadow-sm">
-              <p className="text-yellow-800 flex items-center gap-2 text-base">
-                <div className="bg-yellow-100 p-1.5 rounded-lg flex-shrink-0">
+            <div className="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-5">
+              <div className="flex items-start gap-3">
+                <div className="bg-yellow-100 p-2 rounded-lg flex-shrink-0">
                   <AlertCircle className="w-5 h-5 text-yellow-600" />
                 </div>
-                <span className="font-medium">
+                <p className="text-yellow-800 font-medium">
                   يجب إضافة فيديو واحد على الأقل قبل النشر
-                </span>
-              </p>
+                </p>
+              </div>
             </div>
           )}
         </div>
 
-        {/* ===== RESPONSIVE ALERTS ===== */}
+        {/* ===== ALERTS ===== */}
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-red-700 text-sm">{error}</p>
+          <div className="mb-6 bg-red-50 border-2 border-red-200 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+              <p className="text-red-700">{error}</p>
+            </div>
           </div>
         )}
 
         {success && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-start gap-3">
-            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-            <p className="text-green-700 text-sm">{success}</p>
+          <div className="mb-6 bg-green-50 border-2 border-green-200 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <p className="text-green-700">{success}</p>
+            </div>
           </div>
         )}
 
-        {/* ===== RESPONSIVE KPI CARDS ===== */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
-          <Card className="shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="pt-5 p-4 md:p-5">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 md:p-3 bg-green-100 rounded-lg flex-shrink-0">
-                  <FileText className="h-5 w-5 md:h-6 md:w-6 text-green-600" />
+        {/* ===== STATS CARDS ===== */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          <Card className="border-2 border-gray-200">
+            <CardContent className="pt-6 p-5">
+              <div className="flex items-center gap-4">
+                <div className="bg-blue-100 p-3 rounded-xl">
+                  <FileText className="h-6 w-6 text-blue-600" />
                 </div>
-                <div className="text-right flex-1 min-w-0">
-                  <p className="text-sm text-gray-600 truncate">
-                    الملفات
-                  </p>
-                  <p className="text-xl md:text-2xl font-bold text-gray-900">
+                <div>
+                  <p className="text-sm text-gray-600">الملفات</p>
+                  <p className="text-2xl font-bold text-gray-900">
                     {files.length}
                   </p>
                 </div>
@@ -552,17 +555,15 @@ export default function CourseDashboard({ defaultValues }: Props) {
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="pt-5 p-4 md:p-5">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 md:p-3 bg-purple-100 rounded-lg flex-shrink-0">
-                  <Clock className="h-5 w-5 md:h-6 md:w-6 text-purple-600" />
+          <Card className="border-2 border-gray-200">
+            <CardContent className="pt-6 p-5">
+              <div className="flex items-center gap-4">
+                <div className="bg-purple-100 p-3 rounded-xl">
+                  <Clock className="h-6 w-6 text-purple-600" />
                 </div>
-                <div className="text-right flex-1 min-w-0">
-                  <p className="text-sm text-gray-600 truncate">
-                    مدة الدورة
-                  </p>
-                  <p className="text-xl md:text-2xl font-bold text-gray-900">
+                <div>
+                  <p className="text-sm text-gray-600">مدة الدورة</p>
+                  <p className="text-2xl font-bold text-gray-900">
                     {formatDuration(totalVideoDuration)}
                   </p>
                 </div>
@@ -570,17 +571,15 @@ export default function CourseDashboard({ defaultValues }: Props) {
             </CardContent>
           </Card>
 
-          <Card className="col-span-2 md:col-span-1 shadow-sm hover:shadow-md transition-shadow">
-            <CardContent className="pt-5 p-4 md:p-5">
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 md:p-3 bg-orange-100 rounded-lg flex-shrink-0">
-                  <DollarSign className="h-5 w-5 md:h-6 md:w-6 text-orange-600" />
+          <Card className="col-span-2 lg:col-span-1 border-2 border-gray-200">
+            <CardContent className="pt-6 p-5">
+              <div className="flex items-center gap-4">
+                <div className="bg-green-100 p-3 rounded-xl">
+                  <DollarSign className="h-6 w-6 text-green-600" />
                 </div>
-                <div className="text-right flex-1 min-w-0">
-                  <p className="text-sm text-gray-600 truncate">
-                    السعر
-                  </p>
-                  <p className="text-xl md:text-2xl font-bold text-gray-900 truncate">
+                <div>
+                  <p className="text-sm text-gray-600">السعر</p>
+                  <p className="text-2xl font-bold text-gray-900">
                     {course.price || 0} د.ع
                   </p>
                 </div>
@@ -589,60 +588,57 @@ export default function CourseDashboard({ defaultValues }: Props) {
           </Card>
         </div>
 
-        {/* ===== RESPONSIVE TABS ===== */}
+        {/* ===== TABS ===== */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-white border border-gray-200 rounded-xl h-14 md:h-16 p-1.5 shadow-sm">
+          <TabsList className="grid w-full grid-cols-2 bg-white border-2 border-gray-200 rounded-xl h-14 p-1.5">
             <TabsTrigger
               value="overview"
-              className="text-base md:text-lg font-semibold text-gray-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
+              className="text-base font-semibold rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white"
             >
               نظرة عامة
             </TabsTrigger>
             <TabsTrigger
               value="content"
-              className="text-base md:text-lg font-semibold text-gray-600 data-[state=active]:bg-green-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
+              className="text-base font-semibold rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white"
             >
               المحتوى
             </TabsTrigger>
           </TabsList>
 
-          {/* ===== OVERVIEW TAB - RESPONSIVE ===== */}
+          {/* ===== OVERVIEW TAB ===== */}
           <TabsContent value="overview" className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Basic Info Form - Full width on mobile/tablet, 2/3 on lg */}
-              <Card className="lg:col-span-2 shadow-sm border-gray-200">
-                <CardHeader className="p-5 md:p-6">
-                  <CardTitle className="text-right text-xl md:text-2xl">
-                    المعلومات الأساسية
-                  </CardTitle>
-                  <CardDescription className="text-right text-sm md:text-base">
+              {/* Basic Info */}
+              <Card className="lg:col-span-2 border-2 border-gray-200">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-2xl">المعلومات الأساسية</CardTitle>
+                  <CardDescription>
                     تحديث تفاصيل الدورة الرئيسية
                   </CardDescription>
                 </CardHeader>
-                <CardContent dir="rtl" className="p-5 md:p-6 pt-0">
+                <CardContent>
                   <Form {...basicInfoForm}>
                     <form
                       onSubmit={basicInfoForm.handleSubmit(onSubmitBasicInfo)}
-                      className="space-y-4"
+                      className="space-y-5"
                     >
-                      {/* Title and Subtitle - Stack on mobile, row on md+ */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <FormField
                           control={basicInfoForm.control}
                           name="title"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block text-base">
+                              <FormLabel className="text-base font-semibold">
                                 العنوان *
                               </FormLabel>
                               <FormControl>
                                 <Input
                                   {...field}
                                   placeholder="عنوان الدورة"
-                                  className="text-right h-11 md:h-12 text-base"
+                                  className="h-12 border-2 border-gray-200 focus-visible:border-blue-500 focus-visible:ring-0"
                                 />
                               </FormControl>
-                              <FormMessage className="text-sm" />
+                              <FormMessage />
                             </FormItem>
                           )}
                         />
@@ -651,29 +647,28 @@ export default function CourseDashboard({ defaultValues }: Props) {
                           name="subtitle"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block text-base">
+                              <FormLabel className="text-base font-semibold">
                                 العنوان الفرعي
                               </FormLabel>
                               <FormControl>
                                 <Input
                                   {...field}
                                   placeholder="وصف قصير"
-                                  className="text-right h-11 md:h-12 text-base"
+                                  className="h-12 border-2 border-gray-200 focus-visible:border-blue-500 focus-visible:ring-0"
                                 />
                               </FormControl>
-                              <FormMessage className="text-sm" />
+                              <FormMessage />
                             </FormItem>
                           )}
                         />
                       </div>
 
-                      {/* Description */}
                       <FormField
                         control={basicInfoForm.control}
                         name="description"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-right block text-base">
+                            <FormLabel className="text-base font-semibold">
                               الوصف
                             </FormLabel>
                             <FormControl>
@@ -681,43 +676,40 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                 {...field}
                                 placeholder="وصف تفصيلي للدورة"
                                 rows={4}
-                                className="resize-none text-right text-base"
+                                className="resize-none border-2 border-gray-200 focus-visible:border-blue-500 focus-visible:ring-0"
                               />
                             </FormControl>
-                            <FormMessage className="text-sm" />
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
 
-                      {/* Instructor Name */}
                       <FormField
                         control={basicInfoForm.control}
                         name="instructorName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-right text-base">
+                            <FormLabel className="text-base font-semibold">
                               اسم المحاضر
                             </FormLabel>
                             <FormControl>
-                              <Textarea
+                              <Input
                                 {...field}
-                                rows={1}
-                                className="resize-none text-right text-base"
+                                className="h-12 border-2 border-gray-200 focus-visible:border-blue-500 focus-visible:ring-0"
                               />
                             </FormControl>
-                            <FormMessage className="text-sm" />
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
 
-                      {/* Category, Level, Language - Stack on mobile, row on tablet */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                         <FormField
                           control={basicInfoForm.control}
                           name="category"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block text-base">
+                              <FormLabel className="text-base font-semibold">
                                 التصنيف
                               </FormLabel>
                               <Select
@@ -726,14 +718,11 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                 dir="rtl"
                               >
                                 <FormControl>
-                                  <SelectTrigger className="text-right h-11 md:h-12 text-base">
+                                  <SelectTrigger className="h-12 border-2 border-gray-200 focus:ring-0 focus:border-blue-500">
                                     <SelectValue placeholder="اختر التصنيف" />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent
-                                  align="end"
-                                  className="text-base"
-                                >
+                                <SelectContent align="end">
                                   <SelectItem value="programming">
                                     البرمجة
                                   </SelectItem>
@@ -775,16 +764,17 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
-                              <FormMessage className="text-sm" />
+                              <FormMessage />
                             </FormItem>
                           )}
                         />
+
                         <FormField
                           control={basicInfoForm.control}
                           name="level"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block text-base">
+                              <FormLabel className="text-base font-semibold">
                                 المستوى
                               </FormLabel>
                               <Select
@@ -792,11 +782,11 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                 defaultValue={field.value}
                               >
                                 <FormControl>
-                                  <SelectTrigger className="text-right h-11 md:h-12 text-base">
+                                  <SelectTrigger className="h-12 border-2 border-gray-200 focus:ring-0 focus:border-blue-500">
                                     <SelectValue />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent className="text-base">
+                                <SelectContent>
                                   <SelectItem value="beginner">
                                     مبتدئ
                                   </SelectItem>
@@ -811,16 +801,17 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
-                              <FormMessage className="text-sm" />
+                              <FormMessage />
                             </FormItem>
                           )}
                         />
+
                         <FormField
                           control={basicInfoForm.control}
                           name="language"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel className="text-right block text-base">
+                              <FormLabel className="text-base font-semibold">
                                 اللغة
                               </FormLabel>
                               <Select
@@ -828,11 +819,11 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                 defaultValue={field.value}
                               >
                                 <FormControl>
-                                  <SelectTrigger className="text-right h-11 md:h-12 text-base">
+                                  <SelectTrigger className="h-12 border-2 border-gray-200 focus:ring-0 focus:border-blue-500">
                                     <SelectValue />
                                   </SelectTrigger>
                                 </FormControl>
-                                <SelectContent className="text-base">
+                                <SelectContent>
                                   <SelectItem value="arabic">
                                     العربية
                                   </SelectItem>
@@ -847,17 +838,16 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
-                              <FormMessage className="text-sm" />
+                              <FormMessage />
                             </FormItem>
                           )}
                         />
                       </div>
 
-                      {/* Submit Button */}
                       <Button
                         type="submit"
                         disabled={basicInfoForm.formState.isSubmitting}
-                        className="w-full gap-2 h-12 text-base font-medium"
+                        className="w-full h-12 gap-2 font-semibold bg-blue-600 hover:bg-blue-700"
                       >
                         {basicInfoForm.formState.isSubmitting ? (
                           <Loader2 className="h-5 w-5 animate-spin" />
@@ -871,220 +861,194 @@ export default function CourseDashboard({ defaultValues }: Props) {
                 </CardContent>
               </Card>
 
-              {/* RIGHT COLUMN - Pricing - Full width on mobile/tablet */}
-              <div className="space-y-6">
-                {/* Pricing Form */}
-                <Card className="shadow-sm border-gray-200">
-                  <CardHeader className="p-5 md:p-6">
-                    <CardTitle className="text-right text-xl md:text-2xl">
-                      التسعير
-                    </CardTitle>
-                    <CardDescription className="text-right text-sm md:text-base">
-                      تحديد سعر الدورة
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent dir="rtl" className="p-5 md:p-6 pt-0">
-                    <Form {...pricingForm}>
-                      <form
-                        onSubmit={pricingForm.handleSubmit(onSubmitPricing)}
-                        className="space-y-4"
+              {/* Pricing */}
+              <Card className="border-2 border-gray-200">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-2xl">التسعير</CardTitle>
+                  <CardDescription>تحديد سعر الدورة</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Form {...pricingForm}>
+                    <form
+                      onSubmit={pricingForm.handleSubmit(onSubmitPricing)}
+                      className="space-y-5"
+                    >
+                      <FormField
+                        control={pricingForm.control}
+                        name="price"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-base font-semibold">
+                              السعر (دينار) *
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="text"
+                                inputMode="decimal"
+                                value={
+                                  field.value === 0 ? "" : String(field.value)
+                                }
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val === "") {
+                                    field.onChange(0);
+                                    return;
+                                  }
+                                  if (/^\d*\.?\d{0,2}$/.test(val)) {
+                                    const numVal = parseFloat(val);
+                                    field.onChange(isNaN(numVal) ? 0 : numVal);
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  const val = e.target.value;
+                                  if (val === "") {
+                                    field.onChange(0);
+                                    return;
+                                  }
+                                  const numValue = parseFloat(val);
+                                  if (isNaN(numValue) || numValue < 0) {
+                                    field.onChange(0);
+                                    return;
+                                  }
+                                  field.onChange(
+                                    Math.round(numValue * 100) / 100
+                                  );
+                                }}
+                                placeholder="0"
+                                className="h-12 border-2 border-gray-200 focus-visible:border-blue-500 focus-visible:ring-0"
+                              />
+                            </FormControl>
+                            <div className="text-sm">
+                              {field.value === 0 ? (
+                                <span className="text-green-600 font-medium">
+                                  ✓ دورة مجانية (السعر = 0 د.ع)
+                                </span>
+                              ) : (
+                                <span className="text-blue-600 font-medium">
+                                  السعر: {Number(field.value).toLocaleString()}{" "}
+                                  د.ع
+                                </span>
+                              )}
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={pricingForm.control}
+                        name="salePrice"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-base font-semibold">
+                              السعر المخفض (اختياري)
+                            </FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                type="text"
+                                inputMode="decimal"
+                                value={
+                                  field.value === undefined || field.value === 0
+                                    ? ""
+                                    : String(field.value)
+                                }
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  if (val === "") {
+                                    field.onChange(0);
+                                    return;
+                                  }
+                                  if (/^\d*\.?\d{0,2}$/.test(val)) {
+                                    const numVal = parseFloat(val);
+                                    field.onChange(isNaN(numVal) ? 0 : numVal);
+                                  }
+                                }}
+                                onBlur={(e) => {
+                                  const val = e.target.value;
+                                  if (val === "") {
+                                    field.onChange(0);
+                                    return;
+                                  }
+                                  const numValue = parseFloat(val);
+                                  if (isNaN(numValue) || numValue < 0) {
+                                    field.onChange(0);
+                                    return;
+                                  }
+                                  if (numValue === 0) {
+                                    field.onChange(undefined);
+                                    return;
+                                  }
+                                  field.onChange(
+                                    Math.round(numValue * 100) / 100
+                                  );
+                                }}
+                                placeholder="0"
+                                className="h-12 border-2 border-gray-200 focus-visible:border-blue-500 focus-visible:ring-0"
+                              />
+                            </FormControl>
+                            <div className="text-sm">
+                              {!field.value ? (
+                                <span className="text-gray-500">
+                                  لا يوجد خصم
+                                </span>
+                              ) : (
+                                <span className="text-orange-600 font-medium">
+                                  السعر المخفض:{" "}
+                                  {Number(field.value).toLocaleString()} د.ع
+                                </span>
+                              )}
+                            </div>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <Button
+                        type="submit"
+                        disabled={pricingForm.formState.isSubmitting}
+                        className="w-full h-12 gap-2 font-semibold bg-blue-600 hover:bg-blue-700"
                       >
-                        <FormField
-                          control={pricingForm.control}
-                          name="price"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-right block text-base">
-                                السعر (دينار) *
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  type="text"
-                                  inputMode="decimal"
-                                  value={
-                                    field.value === 0 ? "" : String(field.value)
-                                  }
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-
-                                    if (val === "") {
-                                      field.onChange(0);
-                                      return;
-                                    }
-
-                                    if (/^\d*\.?\d{0,2}$/.test(val)) {
-                                      const numVal = parseFloat(val);
-                                      field.onChange(
-                                        isNaN(numVal) ? 0 : numVal
-                                      );
-                                    }
-                                  }}
-                                  onBlur={(e) => {
-                                    const val = e.target.value;
-
-                                    if (val === "") {
-                                      field.onChange(0);
-                                      return;
-                                    }
-
-                                    const numValue = parseFloat(val);
-
-                                    if (isNaN(numValue) || numValue < 0) {
-                                      field.onChange(0);
-                                      return;
-                                    }
-
-                                    field.onChange(
-                                      Math.round(numValue * 100) / 100
-                                    );
-                                  }}
-                                  placeholder="اتركه فارغًا للدورة المجانية"
-                                  className="h-11 md:h-12 text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500 text-right"
-                                />
-                              </FormControl>
-                              <div className="text-sm">
-                                {field.value === 0 ? (
-                                  <span className="text-green-600 font-medium">
-                                    ✓ دورة مجانية (السعر = 0 د.ع)
-                                  </span>
-                                ) : (
-                                  <span className="text-blue-600 font-medium">
-                                    السعر:{" "}
-                                    {Number(field.value).toLocaleString()} د.ع
-                                  </span>
-                                )}
-                              </div>
-                              <FormMessage className="text-sm" />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={pricingForm.control}
-                          name="salePrice"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="text-right block text-base">
-                                السعر المخفض (اختياري)
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...field}
-                                  type="text"
-                                  inputMode="decimal"
-                                  value={
-                                    field.value === undefined ||
-                                    field.value === 0
-                                      ? ""
-                                      : String(field.value)
-                                  }
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-
-                                    if (val === "") {
-                                      field.onChange(0);
-                                      return;
-                                    }
-
-                                    if (/^\d*\.?\d{0,2}$/.test(val)) {
-                                      const numVal = parseFloat(val);
-                                      field.onChange(
-                                        isNaN(numVal) ? 0 : numVal
-                                      );
-                                    }
-                                  }}
-                                  onBlur={(e) => {
-                                    const val = e.target.value;
-
-                                    if (val === "") {
-                                      field.onChange(0);
-                                      return;
-                                    }
-
-                                    const numValue = parseFloat(val);
-
-                                    if (isNaN(numValue) || numValue < 0) {
-                                      field.onChange(0);
-                                      return;
-                                    }
-                                    if (numValue === 0) {
-                                      field.onChange(undefined);
-                                      return;
-                                    }
-
-                                    field.onChange(
-                                      Math.round(numValue * 100) / 100
-                                    );
-                                  }}
-                                  placeholder="اتركه فارغًا إذا لم يكن هناك خصم"
-                                  className="h-11 md:h-12 text-base border-gray-300 focus-visible:ring-2 focus-visible:ring-blue-500/30 focus-visible:border-blue-500 text-right"
-                                />
-                              </FormControl>
-
-                              <div className="text-sm">
-                                {!field.value ? (
-                                  <span className="text-gray-500">
-                                    لا يوجد خصم
-                                  </span>
-                                ) : (
-                                  <span className="text-orange-600 font-medium">
-                                    السعر المخفض:{" "}
-                                    {Number(field.value).toLocaleString()} د.ع
-                                  </span>
-                                )}
-                              </div>
-                              <FormMessage className="text-sm" />
-                            </FormItem>
-                          )}
-                        />
-                        <Button
-                          type="submit"
-                          disabled={pricingForm.formState.isSubmitting}
-                          className="w-full gap-2 h-12 text-base font-medium"
-                        >
-                          {pricingForm.formState.isSubmitting ? (
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                          ) : (
-                            <Save className="h-5 w-5" />
-                          )}
-                          حفظ السعر
-                        </Button>
-                      </form>
-                    </Form>
-                  </CardContent>
-                </Card>
-              </div>
+                        {pricingForm.formState.isSubmitting ? (
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                        ) : (
+                          <Save className="h-5 w-5" />
+                        )}
+                        حفظ السعر
+                      </Button>
+                    </form>
+                  </Form>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* Thumbnail Section - Full width */}
-            <Card className="shadow-sm border-gray-200">
-              <CardHeader className="text-right space-y-1 p-5 md:p-6">
-                <CardTitle className="text-xl md:text-2xl font-semibold text-gray-800">
-                  🖼️ صورة الغلاف
+            {/* Thumbnail */}
+            <Card className="border-2 border-gray-200">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-2xl flex items-center gap-2">
+                  <ImageIcon className="h-6 w-6 text-blue-600" />
+                  صورة الغلاف
                 </CardTitle>
-                <CardDescription className="text-sm md:text-base text-gray-500">
+                <CardDescription>
                   قم بتحميل صورة جذابة لتكون غلاف الدورة التعليمية
                 </CardDescription>
               </CardHeader>
-              <CardContent dir="rtl" className="p-5 md:p-6 pt-0">
+              <CardContent>
                 <Form {...form}>
                   <form
                     onSubmit={form.handleSubmit(onImageSubmit)}
-                    className="space-y-4"
+                    className="space-y-5"
                   >
                     <FormField
                       control={form.control}
                       name="image"
                       render={({ field }) => (
                         <FormItem>
-                          <FormDescription className="text-sm md:text-base text-gray-600 mt-2 leading-relaxed bg-gray-50 border border-gray-100 rounded-lg p-4">
-                            📸 اختر{" "}
-                            <span className="font-medium text-gray-800">
-                              صورة واحدة عالية الجودة
-                            </span>{" "}
-                            لتكون غلاف الدورة
+                          <FormDescription className="bg-blue-50 border-2 border-blue-100 rounded-xl p-4">
+                            📸 اختر صورة واحدة عالية الجودة لتكون غلاف الدورة
                             <br />
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-gray-600">
                               (يُفضل 1280×720 بكسل)
                             </span>
                           </FormDescription>
@@ -1096,14 +1060,14 @@ export default function CourseDashboard({ defaultValues }: Props) {
                               isDeleting={deletingThumbnail}
                             />
                           </FormControl>
-                          <FormMessage className="text-sm" />
+                          <FormMessage />
                         </FormItem>
                       )}
                     />
                     <Button
                       type="submit"
                       disabled={uploadingThumbnail}
-                      className="w-full gap-2 h-12 text-base font-medium"
+                      className="w-full h-12 gap-2 font-semibold bg-blue-600 hover:bg-blue-700"
                     >
                       {uploadingThumbnail ? (
                         <Loader2 className="h-5 w-5 animate-spin" />
@@ -1118,7 +1082,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
             </Card>
           </TabsContent>
 
-          {/* ===== CONTENT TAB - RESPONSIVE ===== */}
+          {/* ===== CONTENT TAB ===== */}
           <TabsContent value="content" className="space-y-6">
             <VideoUploader courseId={course.id} disabled={isAnyActionRunning} />
             <SmartCourseUploader id={course.id} disabled={isAnyActionRunning} />
