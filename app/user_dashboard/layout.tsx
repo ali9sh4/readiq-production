@@ -39,9 +39,9 @@ function SidebarContent() {
   return (
     <div className="flex flex-col h-full">
       {/* User Info */}
-      <div className="p-6 border-b bg-blue-50">
+      <div className="p-6 border-b bg-gradient-to-br from-blue-50 via-blue-50 to-indigo-50">
         <div className="flex items-center gap-3">
-          <Avatar className="h-14 w-14 ring-2 ring-white shadow-lg">
+          <Avatar className="h-14 w-14 ring-2 ring-blue-200 shadow-lg hover:ring-blue-300 transition-all">
             {auth.user?.photoURL ? (
               <Image
                 src={auth.user.photoURL}
@@ -51,7 +51,7 @@ function SidebarContent() {
                 className="rounded-full object-cover"
               />
             ) : (
-              <AvatarFallback className="text-xl bg-blue-600 text-white font-semibold">
+              <AvatarFallback className="text-xl bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold">
                 {auth.user?.displayName?.charAt(0) || "ع"}
               </AvatarFallback>
             )}
@@ -62,7 +62,7 @@ function SidebarContent() {
             </p>
             <p className="text-xs text-gray-600 truncate">{auth.user?.email}</p>
             {!!auth?.CustomClaims?.admin && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white mt-1.5">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-blue-600 to-indigo-600 text-white mt-1.5 shadow-sm">
                 👑 مدير
               </span>
             )}
@@ -81,14 +81,15 @@ function SidebarContent() {
               <div
                 className={`
                   flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 cursor-pointer
+                  transform active:scale-[0.98] select-none
                   ${
                     isActive
-                      ? "bg-blue-600 text-white shadow-lg"
-                      : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                      ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30 ring-2 ring-blue-500/20"
+                      : "text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 hover:text-blue-600 hover:shadow-md active:shadow-inner"
                   }
                 `}
               >
-                <Icon className="h-5 w-5" />
+                <Icon className={`h-5 w-5 transition-transform ${isActive ? "scale-110" : ""}`} />
                 <span className="font-semibold text-sm">{item.label}</span>
               </div>
             </Link>
@@ -99,14 +100,14 @@ function SidebarContent() {
       {/* Footer */}
       <div className="p-4 border-t space-y-2">
         <Link href="/">
-          <Button variant="ghost" className="w-full justify-start">
+          <Button variant="ghost" className="w-full justify-start hover:bg-gray-100 active:scale-[0.98] transition-transform">
             <Settings className="h-4 w-4 ml-2" />
             العودة للموقع
           </Button>
         </Link>
         <Button
           variant="ghost"
-          className="w-full justify-start text-red-600"
+          className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700 active:scale-[0.98] transition-transform"
           onClick={() => auth.logOut()}
         >
           <LogOut className="h-4 w-4 ml-2" />
@@ -157,12 +158,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex" dir="rtl">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex" dir="rtl">
       {/* Desktop Sidebar - Hidden on mobile */}
-      <aside className="hidden sm:block w-[280px] bg-white border-l border-gray-100 shadow-xl">
+      <aside className="hidden sm:block w-[280px] bg-white border-l border-gray-200 shadow-2xl">
         <div className="sticky top-0 h-screen">
-          <div className="p-6 border-b">
-            <h1 className="text-xl font-bold text-gray-900">لوحة التحكم</h1>
+          <div className="p-6 border-b bg-gradient-to-r from-blue-600 to-indigo-600">
+            <h1 className="text-xl font-bold text-white">لوحة التحكم</h1>
           </div>
           <SidebarContent />
         </div>
@@ -171,18 +172,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile Tabs - Only visible on mobile */}
-        <div className="sm:hidden bg-white border-b sticky top-16 z-20 px-3 pt-3">
+        <div className="sm:hidden bg-white border-b sticky top-16 z-20 px-3 pt-3 pb-2">
           <Tabs value={getActiveTab()} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-gray-50 border border-gray-200 rounded-xl h-12 p-1 shadow-sm">
+            <TabsList className="grid w-full grid-cols-3 bg-gradient-to-br from-gray-50 to-gray-100 border border-gray-200 rounded-xl h-12 p-1 shadow-md">
               {navItems.map((item) => {
                 const Icon = item.icon;
+                const isActive = getActiveTab() === item.value;
                 return (
                   <Link key={item.value} href={item.href} className="w-full">
                     <TabsTrigger
                       value={item.value}
-                      className="w-full text-xs font-semibold text-gray-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5"
+                      className={`w-full text-xs font-semibold text-gray-600 rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5 active:scale-95
+                        data-[state=active]:bg-gradient-to-br data-[state=active]:from-blue-600 data-[state=active]:to-blue-700
+                        data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-blue-500/40
+                        data-[state=active]:ring-2 data-[state=active]:ring-blue-500/30
+                        hover:bg-blue-50 hover:text-blue-600`}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className={`h-4 w-4 transition-transform ${isActive ? "scale-110" : ""}`} />
                       <span className="hidden xs:inline">{item.label}</span>
                     </TabsTrigger>
                   </Link>
@@ -193,7 +199,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden pb-safe">
           {children}
         </main>
       </div>
