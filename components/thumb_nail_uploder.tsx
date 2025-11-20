@@ -206,18 +206,19 @@ export default function ThumbNailUploader({
                     <div
                       ref={provided.innerRef}
                       {...provided.draggableProps}
-                      className={`relative p-3 transition-all duration-200 ${
+                      className={`relative p-2 md:p-3 transition-all duration-200 ${
                         snapshot.isDragging ? "opacity-70 scale-105" : ""
                       }`}
                     >
-                      <div className="bg-white rounded-2xl flex gap-4 items-center p-5 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-lg transition-all duration-300">
+                      <div className="bg-white rounded-xl md:rounded-2xl flex gap-3 md:gap-4 items-center p-3 md:p-5 border border-gray-200 hover:border-gray-300 shadow-sm hover:shadow-lg transition-all duration-300">
                         <div
                           {...provided.dragHandleProps}
                           className="text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing"
                         >
-                          <GripVertical className="w-5 h-5" />
+                          <GripVertical className="w-4 h-4 md:w-5 md:h-5" />
                         </div>
-                        <div className="w-48 h-48 relative rounded-xl overflow-hidden border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300">
+                        {/* 🔥 UPDATED: Smaller image preview on iPad */}
+                        <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 relative rounded-lg md:rounded-xl overflow-hidden border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 flex-shrink-0">
                           <Image
                             src={urlFormatter ? urlFormatter(image) : image.url}
                             fill
@@ -226,9 +227,9 @@ export default function ThumbNailUploader({
                           />
                         </div>
 
-                        <div className="flex-grow">
-                          <div className="flex items-center gap-2 mb-2">
-                            <p className="text-base font-semibold text-gray-800">
+                        <div className="flex-grow min-w-0">
+                          <div className="flex items-center gap-2 mb-1 md:mb-2">
+                            <p className="text-sm md:text-base font-semibold text-gray-800">
                               صورة {index + 1}
                             </p>
                             <Badge
@@ -240,7 +241,7 @@ export default function ThumbNailUploader({
                           </div>
 
                           {image.file && (
-                            <p className="text-sm text-gray-500 truncate">
+                            <p className="text-xs md:text-sm text-gray-500 truncate">
                               {image.file.name}
                             </p>
                           )}
@@ -248,14 +249,14 @@ export default function ThumbNailUploader({
 
                         <button
                           onClick={() => handleDeleteImage(image)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-full transition-colors disabled:opacity-50"
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 md:p-2 rounded-full transition-colors disabled:opacity-50 flex-shrink-0"
                           type="button"
                           disabled={isDeleting}
                         >
                           {isDeleting ? (
-                            <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                            <div className="w-4 h-4 md:w-5 md:h-5 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
                           ) : (
-                            <X className="w-8 h-8" />
+                            <X className="w-6 h-6 md:w-7 md:h-7" />
                           )}
                         </button>
                       </div>
