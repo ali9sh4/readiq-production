@@ -47,8 +47,19 @@ export default function QuickCourseForm({
     } as Partial<InputT>,
   });
 
-  const onSubmit: SubmitHandler<InputT> = (data) => {
-    handleSubmit?.(QuickCourseSchema.parse(data));
+  // In QuickCourseForm component - update the onSubmit function
+
+  const onSubmit: SubmitHandler<InputT> = async (data) => {
+    // ✅ Prevent if already submitting
+    if (form.formState.isSubmitting) {
+      return;
+    }
+
+    try {
+      await handleSubmit?.(QuickCourseSchema.parse(data));
+    } catch (error) {
+      console.error("Form submission error:", error);
+    }
   };
 
   const desc = form.watch("description") ?? "";
@@ -130,7 +141,7 @@ export default function QuickCourseForm({
                       <p className="text-sm text-gray-500">
                         {field.value.length > 0
                           ? `${field.value.length} حرف`
-                          : "أدخل عنوانًا واضحًا وجذابًا (10 أحرف على الأقل)"}
+                          : "أدخل عنوانًا واضحًا  (10 أحرف على الأقل)"}
                       </p>
                       <FormMessage />
                     </FormItem>
