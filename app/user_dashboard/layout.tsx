@@ -4,25 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/authContext";
-import {
-  Home,
-  User,
-  Award,
-  Menu,
-  BookOpen,
-  Settings,
-  LogOut,
-} from "lucide-react";
+import { Home, User, Award, BookOpen, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Image from "next/image";
 
 interface DashboardLayoutProps {
@@ -30,13 +16,23 @@ interface DashboardLayoutProps {
 }
 
 const navItems = [
-  { href: "/user_dashboard", label: "الرئيسية", icon: Home },
-  { href: "/user_dashboard/profile", label: "الملف الشخصي", icon: User },
-  { href: "/user_dashboard/certificates", label: "الشهادات", icon: Award },
+  { href: "/user_dashboard", label: "الرئيسية", icon: Home, value: "home" },
+  {
+    href: "/user_dashboard/profile",
+    label: "الملف الشخصي",
+    icon: User,
+    value: "profile",
+  },
+  {
+    href: "/user_dashboard/certificates",
+    label: "الشهادات",
+    icon: Award,
+    value: "certificates",
+  },
 ];
 
-// Sidebar Content Component (reused for mobile and desktop)
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+// Sidebar Content Component (desktop only)
+function SidebarContent() {
   const pathname = usePathname();
   const auth = useAuth();
 
@@ -81,7 +77,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           const isActive = pathname === item.href;
 
           return (
-            <Link key={item.href} href={item.href} onClick={onNavigate}>
+            <Link key={item.href} href={item.href}>
               <div
                 className={`
                   flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 cursor-pointer
@@ -102,7 +98,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Footer */}
       <div className="p-4 border-t space-y-2">
-        <Link href="/" onClick={onNavigate}>
+        <Link href="/">
           <Button variant="ghost" className="w-full justify-start">
             <Settings className="h-4 w-4 ml-2" />
             العودة للموقع
@@ -111,10 +107,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <Button
           variant="ghost"
           className="w-full justify-start text-red-600"
-          onClick={() => {
-            onNavigate?.();
-            auth.logOut();
-          }}
+          onClick={() => auth.logOut()}
         >
           <LogOut className="h-4 w-4 ml-2" />
           تسجيل الخروج
@@ -125,8 +118,16 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const [open, setOpen] = useState(false);
+  const pathname = usePathname();
   const auth = useAuth();
+
+  // Determine active tab based on current path
+  const getActiveTab = () => {
+    if (pathname === "/user_dashboard") return "home";
+    if (pathname === "/user_dashboard/profile") return "profile";
+    if (pathname === "/user_dashboard/certificates") return "certificates";
+    return "home";
+  };
 
   if (!auth.isClient) {
     return (
@@ -157,7 +158,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex" dir="rtl">
-      {/* Desktop Sidebar - Hidden on mobile, visible on sm+ */}
+      {/* Desktop Sidebar - Hidden on mobile */}
       <aside className="hidden sm:block w-[280px] bg-white border-l border-gray-100 shadow-xl">
         <div className="sticky top-0 h-screen">
           <div className="p-6 border-b">
@@ -169,30 +170,27 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header with Sheet */}
-        <header className="sm:hidden bg-white border-b px-4 py-3 sticky top-0 z-30">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <BookOpen className="h-5 w-5 text-blue-600" />
-              <h1 className="text-lg font-bold text-gray-900">لوحة التحكم</h1>
-            </div>
-
-            {/* Mobile Menu Sheet */}
-            <Sheet open={open} onOpenChange={setOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[280px] p-0">
-                <SheetHeader className="p-6 border-b">
-                  <SheetTitle>لوحة التحكم</SheetTitle>
-                </SheetHeader>
-                <SidebarContent onNavigate={() => setOpen(false)} />
-              </SheetContent>
-            </Sheet>
-          </div>
-        </header>
+        {/* Mobile Tabs - Only visible on mobile */}
+        <div className="sm:hidden bg-white border-b sticky top-16 z-20 px-3 pt-3">
+          <Tabs value={getActiveTab()} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 bg-gray-50 border border-gray-200 rounded-xl h-12 p-1 shadow-sm">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link key={item.value} href={item.href} className="w-full">
+                    <TabsTrigger
+                      value={item.value}
+                      className="w-full text-xs font-semibold text-gray-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200 flex items-center justify-center gap-1.5"
+                    >
+                      <Icon className="h-4 w-4" />
+                      <span className="hidden xs:inline">{item.label}</span>
+                    </TabsTrigger>
+                  </Link>
+                );
+              })}
+            </TabsList>
+          </Tabs>
+        </div>
 
         {/* Page Content */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
