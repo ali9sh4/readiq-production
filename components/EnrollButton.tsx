@@ -14,7 +14,7 @@ import { purchaseCourseWithWallet } from "@/app/actions/wallet_actions";
 
 interface EnrollButtonProps {
   courseId: string;
-  courseTitle?: string; // Added for payment
+  courseTitle?: string;
   isFree: boolean;
   fullWidth?: boolean;
   price?: number;
@@ -41,7 +41,6 @@ export default function EnrollButton({
       return;
     }
 
-    // ✅ YOUR EXISTING LOGIC for free courses
     if (isFree) {
       setLoading(true);
       try {
@@ -111,9 +110,8 @@ export default function EnrollButton({
           setShowPaymentDialog(false);
           setLoading(false);
 
-          // Redirect to course page or refresh
           setTimeout(() => {
-            router.push(`/Course/${courseId}`); // Or wherever enrolled courses go
+            router.push(`/Course/${courseId}`);
             router.refresh();
           }, 1500);
         } else {
@@ -137,10 +135,8 @@ export default function EnrollButton({
       const data = await response.json();
 
       if (data.success && data.redirectUrl) {
-        // Success - redirect to payment gateway
         window.location.href = data.redirectUrl;
       } else {
-        // Handle different error types with specific messages
         const errorMessage = data.error || "";
 
         if (errorMessage.includes("قيد المعالجة")) {
@@ -154,7 +150,6 @@ export default function EnrollButton({
             description: "أنت مسجل بالفعل في هذه الدورة",
             duration: 4000,
           });
-          // Optionally refresh the page to show enrolled state
           setTimeout(() => router.refresh(), 2000);
         } else if (errorMessage.includes("سعر غير صحيح")) {
           toast.error("خطأ في السعر", {
@@ -167,7 +162,6 @@ export default function EnrollButton({
             duration: 4000,
           });
         } else {
-          // Generic error fallback
           toast.error("فشل في إنشاء جلسة الدفع", {
             description: errorMessage || "حدث خطأ غير متوقع",
             duration: 5000,
@@ -180,7 +174,6 @@ export default function EnrollButton({
     } catch (error) {
       console.error("Payment error:", error);
 
-      // ✅ Show the actual error message
       const errorMessage =
         error instanceof Error ? error.message : "حدث خطأ أثناء معالجة الدفع";
 
@@ -201,8 +194,8 @@ export default function EnrollButton({
         size="lg"
         className={`${fullWidth ? "w-full" : ""} ${
           isFree
-            ? "bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-            : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+            ? "bg-green-600 hover:bg-green-700"
+            : "bg-blue-600 hover:bg-blue-700"
         } text-white font-bold shadow-lg hover:shadow-xl transition-all`}
       >
         {loading ? (
@@ -232,7 +225,6 @@ export default function EnrollButton({
         )}
       </Button>
 
-      {/* ✅ NEW: Payment dialog */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
         <DialogContent className="sm:max-w-[425px]">
           <PaymentSelector
