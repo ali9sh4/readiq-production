@@ -4,6 +4,7 @@ export type WalletTransactionType =
   | "topup"
   | "purchase"
   | "refund"
+  | "earning"
   | "bonus"
   | "penalty";
 
@@ -15,6 +16,7 @@ export interface Wallet {
   userName?: string;
   balance: number;
   totalTopups: number;
+  totalEarnings?: number;
   totalSpent: number;
   createdAt: string;
   updatedAt: string;

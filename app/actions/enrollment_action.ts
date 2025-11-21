@@ -50,6 +50,12 @@ export async function enrollInFreeCourse(courseId: string, token: string) {
     }
 
     const courseData = courseDoc.data();
+    if (courseData?.createdBy === userId) {
+      return {
+        success: false,
+        message: "لا يمكنك التسجيل في دورتك الخاصة",
+      };
+    }
     if (courseData?.price !== 0) {
       return { success: false, message: "This course is not free" };
     }

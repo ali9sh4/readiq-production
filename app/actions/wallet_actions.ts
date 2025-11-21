@@ -189,6 +189,66 @@ export async function purchaseCourseWithWallet(
         totalSpent: FieldValue.increment(coursePrice),
         updatedAt: new Date().toISOString(),
       });
+      // ===== TRANSFER TO INSTRUCTOR =====
+      const instructorId = courseData?.createdBy;
+      if (!instructorId) {
+        throw new Error("معلومات المدرب غير موجودة");
+      }
+
+      // Prevent buying your own course
+      if (instructorId === userId) {
+        throw new Error("لا يمكنك شراء دورتك الخاصة");
+      }
+
+      // Get or create instructor wallet
+      const instructorWalletRef = db.collection("wallets").doc(instructorId);
+      const instructorWalletDoc = await transaction.get(instructorWalletRef);
+
+      if (instructorWalletDoc.exists) {
+        // Update existing wallet
+        const instructorWallet = instructorWalletDoc.data() as Wallet;
+        transaction.update(instructorWalletRef, {
+          balance: instructorWallet.balance + coursePrice,
+          totalEarnings: (instructorWallet.totalEarnings || 0) + coursePrice,
+          updatedAt: new Date().toISOString(),
+        });
+      } else {
+        // Create new wallet for instructor
+        transaction.set(instructorWalletRef, {
+          userId: instructorId,
+          userName: courseData?.instructorName || "مدرب",
+          balance: coursePrice,
+          totalEarnings: coursePrice,
+          totalTopups: 0,
+          totalSpent: 0,
+          dailyLimit: 5000000,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+
+      // Log instructor earning transaction
+      const instructorTxnRef = db.collection("wallet_transactions").doc();
+      transaction.set(instructorTxnRef, {
+        userId: instructorId,
+        type: "earning",
+        amount: coursePrice,
+        balanceBefore: instructorWalletDoc.exists
+          ? instructorWalletDoc.data()?.balance || 0
+          : 0,
+        balanceAfter:
+          (instructorWalletDoc.exists
+            ? instructorWalletDoc.data()?.balance || 0
+            : 0) + coursePrice,
+        description: `إيراد من بيع دورة: ${courseData?.title || courseId}`,
+        metadata: {
+          courseId,
+          courseTitle: courseData?.title,
+          enrollmentId,
+          studentId: userId,
+        },
+        createdAt: new Date().toISOString(),
+      });
 
       // Create enrollment
       const enrollmentRef = db.collection("enrollments").doc(enrollmentId);
