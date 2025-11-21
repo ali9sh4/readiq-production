@@ -25,9 +25,9 @@ export default function PaymentSelector({
       id: "wallet" as PaymentMethod,
       name: "المحفظة",
       description: "ادفع من رصيد محفظتك",
-      icon: <Wallet className="w-8 h-8 text-white" />,
-      color: "from-green-600 to-green-700",
-      disabled: false, // ✅ ONLY THIS IS ENABLED
+      icon: <Wallet className="w-6 h-6 sm:w-8 sm:h-8 text-white" />,
+      color: "bg-green-600",
+      disabled: false,
       badge: "متاح الآن",
       badgeColor: "bg-green-100 text-green-700",
     },
@@ -39,13 +39,13 @@ export default function PaymentSelector({
         <Image
           src="/ZainCashLogo.png"
           alt="ZainCash"
-          width={120}
-          height={40}
-          className="object-contain"
+          width={100}
+          height={32}
+          className="object-contain w-20 h-8 sm:w-28 sm:h-10"
         />
       ),
-      color: "from-purple-600 to-purple-700",
-      disabled: true, // ❌ DISABLED
+      color: "bg-purple-600",
+      disabled: true,
       badge: "قريباً",
       badgeColor: "bg-yellow-100 text-yellow-700",
     },
@@ -53,29 +53,31 @@ export default function PaymentSelector({
       id: "areeba" as PaymentMethod,
       name: "بطاقة الدفع",
       description: "فيزا • ماستركارد",
-      icon: <CreditCard className="w-8 h-8" />,
-      color: "from-blue-600 to-blue-700",
-      disabled: true, // ❌ DISABLED
+      icon: <CreditCard className="w-6 h-6 sm:w-8 sm:h-8" />,
+      color: "bg-blue-600",
+      disabled: true,
       badge: "قريباً",
       badgeColor: "bg-yellow-100 text-yellow-700",
     },
   ];
 
   return (
-    <div className="font-zain space-y-4" dir="rtl">
-      <div className="text-center space-y-2">
-        <h3 className="text-xl font-bold">اختر طريقة الدفع</h3>
-        <p className="text-2xl font-bold text-blue-600">
+    <div className="font-zain space-y-3 sm:space-y-4 p-2 sm:p-0" dir="rtl">
+      {/* Header */}
+      <div className="text-center space-y-1 sm:space-y-2">
+        <h3 className="text-lg sm:text-xl font-bold">اختر طريقة الدفع</h3>
+        <p className="text-xl sm:text-2xl font-bold text-blue-600">
           {price.toLocaleString()} IQD
         </p>
       </div>
 
-      <div className="grid gap-3">
+      {/* Payment Methods */}
+      <div className="grid gap-2 sm:gap-3">
         {methods.map((method) => (
           <Card
             key={method.id}
             onClick={() => !method.disabled && !loading && onSelect(method.id)}
-            className={`p-4 transition-all ${
+            className={`p-3 sm:p-4 transition-all ${
               method.disabled
                 ? "opacity-50 cursor-not-allowed bg-gray-50"
                 : selectedMethod === method.id
@@ -83,27 +85,29 @@ export default function PaymentSelector({
                 : "cursor-pointer hover:shadow-lg hover:ring-2 hover:ring-green-200"
             } ${loading ? "pointer-events-none opacity-70" : ""}`}
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
               {/* Icon */}
               <div
                 className={`${
                   method.id === "zaincash"
-                    ? "w-32 h-12"
-                    : method.id === "wallet"
-                    ? "w-12 h-12 rounded-lg bg-gradient-to-br from-green-600 to-green-700"
-                    : "w-12 h-12 rounded-lg bg-gradient-to-br from-blue-600 to-blue-700"
-                } flex items-center justify-center flex-shrink-0 ${
-                  method.disabled ? "grayscale" : ""
-                }`}
+                    ? "w-20 h-10 sm:w-28 sm:h-12"
+                    : "w-10 h-10 sm:w-12 sm:h-12"
+                } flex items-center justify-center flex-shrink-0 rounded-lg ${
+                  method.id === "wallet"
+                    ? "bg-green-600"
+                    : method.id === "areeba"
+                    ? "bg-blue-600"
+                    : ""
+                } ${method.disabled ? "grayscale" : ""}`}
               >
                 {method.icon}
               </div>
 
               {/* Content */}
-              <div className="flex-1 text-right">
-                <div className="flex items-center gap-2 justify-end">
+              <div className="flex-1 text-right min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2 justify-end mb-0.5 sm:mb-1">
                   <span
-                    className={`text-xs ${method.badgeColor} px-2 py-0.5 rounded-full flex items-center gap-1`}
+                    className={`text-xs ${method.badgeColor} px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-1`}
                   >
                     {method.disabled ? (
                       <Clock className="w-3 h-3" />
@@ -115,7 +119,7 @@ export default function PaymentSelector({
                 </div>
 
                 <p
-                  className={`text-sm ${
+                  className={`text-xs sm:text-sm ${
                     method.disabled ? "text-gray-400" : "text-gray-600"
                   }`}
                 >
@@ -131,8 +135,8 @@ export default function PaymentSelector({
               {/* Selected indicator */}
               {selectedMethod === method.id && !loading && (
                 <div className="flex-shrink-0">
-                  <div className="w-6 h-6 rounded-full bg-green-600 flex items-center justify-center">
-                    <CheckCircle2 className="w-4 h-4 text-white" />
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-600 flex items-center justify-center">
+                    <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                   </div>
                 </div>
               )}
@@ -140,7 +144,7 @@ export default function PaymentSelector({
               {/* Loading spinner */}
               {loading && selectedMethod === method.id && (
                 <div className="flex-shrink-0">
-                  <div className="w-6 h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
             </div>
@@ -151,21 +155,22 @@ export default function PaymentSelector({
       {/* Info notices */}
       <div className="space-y-2">
         {/* Wallet info */}
-        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-          <p className="text-sm text-green-800 font-medium text-center">
+        <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3">
+          <p className="text-xs sm:text-sm text-green-800 font-medium text-center">
             ✅ الدفع عبر المحفظة متاح الآن - رصيد آمن وسريع
           </p>
         </div>
 
         {/* Coming soon for other methods */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-          <p className="text-sm text-yellow-800 text-center">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 sm:p-3">
+          <p className="text-xs sm:text-sm text-yellow-800 text-center">
             ⏳ طرق الدفع الأخرى (زين كاش والبطاقات البنكية) قيد التفعيل
           </p>
         </div>
       </div>
 
-      <p className="text-xs text-center text-gray-500">
+      {/* Security notice */}
+      <p className="text-xs text-center text-gray-500 pt-1">
         🔒 جميع المعاملات مشفرة ومحمية
       </p>
     </div>
