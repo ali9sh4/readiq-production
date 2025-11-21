@@ -192,66 +192,6 @@ export default function DashboardHome() {
           </div>
         </section>
       )}
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="bg-gray-50 px-6 py-6 sm:px-8 sm:py-8 border-b border-gray-100">
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-green-500 rounded-2xl shadow-md mb-3">
-              <span className="text-2xl">⚡</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-1">
-              الإجراءات السريعة
-            </h2>
-            <p className="text-gray-600 text-sm sm:text-base">
-              اختصارات لأهم الوظائف التي تحتاجها بسرعة
-            </p>
-          </div>
-        </div>
-        <div className="p-6 sm:p-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <Link href="/" className="group">
-              <div className="relative h-full bg-blue-50 border-2 border-blue-100 hover:border-blue-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-95 cursor-pointer">
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                    <BookOpen className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="font-semibold text-gray-800 text-sm sm:text-base">
-                    استكشف الدورات
-                  </span>
-                </div>
-              </div>
-            </Link>
-            <Link href="/course-upload" className="group">
-              <div className="relative h-full bg-green-50 border-2 border-green-100 hover:border-green-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-95 cursor-pointer">
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                    <Plus className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="font-semibold text-gray-800 text-sm sm:text-base">
-                    إنشاء دورة جديدة
-                  </span>
-                </div>
-              </div>
-            </Link>
-            <Link
-              href="/user_dashboard/certificates"
-              className="group sm:col-span-2 lg:col-span-1"
-            >
-              <div className="relative h-full bg-amber-50 border-2 border-amber-100 hover:border-amber-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-95 cursor-pointer">
-                <div className="flex flex-col items-center text-center gap-3">
-                  <div className="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
-                    <Award className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="font-semibold text-gray-800 text-sm sm:text-base">
-                    عرض الشهادات
-                  </span>
-                </div>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

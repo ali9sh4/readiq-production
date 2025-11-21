@@ -113,7 +113,7 @@ const CourseCard = memo(
     // Admin View
     if (isAdminView) {
       return (
-        <div className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1">
+        <div className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white shadow-md md:shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 md:border-gray-300 hover:-translate-y-1">
           {/* Image with Preview Overlay */}
           <Link href={`/Course/${course.id}`} className="relative block">
             <div className="relative h-48 sm:h-52 md:h-56 lg:h-48 bg-gray-100 overflow-hidden group/image">
@@ -225,7 +225,7 @@ const CourseCard = memo(
     return (
       <Link
         href={`/Course/${course.id}`}
-        className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1"
+        className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white shadow-md md:shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 md:border-gray-300 hover:-translate-y-1"
       >
         {/* Image with Badges */}
         <div className="relative h-48 sm:h-52 md:h-56 lg:h-48 bg-gray-100 overflow-hidden">
@@ -399,7 +399,7 @@ export default function CoursesCardList({
       aria-label="قائمة الدورات"
     >
       {/* Courses Grid - Optimized for all screen sizes */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-4 lg:gap-5">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4 lg:gap-5">
         {" "}
         {data.courses.map((course) => (
           <CourseCard

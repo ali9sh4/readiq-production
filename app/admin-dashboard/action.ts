@@ -17,7 +17,7 @@ export const approveCourse = async (
         error: true,
         message: "غير مخول لك اعتماد الدورات",
       };
-    } 
+    }
 
     // Update course with approval status
     await db
@@ -32,7 +32,6 @@ export const approveCourse = async (
         updatedAt: new Date(),
         rejectionReason: !approve && reason ? reason : null, // ✅ Add this
       });
-        revalidatePath('/');
 
     return {
       success: true,
@@ -72,7 +71,6 @@ export const resetCourseStatus = async (courseId: string, token: string) => {
       rejectionReason: null,
       updatedAt: new Date(),
     });
-    revalidatePath('/');  
 
     return {
       success: true,
