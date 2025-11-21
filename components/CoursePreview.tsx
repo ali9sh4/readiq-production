@@ -267,28 +267,38 @@ export default function CoursePreview({
                 )}
               </div>
 
-              {/* Price & Enroll (Mobile & Tablet) */}
-              <div className="lg:hidden pt-2">
-                <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-                  <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
-                    <div className="flex flex-wrap items-baseline gap-2">
-                      {(course.salePrice ?? 0) > 0 &&
-                      course.salePrice! < (course.price ?? 0) ? (
-                        <>
-                          <span className="text-xl sm:text-2xl md:text-3xl font-bold text-green-600">
-                            ${course.salePrice!.toFixed(2)}
-                          </span>
-                          <span className="text-sm sm:text-base md:text-lg text-gray-400 line-through">
-                            ${(course.price ?? 0).toFixed(2)}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-xl sm:text-2xl md:text-3xl font-bold">
-                          ${(course.price ?? 0).toFixed(2)}
+              {/* ========================================
+                  ENROLLMENT CARD - MOBILE/TABLET ONLY
+                  Shown on screens smaller than lg (< 1024px)
+                  ======================================== */}
+              <div className="lg:hidden">
+                <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
+                  {/* Price Display */}
+                  <div className="mb-3">
+                    {/* Show sale price if available */}
+                    {(course.salePrice ?? 0) > 0 &&
+                    course.salePrice! < (course.price ?? 0) ? (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-green-600">
+                          {course.salePrice!.toLocaleString()} د.ع
                         </span>
-                      )}
-                    </div>
+                        <span className="text-sm text-gray-400 line-through">
+                          {course.price!.toLocaleString()} د.ع
+                        </span>
+                      </div>
+                    ) : course.price === 0 ? (
+                      <span className="text-2xl font-bold text-green-600">
+                        مجاني
+                      </span>
+                    ) : (
+                      <span className="text-2xl font-bold text-gray-900">
+                        {course.price!.toLocaleString()} د.ع
+                      </span>
+                    )}
+                  </div>
 
+                  {/* Enroll Button */}
+                  <div className="mb-2">
                     <EnrollButton
                       courseTitle={course.title}
                       price={actualPrice}
@@ -296,15 +306,17 @@ export default function CoursePreview({
                       isFree={course.price === 0}
                       fullWidth
                     />
-                    <FavoriteButton
-                      courseId={course.id}
-                      courseTitle={course.title}
-                      courseThumbnail={course.thumbnailUrl}
-                      initialIsFavorited={initialIsFavorite}
-                      showLabel={false}
-                    />
-                  </CardContent>
-                </Card>
+                  </div>
+
+                  {/* Favorite Button */}
+                  <FavoriteButton
+                    courseId={course.id}
+                    courseTitle={course.title}
+                    courseThumbnail={course.thumbnailUrl}
+                    initialIsFavorited={initialIsFavorite}
+                    showLabel={false}
+                  />
+                </div>
               </div>
             </div>
 
@@ -359,38 +371,48 @@ export default function CoursePreview({
                   )}
                 </div>
 
-                {/* Desktop Price Card */}
+                {/* ========================================
+                    ENROLLMENT CARD - DESKTOP ONLY
+                    Shown below video on lg+ screens (≥ 1024px)
+                    ======================================== */}
                 <div className="hidden lg:block">
-                  <CardContent className="p-6 space-y-4 bg-white">
-                    <div className="text-center">
+                  <CardContent className="p-5 bg-white border-t border-gray-200">
+                    {/* Price Display - Centered */}
+                    <div className="text-center mb-4">
+                      {/* Show sale price if available */}
                       {(course.salePrice ?? 0) > 0 &&
                       course.salePrice! < (course.price ?? 0) ? (
                         <div className="flex items-baseline justify-center gap-3">
-                          <span className="text-4xl font-bold text-green-600">
+                          <span className="text-3xl font-bold text-green-600">
                             {course.salePrice!.toLocaleString()} د.ع
                           </span>
-                          <span className="text-xl text-gray-400 line-through">
+                          <span className="text-lg text-gray-400 line-through">
                             {course.price!.toLocaleString()} د.ع
                           </span>
                         </div>
                       ) : course.price === 0 ? (
-                        <p className="text-4xl font-bold text-green-600">
+                        <span className="text-3xl font-bold text-green-600">
                           مجاني
-                        </p>
+                        </span>
                       ) : (
-                        <span className="text-4xl font-bold text-gray-900">
+                        <span className="text-3xl font-bold text-gray-900">
                           {course.price!.toLocaleString()} د.ع
                         </span>
                       )}
                     </div>
 
-                    <EnrollButton
-                      courseTitle={course.title}
-                      price={actualPrice}
-                      courseId={course.id}
-                      isFree={course.price === 0}
-                      fullWidth
-                    />
+                    {/* Enroll Button */}
+                    <div className="mb-3">
+                      <EnrollButton
+                        courseTitle={course.title}
+                        price={actualPrice}
+                        courseId={course.id}
+                        isFree={course.price === 0}
+                        fullWidth
+                      />
+                    </div>
+
+                    {/* Favorite Button */}
                     <FavoriteButton
                       courseId={course.id}
                       courseTitle={course.title}
@@ -398,6 +420,11 @@ export default function CoursePreview({
                       initialIsFavorited={initialIsFavorite}
                       showLabel={false}
                     />
+
+                    {/* Trust Badge */}
+                    <p className="text-xs text-center text-gray-500 mt-4 pt-3 border-t">
+                      💳 دفع آمن • 🔄 ضمان استرداد 30 يوم
+                    </p>
                   </CardContent>
                 </div>
               </Card>
@@ -603,71 +630,83 @@ export default function CoursePreview({
             )}
           </div>
 
-          {/* Right: Sidebar - Sticky Info Card */}
+          {/* ========================================
+              SIDEBAR - DESKTOP ONLY
+              Sticky info card with course details and enrollment
+              Shown on lg+ screens (≥ 1024px)
+              ======================================== */}
           <div className="hidden lg:block">
             <Card className="sticky top-4 border-0 shadow-lg">
-              <CardContent className="p-6 space-y-6">
-                <h3 className="font-bold text-xl border-b pb-3">
+              <CardContent className="p-5 space-y-5">
+                {/* Sidebar Title */}
+                <h3 className="font-bold text-lg border-b border-gray-200 pb-3">
                   معلومات الدورة
                 </h3>
 
-                <div className="space-y-4">
+                {/* Course Metadata */}
+                <div className="space-y-3">
+                  {/* Level */}
                   {course.level && (
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between py-1">
                       <span className="text-gray-600 flex items-center gap-2 text-sm">
                         <BarChart3 className="w-4 h-4" />
                         المستوى
                       </span>
-                      <span className="font-semibold text-gray-900">
+                      <span className="font-semibold text-gray-900 text-sm">
                         {course.level}
                       </span>
                     </div>
                   )}
 
+                  {/* Language */}
                   {course.language && (
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between py-1">
                       <span className="text-gray-600 flex items-center gap-2 text-sm">
                         <Globe className="w-4 h-4" />
                         اللغة
                       </span>
-                      <span className="font-semibold text-gray-900">
+                      <span className="font-semibold text-gray-900 text-sm">
                         {course.language}
                       </span>
                     </div>
                   )}
 
-                  <div className="flex items-center justify-between">
+                  {/* Total Lessons */}
+                  <div className="flex items-center justify-between py-1">
                     <span className="text-gray-600 flex items-center gap-2 text-sm">
                       <Video className="w-4 h-4" />
                       عدد الدروس
                     </span>
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-gray-900 text-sm">
                       {totalVideos}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  {/* Total Duration */}
+                  <div className="flex items-center justify-between py-1">
                     <span className="text-gray-600 flex items-center gap-2 text-sm">
                       <Clock className="w-4 h-4" />
                       المدة الإجمالية
                     </span>
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-gray-900 text-sm">
                       {formatTotalDuration(totalDuration)}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  {/* Students Count */}
+                  <div className="flex items-center justify-between py-1">
                     <span className="text-gray-600 flex items-center gap-2 text-sm">
                       <Users className="w-4 h-4" />
                       الطلاب
                     </span>
-                    <span className="font-semibold text-gray-900">
+                    <span className="font-semibold text-gray-900 text-sm">
                       {(course.studentsCount || 0).toLocaleString()}
                     </span>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t">
+                {/* Enroll Button */}
+                <div className="pt-3 border-t border-gray-200">
                   <EnrollButton
                     courseTitle={course.title}
                     price={actualPrice}
@@ -677,7 +716,8 @@ export default function CoursePreview({
                   />
                 </div>
 
-                <p className="text-xs text-center text-gray-500 pt-2">
+                {/* Trust Badge */}
+                <p className="text-xs text-center text-gray-500 pt-1">
                   💳 دفع آمن • 🔄 ضمان استرداد 30 يوم
                 </p>
               </CardContent>
