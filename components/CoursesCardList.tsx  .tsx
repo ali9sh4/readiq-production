@@ -39,32 +39,45 @@ const getImageUrl = (thumbnailUrl?: string): string => {
 // ===== SUB-COMPONENTS =====
 
 const EmptyState = memo(() => (
-  <div className="flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
-    <div className="bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200 p-8 max-w-md">
-      <div className="w-16 h-16 bg-gray-400 rounded-full flex items-center justify-center mx-auto mb-4">
-        <BookOpen className="w-8 h-8 text-white" aria-hidden="true" />
+  <div className="flex flex-col items-center justify-center p-8 md:p-12 text-center min-h-[400px]">
+    <div className="bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200 p-6 md:p-8 max-w-md w-full">
+      <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-400 rounded-full flex items-center justify-center mx-auto mb-4">
+        <BookOpen
+          className="w-8 h-8 md:w-10 md:h-10 text-white"
+          aria-hidden="true"
+        />
       </div>
-      <h3 className="text-xl font-bold text-gray-800 mb-2">لا توجد دورات</h3>
-      <p className="text-gray-600">لا توجد دورات متاحة في الوقت الحالي</p>
+      <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2">
+        لا توجد دورات
+      </h3>
+      <p className="text-sm md:text-base text-gray-600">
+        لا توجد دورات متاحة في الوقت الحالي
+      </p>
     </div>
   </div>
 ));
 EmptyState.displayName = "EmptyState";
 
 const ErrorState = memo(({ message }: { message?: string }) => (
-  <div className="flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
-    <div className="bg-gradient-to-br from-red-50 to-rose-100 rounded-2xl shadow-lg border border-red-200 p-8 max-w-md">
-      <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-        <AlertCircle className="w-8 h-8 text-white" aria-hidden="true" />
+  <div className="flex flex-col items-center justify-center p-8 md:p-12 text-center min-h-[400px]">
+    <div className="bg-gradient-to-br from-red-50 to-rose-100 rounded-2xl shadow-lg border border-red-200 p-6 md:p-8 max-w-md w-full">
+      <div className="w-16 h-16 md:w-20 md:h-20 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+        <AlertCircle
+          className="w-8 h-8 md:w-10 md:h-10 text-white"
+          aria-hidden="true"
+        />
       </div>
-      <h3 className="text-xl font-bold text-red-800 mb-2">خطأ في التحميل</h3>
-      <p className="text-red-600">{message || "حدث خطأ غير متوقع"}</p>
+      <h3 className="text-lg md:text-xl font-bold text-red-800 mb-2">
+        خطأ في التحميل
+      </h3>
+      <p className="text-sm md:text-base text-red-600">
+        {message || "حدث خطأ غير متوقع"}
+      </p>
     </div>
   </div>
 ));
 ErrorState.displayName = "ErrorState";
 
-// ✅ BEST PRACTICE S: Simple, clean course card
 const CourseCard = memo(
   ({
     course,
@@ -86,26 +99,24 @@ const CourseCard = memo(
       [course.thumbnailUrl]
     );
 
-    // ✅ YOUR IMPROVEMENT: Better default values
     const rating = course.rating || 4.7;
     const studentsCount = course.studentsCount || 0;
-    const instructor = course.instructorName || " مدرب غير معروف";
+    const instructor = course.instructorName || "مدرب غير معروف";
     const originalPrice = course.price ?? 99.99;
     const salePrice = course.salePrice || null;
     const currentPrice = salePrice || originalPrice;
 
-    // ✅ BEST PRACTICE: Determine which badges to show
     const showBestseller = studentsCount > 20;
     const showPremium = originalPrice > 0;
     const showFree = originalPrice === 0;
 
-    // Admin View - Not wrapped in Link
+    // Admin View
     if (isAdminView) {
       return (
-        <div className="group block rounded-xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1">
+        <div className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1">
           {/* Image with Preview Overlay */}
           <Link href={`/Course/${course.id}`} className="relative block">
-            <div className="relative h-40 sm:h-44 bg-gray-100 overflow-hidden group/image">
+            <div className="relative h-48 sm:h-52 md:h-56 lg:h-48 bg-gray-100 overflow-hidden group/image">
               {!imageError ? (
                 <Image
                   src={imageUrl}
@@ -116,15 +127,15 @@ const CourseCard = memo(
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                  <BookOpen className="w-10 h-10 text-gray-400" />
+                  <BookOpen className="w-12 h-12 md:w-14 md:h-14 lg:w-10 lg:h-10 text-gray-400" />
                 </div>
               )}
 
-              {/* ✨ Preview Overlay - appears on hover */}
+              {/* Preview Overlay */}
               <div className="absolute inset-0 bg-black/0 group-hover/image:bg-black/40 transition-all duration-300 flex items-center justify-center">
                 <div className="opacity-0 group-hover/image:opacity-100 transition-opacity duration-300 flex flex-col items-center gap-2">
-                  <BookOpen className="w-8 h-8 text-white" />
-                  <span className="text-white text-sm font-semibold">
+                  <BookOpen className="w-10 h-10 md:w-12 md:h-12 lg:w-8 lg:h-8 text-white" />
+                  <span className="text-white text-sm md:text-base lg:text-sm font-semibold">
                     معاينة الدورة
                   </span>
                 </div>
@@ -133,26 +144,28 @@ const CourseCard = memo(
           </Link>
 
           {/* Content */}
-          <div className="p-3 space-y-2 text-right">
-            <h3 className="text-sm font-bold text-gray-900 line-clamp-2">
+          <div className="p-4 md:p-5 lg:p-4 space-y-2.5 md:space-y-3 lg:space-y-2 text-right">
+            <h3 className="text-base md:text-lg lg:text-sm font-bold text-gray-900 line-clamp-2 leading-snug">
               {course.title}
             </h3>
-            <p className="text-xs text-gray-600 truncate">{instructor}</p>
-            {/* ✅ ADD THIS: Enrollment Count */}
+            <p className="text-sm md:text-base lg:text-xs text-gray-600 truncate">
+              {instructor}
+            </p>
+
             {course.enrollmentCount !== undefined &&
               course.enrollmentCount > 0 && (
-                <div className="flex items-center gap-1 text-xs text-gray-600">
-                  <Users className="w-4 h-4" />
+                <div className="flex items-center gap-1.5 md:gap-2 lg:gap-1 text-sm md:text-base lg:text-xs text-gray-600">
+                  <Users className="w-4 h-4 md:w-5 md:h-5 lg:w-4 lg:h-4" />
                   <span>{course.enrollmentCount} طالب مسجل</span>
                 </div>
               )}
 
             {/* Admin Actions */}
-            <div className="flex gap-2 pt-2 border-t border-gray-100">
+            <div className="flex gap-2 md:gap-3 lg:gap-2 pt-3 md:pt-4 lg:pt-2 border-t border-gray-100">
               <Button
                 size="sm"
                 variant="outline"
-                className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50 text-xs"
+                className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50 text-sm md:text-base lg:text-xs h-9 md:h-10 lg:h-8"
                 onClick={() => {
                   console.log("🔍 Navigating to edit page");
                   console.log("🔍 Course ID:", course.id);
@@ -164,14 +177,14 @@ const CourseCard = memo(
                 asChild
               >
                 <Link href={`/course-upload/edit/${course.id}`}>
-                  <Edit className="w-3 h-3 ml-1" />
+                  <Edit className="w-4 h-4 md:w-5 md:h-5 lg:w-3 lg:h-3 ml-1.5 md:ml-2 lg:ml-1" />
                   تعديل
                 </Link>
               </Button>
               <Button
                 size="sm"
                 variant="destructive"
-                className="text-xs"
+                className="text-sm md:text-base lg:text-xs h-9 md:h-10 lg:h-8"
                 onClick={async (e) => {
                   e.stopPropagation();
 
@@ -180,14 +193,12 @@ const CourseCard = memo(
                   }
 
                   try {
-                    // ✅ Fixed: Use auth.user instead of user prop
                     if (!auth?.user) {
                       alert("يرجى تسجيل الدخول");
                       return;
                     }
 
                     const token = await auth.user.getIdToken();
-
                     const result = await softDeleteCourse(course.id, token);
 
                     if (result.success) {
@@ -201,7 +212,7 @@ const CourseCard = memo(
                   }
                 }}
               >
-                <Trash2 className="w-3 h-3 ml-1" />
+                <Trash2 className="w-4 h-4 md:w-5 md:h-5 lg:w-3 lg:h-3 ml-1.5 md:ml-2 lg:ml-1" />
                 حذف الدوره
               </Button>
             </div>
@@ -210,30 +221,32 @@ const CourseCard = memo(
       );
     }
 
-    // ✅ YOUR IMPROVEMENT: User View - Entire card is a Link (simpler!)
+    // User View
     return (
       <Link
         href={`/Course/${course.id}`}
-        className="group block rounded-xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1"
+        className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:-translate-y-1"
       >
         {/* Image with Badges */}
-        <div className="relative h-40 sm:h-44 bg-gray-100 overflow-hidden">
+        <div className="relative h-48 sm:h-52 md:h-56 lg:h-48 bg-gray-100 overflow-hidden">
           {!imageError ? (
             <Image
               src={imageUrl}
               alt={course.title}
               fill
               className="object-cover group-hover:scale-110 transition-transform duration-500"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
               onError={() => setImageError(true)}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-200">
-              <BookOpen className="w-10 h-10 text-gray-400" />
+              <BookOpen className="w-12 h-12 md:w-14 md:h-14 lg:w-10 lg:h-10 text-gray-400" />
             </div>
           )}
+
+          {/* Favorite Button */}
           {!isAdminView && (
-            <div className="absolute top-2 right-2 z-10">
+            <div className="absolute top-2.5 md:top-3 lg:top-2 right-2.5 md:right-3 lg:right-2 z-10">
               <FavoriteButton
                 courseId={course.id}
                 courseTitle={course.title}
@@ -244,25 +257,25 @@ const CourseCard = memo(
             </div>
           )}
 
-          {/* ✅ YOUR IMPROVEMENT: Badges ON the image (bottom-left) - Very Udemy! */}
-          <div className="absolute bottom-2 left-2 flex gap-2">
+          {/* Badges */}
+          <div className="absolute bottom-2.5 md:bottom-3 lg:bottom-2 left-2.5 md:left-3 lg:left-2 flex flex-wrap gap-1.5 md:gap-2 lg:gap-1.5">
             {showFree && (
-              <Badge className="bg-green-500 text-white font-semibold text-xs px-2 py-0.5 rounded-md shadow-sm">
+              <Badge className="bg-green-500 text-white font-semibold text-xs md:text-sm lg:text-xs px-2.5 md:px-3 lg:px-2 py-1 md:py-1.5 lg:py-0.5 rounded-md shadow-sm">
                 مجاني
               </Badge>
             )}
             {showBestseller && (
-              <Badge className="bg-yellow-400 text-black font-semibold text-xs px-2 py-0.5 rounded-md shadow-sm">
+              <Badge className="bg-yellow-400 text-black font-semibold text-xs md:text-sm lg:text-xs px-2.5 md:px-3 lg:px-2 py-1 md:py-1.5 lg:py-0.5 rounded-md shadow-sm">
                 الأكثر مبيعاً
               </Badge>
             )}
             {showPremium && (
-              <Badge className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded-md shadow-sm">
+              <Badge className="bg-purple-600 text-white text-xs md:text-sm lg:text-xs px-2.5 md:px-3 lg:px-2 py-1 md:py-1.5 lg:py-0.5 rounded-md shadow-sm">
                 مميز
               </Badge>
             )}
             {isEnrolled && (
-              <Badge className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-md shadow-sm">
+              <Badge className="bg-blue-600 text-white text-xs md:text-sm lg:text-xs px-2.5 md:px-3 lg:px-2 py-1 md:py-1.5 lg:py-0.5 rounded-md shadow-sm">
                 مسجل
               </Badge>
             )}
@@ -270,45 +283,47 @@ const CourseCard = memo(
         </div>
 
         {/* Content */}
-        <div className="p-3 space-y-2 text-right">
+        <div className="p-4 md:p-5 lg:p-4 space-y-2.5 md:space-y-3 lg:space-y-2 text-right">
           {/* Title */}
-          <h3 className="text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition">
+          <h3 className="text-base md:text-lg lg:text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition leading-snug">
             {course.title}
           </h3>
 
           {/* Instructor */}
-          <p className="text-xs text-gray-600 truncate">{instructor}</p>
+          <p className="text-sm md:text-base lg:text-xs text-gray-600 truncate">
+            {instructor}
+          </p>
+
+          {/* Enrollment Count */}
           {course.enrollmentCount !== undefined &&
             course.enrollmentCount > 0 && (
-              <div className="flex items-center gap-1 text-xs text-gray-600">
-                <Users className="w-4 h-4" />
+              <div className="flex items-center gap-1.5 md:gap-2 lg:gap-1 text-sm md:text-base lg:text-xs text-gray-600">
+                <Users className="w-4 h-4 md:w-5 md:h-5 lg:w-4 lg:h-4" />
                 <span>{course.enrollmentCount} طالب مسجل</span>
               </div>
             )}
 
-          {/* ✅ YOUR IMPROVEMENT: Single star + rating (cleaner than 5 stars) */}
-          <div className="flex justify-end items-center gap-1 text-xs">
+          {/* Rating */}
+          <div className="flex justify-end items-center gap-1.5 md:gap-2 lg:gap-1 text-sm md:text-base lg:text-xs">
             <span className="font-semibold text-gray-900">
               {rating.toFixed(1)}
             </span>
-            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+            <Star className="w-4 h-4 md:w-5 md:h-5 lg:w-3.5 lg:h-3.5 fill-amber-400 text-amber-400" />
             <span className="text-gray-500">
               ({studentsCount.toLocaleString()})
             </span>
           </div>
 
-          {/* ✅ YOUR IMPROVEMENT: Clean price display */}
-          <div className="flex justify-end items-baseline gap-2">
-            {/* Show the current price (sale or regular) */}
-            <span className="text-base font-bold text-gray-900">
+          {/* Price */}
+          <div className="flex justify-end items-baseline gap-2 md:gap-2.5 lg:gap-2">
+            <span className="text-lg md:text-xl lg:text-base font-bold text-gray-900">
               {currentPrice === 0
                 ? "مجاني"
                 : `${currentPrice.toLocaleString()} د.ع`}
             </span>
 
-            {/* Show strikethrough original price only if there's a discount */}
             {salePrice && salePrice < originalPrice && (
-              <span className="text-xs text-gray-400 line-through">
+              <span className="text-sm md:text-base lg:text-xs text-gray-400 line-through">
                 {originalPrice.toLocaleString()} د.ع
               </span>
             )}
@@ -328,19 +343,16 @@ export default function CoursesCardList({
   isAdminView = false,
   onDeleteCourse,
 }: CoursesCardListProps) {
-  // Add this after fetching enrollments
-
   const auth = useAuth();
   const [enrollmentStatus, setEnrollmentStatus] = useState<
     Record<string, boolean>
   >({});
   const [favoriteStatus, setFavoriteStatus] = useState<Record<string, boolean>>(
     {}
-  ); // ✅ Add this
+  );
 
   const [loading, setLoading] = useState(true);
 
-  // Check enrollments on mount
   const fetchEnrollments = useCallback(async () => {
     if (!auth?.user || isAdminView || !data.courses) {
       setLoading(false);
@@ -381,9 +393,14 @@ export default function CoursesCardList({
   }
 
   return (
-    <div className="space-y-6" role="region" aria-label="قائمة الدورات">
-      {/* Courses Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+    <div
+      className="space-y-6 md:space-y-8"
+      role="region"
+      aria-label="قائمة الدورات"
+    >
+      {/* Courses Grid - Optimized for all screen sizes */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 md:gap-4 lg:gap-5">
+        {" "}
         {data.courses.map((course) => (
           <CourseCard
             key={course.id}
@@ -398,26 +415,12 @@ export default function CoursesCardList({
 
       {/* Pagination */}
       {data.hasMore && (
-        <div className="text-center py-4">
-          <p className="text-sm text-gray-600">المزيد من الدورات متاحة...</p>
+        <div className="text-center py-4 md:py-6">
+          <p className="text-sm md:text-base text-gray-600">
+            المزيد من الدورات متاحة...
+          </p>
         </div>
       )}
     </div>
   );
 }
-
-/*
-delete button
-    <Button
-                size="sm"
-                variant="destructive"
-                className="text-xs"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete?.(course.id);
-                }}
-              >
-                <Trash2 className="w-3 h-3 ml-1" />
-                حذف
-              </Button> 
-              */
