@@ -23,8 +23,9 @@ import { Badge } from "@/components/ui/badge";
 import MuxPlayer from "@mux/mux-player-react";
 import EnrollButton from "./EnrollButton";
 import { toast } from "sonner";
-import { useSearchParams } from "next/navigation"; // ✅ Only need this
+import { useSearchParams } from "next/navigation";
 import FavoriteButton from "./favoritesButton";
+
 interface CoursePreviewProps {
   course: Course;
   initialIsFavorited: boolean;
@@ -156,19 +157,19 @@ export default function CoursePreview({
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
-        <div className="container mx-auto px-4 py-8 lg:py-12">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+      <div className="bg-gray-900 text-white">
+        <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8 lg:py-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-start">
             {/* Left: Course Info */}
-            <div className="space-y-6">
+            <div className="space-y-3 sm:space-y-4 md:space-y-6">
               {/* Breadcrumb or Category */}
               {course.category && (
-                <div className="flex items-center gap-2">
-                  <Badge className="bg-blue-600 text-white hover:bg-blue-700">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge className="bg-blue-600 text-white hover:bg-blue-700 text-xs sm:text-sm">
                     {course.category}
                   </Badge>
                   {course.status === "published" && (
-                    <Badge className="bg-yellow-400 text-black font-semibold hover:bg-yellow-500">
+                    <Badge className="bg-yellow-400 text-black font-semibold hover:bg-yellow-500 text-xs sm:text-sm">
                       الأكثر مبيعاً
                     </Badge>
                   )}
@@ -177,11 +178,11 @@ export default function CoursePreview({
 
               {/* Title */}
               <div>
-                <h1 className="text-3xl lg:text-4xl font-bold mb-3 leading-tight">
+                <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3 leading-tight">
                   {course.title}
                 </h1>
                 {course.subtitle && (
-                  <p className="text-lg lg:text-xl text-gray-300 leading-relaxed">
+                  <p className="text-base sm:text-lg md:text-xl text-gray-300 leading-relaxed">
                     {course.subtitle}
                   </p>
                 )}
@@ -189,23 +190,23 @@ export default function CoursePreview({
 
               {/* Description */}
               {course.description && (
-                <p className="text-gray-300 leading-relaxed text-sm lg:text-base">
+                <p className="text-gray-300 leading-relaxed text-xs sm:text-sm md:text-base line-clamp-3 sm:line-clamp-none">
                   {course.description}
                 </p>
               )}
 
               {/* Stats Row */}
-              <div className="flex flex-wrap items-center gap-4 lg:gap-6 text-sm">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 lg:gap-6 text-xs sm:text-sm">
                 {/* Rating */}
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-lg">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="font-bold text-base sm:text-lg">
                     {course.rating?.toFixed(1) || "4.7"}
                   </span>
                   <div className="flex items-center gap-0.5">
                     {[...Array(5)].map((_, i) => (
                       <Star
                         key={i}
-                        className={`w-4 h-4 ${
+                        className={`w-3 h-3 sm:w-4 sm:h-4 ${
                           i < Math.floor(course.rating || 4.7)
                             ? "fill-amber-400 text-amber-400"
                             : "text-gray-500"
@@ -213,14 +214,14 @@ export default function CoursePreview({
                       />
                     ))}
                   </div>
-                  <span className="text-gray-400">
+                  <span className="text-gray-400 hidden sm:inline">
                     ({(course.studentsCount || 0).toLocaleString()} تقييم)
                   </span>
                 </div>
 
                 {/* Students */}
-                <div className="flex items-center gap-2 text-gray-300">
-                  <Users className="w-5 h-5" />
+                <div className="flex items-center gap-1.5 sm:gap-2 text-gray-300">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span>
                     {(course.studentsCount || 0).toLocaleString()} طالب
                   </span>
@@ -229,13 +230,13 @@ export default function CoursePreview({
 
               {/* Instructor */}
               {course.instructorName && (
-                <div className="flex items-center gap-3 bg-white/10 rounded-xl p-4 backdrop-blur-sm">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                    <Award className="w-6 h-6 text-white" />
+                <div className="flex items-center gap-2 sm:gap-3 bg-white/10 rounded-lg sm:rounded-xl p-3 sm:p-4 backdrop-blur-sm">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                    <Award className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                   </div>
                   <div>
                     <p className="text-xs text-gray-400">أنشأها</p>
-                    <p className="font-semibold text-base">
+                    <p className="font-semibold text-sm sm:text-base">
                       {course.instructorName}
                     </p>
                   </div>
@@ -243,47 +244,46 @@ export default function CoursePreview({
               )}
 
               {/* Course Meta */}
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-300">
-                <div className="flex items-center gap-2">
-                  <Video className="w-4 h-4" />
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-300">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Video className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>{totalVideos} درس</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="w-4 h-4" />
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>{formatTotalDuration(totalDuration)}</span>
                 </div>
                 {course.language && (
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4" />
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>{course.language}</span>
                   </div>
                 )}
                 {course.level && (
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4" />
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <BarChart3 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     <span>{course.level}</span>
                   </div>
                 )}
               </div>
 
-              {/* Price & Enroll (Mobile & Desktop) */}
-              <div className="lg:hidden">
+              {/* Price & Enroll (Mobile & Tablet) */}
+              <div className="lg:hidden pt-2">
                 <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-                  <CardContent className="p-6 space-y-4">
+                  <CardContent className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                     <div className="flex flex-wrap items-baseline gap-2">
-                      {" "}
                       {(course.salePrice ?? 0) > 0 &&
                       course.salePrice! < (course.price ?? 0) ? (
                         <>
-                          <span className="text-2xl sm:text-3xl font-bold text-green-600">
+                          <span className="text-xl sm:text-2xl md:text-3xl font-bold text-green-600">
                             ${course.salePrice!.toFixed(2)}
                           </span>
-                          <span className="text-base sm:text-lg text-gray-400 line-through">
+                          <span className="text-sm sm:text-base md:text-lg text-gray-400 line-through">
                             ${(course.price ?? 0).toFixed(2)}
                           </span>
                         </>
                       ) : (
-                        <span className="text-2xl sm:text-3xl font-bold">
+                        <span className="text-xl sm:text-2xl md:text-3xl font-bold">
                           ${(course.price ?? 0).toFixed(2)}
                         </span>
                       )}
@@ -333,23 +333,23 @@ export default function CoursePreview({
                         fill
                         className="object-cover"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent flex items-center justify-center">
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                         {freePreviewVideo?.playbackId ? (
                           <button
                             onClick={() => setShowVideoPlayer(true)}
-                            className="group flex flex-col items-center gap-3"
+                            className="group flex flex-col items-center gap-2 sm:gap-3"
                           >
-                            <div className="bg-white rounded-full p-5 group-hover:scale-110 transition-transform shadow-2xl">
-                              <Play className="w-10 h-10 text-gray-900 fill-current" />
+                            <div className="bg-white rounded-full p-3 sm:p-4 md:p-5 group-hover:scale-110 transition-transform shadow-2xl">
+                              <Play className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-gray-900 fill-current" />
                             </div>
-                            <p className="text-white font-bold text-lg">
+                            <p className="text-white font-bold text-sm sm:text-base md:text-lg px-4 text-center">
                               مشاهدة المعاينة المجانية
                             </p>
                           </button>
                         ) : (
-                          <div className="flex flex-col items-center gap-3">
-                            <Lock className="w-12 h-12 text-white/60" />
-                            <p className="text-white/80 text-sm">
+                          <div className="flex flex-col items-center gap-2 sm:gap-3">
+                            <Lock className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white/60" />
+                            <p className="text-white/80 text-xs sm:text-sm">
                               لا توجد معاينة متاحة
                             </p>
                           </div>
@@ -359,20 +359,16 @@ export default function CoursePreview({
                   )}
                 </div>
 
-                {/* Price Card (Desktop Only - Below Video) */}
                 {/* Desktop Price Card */}
                 <div className="hidden lg:block">
                   <CardContent className="p-6 space-y-4 bg-white">
                     <div className="text-center">
-                      {/* ✅ CORRECT ORDER: Show salePrice if available */}
                       {(course.salePrice ?? 0) > 0 &&
                       course.salePrice! < (course.price ?? 0) ? (
                         <div className="flex items-baseline justify-center gap-3">
-                          {/* Sale price - BIGGER, GREEN */}
                           <span className="text-4xl font-bold text-green-600">
                             {course.salePrice!.toLocaleString()} د.ع
                           </span>
-                          {/* Original price - SMALLER, CROSSED */}
                           <span className="text-xl text-gray-400 line-through">
                             {course.price!.toLocaleString()} د.ع
                           </span>
@@ -399,7 +395,7 @@ export default function CoursePreview({
                       courseId={course.id}
                       courseTitle={course.title}
                       courseThumbnail={course.thumbnailUrl}
-                      initialIsFavorited={initialIsFavorite} // ✅ Pass the prop
+                      initialIsFavorited={initialIsFavorite}
                       showLabel={false}
                     />
                   </CardContent>
@@ -411,23 +407,26 @@ export default function CoursePreview({
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8 lg:py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 md:py-8 lg:py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
           {/* Left: Main Content */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6 md:space-y-8">
             {/* What You'll Learn */}
             {course.learningPoints && course.learningPoints.length > 0 && (
               <Card className="border-0 shadow-lg">
-                <CardContent className="p-6 lg:p-8">
-                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                    <CheckCircle className="w-7 h-7 text-green-600" />
+                <CardContent className="p-4 sm:p-6 md:p-8">
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-green-600 flex-shrink-0" />
                     ماذا ستتعلم
                   </h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {course.learningPoints.map((point, idx) => (
-                      <div key={idx} className="flex items-start gap-3">
-                        <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-700 text-sm leading-relaxed">
+                      <div
+                        key={idx}
+                        className="flex items-start gap-2 sm:gap-3"
+                      >
+                        <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-700 text-xs sm:text-sm leading-relaxed">
                           {point}
                         </span>
                       </div>
@@ -439,13 +438,13 @@ export default function CoursePreview({
 
             {/* Course Content (Curriculum) */}
             <Card className="border-0 shadow-lg">
-              <CardContent className="p-6 lg:p-8">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-bold flex items-center gap-2">
-                    <BookOpen className="w-7 h-7 text-blue-600" />
+              <CardContent className="p-4 sm:p-6 md:p-8">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-blue-600 flex-shrink-0" />
                     محتوى الدورة
                   </h2>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-xs sm:text-sm text-gray-600">
                     <span className="font-medium">{totalVideos}</span> درس •{" "}
                     <span className="font-medium">
                       {formatTotalDuration(totalDuration)}
@@ -453,7 +452,7 @@ export default function CoursePreview({
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {videosBySections.map(([section, videos]) => {
                     const isExpanded = expandedSections.has(section);
                     const isFreeSection = section === "المقدمة";
@@ -476,16 +475,16 @@ export default function CoursePreview({
                         {/* Section Header */}
                         <button
                           onClick={() => toggleSection(section)}
-                          className="w-full p-4 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+                          className="w-full p-3 sm:p-4 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                         >
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 sm:gap-3">
                             <ChevronDown
-                              className={`w-5 h-5 text-gray-600 transition-transform ${
+                              className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-600 transition-transform flex-shrink-0 ${
                                 isExpanded ? "rotate-180" : ""
                               }`}
                             />
                             <div className="text-right">
-                              <h3 className="font-bold text-gray-900 text-base">
+                              <h3 className="font-bold text-gray-900 text-sm sm:text-base">
                                 {section}
                               </h3>
                               {isFreeSection && (
@@ -495,7 +494,7 @@ export default function CoursePreview({
                               )}
                             </div>
                           </div>
-                          <div className="text-sm text-gray-600">
+                          <div className="text-xs sm:text-sm text-gray-600 whitespace-nowrap mr-2">
                             {videos.length} دروس •{" "}
                             {formatDuration(sectionDuration)}
                           </div>
@@ -519,24 +518,28 @@ export default function CoursePreview({
                                       });
                                     }
                                   }}
-                                  className="p-4 flex items-center justify-between cursor-pointer"
+                                  className={`p-3 sm:p-4 flex items-center justify-between ${
+                                    isThisVideoFree
+                                      ? "cursor-pointer hover:bg-gray-50"
+                                      : "cursor-default"
+                                  }`}
                                 >
-                                  <div className="flex items-center gap-3">
+                                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                                     <div
-                                      className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                                         isThisVideoFree
                                           ? "bg-green-100"
                                           : "bg-gray-100"
                                       }`}
                                     >
                                       {isThisVideoFree ? (
-                                        <Play className="w-4 h-4 text-green-600" />
+                                        <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-600" />
                                       ) : (
-                                        <Lock className="w-4 h-4 text-gray-400" />
+                                        <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
                                       )}
                                     </div>
-                                    <div className="flex-1 text-right">
-                                      <p className="font-medium text-gray-900 text-sm">
+                                    <div className="flex-1 text-right min-w-0">
+                                      <p className="font-medium text-gray-900 text-xs sm:text-sm truncate">
                                         {video.title}
                                       </p>
                                       {video.description && (
@@ -546,7 +549,7 @@ export default function CoursePreview({
                                       )}
                                     </div>
                                   </div>
-                                  <span className="text-sm text-gray-600 font-medium ml-4">
+                                  <span className="text-xs sm:text-sm text-gray-600 font-medium mr-2 sm:mr-4 whitespace-nowrap">
                                     {formatDuration(video.duration)}
                                   </span>
                                 </div>
@@ -564,16 +567,16 @@ export default function CoursePreview({
             {/* Requirements */}
             {course.requirements && course.requirements.length > 0 && (
               <Card className="border-0 shadow-lg">
-                <CardContent className="p-6 lg:p-8">
-                  <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                    <FileText className="w-7 h-7 text-orange-600" />
+                <CardContent className="p-4 sm:p-6 md:p-8">
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 sm:mb-6 flex items-center gap-2">
+                    <FileText className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-orange-600 flex-shrink-0" />
                     المتطلبات
                   </h2>
-                  <ul className="space-y-3">
+                  <ul className="space-y-2 sm:space-y-3">
                     {course.requirements.map((req, idx) => (
-                      <li key={idx} className="flex items-start gap-3">
+                      <li key={idx} className="flex items-start gap-2 sm:gap-3">
                         <div className="w-2 h-2 bg-orange-600 rounded-full mt-2 flex-shrink-0" />
-                        <span className="text-gray-700 leading-relaxed">
+                        <span className="text-gray-700 leading-relaxed text-xs sm:text-sm md:text-base">
                           {req}
                         </span>
                       </li>
@@ -586,10 +589,12 @@ export default function CoursePreview({
             {/* Description */}
             {course.description && (
               <Card className="border-0 shadow-lg">
-                <CardContent className="p-6 lg:p-8">
-                  <h2 className="text-2xl font-bold mb-6">الوصف</h2>
+                <CardContent className="p-4 sm:p-6 md:p-8">
+                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-4 sm:mb-6">
+                    الوصف
+                  </h2>
                   <div className="prose prose-gray max-w-none text-right">
-                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-line text-xs sm:text-sm md:text-base">
                       {course.description}
                     </p>
                   </div>
