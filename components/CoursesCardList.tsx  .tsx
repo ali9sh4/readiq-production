@@ -113,10 +113,10 @@ const CourseCard = memo(
     // Admin View
     if (isAdminView) {
       return (
-        <div className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white shadow-md md:shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 md:border-gray-300 hover:-translate-y-1">
+        <div className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white shadow-[0_2px_8px_rgba(0,0,0,0.1)] md:shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-all duration-300 border-2 border-gray-200 md:border-gray-300 hover:-translate-y-1 transform-gpu">
           {/* Image with Preview Overlay */}
           <Link href={`/Course/${course.id}`} className="relative block">
-            <div className="relative h-48 sm:h-52 md:h-56 lg:h-48 bg-gray-100 overflow-hidden group/image">
+            <div className="relative h-40 sm:h-48 md:h-52 lg:h-44 bg-gray-100 overflow-hidden group/image">
               {!imageError ? (
                 <Image
                   src={imageUrl}
@@ -144,28 +144,28 @@ const CourseCard = memo(
           </Link>
 
           {/* Content */}
-          <div className="p-4 md:p-5 lg:p-4 space-y-2.5 md:space-y-3 lg:space-y-2 text-right">
-            <h3 className="text-base md:text-lg lg:text-sm font-bold text-gray-900 line-clamp-2 leading-snug">
+          <div className="p-3 md:p-4 lg:p-4 space-y-1.5 md:space-y-2.5 lg:space-y-2 text-right">
+            <h3 className="text-sm md:text-base lg:text-sm font-bold text-gray-900 line-clamp-2 leading-snug">
               {course.title}
             </h3>
-            <p className="text-sm md:text-base lg:text-xs text-gray-600 truncate">
+            <p className="text-xs md:text-sm lg:text-xs text-gray-600 truncate">
               {instructor}
             </p>
 
             {course.enrollmentCount !== undefined &&
               course.enrollmentCount > 0 && (
-                <div className="flex items-center gap-1.5 md:gap-2 lg:gap-1 text-sm md:text-base lg:text-xs text-gray-600">
-                  <Users className="w-4 h-4 md:w-5 md:h-5 lg:w-4 lg:h-4" />
+                <div className="flex items-center gap-1 md:gap-1.5 lg:gap-1 text-xs md:text-sm lg:text-xs text-gray-600">
+                  <Users className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-4 lg:h-4" />
                   <span>{course.enrollmentCount} طالب مسجل</span>
                 </div>
               )}
 
             {/* Admin Actions */}
-            <div className="flex gap-2 md:gap-3 lg:gap-2 pt-3 md:pt-4 lg:pt-2 border-t border-gray-100">
+            <div className="flex gap-1.5 md:gap-2 lg:gap-2 pt-2 md:pt-3 lg:pt-2 border-t border-gray-100">
               <Button
                 size="sm"
                 variant="outline"
-                className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50 text-sm md:text-base lg:text-xs h-9 md:h-10 lg:h-8"
+                className="flex-1 border-blue-600 text-blue-600 hover:bg-blue-50 text-xs md:text-sm lg:text-xs h-8 md:h-9 lg:h-8"
                 onClick={() => {
                   console.log("🔍 Navigating to edit page");
                   console.log("🔍 Course ID:", course.id);
@@ -177,14 +177,14 @@ const CourseCard = memo(
                 asChild
               >
                 <Link href={`/course-upload/edit/${course.id}`}>
-                  <Edit className="w-4 h-4 md:w-5 md:h-5 lg:w-3 lg:h-3 ml-1.5 md:ml-2 lg:ml-1" />
+                  <Edit className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-3 lg:h-3 ml-1 md:ml-1.5 lg:ml-1" />
                   تعديل
                 </Link>
               </Button>
               <Button
                 size="sm"
                 variant="destructive"
-                className="text-sm md:text-base lg:text-xs h-9 md:h-10 lg:h-8"
+                className="text-xs md:text-sm lg:text-xs h-8 md:h-9 lg:h-8"
                 onClick={async (e) => {
                   e.stopPropagation();
 
@@ -212,7 +212,7 @@ const CourseCard = memo(
                   }
                 }}
               >
-                <Trash2 className="w-4 h-4 md:w-5 md:h-5 lg:w-3 lg:h-3 ml-1.5 md:ml-2 lg:ml-1" />
+                <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-3 lg:h-3 ml-1 md:ml-1.5 lg:ml-1" />
                 حذف الدوره
               </Button>
             </div>
@@ -225,10 +225,10 @@ const CourseCard = memo(
     return (
       <Link
         href={`/Course/${course.id}`}
-        className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white shadow-md md:shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 md:border-gray-300 hover:-translate-y-1"
+        className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white shadow-[0_2px_8px_rgba(0,0,0,0.1)] md:shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-all duration-300 border-2 border-gray-200 md:border-gray-300 hover:-translate-y-1 transform-gpu"
       >
         {/* Image with Badges */}
-        <div className="relative h-48 sm:h-52 md:h-56 lg:h-48 bg-gray-100 overflow-hidden">
+        <div className="relative h-40 sm:h-48 md:h-52 lg:h-44 bg-gray-100 overflow-hidden">
           {!imageError ? (
             <Image
               src={imageUrl}
@@ -246,7 +246,7 @@ const CourseCard = memo(
 
           {/* Favorite Button */}
           {!isAdminView && (
-            <div className="absolute top-2.5 md:top-3 lg:top-2 right-2.5 md:right-3 lg:right-2 z-10">
+            <div className="absolute top-2 md:top-2.5 lg:top-2 right-2 md:right-2.5 lg:right-2 z-10">
               <FavoriteButton
                 courseId={course.id}
                 courseTitle={course.title}
@@ -258,24 +258,24 @@ const CourseCard = memo(
           )}
 
           {/* Badges */}
-          <div className="absolute bottom-2.5 md:bottom-3 lg:bottom-2 left-2.5 md:left-3 lg:left-2 flex flex-wrap gap-1.5 md:gap-2 lg:gap-1.5">
+          <div className="absolute bottom-2 md:bottom-2.5 lg:bottom-2 left-2 md:left-2.5 lg:left-2 flex flex-wrap gap-1 md:gap-1.5 lg:gap-1.5">
             {showFree && (
-              <Badge className="bg-green-500 text-white font-semibold text-xs md:text-sm lg:text-xs px-2.5 md:px-3 lg:px-2 py-1 md:py-1.5 lg:py-0.5 rounded-md shadow-sm">
+              <Badge className="bg-green-500 text-white font-semibold text-xs md:text-sm lg:text-xs px-2 md:px-2.5 lg:px-2 py-0.5 md:py-1 lg:py-0.5 rounded-md shadow-sm">
                 مجاني
               </Badge>
             )}
             {showBestseller && (
-              <Badge className="bg-yellow-400 text-black font-semibold text-xs md:text-sm lg:text-xs px-2.5 md:px-3 lg:px-2 py-1 md:py-1.5 lg:py-0.5 rounded-md shadow-sm">
+              <Badge className="bg-yellow-400 text-black font-semibold text-xs md:text-sm lg:text-xs px-2 md:px-2.5 lg:px-2 py-0.5 md:py-1 lg:py-0.5 rounded-md shadow-sm">
                 الأكثر مبيعاً
               </Badge>
             )}
             {showPremium && (
-              <Badge className="bg-purple-600 text-white text-xs md:text-sm lg:text-xs px-2.5 md:px-3 lg:px-2 py-1 md:py-1.5 lg:py-0.5 rounded-md shadow-sm">
+              <Badge className="bg-purple-600 text-white text-xs md:text-sm lg:text-xs px-2 md:px-2.5 lg:px-2 py-0.5 md:py-1 lg:py-0.5 rounded-md shadow-sm">
                 مميز
               </Badge>
             )}
             {isEnrolled && (
-              <Badge className="bg-blue-600 text-white text-xs md:text-sm lg:text-xs px-2.5 md:px-3 lg:px-2 py-1 md:py-1.5 lg:py-0.5 rounded-md shadow-sm">
+              <Badge className="bg-blue-600 text-white text-xs md:text-sm lg:text-xs px-2 md:px-2.5 lg:px-2 py-0.5 md:py-1 lg:py-0.5 rounded-md shadow-sm">
                 مسجل
               </Badge>
             )}
@@ -283,40 +283,40 @@ const CourseCard = memo(
         </div>
 
         {/* Content */}
-        <div className="p-4 md:p-5 lg:p-4 space-y-2.5 md:space-y-3 lg:space-y-2 text-right">
+        <div className="p-3 md:p-4 lg:p-4 space-y-1.5 md:space-y-2.5 lg:space-y-2 text-right">
           {/* Title */}
-          <h3 className="text-base md:text-lg lg:text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition leading-snug">
+          <h3 className="text-sm md:text-base lg:text-sm font-bold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition leading-snug">
             {course.title}
           </h3>
 
           {/* Instructor */}
-          <p className="text-sm md:text-base lg:text-xs text-gray-600 truncate">
+          <p className="text-xs md:text-sm lg:text-xs text-gray-600 truncate">
             {instructor}
           </p>
 
           {/* Enrollment Count */}
           {course.enrollmentCount !== undefined &&
             course.enrollmentCount > 0 && (
-              <div className="flex items-center gap-1.5 md:gap-2 lg:gap-1 text-sm md:text-base lg:text-xs text-gray-600">
-                <Users className="w-4 h-4 md:w-5 md:h-5 lg:w-4 lg:h-4" />
+              <div className="flex items-center gap-1 md:gap-1.5 lg:gap-1 text-xs md:text-sm lg:text-xs text-gray-600">
+                <Users className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-4 lg:h-4" />
                 <span>{course.enrollmentCount} طالب مسجل</span>
               </div>
             )}
 
           {/* Rating */}
-          <div className="flex justify-end items-center gap-1.5 md:gap-2 lg:gap-1 text-sm md:text-base lg:text-xs">
+          <div className="flex justify-end items-center gap-1 md:gap-1.5 lg:gap-1 text-xs md:text-sm lg:text-xs">
             <span className="font-semibold text-gray-900">
               {rating.toFixed(1)}
             </span>
-            <Star className="w-4 h-4 md:w-5 md:h-5 lg:w-3.5 lg:h-3.5 fill-amber-400 text-amber-400" />
+            <Star className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-3.5 lg:h-3.5 fill-amber-400 text-amber-400" />
             <span className="text-gray-500">
               ({studentsCount.toLocaleString()})
             </span>
           </div>
 
           {/* Price */}
-          <div className="flex justify-end items-baseline gap-2 md:gap-2.5 lg:gap-2">
-            <span className="text-lg md:text-xl lg:text-base font-bold text-gray-900">
+          <div className="flex justify-end items-baseline gap-1.5 md:gap-2 lg:gap-2">
+            <span className="text-base md:text-lg lg:text-base font-bold text-gray-900">
               {currentPrice === 0
                 ? "مجاني"
                 : `${currentPrice.toLocaleString()} د.ع`}
@@ -399,8 +399,7 @@ export default function CoursesCardList({
       aria-label="قائمة الدورات"
     >
       {/* Courses Grid - Optimized for all screen sizes */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4 lg:gap-5">
-        {" "}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4 lg:gap-4">
         {data.courses.map((course) => (
           <CourseCard
             key={course.id}
@@ -421,6 +420,18 @@ export default function CoursesCardList({
           </p>
         </div>
       )}
+
+      {/* Safari Shadow Fix */}
+      <style jsx global>{`
+        /* Force Safari to render shadows properly */
+        @supports (-webkit-touch-callout: none) {
+          .group {
+            -webkit-transform: translateZ(0);
+            -webkit-backface-visibility: hidden;
+            -webkit-perspective: 1000px;
+          }
+        }
+      `}</style>
     </div>
   );
 }
