@@ -26,10 +26,10 @@ export default function PaymentSelector({
       name: "المحفظة",
       description: "ادفع من رصيد محفظتك",
       icon: <Wallet className="w-6 h-6 sm:w-8 sm:h-8 text-white" />,
-      color: "bg-green-600",
+      color: "bg-green-700",
       disabled: false,
       badge: "متاح الآن",
-      badgeColor: "bg-green-100 text-green-700",
+      badgeColor: "bg-green-600 text-white",
     },
     {
       id: "zaincash" as PaymentMethod,
@@ -44,20 +44,20 @@ export default function PaymentSelector({
           className="object-contain w-20 h-8 sm:w-28 sm:h-10"
         />
       ),
-      color: "bg-purple-600",
+      color: "bg-purple-700",
       disabled: true,
       badge: "قريباً",
-      badgeColor: "bg-yellow-100 text-yellow-700",
+      badgeColor: "bg-yellow-500 text-gray-900",
     },
     {
       id: "areeba" as PaymentMethod,
       name: "بطاقة الدفع",
       description: "فيزا • ماستركارد",
       icon: <CreditCard className="w-6 h-6 sm:w-8 sm:h-8" />,
-      color: "bg-blue-600",
+      color: "bg-blue-700",
       disabled: true,
       badge: "قريباً",
-      badgeColor: "bg-yellow-100 text-yellow-700",
+      badgeColor: "bg-yellow-500 text-gray-900",
     },
   ];
 
@@ -65,8 +65,10 @@ export default function PaymentSelector({
     <div className="font-zain space-y-3 sm:space-y-4 p-2 sm:p-0" dir="rtl">
       {/* Header */}
       <div className="text-center space-y-1 sm:space-y-2">
-        <h3 className="text-lg sm:text-xl font-bold">اختر طريقة الدفع</h3>
-        <p className="text-xl sm:text-2xl font-bold text-blue-600">
+        <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+          اختر طريقة الدفع
+        </h3>
+        <p className="text-xl sm:text-2xl font-bold text-blue-700">
           {price.toLocaleString()} IQD
         </p>
       </div>
@@ -77,12 +79,12 @@ export default function PaymentSelector({
           <Card
             key={method.id}
             onClick={() => !method.disabled && !loading && onSelect(method.id)}
-            className={`p-3 sm:p-4 transition-all ${
+            className={`p-3 sm:p-4 transition-all border-2 ${
               method.disabled
-                ? "opacity-50 cursor-not-allowed bg-gray-50"
+                ? "opacity-60 cursor-not-allowed bg-gray-100 border-gray-300"
                 : selectedMethod === method.id
-                ? "ring-2 ring-green-500 shadow-lg cursor-pointer"
-                : "cursor-pointer hover:shadow-lg hover:ring-2 hover:ring-green-200"
+                ? "ring-2 ring-green-600 border-green-600 shadow-xl cursor-pointer bg-green-50"
+                : "cursor-pointer hover:shadow-xl hover:border-green-500 border-gray-300 bg-white"
             } ${loading ? "pointer-events-none opacity-70" : ""}`}
           >
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
@@ -94,9 +96,9 @@ export default function PaymentSelector({
                     : "w-10 h-10 sm:w-12 sm:h-12"
                 } flex items-center justify-center flex-shrink-0 rounded-lg ${
                   method.id === "wallet"
-                    ? "bg-green-600"
+                    ? "bg-green-700"
                     : method.id === "areeba"
-                    ? "bg-blue-600"
+                    ? "bg-blue-700"
                     : ""
                 } ${method.disabled ? "grayscale" : ""}`}
               >
@@ -107,7 +109,7 @@ export default function PaymentSelector({
               <div className="flex-1 text-right min-w-0">
                 <div className="flex items-center gap-1.5 sm:gap-2 justify-end mb-0.5 sm:mb-1">
                   <span
-                    className={`text-xs ${method.badgeColor} px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-1`}
+                    className={`text-xs font-semibold ${method.badgeColor} px-1.5 sm:px-2 py-0.5 rounded-full flex items-center gap-1`}
                   >
                     {method.disabled ? (
                       <Clock className="w-3 h-3" />
@@ -119,8 +121,8 @@ export default function PaymentSelector({
                 </div>
 
                 <p
-                  className={`text-xs sm:text-sm ${
-                    method.disabled ? "text-gray-400" : "text-gray-600"
+                  className={`text-xs sm:text-sm font-medium ${
+                    method.disabled ? "text-gray-500" : "text-gray-800"
                   }`}
                 >
                   {method.description}
@@ -135,7 +137,7 @@ export default function PaymentSelector({
               {/* Selected indicator */}
               {selectedMethod === method.id && !loading && (
                 <div className="flex-shrink-0">
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-600 flex items-center justify-center">
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-green-700 flex items-center justify-center shadow-md">
                     <CheckCircle2 className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                   </div>
                 </div>
@@ -144,7 +146,7 @@ export default function PaymentSelector({
               {/* Loading spinner */}
               {loading && selectedMethod === method.id && (
                 <div className="flex-shrink-0">
-                  <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-green-600 border-t-transparent rounded-full animate-spin" />
+                  <div className="w-5 h-5 sm:w-6 sm:h-6 border-2 border-green-700 border-t-transparent rounded-full animate-spin" />
                 </div>
               )}
             </div>
@@ -155,22 +157,22 @@ export default function PaymentSelector({
       {/* Info notices */}
       <div className="space-y-2">
         {/* Wallet info */}
-        <div className="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3">
-          <p className="text-xs sm:text-sm text-green-800 font-medium text-center">
+        <div className="bg-green-100 border-2 border-green-500 rounded-lg p-2 sm:p-3">
+          <p className="text-xs sm:text-sm text-green-900 font-bold text-center">
             ✅ الدفع عبر المحفظة متاح الآن - رصيد آمن وسريع
           </p>
         </div>
 
         {/* Coming soon for other methods */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2 sm:p-3">
-          <p className="text-xs sm:text-sm text-yellow-800 text-center">
+        <div className="bg-yellow-100 border-2 border-yellow-500 rounded-lg p-2 sm:p-3">
+          <p className="text-xs sm:text-sm text-yellow-900 font-semibold text-center">
             ⏳ طرق الدفع الأخرى (زين كاش والبطاقات البنكية) قيد التفعيل
           </p>
         </div>
       </div>
 
       {/* Security notice */}
-      <p className="text-xs text-center text-gray-500 pt-1">
+      <p className="text-xs text-center text-gray-600 font-medium pt-1">
         🔒 جميع المعاملات مشفرة ومحمية
       </p>
     </div>
