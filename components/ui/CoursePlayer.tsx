@@ -21,7 +21,7 @@ import {
   BarChart3,
   Loader2,
   AlertCircle,
-  Menu,
+  List,
 } from "lucide-react";
 import { Course } from "@/types/types";
 import { Button } from "@/components/ui/button";
@@ -113,14 +113,13 @@ export default function CoursePlayer({
     }
   }, [searchParams]);
 
-  // 🔥 State - sidebar closed by default on mobile
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // State
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set()
   );
-  const [activeTab, setActiveTab] = useState<"overview" | "resources">(
-    "overview"
+  const [activeTab, setActiveTab] = useState<"sections" | "resources">(
+    "sections"
   );
   const [completedVideos, setCompletedVideos] = useState<Set<string>>(
     new Set()
@@ -217,13 +216,6 @@ export default function CoursePlayer({
       setExpandedSections((prev) => new Set(prev).add(section));
     }
   }, [currentVideo]);
-
-  // 🔥 Close sidebar when video changes on mobile
-  useEffect(() => {
-    if (window.innerWidth < 1024) {
-      setSidebarOpen(false);
-    }
-  }, [currentVideoIndex]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -332,236 +324,219 @@ export default function CoursePlayer({
     return allVideos.reduce((sum, v) => sum + (v.duration || 0), 0);
   }, [allVideos]);
 
+  // Sections Component (reusable for both sidebar and mobile tab)
+  const SectionsContent = () => (
+    <div className="divide-y divide-gray-200">
+      {Object.entries(videosBySections).map(([section, videos]) => {
+        const isExpanded = expandedSections.has(section);
+        const sectionCompleted = videos.filter((v) =>
+          completedVideos.has(v.videoId)
+        ).length;
+        const sectionProgress = Math.round(
+          (sectionCompleted / videos.length) * 100
+        );
+
+        return (
+          <div key={section} className="bg-gray-50/30">
+            {/* Section Header */}
+            <button
+              onClick={() => toggleSection(section)}
+              className="w-full p-3 lg:p-4 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-2 lg:gap-3">
+                <div
+                  className={`p-1.5 lg:p-2 rounded-lg ${
+                    isExpanded ? "bg-blue-100" : "bg-gray-100"
+                  } transition-colors`}
+                >
+                  {isExpanded ? (
+                    <ChevronDown className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-blue-600" />
+                  ) : (
+                    <ChevronLeft className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-gray-600" />
+                  )}
+                </div>
+                <div className="text-right">
+                  <h3 className="font-semibold text-sm lg:text-base text-gray-900">
+                    {section}
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    {videos.length} دروس • {sectionCompleted} مكتمل
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 lg:w-12 lg:h-12 relative">
+                  <svg className="w-10 h-10 lg:w-12 lg:h-12 transform -rotate-90">
+                    <circle
+                      cx="20"
+                      cy="20"
+                      r="16"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      fill="none"
+                      className="text-gray-200 lg:hidden"
+                    />
+                    <circle
+                      cx="24"
+                      cy="24"
+                      r="20"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                      className="text-gray-200 hidden lg:block"
+                    />
+                    <circle
+                      cx="20"
+                      cy="20"
+                      r="16"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 16}`}
+                      strokeDashoffset={`${
+                        2 * Math.PI * 16 * (1 - sectionProgress / 100)
+                      }`}
+                      className="text-blue-600 transition-all duration-500 lg:hidden"
+                    />
+                    <circle
+                      cx="24"
+                      cy="24"
+                      r="20"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                      strokeDasharray={`${2 * Math.PI * 20}`}
+                      strokeDashoffset={`${
+                        2 * Math.PI * 20 * (1 - sectionProgress / 100)
+                      }`}
+                      className="text-blue-600 transition-all duration-500 hidden lg:block"
+                    />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700">
+                    {sectionProgress}%
+                  </span>
+                </div>
+              </div>
+            </button>
+
+            {/* Videos */}
+            {isExpanded && (
+              <div className="border-t border-gray-200 bg-gray-50">
+                {videos.map((video, idx) => {
+                  const videoIndex = allVideos.indexOf(video);
+                  const isActive = videoIndex === currentVideoIndex;
+                  const isCompleted = completedVideos.has(video.videoId);
+                  const isLocked =
+                    !video.isFreePreview &&
+                    course.price !== 0 &&
+                    !isEnrolled;
+
+                  return (
+                    <button
+                      key={video.videoId}
+                      onClick={() => {
+                        if (!isLocked) {
+                          setCurrentVideoIndex(videoIndex);
+                          setVideoError(null);
+                          // Switch to sections tab on mobile when video is selected
+                          if (window.innerWidth < 1024) {
+                            setActiveTab("sections");
+                          }
+                        }
+                      }}
+                      disabled={isLocked}
+                      className={`w-full p-3 lg:p-4 flex items-center gap-2 lg:gap-3 transition-all border-b border-gray-100 last:border-b-0 ${
+                        isActive
+                          ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-r-4 border-blue-600"
+                          : "hover:bg-gray-50"
+                      } ${isLocked ? "opacity-50 cursor-not-allowed" : ""}`}
+                    >
+                      <div
+                        className={`flex-shrink-0 w-8 h-8 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center font-bold text-xs lg:text-sm transition-all ${
+                          isCompleted
+                            ? "bg-gradient-to-br from-green-500 to-emerald-600 text-white"
+                            : isActive
+                            ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {isLocked ? (
+                          <Lock className="w-4 h-4 lg:w-5 lg:h-5" />
+                        ) : isCompleted ? (
+                          <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5" />
+                        ) : (
+                          idx + 1
+                        )}
+                      </div>
+
+                      <div className="flex-1 text-right min-w-0">
+                        <p
+                          className={`font-medium text-sm lg:text-base truncate ${
+                            isActive ? "text-blue-900" : "text-gray-900"
+                          }`}
+                        >
+                          {video.title}
+                        </p>
+                        <div className="flex items-center gap-2 lg:gap-3 mt-1">
+                          <span className="text-xs text-gray-500 flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatDuration(video.duration)}
+                          </span>
+                          {video.isFreePreview && (
+                            <span className="text-xs bg-green-100 text-green-700 px-1.5 lg:px-2 py-0.5 rounded-full font-medium">
+                              معاينة مجانية
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {isActive && !isLocked && (
+                        <PlayCircle className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600 flex-shrink-0 animate-pulse" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="flex min-h-screen bg-gray-50 text-gray-900" dir="rtl">
-      {/* 🔥 Backdrop Overlay for Mobile/Tablet */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* 🔥 Sidebar - Slide-over on mobile, Sticky on desktop */}
-      <aside
-        className={`
-          fixed lg:sticky top-0 h-screen z-50 
-          transition-transform duration-300 ease-in-out
-          ${sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
-          w-full sm:w-96 lg:w-96 
-          border-l border-gray-200 backdrop-blur-xl
-        `}
-      >
+      {/* Desktop Sidebar - Hidden on mobile/tablet */}
+      <aside className="hidden lg:block lg:sticky top-0 h-screen w-96 border-l border-gray-200 backdrop-blur-xl">
         <div className="flex flex-col h-full bg-white">
           {/* Header */}
-          <div className="flex-shrink-0 bg-gradient-to-br from-slate-50 via-gray-100 to-slate-100 p-3 lg:p-4 text-gray-900 border-b border-gray-200">
-            <div className="flex items-center justify-between gap-2 lg:gap-4">
-              <h2 className="text-base lg:text-lg font-bold flex items-center gap-2">
-                <BookOpen className="w-4 h-4 lg:w-5 lg:h-5" />
+          <div className="flex-shrink-0 bg-gradient-to-br from-slate-50 via-gray-100 to-slate-100 p-4 text-gray-900 border-b border-gray-200">
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-lg font-bold flex items-center gap-2">
+                <BookOpen className="w-5 h-5" />
                 محتوى الدورة
               </h2>
 
-              <div className="flex items-center gap-2 lg:gap-3">
-                <div className="flex items-center gap-1.5 lg:gap-2">
-                  <div className="w-16 lg:w-24 h-2 bg-white/60 rounded-full overflow-hidden border border-gray-200">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-24 h-2 bg-white/60 rounded-full overflow-hidden border border-gray-200">
                     <div
                       className="h-full bg-gradient-to-l from-green-400 to-emerald-500 rounded-full transition-all duration-500"
                       style={{ width: `${progress}%` }}
                     />
                   </div>
-                  <span className="text-xs lg:text-sm font-bold whitespace-nowrap">
+                  <span className="text-sm font-bold whitespace-nowrap">
                     {progress}%
                   </span>
                 </div>
-                <button
-                  onClick={() => setSidebarOpen(false)}
-                  className="p-1.5 hover:bg-gray-200 rounded-lg transition-all"
-                >
-                  <X className="w-5 h-5" />
-                </button>
               </div>
             </div>
           </div>
 
           {/* Scrollable Sections */}
           <div className="flex-1 overflow-y-auto custom-scrollbar border-t border-gray-200 bg-white">
-            <div className="divide-y divide-gray-200">
-              {Object.entries(videosBySections).map(([section, videos]) => {
-                const isExpanded = expandedSections.has(section);
-                const sectionCompleted = videos.filter((v) =>
-                  completedVideos.has(v.videoId)
-                ).length;
-                const sectionProgress = Math.round(
-                  (sectionCompleted / videos.length) * 100
-                );
-
-                return (
-                  <div key={section} className="bg-gray-50/30">
-                    {/* Section Header */}
-                    <button
-                      onClick={() => toggleSection(section)}
-                      className="w-full p-3 lg:p-4 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2 lg:gap-3">
-                        <div
-                          className={`p-1.5 lg:p-2 rounded-lg ${
-                            isExpanded ? "bg-blue-100" : "bg-gray-100"
-                          } transition-colors`}
-                        >
-                          {isExpanded ? (
-                            <ChevronDown className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-blue-600" />
-                          ) : (
-                            <ChevronLeft className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-gray-600" />
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <h3 className="font-semibold text-sm lg:text-base text-gray-900">
-                            {section}
-                          </h3>
-                          <p className="text-xs text-gray-500">
-                            {videos.length} دروس • {sectionCompleted} مكتمل
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 lg:w-12 lg:h-12 relative">
-                          <svg className="w-10 h-10 lg:w-12 lg:h-12 transform -rotate-90">
-                            <circle
-                              cx="20"
-                              cy="20"
-                              r="16"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              fill="none"
-                              className="text-gray-200 lg:hidden"
-                            />
-                            <circle
-                              cx="24"
-                              cy="24"
-                              r="20"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                              fill="none"
-                              className="text-gray-200 hidden lg:block"
-                            />
-                            <circle
-                              cx="20"
-                              cy="20"
-                              r="16"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              fill="none"
-                              strokeDasharray={`${2 * Math.PI * 16}`}
-                              strokeDashoffset={`${
-                                2 * Math.PI * 16 * (1 - sectionProgress / 100)
-                              }`}
-                              className="text-blue-600 transition-all duration-500 lg:hidden"
-                            />
-                            <circle
-                              cx="24"
-                              cy="24"
-                              r="20"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                              fill="none"
-                              strokeDasharray={`${2 * Math.PI * 20}`}
-                              strokeDashoffset={`${
-                                2 * Math.PI * 20 * (1 - sectionProgress / 100)
-                              }`}
-                              className="text-blue-600 transition-all duration-500 hidden lg:block"
-                            />
-                          </svg>
-                          <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-700">
-                            {sectionProgress}%
-                          </span>
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Videos */}
-                    {isExpanded && (
-                      <div className="border-t border-gray-200 bg-gray-50">
-                        {videos.map((video, idx) => {
-                          const videoIndex = allVideos.indexOf(video);
-                          const isActive = videoIndex === currentVideoIndex;
-                          const isCompleted = completedVideos.has(
-                            video.videoId
-                          );
-                          const isLocked =
-                            !video.isFreePreview &&
-                            course.price !== 0 &&
-                            !isEnrolled;
-
-                          return (
-                            <button
-                              key={video.videoId}
-                              onClick={() => {
-                                if (!isLocked) {
-                                  setCurrentVideoIndex(videoIndex);
-                                  setVideoError(null);
-                                }
-                              }}
-                              disabled={isLocked}
-                              className={`w-full p-3 lg:p-4 flex items-center gap-2 lg:gap-3 transition-all border-b border-gray-100 last:border-b-0 ${
-                                isActive
-                                  ? "bg-gradient-to-r from-blue-50 to-indigo-50 border-r-4 border-blue-600"
-                                  : "hover:bg-gray-50"
-                              } ${
-                                isLocked ? "opacity-50 cursor-not-allowed" : ""
-                              }`}
-                            >
-                              <div
-                                className={`flex-shrink-0 w-8 h-8 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center font-bold text-xs lg:text-sm transition-all ${
-                                  isCompleted
-                                    ? "bg-gradient-to-br from-green-500 to-emerald-600 text-white"
-                                    : isActive
-                                    ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white"
-                                    : "bg-gray-100 text-gray-600"
-                                }`}
-                              >
-                                {isLocked ? (
-                                  <Lock className="w-4 h-4 lg:w-5 lg:h-5" />
-                                ) : isCompleted ? (
-                                  <CheckCircle className="w-4 h-4 lg:w-5 lg:h-5" />
-                                ) : (
-                                  idx + 1
-                                )}
-                              </div>
-
-                              <div className="flex-1 text-right min-w-0">
-                                <p
-                                  className={`font-medium text-sm lg:text-base truncate ${
-                                    isActive ? "text-blue-900" : "text-gray-900"
-                                  }`}
-                                >
-                                  {video.title}
-                                </p>
-                                <div className="flex items-center gap-2 lg:gap-3 mt-1">
-                                  <span className="text-xs text-gray-500 flex items-center gap-1">
-                                    <Clock className="w-3 h-3" />
-                                    {formatDuration(video.duration)}
-                                  </span>
-                                  {video.isFreePreview && (
-                                    <span className="text-xs bg-green-100 text-green-700 px-1.5 lg:px-2 py-0.5 rounded-full font-medium">
-                                      معاينة مجانية
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-
-                              {isActive && !isLocked && (
-                                <PlayCircle className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600 flex-shrink-0 animate-pulse" />
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <SectionsContent />
           </div>
         </div>
       </aside>
@@ -571,13 +546,6 @@ export default function CoursePlayer({
         {/* Top Bar */}
         <header className="flex items-center justify-between px-3 lg:px-4 py-2 lg:py-3 bg-white border-b border-gray-200">
           <div className="flex items-center gap-2 lg:gap-3 min-w-0 flex-1">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-all group flex-shrink-0"
-            >
-              <Menu className="w-5 h-5 text-gray-600 group-hover:text-blue-600 transition-colors" />
-            </button>
-
             <div className="min-w-0">
               <h1 className="text-sm lg:text-lg font-semibold truncate">
                 {course.title}
@@ -744,24 +712,38 @@ export default function CoursePlayer({
           </div>
         )}
 
-        {/* Tabs */}
+        {/* Video Title & Description - Mobile/Tablet Only */}
+        <div className="lg:hidden bg-white border-b border-gray-200 p-4">
+          <h3 className="text-base font-bold mb-2 text-gray-900">
+            {currentVideo?.title || "عنوان الدرس"}
+          </h3>
+          {currentVideo?.description && (
+            <p className="text-sm text-gray-600 leading-relaxed">
+              {currentVideo.description}
+            </p>
+          )}
+        </div>
+
+        {/* Tabs - Different layout for mobile vs desktop */}
         <div className="bg-white/80 backdrop-blur-xl flex border-b border-gray-200/50">
+          {/* Mobile/Tablet: Sections + Resources */}
           <button
-            onClick={() => setActiveTab("overview")}
-            className={`flex-1 px-4 lg:px-8 py-3 lg:py-4 text-xs lg:text-sm font-medium border-b-2 transition-all relative ${
-              activeTab === "overview"
+            onClick={() => setActiveTab("sections")}
+            className={`lg:hidden flex-1 px-4 py-3 text-xs font-medium border-b-2 transition-all relative ${
+              activeTab === "sections"
                 ? "text-blue-600 border-blue-600"
                 : "text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50"
             }`}
           >
-            <span className="flex items-center justify-center gap-1.5 lg:gap-2">
-              <BookOpen className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
-              نظرة عامة
+            <span className="flex items-center justify-center gap-1.5">
+              <List className="w-3.5 h-3.5" />
+              الأقسام
             </span>
-            {activeTab === "overview" && (
+            {activeTab === "sections" && (
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
             )}
           </button>
+
           <button
             onClick={() => setActiveTab("resources")}
             className={`flex-1 px-4 lg:px-8 py-3 lg:py-4 text-xs lg:text-sm font-medium border-b-2 transition-all relative ${
@@ -781,126 +763,70 @@ export default function CoursePlayer({
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 p-4 lg:p-8">
-          {activeTab === "overview" && (
-            <div className="max-w-5xl mx-auto space-y-4 lg:space-y-6">
-              {/* Video Title Card */}
-              <div className="bg-white rounded-xl lg:rounded-2xl shadow-md border border-gray-100 p-4 lg:p-6">
-                <h3 className="text-lg lg:text-2xl font-bold mb-2 flex items-center gap-2 lg:gap-3 text-gray-900">
-                  <div className="bg-gradient-to-br from-blue-100 to-indigo-100 p-1.5 lg:p-2 rounded-lg lg:rounded-xl">
-                    <BookOpen className="w-4 h-4 lg:w-6 lg:h-6 text-blue-600" />
-                  </div>
-                  {currentVideo?.title || "عنوان الدرس"}
-                </h3>
-                {currentVideo?.description && (
-                  <p className="text-sm lg:text-lg text-gray-600 leading-relaxed whitespace-pre-wrap mt-3 lg:mt-4">
-                    {currentVideo.description}
-                  </p>
-                )}
-              </div>
-
-              {/* Course Info Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-blue-100 shadow-sm hover:shadow-md transition-all">
-                  <div className="flex items-center gap-2 lg:gap-3 mb-2">
-                    <div className="bg-white p-1.5 lg:p-2 rounded-lg lg:rounded-xl shadow-sm">
-                      <User className="w-4 h-4 lg:w-5 lg:h-5 text-blue-600" />
-                    </div>
-                    <p className="text-xs font-medium text-blue-800 uppercase tracking-wide">
-                      المدرب
-                    </p>
-                  </div>
-                  <p className="font-bold text-gray-900 text-sm lg:text-lg">
-                    {course.instructorName || "غير محدد"}
-                  </p>
-                </div>
-
-                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-green-100 shadow-sm hover:shadow-md transition-all">
-                  <div className="flex items-center gap-2 lg:gap-3 mb-2">
-                    <div className="bg-white p-1.5 lg:p-2 rounded-lg lg:rounded-xl shadow-sm">
-                      <BarChart3 className="w-4 h-4 lg:w-5 lg:h-5 text-green-600" />
-                    </div>
-                    <p className="text-xs font-medium text-green-800 uppercase tracking-wide">
-                      المستوى
-                    </p>
-                  </div>
-                  <p className="font-bold text-gray-900 text-sm lg:text-lg">
-                    {course.level || "جميع المستويات"}
-                  </p>
-                </div>
-
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-purple-100 shadow-sm hover:shadow-md transition-all">
-                  <div className="flex items-center gap-2 lg:gap-3 mb-2">
-                    <div className="bg-white p-1.5 lg:p-2 rounded-lg lg:rounded-xl shadow-sm">
-                      <Award className="w-4 h-4 lg:w-5 lg:h-5 text-purple-600" />
-                    </div>
-                    <p className="text-xs font-medium text-purple-800 uppercase tracking-wide">
-                      التقدم
-                    </p>
-                  </div>
-                  <p className="font-bold text-gray-900 text-sm lg:text-lg flex items-center gap-1.5 lg:gap-2">
-                    {progress}%
-                    <span className="text-xs lg:text-sm font-normal text-gray-600">
-                      ({completedVideos.size}/{allVideos.length})
-                    </span>
-                  </p>
-                </div>
-              </div>
+        <div className="flex-1 overflow-y-auto">
+          {/* Sections Tab - Mobile/Tablet Only */}
+          {activeTab === "sections" && (
+            <div className="lg:hidden">
+              <SectionsContent />
             </div>
           )}
-          {activeTab === "resources" && (
-            <div className="max-w-5xl mx-auto">
-              {currentVideoFiles.length === 0 && generalFiles.length === 0 ? (
-                <div className="text-center py-12 lg:py-16 bg-white rounded-xl lg:rounded-2xl shadow-md border border-gray-100">
-                  <div className="bg-gray-50 rounded-full w-16 h-16 lg:w-24 lg:h-24 flex items-center justify-center mx-auto mb-3 lg:mb-4">
-                    <FileText className="w-8 h-8 lg:w-12 lg:h-12 text-gray-400" />
-                  </div>
-                  <p className="text-gray-500 text-base lg:text-lg font-medium">
-                    لا توجد ملفات متاحة لهذا الدرس
-                  </p>
-                  <p className="text-gray-400 text-xs lg:text-sm mt-2">
-                    سيتم إضافة الملفات والموارد هنا عند توفرها
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4 lg:space-y-6">
-                  {currentVideoFiles.length > 0 && (
-                    <div>
-                      <h4 className="text-xs lg:text-sm font-semibold text-gray-700 mb-3 lg:mb-4 flex items-center gap-2">
-                        <div className="w-1 h-4 lg:h-5 bg-gradient-to-b from-blue-600 to-indigo-600 rounded-full"></div>
-                        ملفات هذا الدرس
-                      </h4>
-                      <div className="space-y-2 lg:space-y-3">
-                        {currentVideoFiles.map((file) => (
-                          <FileCard
-                            key={file.id}
-                            file={file}
-                            courseId={course.id}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
 
-                  {generalFiles.length > 0 && (
-                    <div>
-                      <h4 className="text-xs lg:text-sm font-semibold text-gray-700 mb-3 lg:mb-4 flex items-center gap-2">
-                        <div className="w-1 h-4 lg:h-5 bg-gradient-to-b from-purple-600 to-pink-600 rounded-full"></div>
-                        ملفات عامة للدورة
-                      </h4>
-                      <div className="space-y-2 lg:space-y-3">
-                        {generalFiles.map((file) => (
-                          <FileCard
-                            key={file.id}
-                            file={file}
-                            courseId={course.id}
-                          />
-                        ))}
-                      </div>
+          {/* Resources Tab */}
+          {activeTab === "resources" && (
+            <div className="p-4 lg:p-8">
+              <div className="max-w-5xl mx-auto">
+                {currentVideoFiles.length === 0 && generalFiles.length === 0 ? (
+                  <div className="text-center py-12 lg:py-16 bg-white rounded-xl lg:rounded-2xl shadow-md border border-gray-100">
+                    <div className="bg-gray-50 rounded-full w-16 h-16 lg:w-24 lg:h-24 flex items-center justify-center mx-auto mb-3 lg:mb-4">
+                      <FileText className="w-8 h-8 lg:w-12 lg:h-12 text-gray-400" />
                     </div>
-                  )}
-                </div>
-              )}
+                    <p className="text-gray-500 text-base lg:text-lg font-medium">
+                      لا توجد ملفات متاحة لهذا الدرس
+                    </p>
+                    <p className="text-gray-400 text-xs lg:text-sm mt-2">
+                      سيتم إضافة الملفات والموارد هنا عند توفرها
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4 lg:space-y-6">
+                    {currentVideoFiles.length > 0 && (
+                      <div>
+                        <h4 className="text-xs lg:text-sm font-semibold text-gray-700 mb-3 lg:mb-4 flex items-center gap-2">
+                          <div className="w-1 h-4 lg:h-5 bg-gradient-to-b from-blue-600 to-indigo-600 rounded-full"></div>
+                          ملفات هذا الدرس
+                        </h4>
+                        <div className="space-y-2 lg:space-y-3">
+                          {currentVideoFiles.map((file) => (
+                            <FileCard
+                              key={file.id}
+                              file={file}
+                              courseId={course.id}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {generalFiles.length > 0 && (
+                      <div>
+                        <h4 className="text-xs lg:text-sm font-semibold text-gray-700 mb-3 lg:mb-4 flex items-center gap-2">
+                          <div className="w-1 h-4 lg:h-5 bg-gradient-to-b from-purple-600 to-pink-600 rounded-full"></div>
+                          ملفات عامة للدورة
+                        </h4>
+                        <div className="space-y-2 lg:space-y-3">
+                          {generalFiles.map((file) => (
+                            <FileCard
+                              key={file.id}
+                              file={file}
+                              courseId={course.id}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

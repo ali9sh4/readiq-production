@@ -62,8 +62,11 @@ export default function PaymentSelector({
   ];
 
   return (
+    // REPLACE WITH:
+    // REPLACE WITH:
+    // REPLACE WITH:
     <div
-      className="font-zain space-y-3 sm:space-y-4 p-2 sm:p-0 rounded-lg"
+      className="font-zain space-y-3 sm:space-y-4 p-2 sm:p-0  rounded-lg"
       dir="rtl"
     >
       {" "}
@@ -86,8 +89,8 @@ export default function PaymentSelector({
               method.disabled
                 ? "opacity-60 cursor-not-allowed bg-gray-100 border-gray-300"
                 : selectedMethod === method.id
-                ? "ring-2 ring-green-600 border-green-600 shadow-xl cursor-pointer bg-green-50"
-                : "cursor-pointer hover:shadow-xl hover:border-green-500 border-gray-300 bg-white"
+                ? "ring-2 ring-green-600 border-green-600 shadow-xl cursor-pointer "
+                : "cursor-pointer hover:shadow-xl hover:border-green-500 border-gray-300 bg-blue-200"
             } ${loading ? "pointer-events-none opacity-70" : ""}`}
           >
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
