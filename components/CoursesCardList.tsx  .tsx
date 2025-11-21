@@ -113,10 +113,16 @@ const CourseCard = memo(
     // Admin View
     if (isAdminView) {
       return (
-        <div className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white shadow-[0_2px_8px_rgba(0,0,0,0.1)] md:shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-all duration-300 border-2 border-gray-200 md:border-gray-300 hover:-translate-y-1 transform-gpu">
+        <div
+          className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white 
+          border-[3px] border-gray-300 lg:border-2 lg:border-gray-200
+          lg:shadow-[0_2px_8px_rgba(0,0,0,0.1)] lg:hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]
+          hover:border-blue-500 lg:hover:border-gray-200
+          transition-all duration-300 hover:-translate-y-1 hover:bg-gray-50 lg:hover:bg-white transform-gpu"
+        >
           {/* Image with Preview Overlay */}
           <Link href={`/Course/${course.id}`} className="relative block">
-            <div className="relative h-40 sm:h-48 md:h-52 lg:h-44 bg-gray-100 overflow-hidden group/image">
+            <div className="relative h-40 sm:h-48 md:h-52 lg:h-44 bg-gray-100 overflow-hidden rounded-t-[9px] lg:rounded-t-[13px] group/image">
               {!imageError ? (
                 <Image
                   src={imageUrl}
@@ -225,10 +231,14 @@ const CourseCard = memo(
     return (
       <Link
         href={`/Course/${course.id}`}
-        className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white shadow-[0_2px_8px_rgba(0,0,0,0.1)] md:shadow-[0_4px_12px_rgba(0,0,0,0.15)] hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)] transition-all duration-300 border-2 border-gray-200 md:border-gray-300 hover:-translate-y-1 transform-gpu"
+        className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white 
+          border-[3px] border-gray-300 lg:border-2 lg:border-gray-200
+          lg:shadow-[0_2px_8px_rgba(0,0,0,0.1)] lg:hover:shadow-[0_8px_24px_rgba(0,0,0,0.2)]
+          hover:border-blue-500 lg:hover:border-gray-200
+          transition-all duration-300 hover:-translate-y-1 hover:bg-gray-50 lg:hover:bg-white transform-gpu"
       >
         {/* Image with Badges */}
-        <div className="relative h-40 sm:h-48 md:h-52 lg:h-44 bg-gray-100 overflow-hidden">
+        <div className="relative h-40 sm:h-48 md:h-52 lg:h-44 bg-gray-100 overflow-hidden rounded-t-[9px] lg:rounded-t-[13px]">
           {!imageError ? (
             <Image
               src={imageUrl}
@@ -435,3 +445,4 @@ export default function CoursesCardList({
     </div>
   );
 }
+  
