@@ -24,7 +24,7 @@ import CTASection from "@/components/CTASection";
 
 export default async function Home() {
   const data = await getCourses({
-    pagination: { pageSize: 1000 },
+    pagination: { pageSize: 20 },
     filters: {
       isApproved: true,
       isRejected: false,
