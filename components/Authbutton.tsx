@@ -13,6 +13,7 @@ import {
 import { Avatar } from "./ui/avatar";
 import Image from "next/image";
 import { AvatarFallback } from "@radix-ui/react-avatar";
+import { User } from "lucide-react";
 
 export const AuthButton = () => {
   const router = useRouter();
@@ -37,8 +38,8 @@ export const AuthButton = () => {
                   className="rounded-full object-cover"
                 />
               )}
-              <AvatarFallback>
-                {auth.user.displayName?.charAt(0).toUpperCase() || "U"}
+              <AvatarFallback className="bg-gray-200 flex items-center justify-center">
+                <User className="w-5 h-5 text-gray-600" />
               </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
