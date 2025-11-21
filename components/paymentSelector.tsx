@@ -62,11 +62,8 @@ export default function PaymentSelector({
   ];
 
   return (
-    // REPLACE WITH:
-    // REPLACE WITH:
-    // REPLACE WITH:
     <div
-      className="font-zain space-y-3 sm:space-y-4 p-2 sm:p-0 bg-blue-200 rounded-lg"
+      className="font-zain space-y-3 sm:space-y-4 p-2 sm:p-0 rounded-lg"
       dir="rtl"
     >
       {" "}
