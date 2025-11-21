@@ -62,7 +62,14 @@ export default function PaymentSelector({
   ];
 
   return (
-    <div className="font-zain space-y-3 sm:space-y-4 p-2 sm:p-0" dir="rtl">
+    // REPLACE WITH:
+    // REPLACE WITH:
+    // REPLACE WITH:
+    <div
+      className="font-zain space-y-3 sm:space-y-4 p-2 sm:p-0 bg-blue-200 rounded-lg"
+      dir="rtl"
+    >
+      {" "}
       {/* Header */}
       <div className="text-center space-y-1 sm:space-y-2">
         <h3 className="text-lg sm:text-xl font-bold text-gray-900">
@@ -72,7 +79,6 @@ export default function PaymentSelector({
           {price.toLocaleString()} IQD
         </p>
       </div>
-
       {/* Payment Methods */}
       <div className="grid gap-2 sm:gap-3">
         {methods.map((method) => (
@@ -153,7 +159,6 @@ export default function PaymentSelector({
           </Card>
         ))}
       </div>
-
       {/* Info notices */}
       <div className="space-y-2">
         {/* Wallet info */}
@@ -170,7 +175,6 @@ export default function PaymentSelector({
           </p>
         </div>
       </div>
-
       {/* Security notice */}
       <p className="text-xs text-center text-gray-600 font-medium pt-1">
         🔒 جميع المعاملات مشفرة ومحمية
