@@ -31,7 +31,7 @@ export const AuthButton = () => {
             <Avatar>
               {!!auth.user.photoURL && (
                 <Image
-                  src={auth.user.photoURL || "/default-avatar.png"}
+                  src={auth.user.photoURL}
                   alt={`${auth.user.displayName} avatar`}
                   width={40}
                   height={40}
