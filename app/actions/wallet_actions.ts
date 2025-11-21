@@ -165,10 +165,27 @@ export async function purchaseCourseWithWallet(
     }
 
     // ✅ ATOMIC TRANSACTION with idempotency key
+    // ✅ ATOMIC TRANSACTION with idempotency key
     const result = await db.runTransaction(async (transaction) => {
+      // ===== STEP 1: DO ALL READS FIRST =====
       const walletRef = db.collection("wallets").doc(userId);
       const walletDoc = await transaction.get(walletRef);
 
+      const instructorId = courseData?.createdBy;
+      if (!instructorId) {
+        throw new Error("معلومات المدرب غير موجودة");
+      }
+
+      // Prevent buying your own course
+      if (instructorId === userId) {
+        throw new Error("لا يمكنك شراء دورتك الخاصة");
+      }
+
+      // Read instructor wallet
+      const instructorWalletRef = db.collection("wallets").doc(instructorId);
+      const instructorWalletDoc = await transaction.get(instructorWalletRef);
+
+      // ===== STEP 2: VALIDATE DATA =====
       if (!walletDoc.exists) {
         throw new Error("المحفظة غير موجودة");
       }
@@ -183,29 +200,17 @@ export async function purchaseCourseWithWallet(
 
       const newBalance = wallet.balance - coursePrice;
 
-      // Update wallet
+      // ===== STEP 3: NOW DO ALL WRITES =====
+
+      // Update buyer's wallet
       transaction.update(walletRef, {
         balance: newBalance,
         totalSpent: FieldValue.increment(coursePrice),
         updatedAt: new Date().toISOString(),
       });
-      // ===== TRANSFER TO INSTRUCTOR =====
-      const instructorId = courseData?.createdBy;
-      if (!instructorId) {
-        throw new Error("معلومات المدرب غير موجودة");
-      }
 
-      // Prevent buying your own course
-      if (instructorId === userId) {
-        throw new Error("لا يمكنك شراء دورتك الخاصة");
-      }
-
-      // Get or create instructor wallet
-      const instructorWalletRef = db.collection("wallets").doc(instructorId);
-      const instructorWalletDoc = await transaction.get(instructorWalletRef);
-
+      // Update or create instructor wallet
       if (instructorWalletDoc.exists) {
-        // Update existing wallet
         const instructorWallet = instructorWalletDoc.data() as Wallet;
         transaction.update(instructorWalletRef, {
           balance: instructorWallet.balance + coursePrice,
@@ -213,7 +218,6 @@ export async function purchaseCourseWithWallet(
           updatedAt: new Date().toISOString(),
         });
       } else {
-        // Create new wallet for instructor
         transaction.set(instructorWalletRef, {
           userId: instructorId,
           userName: courseData?.instructorName || "مدرب",
@@ -262,10 +266,10 @@ export async function purchaseCourseWithWallet(
         enrolledAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        transactionId: protectionKey, // ← Store reference
+        transactionId: protectionKey,
       });
 
-      // Log transaction WITH idempotency key
+      // Log buyer's transaction
       const txnRef = db.collection("wallet_transactions").doc();
       transaction.set(txnRef, {
         userId,
