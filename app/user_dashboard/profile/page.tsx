@@ -23,17 +23,31 @@ import {
   X,
   AlertCircle,
   LogOut,
+  Camera,
+  CheckCircle,
 } from "lucide-react";
 import Image from "next/image";
 import { updateProfile } from "firebase/auth";
 import { updateUserProfile } from "@/lib/services/userService";
 import { useRouter } from "next/navigation";
+import ThumbNailUploader, {
+  ImageUpload,
+} from "@/components/thumb_nail_uploder";
+import { updateUserProfilePicture } from "../actions";
+import { storage } from "@/firebase/client";
+import { getDownloadURL, ref, uploadBytesResumable } from "firebase/storage";
+import { useRef } from "react"; // Add to existing imports
+import { Loader2 } from "lucide-react"; // Add to existing lucide imports
+
+// Add this state variable
 
 export default function DashboardProfile() {
   const auth = useAuth();
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(auth.user?.displayName || "");
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
     if (!auth.user) return;
@@ -155,26 +169,103 @@ export default function DashboardProfile() {
         <div className="p-6 sm:p-8 lg:p-10">
           <div className="flex flex-col lg:flex-row gap-8 sm:gap-10">
             {/* Profile Picture */}
+            {/* Profile Picture */}
             <div className="flex flex-col items-center space-y-4">
+              <input
+                ref={uploadInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !auth.user) return;
+
+                  // Validate
+                  if (file.size > 10 * 1024 * 1024) {
+                    alert("الصورة كبيرة جداً. الحد الأقصى 10 ميجابايت");
+                    return;
+                  }
+
+                  setIsUploadingPhoto(true);
+                  try {
+                    const token = await auth.user.getIdToken();
+                    const path = `users/${
+                      auth.user.uid
+                    }/profile/${Date.now()}-${file.name}`;
+                    const storageRef = ref(storage, path);
+                    const uploadTask = uploadBytesResumable(storageRef, file);
+
+                    await new Promise<void>((resolve, reject) => {
+                      uploadTask.on("state_changed", null, reject, () =>
+                        resolve()
+                      );
+                    });
+
+                    const downloadURL = await getDownloadURL(storageRef);
+                    const result = await updateUserProfilePicture(
+                      auth.user.uid,
+                      downloadURL,
+                      token
+                    );
+
+                    if (result.success) {
+                      await updateProfile(auth.user, { photoURL: downloadURL });
+                      alert("✅ تم تحديث الصورة");
+                      window.location.reload();
+                    }
+                  } catch (error) {
+                    console.error(error);
+                    alert("فشل التحميل");
+                  } finally {
+                    setIsUploadingPhoto(false);
+                    e.target.value = "";
+                  }
+                }}
+              />
+
               <div className="relative group">
-                <Avatar className="w-28 h-28 sm:w-36 sm:h-36 ring-4 ring-blue-100 shadow-2xl transition-transform group-hover:scale-105">
-                  {auth.user.photoURL && (
-                    <Image
-                      src={auth.user.photoURL}
-                      alt="صورة المستخدم"
-                      width={144}
-                      height={144}
-                      className="rounded-full object-cover"
-                    />
-                  )}
-                  <AvatarFallback className="text-3xl sm:text-4xl bg-blue-600 text-white font-bold">
-                    {auth.user.displayName?.charAt(0) || "ع"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-green-600 rounded-full flex items-center justify-center shadow-lg border-4 border-white">
-                  <span className="text-white font-bold">✓</span>
-                </div>
+                <button
+                  onClick={() => uploadInputRef.current?.click()}
+                  disabled={isUploadingPhoto}
+                  className="relative"
+                  type="button"
+                >
+                  <Avatar className="w-28 h-28 sm:w-36 sm:h-36 ring-4 ring-blue-100 shadow-2xl transition-transform group-hover:scale-105 cursor-pointer">
+                    {isUploadingPhoto ? (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                      </div>
+                    ) : (
+                      <>
+                        {auth.user.photoURL && (
+                          <Image
+                            src={auth.user.photoURL}
+                            alt="صورة المستخدم"
+                            width={144}
+                            height={144}
+                            className="rounded-full object-cover"
+                          />
+                        )}
+                        <AvatarFallback className="text-3xl sm:text-4xl bg-blue-600 text-white font-bold">
+                          {auth.user.displayName?.charAt(0) || "ع"}
+                        </AvatarFallback>
+                      </>
+                    )}
+                  </Avatar>
+
+                  {/* Camera overlay on hover */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Camera className="w-8 h-8 text-white" />
+                  </div>
+                </button>
+
+                {auth.user.emailVerified && (
+                  <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-green-600 rounded-full flex items-center justify-center shadow-lg border-4 border-white">
+                    <CheckCircle className="w-5 h-5 text-white" />
+                  </div>
+                )}
               </div>
+
               <div className="text-center">
                 {!!auth.CustomClaims?.admin && (
                   <div className="bg-purple-600 text-white px-4 py-2 rounded-full text-xs sm:text-sm font-semibold shadow-lg flex items-center gap-2">

@@ -2,6 +2,7 @@
 
 import { adminAuth, db } from "@/firebase/service";
 import { Course } from "@/types/types";
+import { revalidatePath } from "next/cache";
 
 // ✅ OPTIMIZED - Fetch courses AND stats in ONE function
 export async function getUserEnrolledCoursesWithStats(
@@ -149,4 +150,28 @@ export async function getDashboardStats(token: string) {
     error: result.error,
     message: result.message,
   };
+}
+export async function updateUserProfilePicture(
+  userId: string,
+  photoPath: string | null, // Path in storage, not full URL
+  token: string
+) {
+  try {
+    const verifiedToken = await adminAuth.verifyIdToken(token);
+    if (!verifiedToken || verifiedToken.uid !== userId) {
+      return { success: false, error: "Invalid authentication" };
+    }
+
+    // Update in Firestore users collection
+    await db.collection("users").doc(userId).update({
+      photoURL: photoPath,
+      updatedAt: new Date().toISOString(),
+    });
+
+    revalidatePath("/dashboard/profile");
+    return { success: true, message: "تم تحديث صورة الملف الشخصي بنجاح" };
+  } catch (error) {
+    console.error("Failed to update profile picture:", error);
+    return { success: false, error: "Failed to update profile picture" };
+  }
 }

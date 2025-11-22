@@ -1,20 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, PlusCircle, User, Menu, X, Loader2 } from "lucide-react";
+import { BookOpen, PlusCircle, User, Menu, X, Monitor } from "lucide-react";
 import { AuthButton } from "@/components/Authbutton";
 import WalletBalance from "@/components/WalletBalance";
 import { useAuth } from "@/context/authContext";
 import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation"; // ✅ Add usePathname
 
 export default function Navbar() {
   const { user } = useAuth();
-  const router = useRouter();
-  const pathname = usePathname(); // ✅ Track current path
   const [open, setOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -25,25 +21,16 @@ export default function Navbar() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // ✅ Reset loading when path changes
-  useEffect(() => {
-    setIsNavigating(false);
-  }, [pathname]);
-
   const handleCreateCourseClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-
     if (isMobile) {
+      e.preventDefault();
       const confirmed = window.confirm(
         "💡 للحصول على أفضل تجربة في إنشاء الدورات، يُنصح باستخدام جهاز iPad أو كمبيوتر محمول.\n\nهل تريد المتابعة على الهاتف؟"
       );
-      if (!confirmed) {
-        return;
+      if (confirmed) {
+        window.location.href = "/course-upload";
       }
     }
-
-    setIsNavigating(true);
-    router.push("/course-upload");
   };
 
   return (
@@ -52,10 +39,38 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 lg:gap-3">
-            <span className="text-2xl lg:text-4xl font-extrabold">اقْرَأْ</span>
-            <span className="hidden sm:block text-xs lg:text-sm text-sky-200 opacity-80">
-              منصة القراءة العربية
-            </span>
+            <div className="flex items-center" dir="ltr">
+              <span
+                className="text-2xl lg:text-4xl font-extrabold"
+                style={{ color: "#E53935" }}
+              >
+                R
+              </span>
+              <span
+                className="text-2xl lg:text-4xl font-extrabold"
+                style={{ color: "#FDD835" }}
+              >
+                u
+              </span>
+              <span
+                className="text-2xl lg:text-4xl font-extrabold"
+                style={{ color: "#1E88E5" }}
+              >
+                b
+              </span>
+              <span
+                className="text-2xl lg:text-4xl font-extrabold"
+                style={{ color: "#43A047" }}
+              >
+                i
+              </span>
+              <span
+                className="text-2xl lg:text-4xl font-extrabold"
+                style={{ color: "#E53935" }}
+              >
+                k
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Nav — Hidden on mobile */}
@@ -84,25 +99,15 @@ export default function Navbar() {
             </li>
 
             <li>
-              <button
+              <Link
+                href="/course-upload"
                 onClick={handleCreateCourseClick}
-                disabled={isNavigating}
                 className="flex items-center gap-2 px-3 py-2 bg-white text-sky-900
-                rounded-lg shadow-md hover:bg-gray-100 disabled:opacity-70 disabled:cursor-wait
-                transition-all"
+                rounded-lg shadow-md hover:bg-gray-100"
               >
-                {isNavigating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>جاري التحميل...</span>
-                  </>
-                ) : (
-                  <>
-                    <PlusCircle className="h-4 w-4 hidden sm:inline-block" />
-                    <span>إنشاء دورة</span>
-                  </>
-                )}
-              </button>
+                <PlusCircle className="h-4 w-4 hidden sm:inline-block" />
+                <span>إنشاء دورة</span>
+              </Link>
             </li>
 
             <li>
@@ -152,27 +157,17 @@ export default function Navbar() {
               دوراتي
             </Link>
 
-            <button
+            <Link
+              href="/course-upload"
+              className="flex items-center gap-2 px-3 py-3 bg-white text-sky-900 rounded-lg shadow-md"
               onClick={(e) => {
                 setOpen(false);
                 handleCreateCourseClick(e);
               }}
-              disabled={isNavigating}
-              className="flex items-center gap-2 px-3 py-3 bg-white text-sky-900 rounded-lg shadow-md
-              disabled:opacity-70 disabled:cursor-wait transition-all w-full"
             >
-              {isNavigating ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  جاري التحميل...
-                </>
-              ) : (
-                <>
-                  <PlusCircle size={18} />
-                  إنشاء دورة
-                </>
-              )}
-            </button>
+              <PlusCircle size={18} />
+              إنشاء دورة
+            </Link>
 
             <Link
               href="/user_dashboard/profile"
