@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +22,28 @@ import { getCourses } from "@/data/courses";
 import HomeCoursesSection from "@/components/HomeCoursesSection";
 import NavigationButton from "@/components/NavigationButton";
 import CTASection from "@/components/CTASection";
+export const metadata: Metadata = {
+  title: "ReadIQ - اقْرَأْ | منصة التعليم الإلكتروني في العراق",
+  description:
+    "أفضل منصة تعليمية عربية في العراق. دورات احترافية في البرمجة، التصميم، والتسويق الرقمي. تعلّم بالعربية مع دعم محلي وطرق دفع تناسب العراق.",
+  keywords: [
+    "دورات تعليمية",
+    "تعليم عن بعد",
+    "دورات عراقية",
+    "تعليم إلكتروني",
+    "ReadIQ",
+    "دورات برمجة",
+    "دورات تصميم",
+  ],
+  openGraph: {
+    title: "ReadIQ - منصة التعليم الإلكتروني في العراق",
+    description: "أفضل منصة تعليمية عربية في العراق",
+    url: "https://readiq.us",
+    siteName: "ReadIQ",
+    locale: "ar_IQ",
+    type: "website",
+  },
+};
 
 export default async function Home() {
   const data = await getCourses({

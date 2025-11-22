@@ -109,7 +109,7 @@ const CourseCard = memo(
           lg:[filter:none]
           transform-gpu will-change-transform">
           {/* Image with Preview Overlay */}
-          <Link href={`/Course/${course.id}`} className="relative block">
+          <Link href={`/course/${course.id}`} className="relative block">
             <div className="relative h-40 sm:h-48 md:h-52 lg:h-44 bg-gray-100 overflow-hidden rounded-t-[8px] md:rounded-t-[7px] lg:rounded-t-[13px] group/image">
               {!imageError ? (
                 <Image
@@ -216,7 +216,7 @@ const CourseCard = memo(
     // User View
     return (
       <Link
-        href={`/Course/${course.id}`}
+        href={`/course/${course.id}`}
         className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white 
           border-[4px] border-gray-400 md:border-[5px] md:border-gray-500
           lg:border-2 lg:border-gray-200 lg:shadow-lg

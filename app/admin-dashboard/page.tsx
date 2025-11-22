@@ -665,7 +665,7 @@ export default function AdminDashboard() {
                   </Button>
 
                   <Button variant="outline" asChild>
-                    <Link href={`/Course/${course.id}`}>
+                    <Link href={`/course/${course.id}`}>
                       <Eye className="h-4 w-4 ml-2" />
                       عرض التفاصيل
                     </Link>
@@ -867,7 +867,7 @@ export default function AdminDashboard() {
                   </Button>
 
                   <Button variant="outline" asChild>
-                    <Link href={`/Course/${course.id}`}>
+                    <Link href={`/course/${course.id}`}>
                       <Eye className="h-4 w-4 ml-2" />
                       عرض التفاصيل
                     </Link>
@@ -920,7 +920,7 @@ export default function AdminDashboard() {
                   </Button>
 
                   <Button variant="outline" asChild>
-                    <Link href={`/Course/${course.id}`}>
+                    <Link href={`/course/${course.id}`}>
                       <Eye className="h-4 w-4 ml-2" />
                       عرض التفاصيل
                     </Link>
@@ -969,7 +969,7 @@ export default function AdminDashboard() {
                   </Button>
 
                   <Button variant="outline" asChild>
-                    <Link href={`/Course/${course.id}`}>
+                    <Link href={`/course/${course.id}`}>
                       <Eye className="h-4 w-4 ml-2" />
                       عرض التفاصيل
                     </Link>

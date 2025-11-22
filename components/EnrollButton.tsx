@@ -37,7 +37,7 @@ export default function EnrollButton({
     if (loading) return;
     const user = auth?.user;
     if (!user) {
-      router.push(`/login?redirect=/Course/${courseId}`);
+      router.push(`/login?redirect=/course/${courseId}`);
       return;
     }
 
@@ -111,7 +111,7 @@ export default function EnrollButton({
           setLoading(false);
 
           setTimeout(() => {
-            router.push(`/Course/${courseId}`);
+            router.push(`/course/${courseId}`);
             router.refresh();
           }, 1500);
         } else {

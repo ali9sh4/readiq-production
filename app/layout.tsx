@@ -16,9 +16,65 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// ✅ UPDATED METADATA
 export const metadata: Metadata = {
-  title: "اقْرَأْ - منصة القراءة",
-  description: "منصة القراءة العربية",
+  metadataBase: new URL("https://readiq.us"),
+  title: {
+    default: "ReadIQ - اقْرَأْ | منصة التعليم الإلكتروني في العراق",
+    template: "%s | ReadIQ - اقْرَأْ",
+  },
+  description:
+    "أفضل منصة تعليمية عربية في العراق. دورات احترافية في البرمجة، التصميم، والتسويق الرقمي مع دعم محلي وطرق دفع تناسب العراق",
+  keywords: [
+    "دورات تعليمية",
+    "تعليم عن بعد",
+    "دورات عراقية",
+    "تعليم إلكتروني",
+    "ReadIQ",
+    "اقرأ",
+    "دورات برمجة",
+    "دورات تصميم",
+    "التعليم في العراق",
+    "دورات أونلاين",
+  ],
+  authors: [{ name: "ReadIQ" }],
+  creator: "ReadIQ",
+  publisher: "ReadIQ",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    type: "website",
+    locale: "ar_IQ",
+    url: "https://readiq.us",
+    siteName: "ReadIQ - اقْرَأْ",
+    title: "ReadIQ - منصة التعليم الإلكتروني في العراق",
+    description: "أفضل منصة تعليمية عربية في العراق. دورات احترافية بالعربية",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ReadIQ - منصة التعليم الإلكتروني في العراق",
+    description: "أفضل منصة تعليمية عربية في العراق",
+  },
+  alternates: {
+    canonical: "https://readiq.us",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    google: "nOdTSzDzvmfr3bX1KZIaLuiSneMILNhtdi5Lq_1zVRI",
+  },
 };
 
 const zainFont = localFont({
@@ -80,7 +136,6 @@ export default function RootLayout({
         <AuthProvider>
           <Navbar />
           <main className="min-h-screen">
-            {" "}
             {children}
             <Toaster richColors closeButton />
           </main>

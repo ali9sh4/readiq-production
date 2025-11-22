@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, BookOpen } from "lucide-react";
 import Link from "next/link";
+import { Metadata } from "next";
 
 // ✅ Helper function to clean Firestore data
 function cleanCourseData(course: any) {
@@ -45,6 +46,74 @@ function cleanCourseData(course: any) {
           ? file.uploadedAt.toDate().toISOString()
           : file.uploadedAt || null,
       })) || [],
+  };
+}
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ courseId: string }>;
+}): Promise<Metadata> {
+  const { courseId } = await params;
+
+  // Fetch course data
+  const result = await getCourseById(courseId);
+
+  if (!result.success || !result.course) {
+    return {
+      title: "الدورة غير موجودة | ReadIQ",
+      description: "لا يمكن العثور على هذه الدورة",
+    };
+  }
+
+  const course = result.course;
+
+  // Calculate price to display
+  let displayPrice = course.price || 0;
+  if (course.salePrice && course.salePrice < displayPrice) {
+    displayPrice = course.salePrice;
+  }
+
+  return {
+    title: `${course.title} | ReadIQ - اقْرَأْ`,
+    description:
+      course.description ||
+      course.subtitle ||
+      `تعلم ${course.title} على منصة ReadIQ`,
+    keywords: [
+      course.title,
+      course.category,
+      "دورة تعليمية",
+      "تعليم عن بعد",
+      "دورات عراقية",
+      course.instructorName || "ReadIQ",
+    ],
+    openGraph: {
+      title: course.title,
+      description: course.description || course.subtitle || "",
+      type: "article",
+      url: `https://readiq.us//course//${courseId}`,
+      siteName: "ReadIQ",
+      locale: "ar_IQ",
+      images: course.thumbnailUrl
+        ? [
+            {
+              url: course.thumbnailUrl,
+              width: 1200,
+              height: 630,
+              alt: course.title,
+            },
+          ]
+        : [],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: course.title,
+      description: course.description || course.subtitle || "",
+      images: course.thumbnailUrl ? [course.thumbnailUrl] : [],
+    },
+    alternates: {
+      canonical: `https://readiq.us/course/${courseId}`,
+    },
   };
 }
 

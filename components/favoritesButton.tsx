@@ -44,7 +44,7 @@ export default function FavoriteButton({
 
     if (!auth.user) {
       toast.error("يرجى تسجيل الدخول أولاً");
-      router.push(`/login?redirect=/Course/${courseId}`);
+      router.push(`/login?redirect=/course/${courseId}`);
       return;
     }
 

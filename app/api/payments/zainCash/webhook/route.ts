@@ -122,7 +122,7 @@ export async function GET(req: NextRequest) {
       console.log(`✅ Payment completed: ${transactionId}`);
 
       return NextResponse.redirect(
-        new URL(`/Course/${courseId}?payment=success`, req.url)
+        new URL(`/course/${courseId}?payment=success`, req.url)
       );
     } else if (finalStatus === "failed") {
       // ❌ Payment failed
@@ -149,21 +149,21 @@ export async function GET(req: NextRequest) {
       console.log(`❌ Payment failed: ${transactionId}`);
 
       return NextResponse.redirect(
-        new URL(`/Course/${courseId}?payment=failed`, req.url)
+        new URL(`/course/${courseId}?payment=failed`, req.url)
       );
     } else if (finalStatus === "pending") {
       // ⏳ Still pending (rare)
       console.log(`⏳ Payment pending: ${transactionId}`);
 
       return NextResponse.redirect(
-        new URL(`/Course/${courseId}?payment=pending`, req.url)
+        new URL(`/course/${courseId}?payment=pending`, req.url)
       );
     } else {
       // ⚠️ Unknown status
       console.warn(`⚠️ Unknown status: ${finalStatus}`);
 
       return NextResponse.redirect(
-        new URL(`/Course/${courseId}?payment=unknown`, req.url)
+        new URL(`/course/${courseId}?payment=unknown`, req.url)
       );
     }
   } catch (error: any) {
