@@ -101,12 +101,48 @@ export const SaveNewProperty = async (
 export const SaveQuickCourseCreation = async (
   data: z.infer<typeof QuickCourseSchema> & { token: string }
 ) => {
+  console.log("🔵 SERVER: SaveQuickCourseCreation function called");
+  console.log("🔵 SERVER: Received data:", {
+    title: data.title,
+    category: data.category,
+    level: data.level,
+    price: data.price,
+    description: data.description ? `${data.description.substring(0, 50)}...` : "empty",
+    hasToken: !!data.token,
+    tokenLength: data.token?.length || 0,
+  });
+
   try {
     const { token, ...CourseData } = data;
+    
+    console.log("🔵 SERVER: Step 1 - Token extracted successfully");
+    console.log("🔵 SERVER: Course data after token extraction:", {
+      title: CourseData.title,
+      category: CourseData.category,
+      level: CourseData.level,
+      price: CourseData.price,
+    });
 
     // Verify token
-    const verifiedToken = await adminAuth.verifyIdToken(token);
+    console.log("🔵 SERVER: Step 2 - Starting token verification...");
+    
+    let verifiedToken;
+    try {
+      verifiedToken = await adminAuth.verifyIdToken(token);
+      console.log("✅ SERVER: Token verified successfully");
+      console.log("🔵 SERVER: Verified user UID:", verifiedToken.uid);
+      console.log("🔵 SERVER: Verified user email:", verifiedToken.email);
+    } catch (tokenError) {
+      console.error("🔴 SERVER: Token verification FAILED");
+      console.error("🔴 SERVER: Token error:", tokenError);
+      return {
+        error: true,
+        message: "فشل التحقق من الجلسة. يرجى تسجيل الدخول مرة أخرى.",
+      };
+    }
+
     if (!verifiedToken) {
+      console.log("🔴 SERVER: verifiedToken is null/undefined");
       return {
         error: true,
         message: "يرجى تسجيل الدخول مرة أخرى.",
@@ -114,18 +150,26 @@ export const SaveQuickCourseCreation = async (
     }
 
     // Validate data
+    console.log("🔵 SERVER: Step 3 - Validating course data...");
     const validation = QuickCourseSchema.safeParse(CourseData);
+    
     if (!validation.success) {
+      console.log("🔴 SERVER: Validation FAILED");
+      console.log("🔴 SERVER: Validation errors:", JSON.stringify(validation.error.issues, null, 2));
       return {
         error: true,
         message:
           validation.error.issues[0].message ?? "البيانات المرسلة غير صحيحة.",
       };
     }
+    
+    console.log("✅ SERVER: Data validation passed");
 
     // Prepare course data
+    console.log("🔵 SERVER: Step 4 - Preparing course data for Firestore...");
     const courseToSave = {
       ...CourseData,
+      level: CourseData.level || "all_levels", // ✅ Set default if not provided
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       createdBy: verifiedToken.uid,
@@ -138,16 +182,61 @@ export const SaveQuickCourseCreation = async (
       deletionStatus: "none",
     };
 
-    // Save to Firestore using v8 Admin SDK syntax
-    const courseRef = await db.collection("courses").add(courseToSave);
+    console.log("🔵 SERVER: Course data prepared:", {
+      title: courseToSave.title,
+      category: courseToSave.category,
+      level: courseToSave.level,
+      price: courseToSave.price,
+      createdBy: courseToSave.createdBy,
+      status: courseToSave.status,
+    });
 
-    return {
+    // Save to Firestore
+    console.log("🔵 SERVER: Step 5 - Saving to Firestore...");
+    
+    let courseRef;
+    try {
+      courseRef = await db.collection("courses").add(courseToSave);
+      console.log("✅ SERVER: Course saved to Firestore successfully!");
+      console.log("✅ SERVER: New course ID:", courseRef.id);
+    } catch (firestoreError) {
+      console.error("🔴 SERVER: Firestore save FAILED");
+      console.error("🔴 SERVER: Firestore error:", firestoreError);
+      
+      if (firestoreError instanceof Error) {
+        console.error("🔴 SERVER: Error name:", firestoreError.name);
+        console.error("🔴 SERVER: Error message:", firestoreError.message);
+        console.error("🔴 SERVER: Error stack:", firestoreError.stack);
+      }
+      
+      return {
+        error: true,
+        message: "فشل حفظ الدورة في قاعدة البيانات",
+      };
+    }
+
+    console.log("✅ SERVER: Step 6 - Returning success response");
+    
+    const successResponse = {
       success: true,
       courseId: courseRef.id,
       message: "تم إنشاء الدورة بنجاح",
     };
+    
+    console.log("✅ SERVER: Success response:", successResponse);
+    
+    return successResponse;
+    
   } catch (error) {
-    console.error("Error saving course:", error);
+    console.error("🔴 SERVER: UNEXPECTED ERROR in SaveQuickCourseCreation");
+    console.error("🔴 SERVER: Error object:", error);
+    
+    if (error instanceof Error) {
+      console.error("🔴 SERVER: Error name:", error.name);
+      console.error("🔴 SERVER: Error message:", error.message);
+      console.error("🔴 SERVER: Error stack:", error.stack);
+    }
+    
     return {
       error: true,
       message: "حدث خطأ أثناء حفظ الدورة",
