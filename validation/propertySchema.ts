@@ -7,7 +7,7 @@ export const QuickCourseSchema = z.object({
     .min(1, "يجب إدخال عنوان الدورة")
     .min(10, "يجب أن يحتوي العنوان على 10 أحرف على الأقل"),
   category: z.string().min(1, "يجب اختيار تصنيف الدورة"),
-  level: z.enum(["beginner", "intermediate", "advanced", "all_levels"]),
+  level: z.enum(["beginner", "intermediate", "advanced", "all_levels"]).optional,
   price: z.coerce.number().min(0),
   description: z.string().optional(), // Optional but shown in form
 });
