@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Image from "next/image";
+import NavigationButton from "@/components/NavigationButton";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -147,9 +148,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <p className="text-gray-600 mb-4">
               تحتاج إلى تسجيل الدخول للوصول إلى لوحة التحكم
             </p>
-            <Link href="/login">
-              <Button>تسجيل الدخول</Button>
-            </Link>
+            <NavigationButton
+              href="/login"
+              className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white transition-all duration-200 font-medium px-6 shadow-md hover:shadow-lg"
+              variant="default"
+            >
+              تسجيل الدخول
+            </NavigationButton>
           </CardContent>
         </Card>
       </div>

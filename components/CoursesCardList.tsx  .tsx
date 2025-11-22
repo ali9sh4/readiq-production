@@ -42,10 +42,17 @@ const EmptyState = memo(() => (
   <div className="flex flex-col items-center justify-center p-8 md:p-12 text-center min-h-[400px]">
     <div className="bg-gradient-to-br from-gray-50 to-slate-100 rounded-2xl shadow-lg border border-gray-200 p-6 md:p-8 max-w-md w-full">
       <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-400 rounded-full flex items-center justify-center mx-auto mb-4">
-        <BookOpen className="w-8 h-8 md:w-10 md:h-10 text-white" aria-hidden="true" />
+        <BookOpen
+          className="w-8 h-8 md:w-10 md:h-10 text-white"
+          aria-hidden="true"
+        />
       </div>
-      <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2">لا توجد دورات</h3>
-      <p className="text-sm md:text-base text-gray-600">لا توجد دورات متاحة في الوقت الحالي</p>
+      <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2">
+        لا توجد دورات
+      </h3>
+      <p className="text-sm md:text-base text-gray-600">
+        لا توجد دورات متاحة في الوقت الحالي
+      </p>
     </div>
   </div>
 ));
@@ -55,10 +62,17 @@ const ErrorState = memo(({ message }: { message?: string }) => (
   <div className="flex flex-col items-center justify-center p-8 md:p-12 text-center min-h-[400px]">
     <div className="bg-gradient-to-br from-red-50 to-rose-100 rounded-2xl shadow-lg border border-red-200 p-6 md:p-8 max-w-md w-full">
       <div className="w-16 h-16 md:w-20 md:h-20 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-        <AlertCircle className="w-8 h-8 md:w-10 md:h-10 text-white" aria-hidden="true" />
+        <AlertCircle
+          className="w-8 h-8 md:w-10 md:h-10 text-white"
+          aria-hidden="true"
+        />
       </div>
-      <h3 className="text-lg md:text-xl font-bold text-red-800 mb-2">خطأ في التحميل</h3>
-      <p className="text-sm md:text-base text-red-600">{message || "حدث خطأ غير متوقع"}</p>
+      <h3 className="text-lg md:text-xl font-bold text-red-800 mb-2">
+        خطأ في التحميل
+      </h3>
+      <p className="text-sm md:text-base text-red-600">
+        {message || "حدث خطأ غير متوقع"}
+      </p>
     </div>
   </div>
 ));
@@ -99,7 +113,8 @@ const CourseCard = memo(
     // Admin View
     if (isAdminView) {
       return (
-        <div className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white 
+        <div
+          className="group block rounded-xl lg:rounded-2xl overflow-hidden bg-white 
           border-[4px] border-gray-400 md:border-[5px] md:border-gray-500
           lg:border-2 lg:border-gray-200 lg:shadow-lg
           hover:border-blue-600 lg:hover:border-blue-500
@@ -107,7 +122,8 @@ const CourseCard = memo(
           hover:bg-blue-50 lg:hover:bg-white
           [filter:drop-shadow(0_4px_6px_rgba(0,0,0,0.2))] md:[filter:drop-shadow(0_6px_8px_rgba(0,0,0,0.25))]
           lg:[filter:none]
-          transform-gpu will-change-transform">
+          transform-gpu will-change-transform"
+        >
           {/* Image with Preview Overlay */}
           <Link href={`/course/${course.id}`} className="relative block">
             <div className="relative h-40 sm:h-48 md:h-52 lg:h-44 bg-gray-100 overflow-hidden rounded-t-[8px] md:rounded-t-[7px] lg:rounded-t-[13px] group/image">
@@ -142,8 +158,10 @@ const CourseCard = memo(
             <h3 className="text-sm md:text-base lg:text-sm font-bold text-gray-900 line-clamp-2 leading-snug">
               {course.title}
             </h3>
-            <p className="text-xs md:text-sm lg:text-xs text-gray-600 truncate">{instructor}</p>
-            
+            <p className="text-xs md:text-sm lg:text-xs text-gray-600 truncate">
+              {instructor}
+            </p>
+
             {course.enrollmentCount !== undefined &&
               course.enrollmentCount > 0 && (
                 <div className="flex items-center gap-1 md:gap-1.5 lg:gap-1 text-xs md:text-sm lg:text-xs text-gray-600">
@@ -243,7 +261,7 @@ const CourseCard = memo(
               <BookOpen className="w-12 h-12 md:w-14 md:h-14 lg:w-10 lg:h-10 text-gray-400" />
             </div>
           )}
-          
+
           {/* Favorite Button */}
           {!isAdminView && (
             <div className="absolute top-2 md:top-2.5 lg:top-2 right-2 md:right-2.5 lg:right-2 z-10">
@@ -290,8 +308,10 @@ const CourseCard = memo(
           </h3>
 
           {/* Instructor */}
-          <p className="text-xs md:text-sm lg:text-xs text-gray-600 truncate">{instructor}</p>
-          
+          <p className="text-xs md:text-sm lg:text-xs text-gray-600 truncate">
+            {instructor}
+          </p>
+
           {/* Enrollment Count */}
           {course.enrollmentCount !== undefined &&
             course.enrollmentCount > 0 && (
@@ -391,7 +411,11 @@ export default function CoursesCardList({
   }
 
   return (
-    <div className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-0 bg-gray-100 lg:bg-transparent rounded-2xl lg:rounded-none" role="region" aria-label="قائمة الدورات">
+    <div
+      className="space-y-6 md:space-y-8 p-4 md:p-6 lg:p-0 bg-gray-100 lg:bg-transparent rounded-2xl lg:rounded-none"
+      role="region"
+      aria-label="قائمة الدورات"
+    >
       {/* Courses Grid - Optimized for all screen sizes */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4 lg:gap-4">
         {data.courses.map((course) => (
@@ -409,7 +433,9 @@ export default function CoursesCardList({
       {/* Pagination */}
       {data.hasMore && (
         <div className="text-center py-4 md:py-6">
-          <p className="text-sm md:text-base text-gray-600">المزيد من الدورات متاحة...</p>
+          <p className="text-sm md:text-base text-gray-600">
+            المزيد من الدورات متاحة...
+          </p>
         </div>
       )}
 

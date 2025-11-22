@@ -24,6 +24,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import { createTopupRequest } from "@/app/actions/wallet_actions";
+import NavigationButton from "@/components/NavigationButton";
 
 export default function TopUpPage() {
   const auth = useAuth();
@@ -169,13 +170,14 @@ export default function TopUpPage() {
                   رقم الواتساب
                 </CardDescription>
               </div>
-              <Link
+              <NavigationButton
                 href="/wallet/transactions"
+                variant="outline"
                 className="flex items-center gap-1.5 text-blue-600 hover:text-blue-800 text-xs sm:text-sm font-medium transition-colors hover:underline"
               >
                 <History className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 الدفعات السابقة
-              </Link>
+              </NavigationButton>
             </div>
           </CardHeader>
 

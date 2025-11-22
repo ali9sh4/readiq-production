@@ -27,7 +27,7 @@ type InputT = z.input<typeof QuickCourseSchema>;
 type OutputT = z.output<typeof QuickCourseSchema>;
 
 type Props = {
-  handleSubmit?: (data: OutputT) => Promise<void>; // ✅ Changed to Promise<void>
+  handleSubmit?: (data: OutputT) => Promise<void>;
   submitButtonLabel: React.ReactNode;
 };
 
@@ -40,14 +40,12 @@ export default function QuickCourseForm({
     mode: "onChange",
     defaultValues: {
       title: "",
-      category: undefined,
-      level: undefined,
+      category: "",
+      level: "all_levels", // ✅ Changed from undefined to default value
       price: 0,
       description: "",
-    } as Partial<InputT>,
+    },
   });
-
-  // In QuickCourseForm component - update the onSubmit function
 
   const onSubmit: SubmitHandler<InputT> = async (data) => {
     try {
@@ -62,9 +60,7 @@ export default function QuickCourseForm({
 
   return (
     <div dir="rtl" lang="ar" className="min-h-screen bg-gray-50">
-      {/* Container */}
       <div className="mx-auto w-full max-w-3xl px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-12 sm:pb-16">
-        {/* Header */}
         <header className="text-center mb-8 sm:mb-10">
           <div className="inline-flex items-center justify-center gap-2 rounded-full bg-blue-100 text-blue-700 px-4 py-2 text-sm sm:text-base font-semibold mb-4">
             <BookOpen className="size-4 sm:size-5" />
@@ -83,7 +79,6 @@ export default function QuickCourseForm({
           </p>
         </header>
 
-        {/* Benefits Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8">
           <div className="bg-white p-4 rounded-xl border-2 border-blue-100 text-center">
             <Clock className="size-6 text-blue-600 mx-auto mb-2" />
@@ -102,7 +97,6 @@ export default function QuickCourseForm({
           </div>
         </div>
 
-        {/* Form Card */}
         <div className="bg-white rounded-2xl border-2 border-gray-200 shadow-lg p-6 sm:p-8">
           <Form {...form}>
             <form
@@ -114,7 +108,6 @@ export default function QuickCourseForm({
                 disabled={form.formState.isSubmitting}
                 className="space-y-6"
               >
-                {/* Title */}
                 <FormField
                   control={form.control}
                   name="title"
@@ -143,7 +136,6 @@ export default function QuickCourseForm({
                   )}
                 />
 
-                {/* Category & Level */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
@@ -156,7 +148,7 @@ export default function QuickCourseForm({
                         </FormLabel>
                         <FormControl>
                           <Select
-                            value={field.value ?? ""}
+                            value={field.value}
                             onValueChange={field.onChange}
                             dir="rtl"
                           >
@@ -212,7 +204,7 @@ export default function QuickCourseForm({
                         </FormLabel>
                         <FormControl>
                           <Select
-                            value={field.value ?? ""}
+                            value={field.value}
                             onValueChange={field.onChange}
                             dir="rtl"
                           >
@@ -237,7 +229,6 @@ export default function QuickCourseForm({
                   />
                 </div>
 
-                {/* Price */}
                 <FormField
                   control={form.control}
                   name="price"
@@ -300,7 +291,6 @@ export default function QuickCourseForm({
                   )}
                 />
 
-                {/* Description */}
                 <FormField
                   control={form.control}
                   name="description"
@@ -343,7 +333,6 @@ export default function QuickCourseForm({
                 />
               </fieldset>
 
-              {/* Submit Button */}
               <Button
                 type="submit"
                 className="w-full h-12 text-base font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transition-all"
@@ -362,7 +351,6 @@ export default function QuickCourseForm({
           </Form>
         </div>
 
-        {/* Next Steps */}
         <div className="mt-8 bg-blue-50 rounded-2xl border-2 border-blue-200 p-6">
           <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
             <span>🎯</span>

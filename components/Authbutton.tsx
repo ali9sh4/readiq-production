@@ -14,6 +14,7 @@ import { Avatar } from "./ui/avatar";
 import Image from "next/image";
 import { AvatarFallback } from "@radix-ui/react-avatar";
 import { User } from "lucide-react";
+import NavigationButton from "./NavigationButton";
 
 export const AuthButton = () => {
   const router = useRouter();
@@ -80,20 +81,22 @@ export const AuthButton = () => {
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
-        <div className="flex gap-4 items-center" dir="rtl">
-          <Link
+        <div className="flex gap-3 items-center" dir="rtl">
+          <NavigationButton
             href="/login"
-            className="text-white hover:text-sky-200 transition-colors duration-200 font-medium"
+            className="text-gray-700 hover:text-sky-600 hover:bg-sky-50 border-gray-300 hover:border-sky-400 transition-all duration-200 font-medium px-5 shadow-sm"
+            variant="outline"
           >
             تسجيل الدخول
-          </Link>
-          <div className="h-6 w-[1px] bg-white/30"></div>
-          <Link
+          </NavigationButton>
+
+          <NavigationButton
             href="/register"
-            className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 font-medium"
+            className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white border-0 transition-all duration-200 font-medium px-5 shadow-md hover:shadow-lg"
+            variant="default"
           >
             تسجيل جديد
-          </Link>
+          </NavigationButton>
         </div>
       )}
     </div>

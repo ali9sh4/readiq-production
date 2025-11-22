@@ -1,4 +1,5 @@
 import InstructorCourse from "@/components/instructorCourse";
+import NavigationButton from "@/components/NavigationButton";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, BookOpen } from "lucide-react";
 import Link from "next/link";
@@ -50,15 +51,16 @@ export default async function Courses({
             size="lg"
             className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200 rounded-xl"
           >
-            <Link
-              href="/course-upload/new"
+            <NavigationButton
+              href={`/course-upload/new`}
+              variant="outline"
               className="flex items-center gap-2 px-8 py-6"
             >
               <PlusCircle className="h-5 w-5" />
               <span className="font-semibold text-base sm:text-lg">
                 إضافة دورة جديدة
-              </span>
-            </Link>
+              </span>{" "}
+            </NavigationButton>
           </Button>
         </div>
       </div>

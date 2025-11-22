@@ -1,16 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, PlusCircle, User, Menu, X, Monitor } from "lucide-react";
+import { BookOpen, PlusCircle, User, Menu, X, Loader2 } from "lucide-react";
 import { AuthButton } from "@/components/Authbutton";
 import WalletBalance from "@/components/WalletBalance";
 import { useAuth } from "@/context/authContext";
 import { useState, useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation"; // ✅ Add usePathname
 
 export default function Navbar() {
   const { user } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname(); // ✅ Track current path
   const [open, setOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -21,16 +25,25 @@ export default function Navbar() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  // ✅ Reset loading when path changes
+  useEffect(() => {
+    setIsNavigating(false);
+  }, [pathname]);
+
   const handleCreateCourseClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+
     if (isMobile) {
-      e.preventDefault();
       const confirmed = window.confirm(
         "💡 للحصول على أفضل تجربة في إنشاء الدورات، يُنصح باستخدام جهاز iPad أو كمبيوتر محمول.\n\nهل تريد المتابعة على الهاتف؟"
       );
-      if (confirmed) {
-        window.location.href = "/course-upload";
+      if (!confirmed) {
+        return;
       }
     }
+
+    setIsNavigating(true);
+    router.push("/course-upload");
   };
 
   return (
@@ -71,15 +84,25 @@ export default function Navbar() {
             </li>
 
             <li>
-              <Link
-                href="/course-upload"
+              <button
                 onClick={handleCreateCourseClick}
+                disabled={isNavigating}
                 className="flex items-center gap-2 px-3 py-2 bg-white text-sky-900
-                rounded-lg shadow-md hover:bg-gray-100"
+                rounded-lg shadow-md hover:bg-gray-100 disabled:opacity-70 disabled:cursor-wait
+                transition-all"
               >
-                <PlusCircle className="h-4 w-4 hidden sm:inline-block" />
-                <span>إنشاء دورة</span>
-              </Link>
+                {isNavigating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>جاري التحميل...</span>
+                  </>
+                ) : (
+                  <>
+                    <PlusCircle className="h-4 w-4 hidden sm:inline-block" />
+                    <span>إنشاء دورة</span>
+                  </>
+                )}
+              </button>
             </li>
 
             <li>
@@ -129,17 +152,27 @@ export default function Navbar() {
               دوراتي
             </Link>
 
-            <Link
-              href="/course-upload"
-              className="flex items-center gap-2 px-3 py-3 bg-white text-sky-900 rounded-lg shadow-md"
+            <button
               onClick={(e) => {
                 setOpen(false);
                 handleCreateCourseClick(e);
               }}
+              disabled={isNavigating}
+              className="flex items-center gap-2 px-3 py-3 bg-white text-sky-900 rounded-lg shadow-md
+              disabled:opacity-70 disabled:cursor-wait transition-all w-full"
             >
-              <PlusCircle size={18} />
-              إنشاء دورة
-            </Link>
+              {isNavigating ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  جاري التحميل...
+                </>
+              ) : (
+                <>
+                  <PlusCircle size={18} />
+                  إنشاء دورة
+                </>
+              )}
+            </button>
 
             <Link
               href="/user_dashboard/profile"

@@ -106,7 +106,7 @@ export const SaveQuickCourseCreation = async (
     if (!verifiedToken) {
       return {
         error: true,
-        message: "يرجى تسجيل الدخول مرة أخرى.",
+        message: "يرجى تسجيل اnلدخول مرة أخرى.",
       };
     }
 
@@ -123,6 +123,7 @@ export const SaveQuickCourseCreation = async (
     // Prepare course data
     const courseToSave = {
       ...CourseData,
+      level: CourseData.level || "all_levels",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       createdBy: verifiedToken.uid,
@@ -135,7 +136,7 @@ export const SaveQuickCourseCreation = async (
       deletionStatus: "none",
     };
 
-    // Save to Firestore using v8 Admin SDK syntax
+    // Save to Firestore
     const courseRef = await db.collection("courses").add(courseToSave);
 
     return {
