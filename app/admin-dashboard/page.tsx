@@ -619,16 +619,6 @@ export default function AdminDashboard() {
                       )
                         return;
 
-                      // Double confirmation
-                      const confirmText = prompt(
-                        `للتأكيد، اكتب عنوان الدورة:\n"${course.title}"`
-                      );
-
-                      if (confirmText !== course.title) {
-                        alert("العنوان غير مطابق. تم إلغاء الحذف.");
-                        return;
-                      }
-
                       setActionLoading(course.id);
                       try {
                         const token = await user.getIdToken();
