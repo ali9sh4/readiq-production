@@ -1,6 +1,6 @@
 import { db, getTotalPages } from "@/firebase/service";
 import { Course, CourseResponse, GetCourseOptions } from "@/types/types";
-import { CourseDataSchema } from "@/validation/propertySchema";
+import { CourseDataSchema } from "@/validation/courseSchema";
 import "server-only";
 import z from "zod";
 import * as admin from "firebase-admin";
@@ -117,7 +117,7 @@ export const getCourses = async (
     } else {
       // ✅ Use equality - no index needed!
       CoursesQuery = CoursesQuery.where("isDeleted", "==", false);
-    }   
+    }
 
     if (category) {
       CoursesQuery = CoursesQuery.where("category", "==", category);

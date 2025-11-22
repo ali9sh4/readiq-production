@@ -23,7 +23,7 @@ import HomeCoursesSection from "@/components/HomeCoursesSection";
 import NavigationButton from "@/components/NavigationButton";
 import CTASection from "@/components/CTASection";
 export const metadata: Metadata = {
-  title: "ReadIQ - اقْرَأْ | منصة التعليم الإلكتروني في العراق",
+  title: "ReadIQ - اقرأ | منصة التعليم الإلكتروني في العراق",
   description:
     "أفضل منصة تعليمية عربية في العراق. دورات احترافية في البرمجة، التصميم، والتسويق الرقمي. تعلّم بالعربية مع دعم محلي وطرق دفع تناسب العراق.",
   keywords: [

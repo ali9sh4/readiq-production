@@ -3,10 +3,7 @@
 
 import { adminAuth, db, storage } from "@/firebase/service";
 import { Course, CourseFile } from "@/types/types";
-import {
-  CourseDataSchema,
-  QuickCourseSchema,
-} from "@/validation/propertySchema";
+import { CourseDataSchema, QuickCourseSchema } from "@/validation/courseSchema";
 import z from "zod";
 
 // Types

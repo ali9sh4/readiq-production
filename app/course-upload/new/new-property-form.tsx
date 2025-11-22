@@ -3,29 +3,22 @@
 import { SaveQuickCourseCreation } from "@/app/course-upload/action";
 import QuickCourseForm from "@/components/quick_course_form";
 import { useAuth } from "@/context/authContext";
-import { QuickCourseSchema } from "@/validation/propertySchema";
+import { QuickCourseSchema } from "@/validation/courseSchema";
 import { PlusCircleIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import z from "zod";
-import { useRef } from "react";
+import { useState } from "react"; // ✅ Changed from useRef
 
 export default function NewPropertyForm() {
   const auth = useAuth();
   const router = useRouter();
-  const isSubmittingRef = useRef(false); // ✅ Track submission state
+  const [isSubmitting, setIsSubmitting] = useState(false); // ✅ Use state instead
 
   const handelSubmitQuickCourseCreation = async (
     data: z.infer<typeof QuickCourseSchema>
   ) => {
-    // ✅ Prevent double submission
-    if (isSubmittingRef.current) {
-      console.log("⚠️ Already submitting, ignoring duplicate click");
-      return;
-    }
-
-    // ✅ Mark as submitting
-    isSubmittingRef.current = true;
+    setIsSubmitting(true); // ✅ Set state
 
     try {
       const token = await auth?.user?.getIdToken();
@@ -49,20 +42,14 @@ export default function NewPropertyForm() {
         description: "جاري الانتقال إلى لوحة التحكم...",
       });
 
-      // ✅ Navigate after a short delay to show the success message
-      setTimeout(() => {
-        router.push(`/course-upload/edit/${response.courseId}/`);
-      }, 500);
+      router.push(`/course-upload/edit/${response.courseId}/`);
     } catch (error) {
       console.error("Error creating course:", error);
       toast.error("حدث خطأ غير متوقع", {
         description: "يرجى المحاولة مرة أخرى",
       });
     } finally {
-      // ✅ Reset after 2 seconds (safety timeout)
-      setTimeout(() => {
-        isSubmittingRef.current = false;
-      }, 2000);
+      setIsSubmitting(false); // ✅ Always reset
     }
   };
 

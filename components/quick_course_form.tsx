@@ -20,14 +20,14 @@ import {
 } from "@/components/ui/select";
 import { Sparkles, Clock, Loader2, BookOpen } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { QuickCourseSchema } from "@/validation/propertySchema";
 import z from "zod";
+import { QuickCourseSchema } from "@/validation/courseSchema";
 
 type InputT = z.input<typeof QuickCourseSchema>;
 type OutputT = z.output<typeof QuickCourseSchema>;
 
 type Props = {
-  handleSubmit?: (data: OutputT) => void;
+  handleSubmit?: (data: OutputT) => Promise<void>; // ✅ Changed to Promise<void>
   submitButtonLabel: React.ReactNode;
 };
 
@@ -50,11 +50,6 @@ export default function QuickCourseForm({
   // In QuickCourseForm component - update the onSubmit function
 
   const onSubmit: SubmitHandler<InputT> = async (data) => {
-    // ✅ Prevent if already submitting
-    if (form.formState.isSubmitting) {
-      return;
-    }
-
     try {
       await handleSubmit?.(QuickCourseSchema.parse(data));
     } catch (error) {

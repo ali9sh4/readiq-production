@@ -2,10 +2,7 @@
 "use server";
 
 import { adminAuth, db } from "@/firebase/service";
-import {
-  CourseDataSchema,
-  QuickCourseSchema,
-} from "@/validation/propertySchema";
+import { CourseDataSchema, QuickCourseSchema } from "@/validation/courseSchema";
 import z from "zod";
 
 // Types
@@ -16,7 +13,7 @@ interface UploadedFile {
   originalName: string;
 }
 
-  interface SaveCourseFilesParams {
+interface SaveCourseFilesParams {
   courseId: string;
   files: UploadedFile[];
   token: string;
