@@ -38,7 +38,7 @@ export default function WalletBalance() {
 
   return (
     <div className="flex items-center gap-2">
-      <Wallet className="h-4 w-4 text-blue-600" />
+      <Wallet className="h-4 w-4 text-[#FDD835]" />
       <span>محفظتي:</span>
       {loading ? (
         <span>...</span>

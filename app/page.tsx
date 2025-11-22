@@ -89,9 +89,8 @@ export default async function Home() {
                     <br className="hidden sm:block" />
                   </h1>
                   <p className="text-base md:text-lg text-white/95 md:text-white max-w-xl mx-auto md:mx-0 leading-relaxed drop-shadow-md md:drop-shadow-xl">
-                    دورات عالية الجودة من محاضرين متميزين، مع دعم محلي وطرق دفع
-                    تناسب العراق. تعلّم في الوقت الذي يناسبك وبالسرعة التي
-                    تفضلها.
+                    دورات عالية الجودة من محاضرين متميزين، . تعلّم في الوقت الذي
+                    يناسبك وبالسرعة التي تفضلها.
                   </p>
                 </div>
 
@@ -123,10 +122,7 @@ export default async function Home() {
                     <CheckCircle className="h-4 w-4 text-emerald-300 md:text-emerald-200" />
                     <span className="font-medium">شهادات إنهاء لكل دورة</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle className="h-4 w-4 text-emerald-300 md:text-emerald-200" />
-                    <span className="font-medium">دعم محلي باللغة العربية</span>
-                  </div>
+
                   <div className="flex items-center gap-1.5">
                     <CheckCircle className="h-4 w-4 text-emerald-300 md:text-emerald-200" />
                     <span className="font-medium">
@@ -307,8 +303,7 @@ export default async function Home() {
                 <h3 className="text-xl font-bold">اقْرَأْ</h3>
               </div>
               <p className="text-sm text-gray-400 leading-relaxed">
-                منصة تعليمية عربية، تهدف لتقديم محتوى عملي وعالي الجودة يناسب
-                سوق العمل في العراق والعالم العربي.
+                منصة تعليمية عربية، تهدف لتقديم محتوى علمي و عملي عالي الجودة
               </p>
               <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-gray-400">
                 <CheckCircle className="h-4 w-4 text-emerald-400" />

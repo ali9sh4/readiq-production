@@ -71,7 +71,7 @@ export default function DashboardCertificates() {
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Page Header - Enhanced */}
-      <div className="relative bg-amber-600 rounded-3xl p-6 sm:p-8 text-white shadow-2xl overflow-hidden">
+      <div className="relative bg-[#FDD835] rounded-3xl p-6 sm:p-8 text-white shadow-2xl overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border border-white/30 shadow-lg">
