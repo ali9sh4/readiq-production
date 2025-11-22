@@ -68,41 +68,6 @@ export default function DashboardCertificates() {
     alert(`مشاركة شهادة: ${certificate.courseTitle}`);
   };
 
-  if (!auth.isClient || loading) {
-    return (
-      <div className="space-y-4 sm:space-y-6">
-        <div className="h-6 sm:h-8 bg-gray-200 rounded animate-pulse"></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {[...Array(3)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-4 sm:p-6">
-                <div className="h-24 sm:h-32 bg-gray-200 rounded mb-4"></div>
-                <div className="h-3 sm:h-4 bg-gray-200 rounded mb-2"></div>
-                <div className="h-3 sm:h-4 bg-gray-200 rounded w-3/4"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (!auth.user) {
-    return (
-      <div className="flex items-center justify-center p-4 sm:p-8">
-        <Card className="p-4 sm:p-6 text-center max-w-md w-full">
-          <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-red-500 mx-auto mb-3 sm:mb-4" />
-          <h3 className="text-base sm:text-lg font-semibold text-red-700 mb-2">
-            غير مسجل الدخول
-          </h3>
-          <p className="text-sm sm:text-base text-gray-600">
-            يرجى تسجيل الدخول لعرض الشهادات
-          </p>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* Page Header - Enhanced */}

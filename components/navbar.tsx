@@ -48,25 +48,25 @@ export default function Navbar() {
               </span>
               <span
                 className="text-2xl lg:text-4xl font-extrabold"
-                style={{ color: "#FDD835" }}
+                style={{ color: "white" }}
               >
                 u
               </span>
               <span
                 className="text-2xl lg:text-4xl font-extrabold"
-                style={{ color: "#1E88E5" }}
+                style={{ color: "white" }}
               >
                 b
               </span>
               <span
                 className="text-2xl lg:text-4xl font-extrabold"
-                style={{ color: "#43A047" }}
+                style={{ color: "white" }}
               >
                 i
               </span>
               <span
                 className="text-2xl lg:text-4xl font-extrabold"
-                style={{ color: "#E53935" }}
+                style={{ color: "#FDD835" }}
               >
                 k
               </span>

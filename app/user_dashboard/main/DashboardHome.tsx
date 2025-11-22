@@ -1,0 +1,178 @@
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useAuth } from "@/context/authContext";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { BookOpen, Award, Plus, AlertCircle } from "lucide-react";
+import { getUserEnrolledCoursesWithStats } from "../actions";
+import CoursesCardList from "@/components/CoursesCardList.tsx  ";
+import { Course } from "@/types/types";
+import { getUserFavorites } from "../../actions/favorites_actions";
+
+interface DashboardStats {
+  enrolledCoursesCount: number;
+  createdCoursesCount: number;
+  completedCoursesCount: number;
+  totalLearningTime: number;
+}
+
+export default function DashboardHome() {
+  const auth = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!auth.user) return;
+
+      try {
+        setLoading(true);
+        setError(null);
+        const token = await auth.user.getIdToken();
+        const [enrolledData, favoritesResult] = await Promise.all([
+          getUserEnrolledCoursesWithStats(token, 20),
+          getUserFavorites(token, 6),
+        ]);
+
+        if (
+          enrolledData.success &&
+          enrolledData.stats &&
+          enrolledData.courses
+        ) {
+          setStats(enrolledData.stats);
+          setEnrolledCourses(enrolledData.courses);
+        } else {
+          setError("حدث خطأ أثناء تحميل بيانات لوحة التحكم");
+        }
+
+        if (favoritesResult.success && favoritesResult.favorites) {
+          setFavorites(favoritesResult.favorites);
+        }
+      } catch (err) {
+        console.error("Dashboard error:", {
+          message: err instanceof Error ? err.message : "Unknown error",
+        });
+        setError("حدث خطأ أثناء تحميل البيانات");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [auth.user]);
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh] px-4">
+        <Card className="p-6 sm:p-8 text-center shadow-lg border border-red-100 rounded-2xl max-w-md w-full">
+          <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-red-500 mx-auto mb-3 sm:mb-4" />
+          <h3 className="text-lg sm:text-xl font-semibold text-red-700 mb-2">
+            خطأ في التحميل
+          </h3>
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
+            {error}
+          </p>
+          <Button
+            onClick={() => window.location.reload()}
+            className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
+          >
+            إعادة المحاولة
+          </Button>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 sm:space-y-8 lg:space-y-10">
+      {/* Welcome Header */}
+      <div className="bg-blue-600 rounded-3xl p-6 sm:p-8 lg:p-10 text-white shadow-lg">
+        <div className="flex items-start justify-between flex-wrap gap-4">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 sm:mb-3">
+              مرحباً، {auth.user?.displayName || "عزيزي المتعلم"} 👋
+            </h1>
+            <p className="text-blue-100 text-sm sm:text-base lg:text-lg max-w-2xl">
+              استمر في رحلة التعلم وحقق أهدافك التعليمية اليوم
+            </p>
+          </div>
+          <div className="bg-blue-700 rounded-2xl px-4 py-3 border border-blue-500">
+            <p className="text-xs text-blue-100">📚 دوراتي</p>
+            <p className="text-2xl font-bold">{enrolledCourses.length}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Enrolled Courses */}
+      <section className="relative">
+        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+          <div className="bg-gray-50 px-6 py-8 sm:px-8 sm:py-10 border-b border-gray-100">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-14 h-14 bg-blue-500 rounded-2xl shadow-md mb-4">
+                <BookOpen className="w-7 h-7 text-white" />
+              </div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
+                دوراتي المسجلة
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base lg:text-lg">
+                تابع الدورات التي التحقت بها مؤخرًا واستمر بالتعلم
+              </p>
+            </div>
+          </div>
+
+          <div className="p-6 sm:p-8">
+            <CoursesCardList
+              data={{
+                success: true,
+                courses: enrolledCourses,
+                hasMore: false,
+                nextCursor: null,
+              }}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Favorites */}
+      {favorites.length > 0 && (
+        <section className="relative">
+          <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="bg-gray-50 px-6 py-6 sm:px-8 sm:py-8 border-b border-gray-100">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-pink-500 rounded-xl flex items-center justify-center shadow-md">
+                  <span className="text-xl">❤️</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">
+                  المفضلة
+                </h2>
+              </div>
+              <p className="text-gray-600 text-sm sm:text-base">
+                الدورات التي قمت بحفظها في قائمة المفضلة
+              </p>
+            </div>
+            <div className="p-6 sm:p-8">
+              <CoursesCardList
+                data={{
+                  success: true,
+                  courses: favorites,
+                  hasMore: false,
+                  nextCursor: null,
+                }}
+              />
+            </div>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}

@@ -53,7 +53,7 @@ export default function DashboardProfile() {
     if (!auth.user) return;
     try {
       await updateProfile(auth.user, { displayName });
-      await updateUserProfile(auth.user.uid, { displayName });
+      await updateUserProfile(auth.user?.uid, { displayName });
       setIsEditing(false);
       alert("✅ تم تحديث الاسم المعروض بنجاح");
     } catch (error) {
@@ -76,22 +76,6 @@ export default function DashboardProfile() {
               </div>
             </div>
           </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!auth.user) {
-    return (
-      <div className="flex items-center justify-center p-4 sm:p-8">
-        <Card className="p-4 sm:p-6 text-center max-w-md w-full">
-          <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-red-500 mx-auto mb-3 sm:mb-4" />
-          <h3 className="text-base sm:text-lg font-semibold text-red-700 mb-2">
-            غير مسجل الدخول
-          </h3>
-          <p className="text-sm sm:text-base text-gray-600">
-            يرجى تسجيل الدخول لعرض الملف الشخصي
-          </p>
         </Card>
       </div>
     );
@@ -188,9 +172,9 @@ export default function DashboardProfile() {
 
                   setIsUploadingPhoto(true);
                   try {
-                    const token = await auth.user.getIdToken();
+                    const token = await auth.user?.getIdToken();
                     const path = `users/${
-                      auth.user.uid
+                      auth.user?.uid
                     }/profile/${Date.now()}-${file.name}`;
                     const storageRef = ref(storage, path);
                     const uploadTask = uploadBytesResumable(storageRef, file);
@@ -203,7 +187,7 @@ export default function DashboardProfile() {
 
                     const downloadURL = await getDownloadURL(storageRef);
                     const result = await updateUserProfilePicture(
-                      auth.user.uid,
+                      auth.user?.uid,
                       downloadURL,
                       token
                     );
@@ -237,9 +221,9 @@ export default function DashboardProfile() {
                       </div>
                     ) : (
                       <>
-                        {auth.user.photoURL && (
+                        {auth.user?.photoURL && (
                           <Image
-                            src={auth.user.photoURL}
+                            src={auth.user?.photoURL}
                             alt="صورة المستخدم"
                             width={144}
                             height={144}
@@ -247,7 +231,7 @@ export default function DashboardProfile() {
                           />
                         )}
                         <AvatarFallback className="text-3xl sm:text-4xl bg-blue-600 text-white font-bold">
-                          {auth.user.displayName?.charAt(0) || "ع"}
+                          {auth.user?.displayName?.charAt(0) || "ع"}
                         </AvatarFallback>
                       </>
                     )}
@@ -259,7 +243,7 @@ export default function DashboardProfile() {
                   </div>
                 </button>
 
-                {auth.user.emailVerified && (
+                {auth.user?.emailVerified && (
                   <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-green-600 rounded-full flex items-center justify-center shadow-lg border-4 border-white">
                     <CheckCircle className="w-5 h-5 text-white" />
                   </div>
@@ -295,7 +279,7 @@ export default function DashboardProfile() {
                     />
                   ) : (
                     <p className="text-sm sm:text-base text-gray-900 bg-gray-50 px-3 py-2 rounded-lg break-words">
-                      {auth.user.displayName || "غير محدد"}
+                      {auth.user?.displayName || "غير محدد"}
                     </p>
                   )}
                 </div>
@@ -309,7 +293,7 @@ export default function DashboardProfile() {
                     </span>
                   </label>
                   <p className="text-sm sm:text-base text-gray-900 bg-gray-50 px-3 py-2 rounded-lg break-all">
-                    {auth.user.email}
+                    {auth.user?.email}
                   </p>
                   <p className="text-xs text-gray-500">
                     لا يمكن تغيير البريد الإلكتروني
@@ -325,7 +309,7 @@ export default function DashboardProfile() {
                     </span>
                   </label>
                   <p className="text-sm sm:text-base text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                    {formatDate(auth.user.metadata?.creationTime)}
+                    {formatDate(auth.user?.metadata?.creationTime)}
                   </p>
                 </div>
 
@@ -336,7 +320,7 @@ export default function DashboardProfile() {
                     <span className="text-xs sm:text-sm">آخر تسجيل دخول</span>
                   </label>
                   <p className="text-sm sm:text-base text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
-                    {formatDate(auth.user.metadata?.lastSignInTime)}
+                    {formatDate(auth.user?.metadata?.lastSignInTime)}
                   </p>
                 </div>
               </div>
@@ -353,7 +337,7 @@ export default function DashboardProfile() {
                   >
                     نشط
                   </Badge>
-                  {auth.user.emailVerified && (
+                  {auth.user?.emailVerified && (
                     <Badge
                       variant="outline"
                       className="bg-blue-50 text-blue-700 border-blue-200 text-xs"

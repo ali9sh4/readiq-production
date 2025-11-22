@@ -138,29 +138,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     );
   }
 
-  if (!auth.user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-        <Card className="p-8 text-center max-w-md w-full">
-          <CardContent>
-            <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-            <h2 className="text-xl font-semibold mb-2">يرجى تسجيل الدخول</h2>
-            <p className="text-gray-600 mb-4">
-              تحتاج إلى تسجيل الدخول للوصول إلى لوحة التحكم
-            </p>
-            <NavigationButton
-              href="/login"
-              className="bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white transition-all duration-200 font-medium px-6 shadow-md hover:shadow-lg"
-              variant="default"
-            >
-              تسجيل الدخول
-            </NavigationButton>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-gray-50 flex" dir="rtl">
       {/* Desktop Sidebar - Hidden on mobile */}
