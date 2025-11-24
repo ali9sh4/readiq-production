@@ -39,7 +39,10 @@ export default function Navbar() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 lg:gap-3">
+          <Link
+            href="/"
+            className="flex items-center gap-2 lg:gap-3 hover:opacity-80 transition-opacity"
+          >
             <div className="flex items-center" dir="ltr">
               <span
                 className="text-2xl lg:text-4xl font-extrabold"
