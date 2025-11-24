@@ -26,10 +26,10 @@ export const approveCourse = async (
       .update({
         isApproved: approve,
         isRejected: !approve, // Track rejection explicitly
-        approvedAt: approve ? new Date() : null,
-        rejectedAt: approve ? null : new Date(),
+        approvedAt: approve ?  new Date().toISOString() : null,
+        rejectedAt: approve ? null :  new Date().toISOString(),
         approvedBy: verifyAuthToken.uid,
-        updatedAt: new Date(),
+        updatedAt:  new Date().toISOString(),
         rejectionReason: !approve && reason ? reason : null, // ✅ Add this
       });
 
@@ -69,7 +69,7 @@ export const resetCourseStatus = async (courseId: string, token: string) => {
       approvedBy: null,
       rejectedBy: null,
       rejectionReason: null,
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     });
 
     return {

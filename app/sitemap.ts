@@ -37,9 +37,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const coursePages: MetadataRoute.Sitemap = coursesSnapshot.docs.map(
       (doc) => {
         const data = doc.data();
+
+        // Handle Firestore Timestamp, string, or fallback to now
+        let lastModified: Date;
+        try {
+          if (data.updatedAt?.toDate) {
+            // Firestore Timestamp
+            lastModified = data.updatedAt.toDate();
+          } else if (data.updatedAt) {
+            // String or Date
+            lastModified = new Date(data.updatedAt);
+            // Validate
+            if (isNaN(lastModified.getTime())) {
+              lastModified = new Date();
+            }
+          } else {
+            lastModified = new Date();
+          }
+        } catch {
+          lastModified = new Date();
+        }
+
         return {
           url: `${baseUrl}/course/${doc.id}`,
-          lastModified: data.updatedAt ? new Date(data.updatedAt) : new Date(),
+          lastModified,
           changeFrequency: "weekly",
           priority: 0.9,
         };

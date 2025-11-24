@@ -78,8 +78,8 @@ export const SaveNewProperty = async (
     // Prepare course data
     const courseToSave = {
       ...CourseData,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       createdBy: verifiedToken.uid,
       isApproved: false,
       isRejected: false,
@@ -132,8 +132,8 @@ export const SaveQuickCourseCreation = async (
     // Prepare course data
     const courseToSave = {
       ...CourseData,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       createdBy: verifiedToken.uid,
       isApproved: false,
       isRejected: false,
@@ -198,7 +198,7 @@ export const SaveImages = async (
     // Update course with images using v8 Admin SDK syntax
     await db.collection("courses").doc(courseId).update({
       images,
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     });
 
     return {
@@ -288,7 +288,7 @@ export async function saveCourseFilesTpFireStore({
       files: allFiles, // ✅ This preserves existing files and adds new ones
       hasFiles: true,
       filesCount: allFiles.length, // ✅ Total count of all files
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
       status: "complete", // Mark course as complete
     });
 
@@ -428,7 +428,7 @@ export async function updateCourseStatus(
 
     await db.collection("courses").doc(courseId).update({
       status,
-      updatedAt: new Date(),
+      updatedAt: new Date().toISOString(),
     });
 
     return {
@@ -489,7 +489,7 @@ export async function deleteCourseFileFromFireStore(
         files: updatedFiles,
         filesCount: updatedFiles.length,
         hasFiles: updatedFiles.length > 0,
-        updatedAt: new Date(),
+        updatedAt: new Date().toISOString(),
       });
 
     return {

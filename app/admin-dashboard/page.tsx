@@ -116,6 +116,13 @@ export default function AdminDashboard() {
       where("isDeleted", "==", true)
     );
 
+    const getTime = (date: any) => {
+      if (!date) return 0;
+      if (date?.toDate) return date.toDate().getTime();
+      const parsed = new Date(date);
+      return isNaN(parsed.getTime()) ? 0 : parsed.getTime();
+    };
+
     const unsubscribe = onSnapshot(
       deletedQuery,
       (snapshot) => {
@@ -124,12 +131,9 @@ export default function AdminDashboard() {
           ...doc.data(),
         })) as Course[];
 
-        // Sort by deletion date (newest first)
-        const sortedCourses = courses.sort((a, b) => {
-          const dateA = new Date(a.deletedAt || 0).getTime();
-          const dateB = new Date(b.deletedAt || 0).getTime();
-          return dateB - dateA;
-        });
+        const sortedCourses = courses.sort(
+          (a, b) => getTime(b.deletedAt) - getTime(a.deletedAt)
+        );
 
         setDeletedCourses(sortedCourses);
       },
