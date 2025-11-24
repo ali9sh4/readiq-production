@@ -133,6 +133,7 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Menu */}
+        {/* Mobile Menu */}
         {open && (
           <div className="sm:hidden flex flex-col gap-3 pb-4 animate-in fade-in slide-in-from-top-2">
             {user && (
@@ -145,16 +146,16 @@ export default function Navbar() {
               </Link>
             )}
 
-            <Link
+            <ProtectedLink
               href="/user_dashboard"
               className="flex items-center gap-2 px-3 py-3 bg-white/10 rounded-lg border border-white/20"
               onClick={() => setOpen(false)}
             >
               <BookOpen size={18} />
               دوراتي
-            </Link>
+            </ProtectedLink>
 
-            <Link
+            <ProtectedLink
               href="/course-upload"
               className="flex items-center gap-2 px-3 py-3 bg-white text-sky-900 rounded-lg shadow-md"
               onClick={(e) => {
@@ -164,16 +165,16 @@ export default function Navbar() {
             >
               <PlusCircle size={18} />
               إنشاء دورة
-            </Link>
+            </ProtectedLink>
 
-            <Link
+            <ProtectedLink
               href="/user_dashboard/profile"
               className="flex items-center gap-2 px-3 py-3 bg-white/10 rounded-lg border border-white/20"
               onClick={() => setOpen(false)}
             >
               <User size={18} />
               ملفي الشخصي
-            </Link>
+            </ProtectedLink>
 
             <div onClick={() => setOpen(false)}>
               <AuthButton />
