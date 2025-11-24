@@ -6,6 +6,7 @@ import { AuthButton } from "@/components/Authbutton";
 import WalletBalance from "@/components/WalletBalance";
 import { useAuth } from "@/context/authContext";
 import { useState, useEffect } from "react";
+import ProtectedLink from "./ProtectedLink";
 
 export default function Navbar() {
   const { user } = useAuth();
@@ -87,39 +88,32 @@ export default function Navbar() {
               </li>
             )}
 
-            <li>
-              <Link
-                href="/user_dashboard"
-                className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 
-                backdrop-blur-sm rounded-lg border border-white/20"
-              >
-                <BookOpen className="h-4 w-4 hidden sm:inline-block" />
-                <span>دوراتي</span>
-              </Link>
-            </li>
+            <ProtectedLink
+              href="/user_dashboard"
+              className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 
+  backdrop-blur-sm rounded-lg border border-white/20"
+            >
+              <BookOpen className="h-4 w-4 hidden sm:inline-block" />
+              <span>دوراتي</span>
+            </ProtectedLink>
 
-            <li>
-              <Link
-                href="/course-upload"
-                onClick={handleCreateCourseClick}
-                className="flex items-center gap-2 px-3 py-2 bg-white text-sky-900
-                rounded-lg shadow-md hover:bg-gray-100"
-              >
-                <PlusCircle className="h-4 w-4 hidden sm:inline-block" />
-                <span>إنشاء دورة</span>
-              </Link>
-            </li>
-
-            <li>
-              <Link
-                href="/user_dashboard/profile"
-                className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 
-                backdrop-blur-sm rounded-lg border border-white/20"
-              >
-                <User className="h-4 w-4 hidden sm:inline-block" />
-                <span>ملفي الشخصي</span>
-              </Link>
-            </li>
+            <ProtectedLink
+              href="/course-upload"
+              onClick={handleCreateCourseClick}
+              className="flex items-center gap-2 px-3 py-2 bg-white text-sky-900
+  rounded-lg shadow-md hover:bg-gray-100"
+            >
+              <PlusCircle className="h-4 w-4 hidden sm:inline-block" />
+              <span>إنشاء دورة</span>
+            </ProtectedLink>
+            <ProtectedLink
+              href="/user_dashboard/profile"
+              className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 
+  backdrop-blur-sm rounded-lg border border-white/20"
+            >
+              <User className="h-4 w-4 hidden sm:inline-block" />
+              <span>ملفي الشخصي</span>
+            </ProtectedLink>
 
             <li>
               <AuthButton />

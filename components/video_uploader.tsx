@@ -34,6 +34,7 @@ import {
   updateVideoDetails,
 } from "@/app/actions/upload_video_actions";
 import { CourseVideo } from "@/types/types";
+import { formatUploadDate } from "@/lib/dateFormater/date";
 // ===== INTERFACES =====
 interface SelectedVideo {
   file: File;
@@ -63,28 +64,7 @@ const formatDuration = (seconds?: number): string => {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
-const formatUploadDate = (timestamp?: string): string => {
-  if (!timestamp) return "غير محدد";
 
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffInHours = Math.floor(
-    (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-  );
-
-  if (diffInHours < 1) return "منذ أقل من ساعة";
-  if (diffInHours < 24) return `منذ ${diffInHours} ساعة`;
-  if (diffInHours < 48) return "منذ يوم واحد";
-
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 7) return `منذ ${diffInDays} أيام`;
-
-  return date.toLocaleDateString("ar-EG", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-};
 
 // ===== MAIN COMPONENT =====
 export default function VideoUploader({

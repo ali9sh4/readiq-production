@@ -15,6 +15,20 @@ export default function HomeCoursesSection({
   initialCourses,
 }: HomeCoursesSection) {
   const [filteredCourses, setFilteredCourses] = useState(initialCourses);
+  const [isLoading, setIsLoading] = useState(false);
+    useEffect(() => {
+    setFilteredCourses(initialCourses);
+    setIsLoading(false);
+  }, [initialCourses]);
+
+  // ✅ Show loading briefly on mount if no courses
+  useEffect(() => {
+    if (initialCourses.length === 0) {
+      setIsLoading(true);
+      const timer = setTimeout(() => setIsLoading(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   return (
     <div className="w-full">

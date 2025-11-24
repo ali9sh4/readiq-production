@@ -38,6 +38,7 @@ import { useAuth } from "@/context/authContext";
 import { deleteCourseFileFromFireStore } from "@/app/course-upload/edit/action";
 import { getCourseVideos } from "@/app/actions/upload_video_actions";
 import { CourseVideo } from "@/types/types";
+import { formatUploadDate } from "@/lib/dateFormater/date";
 
 // ===== INTERFACES =====
 interface SelectedFile {
@@ -191,28 +192,7 @@ const getFileTypeLabel = (filename: string): string => {
 
   return typeMap[extension] || "ملف";
 };
-const formatUploadDate = (timestamp?: string): string => {
-  if (!timestamp) return "غير محدد";
 
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffInHours = Math.floor(
-    (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-  );
-
-  if (diffInHours < 1) return "منذ أقل من ساعة";
-  if (diffInHours < 24) return `منذ ${diffInHours} ساعة`;
-  if (diffInHours < 48) return "منذ يوم واحد";
-
-  const diffInDays = Math.floor(diffInHours / 24);
-  if (diffInDays < 7) return `منذ ${diffInDays} أيام`;
-
-  return date.toLocaleDateString("ar-SA", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-};
 // In your component
 
 // ===== MAIN COMPONENT =====
