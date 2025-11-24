@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- 3D Rubik's Cube Logo -->
+  
+  <!-- Top face (yellow tones) -->
+  <polygon points="50,5 85,22 50,39 15,22" fill="#1e3a5f"/>
+  
+  <!-- Top face grid -->
+  <polygon points="50,5 61.7,10.7 50,16.3 38.3,10.7" fill="#fbbf24"/>
+  <polygon points="61.7,10.7 73.3,16.3 61.7,22 50,16.3" fill="#f59e0b"/>
+  <polygon points="73.3,16.3 85,22 73.3,27.7 61.7,22" fill="#fbbf24"/>
+  
+  <polygon points="38.3,10.7 50,16.3 38.3,22 26.7,16.3" fill="#f59e0b"/>
+  <polygon points="50,16.3 61.7,22 50,27.7 38.3,22" fill="#fbbf24"/>
+  <polygon points="61.7,22 73.3,27.7 61.7,33.3 50,27.7" fill="#f59e0b"/>
+  
+  <polygon points="26.7,16.3 38.3,22 26.7,27.7 15,22" fill="#fbbf24"/>
+  <polygon points="38.3,22 50,27.7 38.3,33.3 26.7,27.7" fill="#f59e0b"/>
+  <polygon points="50,27.7 61.7,33.3 50,39 38.3,33.3" fill="#fbbf24"/>
+  
+  <!-- Left face (blue tones) -->
+  <polygon points="15,22 50,39 50,85 15,68" fill="#1e3a5f"/>
+  
+  <!-- Left face grid -->
+  <polygon points="15,22 26.7,27.7 26.7,43 15,37.3" fill="#3b82f6"/>
+  <polygon points="26.7,27.7 38.3,33.3 38.3,48.7 26.7,43" fill="#2563eb"/>
+  <polygon points="38.3,33.3 50,39 50,54.3 38.3,48.7" fill="#3b82f6"/>
+  
+  <polygon points="15,37.3 26.7,43 26.7,58.3 15,52.7" fill="#2563eb"/>
+  <polygon points="26.7,43 38.3,48.7 38.3,64 26.7,58.3" fill="#3b82f6"/>
+  <polygon points="38.3,48.7 50,54.3 50,69.7 38.3,64" fill="#2563eb"/>
+  
+  <polygon points="15,52.7 26.7,58.3 26.7,73.7 15,68" fill="#3b82f6"/>
+  <polygon points="26.7,58.3 38.3,64 38.3,79.3 26.7,73.7" fill="#2563eb"/>
+  <polygon points="38.3,64 50,69.7 50,85 38.3,79.3" fill="#3b82f6"/>
+  
+  <!-- Right face (green tones) -->
+  <polygon points="85,22 85,68 50,85 50,39" fill="#14532d"/>
+  
+  <!-- Right face grid -->
+  <polygon points="50,39 61.7,33.3 61.7,48.7 50,54.3" fill="#22c55e"/>
+  <polygon points="61.7,33.3 73.3,27.7 73.3,43 61.7,48.7" fill="#16a34a"/>
+  <polygon points="73.3,27.7 85,22 85,37.3 73.3,43" fill="#22c55e"/>
+  
+  <polygon points="50,54.3 61.7,48.7 61.7,64 50,69.7" fill="#16a34a"/>
+  <polygon points="61.7,48.7 73.3,43 73.3,58.3 61.7,64" fill="#22c55e"/>
+  <polygon points="73.3,43 85,37.3 85,52.7 73.3,58.3" fill="#16a34a"/>
+  
+  <polygon points="50,69.7 61.7,64 61.7,79.3 50,85" fill="#22c55e"/>
+  <polygon points="61.7,64 73.3,58.3 73.3,73.7 61.7,79.3" fill="#16a34a"/>
+  <polygon points="73.3,58.3 85,52.7 85,68 73.3,73.7" fill="#22c55e"/>
+  
+  <!-- Grid lines for definition -->
+  <g stroke="#0f172a" stroke-width="0.5" fill="none" opacity="0.3">
+    <!-- Top face lines -->
+    <line x1="38.3" y1="10.7" x2="38.3" y2="33.3"/>
+    <line x1="61.7" y1="10.7" x2="61.7" y2="33.3"/>
+    <line x1="26.7" y1="16.3" x2="73.3" y2="16.3"/>
+    <line x1="26.7" y1="27.7" x2="73.3" y2="27.7"/>
+    
+    <!-- Left face lines -->
+    <line x1="26.7" y1="27.7" x2="26.7" y2="73.7"/>
+    <line x1="38.3" y1="33.3" x2="38.3" y2="79.3"/>
+    <line x1="15" y1="37.3" x2="50" y2="54.3"/>
+    <line x1="15" y1="52.7" x2="50" y2="69.7"/>
+    
+    <!-- Right face lines -->
+    <line x1="61.7" y1="33.3" x2="61.7" y2="79.3"/>
+    <line x1="73.3" y1="27.7" x2="73.3" y2="73.7"/>
+    <line x1="50" y1="54.3" x2="85" y2="37.3"/>
+    <line x1="50" y1="69.7" x2="85" y2="52.7"/>
+  </g>
+</svg>

@@ -85,7 +85,7 @@ export class ZainCash {
 
       if (signature !== expectedSig) {
         throw new Error("Invalid signature");
-      }
+      }   
 
       const decoded = JSON.parse(Buffer.from(payload, "base64url").toString());
 

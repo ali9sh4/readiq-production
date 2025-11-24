@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 import { db } from "@/firebase/service";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = "https://readiq.us";
+  const baseUrl = "https://www.rubiktech.org";
 
   // Static pages
   const staticPages: MetadataRoute.Sitemap = [

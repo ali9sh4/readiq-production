@@ -17,13 +17,14 @@ import {
   Clock,
   Target,
   Sparkles,
+  Box,
 } from "lucide-react";
 import { getCourses } from "@/data/courses";
 import HomeCoursesSection from "@/components/HomeCoursesSection";
 import NavigationButton from "@/components/NavigationButton";
 import CTASection from "@/components/CTASection";
 export const metadata: Metadata = {
-  title: "ReadIQ - اقرأ | منصة التعليم الإلكتروني في العراق",
+  title: "Rubik - روبيك | منصة التعليم الإلكتروني في العراق",
   description:
     "أفضل منصة تعليمية عربية في العراق. دورات احترافية في البرمجة، التصميم، والتسويق الرقمي. تعلّم بالعربية مع دعم محلي وطرق دفع تناسب العراق.",
   keywords: [
@@ -31,15 +32,16 @@ export const metadata: Metadata = {
     "تعليم عن بعد",
     "دورات عراقية",
     "تعليم إلكتروني",
-    "ReadIQ",
+    "Rubik",
+    "روبيك",
     "دورات برمجة",
     "دورات تصميم",
   ],
   openGraph: {
-    title: "ReadIQ - منصة التعليم الإلكتروني في العراق",
+    title: "Rubik - منصة التعليم الإلكتروني في العراق",
+    url: "https://www.rubiktech.org",
+    siteName: "Rubik",
     description: "أفضل منصة تعليمية عربية في العراق",
-    url: "https://readiq.us",
-    siteName: "ReadIQ",
     locale: "ar_IQ",
     type: "website",
   },
@@ -297,10 +299,8 @@ export default async function Home() {
             {/* Brand */}
             <div className="text-center md:text-right space-y-3">
               <div className="flex items-center justify-center md:justify-start gap-2">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-600">
-                  <BookOpen className="h-6 w-6 text-white" />
-                </div>
-                <h3 className="text-xl font-bold">اقْرَأْ</h3>
+                <img src="/rubik-logo.svg" alt="Rubik" className="h-10 w-10" />
+                <h3 className="text-xl font-bold">Rubik</h3>
               </div>
               <p className="text-sm text-gray-400 leading-relaxed">
                 منصة تعليمية عربية، تهدف لتقديم محتوى علمي و عملي عالي الجودة
@@ -326,7 +326,7 @@ export default async function Home() {
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-900">
                       <Mail className="h-4 w-4" />
                     </div>
-                    <span>alisuhailshihab@gmail.com</span>
+                    <span>ali9ssh4@gmail.com</span>
                   </a>
                 </li>
                 <li>
@@ -400,7 +400,7 @@ export default async function Home() {
           <div className="border-t border-gray-800 pt-4 mt-2">
             <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-gray-500">
               <p className="text-center md:text-right">
-                © {new Date().getFullYear()} اقْرَأْ – جميع الحقوق محفوظة.
+                © {new Date().getFullYear()} Rubik – جميع الحقوق محفوظة.
               </p>
               <div className="flex items-center gap-3">
                 <Link

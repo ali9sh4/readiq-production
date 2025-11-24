@@ -60,7 +60,7 @@ export async function generateMetadata({
 
   if (!result.success || !result.course) {
     return {
-      title: "الدورة غير موجودة | ReadIQ",
+      title: "الدورة غير موجودة | Rubik",
       description: "لا يمكن العثور على هذه الدورة",
     };
   }
@@ -74,25 +74,25 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${course.title} | ReadIQ - اقْرَأْ`,
+    title: `${course.title} | Rubik - روبيك`,
     description:
       course.description ||
       course.subtitle ||
-      `تعلم ${course.title} على منصة ReadIQ`,
+      `تعلم ${course.title} على منصة RUBIK`,
     keywords: [
       course.title,
       course.category,
       "دورة تعليمية",
       "تعليم عن بعد",
       "دورات عراقية",
-      course.instructorName || "ReadIQ",
+      course.instructorName || "Rubik",
     ],
     openGraph: {
       title: course.title,
       description: course.description || course.subtitle || "",
       type: "article",
-      url: `https://readiq.us//course//${courseId}`,
-      siteName: "ReadIQ",
+      url: `https://www.rubiktech.org/course/${courseId}`, // also fix double slashes
+      siteName: "Rubik",
       locale: "ar_IQ",
       images: course.thumbnailUrl
         ? [
@@ -112,7 +112,7 @@ export async function generateMetadata({
       images: course.thumbnailUrl ? [course.thumbnailUrl] : [],
     },
     alternates: {
-      canonical: `https://readiq.us/course/${courseId}`,
+      canonical: `https://www.rubiktech.org/course/${courseId}`,
     },
   };
 }

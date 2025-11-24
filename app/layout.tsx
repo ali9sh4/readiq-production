@@ -16,12 +16,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// ✅ UPDATED METADATA
 export const metadata: Metadata = {
-  metadataBase: new URL("https://readiq.us"),
+  metadataBase: new URL("https://www.rubiktech.org"),
   title: {
-    default: "ReadIQ - اقْرَأْ | منصة التعليم الإلكتروني في العراق",
-    template: "%s | ReadIQ - اقْرَأْ",
+    default: "Rubik - روبيك | منصة التعليم الإلكتروني في العراق",
+    template: "%s | Rubik - روبيك",
   },
   description:
     "أفضل منصة تعليمية عربية في العراق. دورات احترافية في البرمجة، التصميم، والتسويق الرقمي مع دعم محلي وطرق دفع تناسب العراق",
@@ -30,16 +29,16 @@ export const metadata: Metadata = {
     "تعليم عن بعد",
     "دورات عراقية",
     "تعليم إلكتروني",
-    "ReadIQ",
-    "اقرأ",
+    "Rubik",
+    "روبيك",
     "دورات برمجة",
     "دورات تصميم",
     "التعليم في العراق",
     "دورات أونلاين",
   ],
-  authors: [{ name: "ReadIQ" }],
-  creator: "ReadIQ",
-  publisher: "ReadIQ",
+  authors: [{ name: "Rubik" }],
+  creator: "Rubik",
+  publisher: "Rubik",
   formatDetection: {
     email: false,
     address: false,
@@ -48,18 +47,18 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     locale: "ar_IQ",
-    url: "https://readiq.us",
-    siteName: "ReadIQ - اقْرَأْ",
-    title: "ReadIQ - منصة التعليم الإلكتروني في العراق",
+    url: "https://www.rubiktech.org",
+    siteName: "Rubik - روبيك",
+    title: "Rubik - منصة التعليم الإلكتروني في العراق",
     description: "أفضل منصة تعليمية عربية في العراق. دورات احترافية بالعربية",
   },
   twitter: {
     card: "summary_large_image",
-    title: "ReadIQ - منصة التعليم الإلكتروني في العراق",
+    title: "Rubik - منصة التعليم الإلكتروني في العراق",
     description: "أفضل منصة تعليمية عربية في العراق",
   },
   alternates: {
-    canonical: "https://readiq.us",
+    canonical: "https://www.rubiktech.org",
   },
   robots: {
     index: true,

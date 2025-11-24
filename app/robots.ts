@@ -12,6 +12,6 @@ export default function robots(): MetadataRoute.Robots {
         "/api/*",
       ],
     },
-    sitemap: "https://readiq.us/sitemap.xml",
+    sitemap: "https://www.rubiktech.org/sitemap.xml",
   };
 }
