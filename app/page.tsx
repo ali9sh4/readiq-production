@@ -146,7 +146,7 @@ export default async function Home() {
                         </div>
                         <div className="space-y-0.5">
                           <p className="font-semibold text-white text-sm md:text-base">
-                            دورات مخصصة للعراق
+                            دورات عملية واحترافية
                           </p>
                           <p className="text-xs text-sky-200">
                             محتوى عملي وقابل للتطبيق مباشرة
@@ -217,7 +217,7 @@ export default async function Home() {
                 </div>
               </div>
               <p className="text-xs sm:text-sm text-gray-600">
-                مجتمع متنامٍ من المتعلمين من مختلف المحافظات.
+                مجتمع متنامٍ من المتعلمين
               </p>
             </div>
 
