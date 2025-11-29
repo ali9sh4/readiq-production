@@ -2,6 +2,8 @@
 import { useAuth } from "@/context/authContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,9 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { Avatar } from "./ui/avatar";
 import Image from "next/image";
-import { AvatarFallback } from "@radix-ui/react-avatar";
 import { User } from "lucide-react";
 import NavigationButton from "./NavigationButton";
 
@@ -30,18 +30,17 @@ export const AuthButton = () => {
         <DropdownMenu>
           <DropdownMenuTrigger>
             <Avatar>
-              {!!auth.user.photoURL && (
-                <Image
+              {auth.user.photoURL ? (
+                <AvatarImage
                   src={auth.user.photoURL}
                   alt={`${auth.user.displayName} avatar`}
-                  width={40}
-                  height={40}
-                  className="rounded-full object-cover"
                 />
+              ) : (
+                <AvatarFallback className="bg-sky-100 text-sky-600">
+                  {(auth.user.displayName ||
+                    auth.user.email)?.[0]?.toUpperCase()}
+                </AvatarFallback>
               )}
-              <AvatarFallback className="bg-gray-200 flex items-center justify-center">
-                <User className="w-5 h-5 text-gray-600" />
-              </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent

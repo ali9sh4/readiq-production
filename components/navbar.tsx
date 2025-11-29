@@ -118,7 +118,7 @@ export default function Navbar() {
               <span>ملفي الشخصي</span>
             </ProtectedLink>
 
-            <li>
+            <li className="flex items-center">
               <AuthButton />
             </li>
           </ul>

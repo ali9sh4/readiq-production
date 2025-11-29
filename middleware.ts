@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
-import { jwtVerify, createRemoteJWKSet } from "jose";
+import { jwtVerify, createRemoteJWKSet, decodeJwt } from "jose";
 
 const JWKS = createRemoteJWKSet(
   new URL(
@@ -11,7 +11,7 @@ const JWKS = createRemoteJWKSet(
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith("/login")) {
+  if (pathname.startsWith("/login") || pathname.startsWith("/register")) {
     const cookie = await cookies();
     const token = cookie.get("firebaseAuthToken")?.value;
 
@@ -36,6 +36,19 @@ export async function middleware(request: NextRequest) {
 
     if (!token) {
       return NextResponse.redirect(new URL("/", request.url));
+    }
+    const decodedToken = decodeJwt(token);
+
+    if (decodedToken.exp && (decodedToken.exp - 300) * 1000 < Date.now()) {
+      console.log("⏰ Token expiring, redirecting to refresh"); // ADD THIS
+      return NextResponse.redirect(
+        new URL(
+          `/api/refresh-token?redirect=${encodeURIComponent(
+            request.nextUrl.pathname
+          )}`,
+          request.url
+        )
+      );
     }
 
     const { payload } = await jwtVerify(token, JWKS, {
@@ -65,6 +78,7 @@ export const config = {
   matcher: [
     "/admin-dashboard/:path*",
     "/login",
+    "/register",
     "/course-upload/:path*",
     "/user_dashboard/:path*",
   ],

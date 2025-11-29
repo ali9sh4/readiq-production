@@ -60,7 +60,6 @@ export default async function Home() {
   });
 
   const courses = data.courses ?? [];
-  console.log("🔍 Server fetched courses:", courses.length); // Server logs
 
   const totalCourses = 20; // Hardcoded total courses for display
 

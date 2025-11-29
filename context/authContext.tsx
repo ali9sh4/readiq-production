@@ -5,6 +5,7 @@ import {
   signInWithPopup,
   User,
   ParsedToken,
+  signInWithEmailAndPassword,
 } from "firebase/auth";
 import React, { useContext, useEffect, createContext, useState } from "react";
 
@@ -23,6 +24,7 @@ type AuthContextType = {
   CustomClaims: ParsedToken | null;
   isClient: boolean;
   isAdmin: boolean;
+  loginWithEmail: (email: string, password: string) => Promise<boolean>;
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
@@ -117,16 +119,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       });
 
       const result = await signInWithPopup(auth, provider);
+
       console.log("Sign-in successful:", result.user.email);
       return true; // ✅ Return success
-    } catch (error) {
+    } catch (error: any) {
       console.error("Full error object:", error);
+      const errorCode = error?.code;
+      if (
+        errorCode === "auth/popup-closed-by-user" ||
+        errorCode === "auth/cancelled-popup-request"
+      ) {
+        // User cancelled - don't show error
+        console.log("User closed the popup");
+        return false;
+      }
 
       if (error instanceof Error) {
         setError(error.message);
       } else {
         setError("An unknown error occurred");
       }
+
       return false; // ✅ Return failure
     } finally {
       setIsLoading(false);
@@ -151,6 +164,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
   };
+  const loginWithEmail = async (
+    email: string,
+    password: string
+  ): Promise<boolean> => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      await signInWithEmailAndPassword(auth, email, password);
+      return true;
+    } catch (error: any) {
+      console.error("Email login error:", error);
+      const errorCode = error?.code;
+      if (
+        errorCode === "auth/invalid-credential" ||
+        errorCode === "auth/user-not-found"
+      ) {
+        setError("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+      } else if (errorCode === "auth/too-many-requests") {
+        setError("محاولات كثيرة جداً. حاول لاحقاً");
+      } else if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("An unknown error occurred");
+      }
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <AuthContext.Provider
@@ -163,6 +206,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         logOut,
         CustomClaims,
         isAdmin,
+        loginWithEmail,
       }}
     >
       {children}

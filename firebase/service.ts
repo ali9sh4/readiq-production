@@ -8,16 +8,6 @@ import {
 import { getAuth } from "firebase-admin/auth";
 import { getStorage } from "firebase-admin/storage";
 import { getFirestore } from "firebase-admin/firestore"; // Add this import
-console.log("🔍 DEBUG Firebase Env Vars:", {
-  PRIVATE_KEY_ID: process.env.FIREBASE_PRIVATE_KEY_ID ? "✅ Set" : "❌ Missing",
-  PRIVATE_KEY: process.env.FIREBASE_PRIVATE_KEY
-    ? "✅ Set (length: " + process.env.FIREBASE_PRIVATE_KEY.length + ")"
-    : "❌ Missing",
-  CLIENT_EMAIL: process.env.FIREBASE_CLIENT_EMAIL
-    ? "✅ Set: " + process.env.FIREBASE_CLIENT_EMAIL
-    : "❌ Missing",
-  CLIENT_ID: process.env.FIREBASE_CLIENT_ID ? "✅ Set" : "❌ Missing",
-});
 
 const serviceAccount = {
   type: "service_account",
