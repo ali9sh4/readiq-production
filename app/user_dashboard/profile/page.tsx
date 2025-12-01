@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   User,
   Mail,
@@ -153,7 +153,6 @@ export default function DashboardProfile() {
         <div className="p-6 sm:p-8 lg:p-10">
           <div className="flex flex-col lg:flex-row gap-8 sm:gap-10">
             {/* Profile Picture */}
-            {/* Profile Picture */}
             <div className="flex flex-col items-center space-y-4">
               <input
                 ref={uploadInputRef}
@@ -222,12 +221,9 @@ export default function DashboardProfile() {
                     ) : (
                       <>
                         {auth.user?.photoURL && (
-                          <Image
+                          <AvatarImage
                             src={auth.user?.photoURL}
                             alt="صورة المستخدم"
-                            width={144}
-                            height={144}
-                            className="rounded-full object-cover"
                           />
                         )}
                         <AvatarFallback className="text-3xl sm:text-4xl bg-blue-600 text-white font-bold">

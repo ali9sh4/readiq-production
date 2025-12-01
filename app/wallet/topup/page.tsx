@@ -211,10 +211,10 @@ export default function TopUpPage() {
                     </p>
                   </div>
                   <p className="font-bold text-blue-700 text-lg sm:text-xl text-center tracking-wider font-mono">
-                    8775523072
+                    9736350993
                   </p>
                   <p className="text-xs text-gray-600 text-center mt-1">
-                    Mr. ALI SHIHAB
+                    SHIREEN YADALLAH
                   </p>
                 </div>
               </div>

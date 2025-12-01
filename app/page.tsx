@@ -404,16 +404,13 @@ export default async function Home() {
                 © {new Date().getFullYear()} Rubik – جميع الحقوق محفوظة.
               </p>
               <div className="flex items-center gap-3">
-                <Link
-                  href="/privacy"
-                  className="hover:text-gray-300 transition"
-                >
+                <span className="hover:text-gray-300 transition">
                   سياسة الخصوصية
-                </Link>
+                </span>
                 <span>•</span>
-                <Link href="/terms" className="hover:text-gray-300 transition">
+                <span  className="hover:text-gray-300 transition">
                   الشروط والأحكام
-                </Link>
+                </span>
               </div>
             </div>
           </div>

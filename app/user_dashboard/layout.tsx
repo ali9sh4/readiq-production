@@ -30,6 +30,12 @@ const navItems = [
     icon: Award,
     value: "certificates",
   },
+  {
+    href: "/user_dashboard/createdCourses",
+    label: "دوراتي المنشأة",
+    icon: BookOpen,
+    value: "createdCourses",
+  },
 ];
 
 // Sidebar Content Component (desktop only)
@@ -127,6 +133,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     if (pathname === "/user_dashboard") return "home";
     if (pathname === "/user_dashboard/profile") return "profile";
     if (pathname === "/user_dashboard/certificates") return "certificates";
+    if (pathname === "/user_dashboard/{${courseId}}/createdCourses")
+      return "createdCourses";
+
     return "home";
   };
 

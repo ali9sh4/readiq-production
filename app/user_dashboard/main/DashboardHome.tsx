@@ -1,5 +1,6 @@
+// /components/DashboardHome.tsx
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/authContext";
 import {
@@ -11,10 +12,8 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Award, Plus, AlertCircle } from "lucide-react";
-import { getUserEnrolledCoursesWithStats } from "../actions";
 import CoursesCardList from "@/components/CoursesCardList.tsx  ";
 import { Course } from "@/types/types";
-import { getUserFavorites } from "../../actions/favorites_actions";
 
 interface DashboardStats {
   enrolledCoursesCount: number;
@@ -23,75 +22,25 @@ interface DashboardStats {
   totalLearningTime: number;
 }
 
-export default function DashboardHome() {
+interface DashboardHomeProps {
+  initialEnrolledCourses: Course[];
+  initialFavorites: any[];
+  initialStats: DashboardStats | null;
+}
+  
+export default function DashboardHome({
+  initialEnrolledCourses,
+  initialFavorites,
+  initialStats,
+}: DashboardHomeProps) {
   const auth = useAuth();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [favorites, setFavorites] = useState<any[]>([]);
+  
+  // ✅ Use initial data - no loading state needed!
+  const [enrolledCourses] = useState<Course[]>(initialEnrolledCourses);
+  const [favorites] = useState<any[]>(initialFavorites);
+  const [stats] = useState<DashboardStats | null>(initialStats);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      if (!auth.user) return;
-
-      try {
-        setLoading(true);
-        setError(null);
-        const token = await auth.user.getIdToken();
-        const [enrolledData, favoritesResult] = await Promise.all([
-          getUserEnrolledCoursesWithStats(token, 20),
-          getUserFavorites(token, 6),
-        ]);
-
-        if (
-          enrolledData.success &&
-          enrolledData.stats &&
-          enrolledData.courses
-        ) {
-          setStats(enrolledData.stats);
-          setEnrolledCourses(enrolledData.courses);
-        } else {
-          setError("حدث خطأ أثناء تحميل بيانات لوحة التحكم");
-        }
-
-        if (favoritesResult.success && favoritesResult.favorites) {
-          setFavorites(favoritesResult.favorites);
-        }
-      } catch (err) {
-        console.error("Dashboard error:", {
-          message: err instanceof Error ? err.message : "Unknown error",
-        });
-        setError("حدث خطأ أثناء تحميل البيانات");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
-  }, [auth.user]);
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh] px-4">
-        <Card className="p-6 sm:p-8 text-center shadow-lg border border-red-100 rounded-2xl max-w-md w-full">
-          <AlertCircle className="w-10 h-10 sm:w-12 sm:h-12 text-red-500 mx-auto mb-3 sm:mb-4" />
-          <h3 className="text-lg sm:text-xl font-semibold text-red-700 mb-2">
-            خطأ في التحميل
-          </h3>
-          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
-            {error}
-          </p>
-          <Button
-            onClick={() => window.location.reload()}
-            className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
-          >
-            إعادة المحاولة
-          </Button>
-        </Card>
-      </div>
-    );
-  }
+  // ✅ No useEffect, no loading, instant render!
 
   return (
     <div className="space-y-6 sm:space-y-8 lg:space-y-10">

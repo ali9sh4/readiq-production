@@ -12,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import Image from "next/image";
 import { User } from "lucide-react";
 import NavigationButton from "./NavigationButton";
 
