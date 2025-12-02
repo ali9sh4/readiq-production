@@ -98,7 +98,7 @@ export default function CourseSearch({
             onClick={() => setSelectedCategory("all")}
             className={`px-4 py-2 whitespace-nowrap rounded-lg border transition flex-shrink-0 ${
               selectedCategory === "all"
-                ? "bg-blue-600 text-white border-blue-600"
+                ? "bg-sky-600 hover:bg-sky-700 text-white"
                 : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
             }`}
           >
@@ -111,7 +111,7 @@ export default function CourseSearch({
               onClick={() => setSelectedCategory(cat)}
               className={`px-4 py-2 whitespace-nowrap rounded-lg border transition flex-shrink-0 ${
                 cat === selectedCategory
-                  ? "bg-blue-600 text-white border-blue-600"
+                  ? "bg-sky-600 hover:bg-sky-700 text-white"
                   : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
               }`}
             >

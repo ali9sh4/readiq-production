@@ -36,6 +36,12 @@ const navItems = [
     icon: BookOpen,
     value: "createdCourses",
   },
+  {
+    href: "/user_dashboard/updatePassword",
+    label: "تحديث كلمة المرور",
+    icon: Settings,
+    value: "updatePassword",
+  },
 ];
 
 // Sidebar Content Component (desktop only)
@@ -133,8 +139,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     if (pathname === "/user_dashboard") return "home";
     if (pathname === "/user_dashboard/profile") return "profile";
     if (pathname === "/user_dashboard/certificates") return "certificates";
-    if (pathname === "/user_dashboard/{${courseId}}/createdCourses")
+    if (pathname.startsWith("/user_dashboard/createdCourses"))
       return "createdCourses";
+    if (pathname === "/user_dashboard/updatePassword") return "updatePassword"; // ✅ Add this
 
     return "home";
   };

@@ -9,7 +9,7 @@ export const registerFormSchema = z
       .min(8, "كلمة المرور يجب أن تكون 8 أحرف على الأقل")
       .regex(/[a-zA-Z]/, "يجب أن تحتوي على حرف واحد على الأقل")
       .regex(/\d/, "يجب أن تحتوي على رقم واحد على الأقل"),
-    passwordConfirm: z.string(),
+    passwordConfirm: z.string().min(1, "تأكيد كلمة المرور مطلوب"),
   })
   .refine((data) => data.password === data.passwordConfirm, {
     message: "كلمة المرور غير متطابقة",

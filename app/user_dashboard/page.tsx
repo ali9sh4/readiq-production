@@ -5,6 +5,8 @@ import { getUserEnrolledCoursesWithStats } from "./actions";
 import { getUserFavorites } from "../actions/favorites_actions";
 import DashboardHome from "./main/DashboardHome";
 import { Course } from "@/types/types";
+import { redirect } from "next/navigation";
+import { adminAuth } from "@/firebase/service";
 interface DashboardStats {
   enrolledCoursesCount: number;
   createdCoursesCount: number;
@@ -15,6 +17,9 @@ interface DashboardStats {
 export default async function DashboardPage() {
   const cookieStore = await cookies();
   const token = cookieStore.get("firebaseAuthToken")?.value;
+  if (!token) {
+    redirect("/login");
+  }
 
   let enrolledCourses: Course[] = [];
   let favorites: any = [];
