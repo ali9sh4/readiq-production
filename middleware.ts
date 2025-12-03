@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify, createRemoteJWKSet, decodeJwt } from "jose";
+import path from "path";
 
 const JWKS = createRemoteJWKSet(
   new URL(
@@ -11,7 +12,11 @@ const JWKS = createRemoteJWKSet(
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith("/login") || pathname.startsWith("/register")) {
+  if (
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register") ||
+    pathname.startsWith("/forget-password")
+  ) {
     const cookie = await cookies();
     const token = cookie.get("firebaseAuthToken")?.value;
 
@@ -79,6 +84,7 @@ export const config = {
     "/admin-dashboard/:path*",
     "/login",
     "/register",
+    "/forget-password",
     "/course-upload/:path*",
     "/user_dashboard/:path*",
   ],

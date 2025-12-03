@@ -92,11 +92,6 @@ const getFileIcon = (filename: string, size: number = 20) => {
     return <FileImage className={`${className} text-blue-500`} />;
   }
 
-  // Videos
-  if (["mp4", "webm", "mov", "avi", "mkv"].includes(extension)) {
-    return <FileVideo className={`${className} text-red-500`} />;
-  }
-
   // Audio
   if (["mp3", "wav", "aac", "m4a", "ogg"].includes(extension)) {
     return <FileAudio className={`${className} text-green-500`} />;
@@ -142,13 +137,6 @@ const getFileTypeLabel = (filename: string): string => {
     xlsx: "ملف Excel",
     txt: "ملف نصي",
     csv: "ملف CSV",
-
-    // Videos
-    mp4: "فيديو",
-    webm: "فيديو",
-    mov: "فيديو",
-    avi: "فيديو",
-    mkv: "فيديو",
 
     // Audio
     mp3: "ملف صوتي",
@@ -235,13 +223,6 @@ export default function SmartCourseUploader({
     "text/plain",
     "text/csv",
 
-    // Videos
-    "video/mp4",
-    "video/webm",
-    "video/quicktime", // .mov
-    "video/x-msvideo", // .avi
-    "video/x-matroska", // .mkv
-
     // Audio
     "audio/mpeg", // .mp3
     "audio/wav",
@@ -281,30 +262,56 @@ export default function SmartCourseUploader({
   const getMaxFileSizeForType = (file: File): number => {
     const extension = file.name.toLowerCase().split(".").pop() || "";
 
-    // 3D Models - Larger limit
+    // 3D Models - Larger files
     if (
       ["stl", "obj", "fbx", "blend", "gltf", "glb", "ply"].includes(extension)
     ) {
-      return 100 * 1024 * 1024; // 100 MB for 3D models
+      return 100 * 1024 * 1024; // 100 MB ✅ Good for detailed models
     }
 
-    // Videos - Largest limit
-    if (["mp4", "webm", "mov", "avi", "mkv"].includes(extension)) {
-      return 200 * 1024 * 1024; // 200 MB for videos
-    }
-
-    // Archives - Large limit
+    // Archives - Course materials bundles
     if (["zip", "rar", "7z", "tar", "gz"].includes(extension)) {
-      return 150 * 1024 * 1024; // 150 MB for archives
+      return 200 * 1024 * 1024; // 200 MB ✅ Good for large resource packs
     }
 
-    // Images - Medium limit
+    // Audio - Lectures/podcasts
+    if (["mp3", "wav", "aac", "m4a"].includes(extension)) {
+      return 50 * 1024 * 1024; // 50 MB ✅ ~50 minutes of audio
+    }
+
+    // Images - Screenshots/diagrams
     if (["jpg", "jpeg", "png", "webp", "gif", "svg"].includes(extension)) {
-      return 20 * 1024 * 1024; // 20 MB for images
+      return 10 * 1024 * 1024; // 10 MB ✅ High-quality images
     }
 
-    // Documents and others - Default
-    return 50 * 1024 * 1024; // 50 MB default
+    // Documents - PDFs, presentations, spreadsheets
+    if (
+      ["pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx"].includes(extension)
+    ) {
+      return 50 * 1024 * 1024; // 50 MB ✅ Large presentations with images
+    }
+
+    // Code files - Usually tiny
+    if (
+      [
+        "js",
+        "jsx",
+        "ts",
+        "tsx",
+        "py",
+        "java",
+        "cpp",
+        "css",
+        "html",
+        "json",
+        "txt",
+      ].includes(extension)
+    ) {
+      return 10 * 1024 * 1024; // 10 MB ✅ More than enough
+    }
+
+    // Default
+    return 50 * 1024 * 1024; // 50 MB
   };
   const hasError = () => {
     return error.upload || error.file || error.load;
@@ -411,11 +418,6 @@ export default function SmartCourseUploader({
       "xlsx",
       "txt",
       "csv",
-      "mp4",
-      "webm",
-      "mov",
-      "avi",
-      "mkv",
       "mp3",
       "wav",
       "m4a",
@@ -437,7 +439,7 @@ export default function SmartCourseUploader({
       "blend",
       "gltf",
       "glb",
-      "ply", // ✅ 3D files
+      "ply",
       "js",
       "jsx",
       "ts",
@@ -448,7 +450,7 @@ export default function SmartCourseUploader({
       "css",
       "html",
       "json",
-      "xml", // Code files
+      "xml",
     ];
 
     if (
@@ -856,7 +858,7 @@ export default function SmartCourseUploader({
               </span>
             )}
           </div>
-          <p>الملفات المسموحة: PDF، DOC، PPT، MP4، MP3، ZIP، صور</p>
+          <p>الملفات المسموحة: PDF، DOC، PPT، MP3، ZIP، صور، ملفات 3D</p>
         </div>
       </div>
 
@@ -865,7 +867,7 @@ export default function SmartCourseUploader({
         <input
           type="file"
           multiple
-          accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.mp4,.webm,.mov,.mp3,.wav,.zip,.rar,.7z,.jpg,.jpeg,.png,.webp,.txt,.stl,.obj,.fbx,.gltf,.glb,.blend,.js,.jsx,.ts,.tsx,.py,.css,.html,.json,.ply"
+          accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.mp3,.wav,.zip,.rar,.7z,.jpg,.jpeg,.png,.webp,.txt,.stl,.obj,.fbx,.gltf,.glb,.blend,.js,.jsx,.ts,.tsx,.py,.css,.html,.json,.ply"
           className="hidden"
           ref={fileInputRef}
           onChange={handleFileSelect}

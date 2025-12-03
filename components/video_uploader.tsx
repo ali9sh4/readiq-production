@@ -64,13 +64,11 @@ const formatDuration = (seconds?: number): string => {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
-
-
 // ===== MAIN COMPONENT =====
 export default function VideoUploader({
   courseId,
   disabled = false,
-  maxFileSize = 500 * 1024 * 1024, // 500MB
+  maxFileSize = 1 * 1024 * 1024 * 1024,
   maxVideos = 50,
 }: Props) {
   const auth = useAuth();
