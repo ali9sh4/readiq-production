@@ -45,7 +45,7 @@ export default function PaymentSelector({
         />
       ),
       color: "bg-purple-700",
-      disabled: true,
+      disabled: false,
       badge: "قريباً",
       badgeColor: "bg-yellow-500 text-gray-900",
     },
@@ -62,9 +62,6 @@ export default function PaymentSelector({
   ];
 
   return (
-    // REPLACE WITH:
-    // REPLACE WITH:
-    // REPLACE WITH:
     <div
       className="font-zain space-y-3 sm:space-y-4 p-2 sm:p-0  rounded-lg"
       dir="rtl"
@@ -171,7 +168,7 @@ export default function PaymentSelector({
         {/* Coming soon for other methods */}
         <div className="bg-yellow-100 border-2 border-yellow-500 rounded-lg p-2 sm:p-3">
           <p className="text-xs sm:text-sm text-yellow-900 font-semibold text-center">
-            ⏳ طرق الدفع الأخرى (زين كاش والبطاقات البنكية) قيد التفعيل
+            ⏳ طرق الدفع الأخرى ( والبطاقات البنكية) قيد التفعيل
           </p>
         </div>
       </div>
