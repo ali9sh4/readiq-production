@@ -4,7 +4,15 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/authContext";
-import { Home, User, Award, BookOpen, Settings, LogOut } from "lucide-react";
+import {
+  Home,
+  User,
+  Award,
+  BookOpen,
+  Settings,
+  LogOut,
+  Heart,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -25,16 +33,23 @@ const navItems = [
     value: "profile",
   },
   {
-    href: "/user_dashboard/certificates",
-    label: "الشهادات",
-    icon: Award,
-    value: "certificates",
+    href: "/user_dashboard/myFavorites",
+    label: "المفضلة",
+    icon: Heart,
+    value: "myFavorites",
   },
+
   {
     href: "/user_dashboard/createdCourses",
     label: "دوراتي المنشأة",
     icon: BookOpen,
     value: "createdCourses",
+  },
+  {
+    href: "/user_dashboard/certificates",
+    label: "الشهادات",
+    icon: Award,
+    value: "certificates",
   },
   {
     href: "/user_dashboard/updatePassword",
@@ -108,24 +123,6 @@ function SidebarContent() {
           );
         })}
       </nav>
-
-      {/* Footer */}
-      <div className="p-4 border-t space-y-2">
-        <Link href="/">
-          <Button variant="ghost" className="w-full justify-start">
-            <Settings className="h-4 w-4 ml-2" />
-            العودة للموقع
-          </Button>
-        </Link>
-        <Button
-          variant="ghost"
-          className="w-full justify-start text-red-600"
-          onClick={() => auth.logOut()}
-        >
-          <LogOut className="h-4 w-4 ml-2" />
-          تسجيل الخروج
-        </Button>
-      </div>
     </div>
   );
 }
@@ -141,7 +138,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     if (pathname === "/user_dashboard/certificates") return "certificates";
     if (pathname.startsWith("/user_dashboard/createdCourses"))
       return "createdCourses";
-    if (pathname === "/user_dashboard/updatePassword") return "updatePassword"; // ✅ Add this
+    if (pathname === "/user_dashboard/updatePassword") return "updatePassword";
+    if (pathname === "/user_dashboard/myFavorites") return "myFavorites";
 
     return "home";
   };

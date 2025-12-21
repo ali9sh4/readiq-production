@@ -78,15 +78,17 @@ export async function GET(req: NextRequest) {
       // ✅ Payment successful
       await db.runTransaction(async (transaction) => {
         const enrollmentRef = enrollmentDoc.ref;
+        const courseRef = db.collection("courses").doc(courseId);
         const currentEnrollment = await transaction.get(enrollmentRef);
+        const courseDoc = await transaction.get(courseRef);
 
         // Prevent duplicate processing
         if (currentEnrollment.data()?.status === "completed") {
           console.log("⚠️ Already processed:", transactionId);
           return;
         }
+        const courseData = courseDoc.data();
 
-        // Update enrollment
         transaction.update(enrollmentRef, {
           status: "completed",
           enrolledAt: new Date().toISOString(),
@@ -94,17 +96,11 @@ export async function GET(req: NextRequest) {
           transactionId: transactionId,
         });
 
-        // ✅ FIX: Update course count with correct field name
-        const courseRef = db.collection("courses").doc(courseId);
-        const courseDoc = await transaction.get(courseRef);
-        const courseData = courseDoc.data();
-
         transaction.update(courseRef, {
-          enrollmentCount: (courseData?.enrollmentCount || 0) + 1, // ✅ Consistent field name
+          enrollmentCount: (courseData?.enrollmentCount || 0) + 1,
           updatedAt: new Date().toISOString(),
         });
       });
-
       // ✅ Update audit log
       await db
         .collection("payment_transactions")

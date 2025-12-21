@@ -33,7 +33,7 @@ export default function PaymentSelector({
     },
     {
       id: "zaincash" as PaymentMethod,
-      name: "ZainCash",
+      name: "zaincash",
       description: "الدفع عبر المحفظة الإلكترونية",
       icon: (
         <Image

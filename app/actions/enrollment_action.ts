@@ -18,8 +18,9 @@ export async function checkUserEnrollments(
 
     const enrollments: Record<string, boolean> = {};
     enrollmentDocs.forEach((doc, index) => {
-      // ✅ Simpler check - if document exists, user is enrolled
-      enrollments[courseIds[index]] = doc.exists;
+      // ✅ FIX: Check both existence AND status
+      enrollments[courseIds[index]] =
+        doc.exists && doc.data()?.status === "completed";
     });
 
     return {

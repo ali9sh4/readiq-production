@@ -41,7 +41,7 @@ export default function FavoriteButton({
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
+ 
     if (!auth.user) {
       toast.error("يرجى تسجيل الدخول أولاً");
       router.push(`/login?redirect=/course/${courseId}`);
