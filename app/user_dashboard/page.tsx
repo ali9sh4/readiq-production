@@ -28,7 +28,7 @@ export default async function DashboardPage() {
   if (token) {
     try {
       const userResult = await getCurrentUser({ token });
-
+      
       if (userResult.success && userResult.user) {
         // ✅ Fetch data on server - much faster
         const [enrolledData, favoritesResult] = await Promise.all([

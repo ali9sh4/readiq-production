@@ -311,8 +311,6 @@ export default function CoursePreview({
                   {/* Favorite Button */}
                   <FavoriteButton
                     courseId={course.id}
-                    courseTitle={course.title}
-                    courseThumbnail={course.thumbnailUrl}
                     initialIsFavorited={initialIsFavorite}
                     showLabel={false}
                   />
@@ -415,8 +413,6 @@ export default function CoursePreview({
                     {/* Favorite Button */}
                     <FavoriteButton
                       courseId={course.id}
-                      courseTitle={course.title}
-                      courseThumbnail={course.thumbnailUrl}
                       initialIsFavorited={initialIsFavorite}
                       showLabel={false}
                     />

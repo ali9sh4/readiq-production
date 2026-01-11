@@ -85,12 +85,14 @@ const CourseCard = memo(
     onDelete,
     isEnrolled = false,
     isFavorited = false,
+    onFavoriteChange,
   }: {
     course: Course;
     isAdminView: boolean;
     onDelete?: (id: string) => void;
     isEnrolled?: boolean;
     isFavorited?: boolean;
+    onFavoriteChange?: (courseId: string, isFavorited: boolean) => void; // ✅ ADD THIS LINE
   }) => {
     const auth = useAuth();
     const [imageError, setImageError] = useState(false);
@@ -267,10 +269,9 @@ const CourseCard = memo(
             <div className="absolute top-2 md:top-2.5 lg:top-2 right-2 md:right-2.5 lg:right-2 z-10">
               <FavoriteButton
                 courseId={course.id}
-                courseTitle={course.title}
-                courseThumbnail={course.thumbnailUrl}
                 variant="ghost"
                 initialIsFavorited={isFavorited}
+                onFavoriteChange={onFavoriteChange}
               />
             </div>
           )}
@@ -371,14 +372,17 @@ export default function CoursesCardList({
 
   const [loading, setLoading] = useState(true);
 
+  const courseIds = useMemo(
+    () => (data.courses || []).map((course) => course.id),
+    [data.courses]
+  );
+
   const fetchEnrollments = useCallback(async () => {
-    if (!auth?.user || isAdminView || !data.courses) {
+    if (!auth?.user || isAdminView || courseIds.length === 0) {
       setLoading(false);
       return;
     }
-
     try {
-      const courseIds = data.courses.map((course) => course.id);
       const token = await auth.user.getIdToken();
       const [enrollmentResult, favoriteResult] = await Promise.all([
         checkUserEnrollments(auth.user.uid, courseIds),
@@ -396,11 +400,20 @@ export default function CoursesCardList({
     } finally {
       setLoading(false);
     }
-  }, [auth?.user, data.courses, isAdminView]);
+  }, [auth?.user, courseIds, isAdminView]);
 
   useEffect(() => {
     fetchEnrollments();
   }, [fetchEnrollments]);
+  const handleFavoriteChange = useCallback(
+    (courseId: string, isFavorited: boolean) => {
+      setFavoriteStatus((prev) => ({
+        ...prev,
+        [courseId]: isFavorited,
+      }));
+    },
+    []
+  );
 
   if (!data.success || data.error) {
     return <ErrorState message={data.error} />;
@@ -426,6 +439,7 @@ export default function CoursesCardList({
             onDelete={onDeleteCourse}
             isEnrolled={enrollmentStatus[course.id]}
             isFavorited={favoriteStatus[course.id]}
+            onFavoriteChange={handleFavoriteChange}
           />
         ))}
       </div>

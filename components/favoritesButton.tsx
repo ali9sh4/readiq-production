@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react"; // ✅ Add useEffect
+import { useState, useEffect } from "react";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/authContext";
@@ -13,27 +13,26 @@ import { useRouter } from "next/navigation";
 
 interface FavoriteButtonProps {
   courseId: string;
-  courseTitle: string;
-  courseThumbnail?: string;
   initialIsFavorited?: boolean;
   showLabel?: boolean;
   variant?: "default" | "ghost" | "outline";
+  size?: "default" | "sm" | "lg" | "icon";
+  onFavoriteChange?: (courseId: string, isFavorited: boolean) => void;
 }
 
 export default function FavoriteButton({
   courseId,
-  courseTitle,
-  courseThumbnail,
   initialIsFavorited = false,
   showLabel = false,
   variant = "ghost",
+  size = "icon",
+  onFavoriteChange,
 }: FavoriteButtonProps) {
   const auth = useAuth();
   const router = useRouter();
   const [isFavorited, setIsFavorited] = useState(initialIsFavorited);
   const [isLoading, setIsLoading] = useState(false);
 
-  // ✅ ADD THIS - Sync state with prop changes
   useEffect(() => {
     setIsFavorited(initialIsFavorited);
   }, [initialIsFavorited]);
@@ -41,43 +40,46 @@ export default function FavoriteButton({
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
- 
+
     if (!auth.user) {
       toast.error("يرجى تسجيل الدخول أولاً");
       router.push(`/login?redirect=/course/${courseId}`);
       return;
     }
 
+    // Haptic feedback
+    if (navigator.vibrate) {
+      navigator.vibrate(10);
+    }
+
     setIsLoading(true);
+
+    const previousState = isFavorited;
+    const newState = !isFavorited;
+
+    // Optimistic update
+    setIsFavorited(newState);
+    onFavoriteChange?.(courseId, newState);
 
     try {
       const token = await auth.user.getIdToken();
 
-      if (isFavorited) {
-        const result = await removeFromFavorites(token, courseId);
+      const result = previousState
+        ? await removeFromFavorites(token, courseId)
+        : await addToFavorites(token, courseId);
 
-        if (result.success) {
-          setIsFavorited(false);
-          toast.success("تمت الإزالة من المفضلة");
-        } else {
-          toast.error(result.error || "حدث خطأ");
-        }
+      if (result.success) {
+        toast.success(result.message);
       } else {
-        const result = await addToFavorites(
-          token,
-          courseId,
-          courseTitle,
-          courseThumbnail
-        );
-
-        if (result.success) {
-          setIsFavorited(true);
-          toast.success("تمت الإضافة إلى المفضلة");
-        } else {
-          toast.error(result.error || "حدث خطأ");
-        }
+        // Rollback on failure
+        setIsFavorited(previousState);
+        onFavoriteChange?.(courseId, previousState);
+        toast.error(result.error || "حدث خطأ");
       }
     } catch (error) {
+      // Rollback on error
+      setIsFavorited(previousState);
+      onFavoriteChange?.(courseId, previousState);
       console.error("Favorite toggle error:", error);
       toast.error("حدث خطأ، يرجى المحاولة مرة أخرى");
     } finally {
@@ -87,20 +89,26 @@ export default function FavoriteButton({
 
   return (
     <Button
+      title={isFavorited ? "إزالة من المفضلة" : "إضافة للمفضلة"}
       onClick={handleToggleFavorite}
       disabled={isLoading}
       variant={variant}
-      size={showLabel ? "default" : "icon"}
-      className={`transition-all backdrop-blur-sm bg-white/80 hover:bg-white border-0 ${
-        isFavorited
-          ? "text-red-500 hover:text-red-600"
-          : "text-gray-600 hover:text-red-500"
-      }`}
+      size={showLabel ? "default" : size}
+      className={`
+        transition-all backdrop-blur-sm bg-white/80 hover:bg-white border-0
+        ${
+          isFavorited
+            ? "text-red-500 hover:text-red-600"
+            : "text-gray-600 hover:text-red-500"
+        }
+        ${isLoading ? "opacity-50 cursor-not-allowed" : ""}
+      `}
+      aria-label={isFavorited ? "إزالة من المفضلة" : "إضافة للمفضلة"}
     >
       <Heart
-        className={`w-5 h-5 ${
-          isFavorited ? "fill-current" : ""
-        } transition-all`}
+        className={`w-5 h-5 transition-all ${
+          isFavorited ? "fill-current scale-110" : ""
+        }`}
       />
       {showLabel && (
         <span className="mr-2">

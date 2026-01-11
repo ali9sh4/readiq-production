@@ -4,41 +4,19 @@ import { adminAuth, db } from "@/firebase/service";
 import { Course } from "@/types/types";
 
 // ===== ADD TO FAVORITES =====
-export async function addToFavorites(
-  token: string,
-  courseId: string,
-  courseTitle: string,
-  courseThumbnail?: string
-) {
+export async function addToFavorites(token: string, courseId: string) {
   try {
     const verifiedToken = await adminAuth.verifyIdToken(token);
     const userId = verifiedToken.uid;
 
-    // Create composite ID to prevent duplicates
     const favoriteId = `${userId}_${courseId}`;
 
-    // Check if already exists
-    const existingFav = await db.collection("favorites").doc(favoriteId).get();
-
-    if (existingFav.exists) {
-      return {
-        success: false,
-        error: "الدورة موجودة بالفعل في المفضلة",
-      };
-    }
-
-    // Add to favorites
-    await db
-      .collection("favorites")
-      .doc(favoriteId)
-      .set({
-        id: favoriteId,
-        userId,
-        courseId,
-        courseTitle,
-        courseThumbnail: courseThumbnail || null,
-        createdAt: new Date().toISOString(),
-      });
+    // ✅ Only store essential data - course details fetched separately
+    await db.collection("favorites").doc(favoriteId).set({
+      userId,
+      courseId,
+      createdAt: new Date().toISOString(),
+    });
 
     return {
       success: true,
@@ -61,7 +39,6 @@ export async function removeFromFavorites(token: string, courseId: string) {
 
     const favoriteId = `${userId}_${courseId}`;
 
-    // Delete the favorite
     await db.collection("favorites").doc(favoriteId).delete();
 
     return {
@@ -77,7 +54,7 @@ export async function removeFromFavorites(token: string, courseId: string) {
   }
 }
 
-// ===== CHECK IF FAVORITED =====
+// ===== CHECK IF FAVORITED (Single) =====
 export async function checkIfFavorited(token: string, courseId: string) {
   try {
     const verifiedToken = await adminAuth.verifyIdToken(token);
@@ -98,9 +75,44 @@ export async function checkIfFavorited(token: string, courseId: string) {
   }
 }
 
-// ===== GET USER'S FAVORITES =====
-// app/actions/favorites_actions.ts
+// ===== CHECK MULTIPLE FAVORITES (Batch) - MOST IMPORTANT FOR PERFORMANCE =====
+export async function checkUserFavorites(token: string, courseIds: string[]) {
+  if (courseIds.length === 0) {
+    return { success: true, favorites: {} };
+  }
 
+  try {
+    const verifiedToken = await adminAuth.verifyIdToken(token);
+    const userId = verifiedToken.uid;
+
+    const favoriteIds = courseIds.map((courseId) => `${userId}_${courseId}`);
+
+    // ✅ Batch get (up to 500 at once) - 1 DB call instead of N calls
+    const favoriteRefs = favoriteIds.map((id) =>
+      db.collection("favorites").doc(id)
+    );
+
+    const favoriteDocs = await db.getAll(...favoriteRefs);
+
+    const favorites: Record<string, boolean> = {};
+    courseIds.forEach((courseId, index) => {
+      favorites[courseId] = favoriteDocs[index].exists;
+    });
+
+    return {
+      success: true,
+      favorites,
+    };
+  } catch (error: any) {
+    console.error("Check user favorites error:", error);
+    return {
+      success: false,
+      favorites: {},
+    };
+  }
+}
+
+// ===== GET USER'S FAVORITES (Optimized for pagination) =====
 export async function getUserFavorites(
   token: string,
   limit: number = 20,
@@ -125,25 +137,28 @@ export async function getUserFavorites(
 
     const snapshot = await favoritesQuery.get();
 
-    // ✅ Fetch full course data for each favorite
-    const favoritesWithCourseData = await Promise.all(
-      snapshot.docs.map(async (doc) => {
-        const favData = doc.data();
-        const courseDoc = await db
-          .collection("courses")
-          .doc(favData.courseId)
-          .get();
+    const courseIds = snapshot.docs.map((doc) => doc.data().courseId);
 
-        if (!courseDoc.exists) {
-          return null; // Course was deleted
-        }
+    if (courseIds.length === 0) {
+      return {
+        success: true,
+        favorites: [],
+        hasMore: false,
+        lastDocId: null,
+      };
+    }
+
+    // ✅ Batch fetch all courses at once (much faster than loop!)
+    const courseRefs = courseIds.map((id) => db.collection("courses").doc(id));
+    const courseDocs = await db.getAll(...courseRefs);
+
+    // ✅ Map courses with proper type conversion
+    const favorites: Course[] = courseDocs
+      .map((courseDoc) => {
+        if (!courseDoc.exists) return null;
 
         const data = courseDoc.data();
-
-        // ✅ NEW: Check if deleted
-        if (data?.isDeleted === true) {
-          return null; // Filter out deleted courses
-        }
+        if (data?.isDeleted === true) return null;
 
         return {
           id: courseDoc.id,
@@ -157,10 +172,7 @@ export async function getUserFavorites(
           rejectedAt: data?.rejectedAt?.toDate?.()?.toISOString() || null,
         } as Course;
       })
-    );
-
-    // Filter out deleted courses and null values
-    const favorites = favoritesWithCourseData.filter(Boolean);
+      .filter((course): course is Course => course !== null); 
 
     const lastVisible = snapshot.docs[snapshot.docs.length - 1];
 
@@ -181,42 +193,8 @@ export async function getUserFavorites(
     };
   }
 }
-// ===== CHECK MULTIPLE FAVORITES (Like checkUserEnrollments) =====
-export async function checkUserFavorites(token: string, courseIds: string[]) {
-  try {
-    const verifiedToken = await adminAuth.verifyIdToken(token);
-    const userId = verifiedToken.uid;
 
-    // Build favorite IDs
-    const favoriteIds = courseIds.map((courseId) => `${userId}_${courseId}`);
-
-    // Batch get all favorites
-    const favoriteRefs = favoriteIds.map((id) =>
-      db.collection("favorites").doc(id)
-    );
-
-    const favoriteDocs = await db.getAll(...favoriteRefs);
-
-    // Build result map
-    const favorites: Record<string, boolean> = {};
-    courseIds.forEach((courseId, index) => {
-      favorites[courseId] = favoriteDocs[index].exists;
-    });
-
-    return {
-      success: true,
-      favorites,
-    };
-  } catch (error: any) {
-    console.error("Check user favorites error:", error);
-    return {
-      success: false,
-      favorites: {},
-    };
-  }
-}
-
-// ===== GET COURSE FAVORITE COUNT (Optional - for analytics) =====
+// ===== GET FAVORITE COUNT FOR COURSE (Analytics) =====
 export async function getCourseFavoriteCount(courseId: string) {
   try {
     const snapshot = await db
@@ -233,6 +211,34 @@ export async function getCourseFavoriteCount(courseId: string) {
     return {
       success: false,
       count: 0,
+    };
+  }
+}
+
+// ===== GET ALL FAVORITE IDs (Fast lightweight check) =====
+// Useful when you only need IDs, not full course data
+export async function getUserFavoriteIds(token: string) {
+  try {
+    const verifiedToken = await adminAuth.verifyIdToken(token);
+    const userId = verifiedToken.uid;
+
+    const snapshot = await db
+      .collection("favorites")
+      .where("userId", "==", userId)
+      .select("courseId") // ✅ Only fetch courseId field - faster!
+      .get();
+
+    const courseIds = snapshot.docs.map((doc) => doc.data().courseId);
+
+    return {
+      success: true,
+      courseIds,
+    };
+  } catch (error: any) {
+    console.error("Get favorite IDs error:", error);
+    return {
+      success: false,
+      courseIds: [],
     };
   }
 }
