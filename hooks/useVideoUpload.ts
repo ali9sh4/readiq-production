@@ -29,10 +29,10 @@ export const useVideoUpload = () => {
     async (
       file: File,
       courseId: string,
-      token: string
+      token: string,
     ): Promise<VideoUploadResult> => {
-      const POLL_INTERVAL = 5000; // 5 seconds
-      const MAX_ATTEMPTS = 20;
+      const POLL_INTERVAL = 10000;
+      const MAX_ATTEMPTS = 60;
       return new Promise<VideoUploadResult>((resolveUpload, rejectUpload) => {
         const pollMuxStatus = async (uploadId: string, attempt = 0) => {
           if (attempt >= MAX_ATTEMPTS) {
@@ -66,14 +66,14 @@ export const useVideoUpload = () => {
             } else {
               setTimeout(
                 () => pollMuxStatus(uploadId, attempt + 1),
-                POLL_INTERVAL
+                POLL_INTERVAL,
               );
             }
           } catch (error) {
             console.error("Polling error:", error);
             setTimeout(
               () => pollMuxStatus(uploadId, attempt + 1),
-              POLL_INTERVAL
+              POLL_INTERVAL,
             );
           }
         };
@@ -149,7 +149,7 @@ export const useVideoUpload = () => {
         })();
       });
     },
-    []
+    [],
   );
 
   const checkProcessingStatus = useCallback(async (assetId: string) => {

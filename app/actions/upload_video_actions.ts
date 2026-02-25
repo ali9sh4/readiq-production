@@ -39,11 +39,33 @@ export async function createMuxUpload(formData: FormData) {
       return { success: false, error: "Authentication required" };
     }
 
-    const verifiedToken = await adminAuth.verifyIdToken(token);
+    // ✅ Handle token verification with specific error for expired tokens
+    let verifiedToken;
+    try {
+      verifiedToken = await adminAuth.verifyIdToken(token);
+    } catch (error: any) {
+      console.error("Token verification failed:", error.code);
+
+      // ✅ Return specific error for expired tokens
+      if (
+        error.code === "auth/id-token-expired" ||
+        error.code === "auth/argument-error"
+      ) {
+        return {
+          success: false,
+          error: "TOKEN_EXPIRED",
+          message: "انتهت صلاحية الجلسة. يرجى المحاولة مرة أخرى.",
+        };
+      }
+
+      return { success: false, error: "Invalid authentication" };
+    }
+
     if (!verifiedToken) {
       return { success: false, error: "Invalid authentication" };
     }
 
+    // ✅ Rate limiting
     const identifier = `video_upload_${verifiedToken.uid}`;
     const { success: rateLimitOk } = await ratelimit.limit(identifier);
 
@@ -54,11 +76,13 @@ export async function createMuxUpload(formData: FormData) {
       };
     }
 
+    // ✅ Course validation
     const courseDoc = await db.collection("courses").doc(courseId).get();
     if (!courseDoc.exists) {
       return { success: false, error: "Course not found" };
     }
 
+    // ✅ Permission check
     const courseData = courseDoc.data();
     const isOwner = courseData?.createdBy === verifiedToken.uid;
     const isAdmin = verifiedToken.admin === true;
@@ -68,11 +92,11 @@ export async function createMuxUpload(formData: FormData) {
       return { success: false, error: "Permission denied" };
     }
 
+    // ✅ Create Mux upload
     const upload = await mux.video.uploads.create({
       new_asset_settings: {
         playback_policy: ["public"],
         encoding_tier: "smart",
-
         normalize_audio: true,
       },
       cors_origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
@@ -85,14 +109,12 @@ export async function createMuxUpload(formData: FormData) {
         uploadId: upload.id,
       },
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating Mux upload:", error);
-
-    // Detailed logging
 
     return {
       success: false,
-      error: "Failed to create upload URL",
+      error: error.message || "Failed to create upload URL",
     };
   }
 }
@@ -202,8 +224,8 @@ export async function saveCourseVideoToFireStore({
       existingVideos.length > 0
         ? Math.max(
             ...existingVideos.map(
-              (v) => parseInt(v.videoId.replace("video_", "")) || 0
-            )
+              (v) => parseInt(v.videoId.replace("video_", "")) || 0,
+            ),
           )
         : 0;
     const currentHighestOrder =
@@ -279,7 +301,7 @@ export async function updateVideoDetails(
     isVisible?: boolean;
     isFreePreview?: boolean;
   },
-  token: string
+  token: string,
 ) {
   try {
     const verifiedToken = await adminAuth.verifyIdToken(token);
@@ -341,7 +363,7 @@ export async function updateVideoDetails(
 export async function deleteCourseVideo(
   courseId: string,
   videoId: string,
-  token: string
+  token: string,
 ) {
   try {
     const verifiedToken = await adminAuth.verifyIdToken(token);
@@ -409,7 +431,7 @@ export async function reorderCourseVideos(
   courseId: string,
   videoId: string,
   newOrder: number,
-  token: string
+  token: string,
 ) {
   try {
     const verifiedToken = await adminAuth.verifyIdToken(token);
