@@ -68,7 +68,7 @@ const formatDuration = (seconds?: number): string => {
 export default function VideoUploader({
   courseId,
   disabled = false,
-  maxFileSize = 1 * 1024 * 1024 * 1024,
+  maxFileSize = 2 * 1024 * 1024 * 1024,
   maxVideos = 50,
 }: Props) {
   const auth = useAuth();
@@ -77,7 +77,7 @@ export default function VideoUploader({
 
   // ===== STATE =====
   const [selectedVideo, setSelectedVideo] = useState<SelectedVideo | null>(
-    null
+    null,
   );
   const [previousVideos, setPreviousVideos] = useState<CourseVideo[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
@@ -88,7 +88,7 @@ export default function VideoUploader({
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   const [videoOrder, setVideoOrder] = useState<number | "">(1);
   const [reorderingVideoId, setReorderingVideoId] = useState<string | null>(
-    null
+    null,
   );
   const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
   const [savingVideoId, setSavingVideoId] = useState<string | null>(null);
@@ -124,13 +124,13 @@ export default function VideoUploader({
       if (result.success) {
         const videoList = result.videos || [];
         const sortedVideos = [...videoList].sort(
-          (a, b) => (a.order || 0) - (b.order || 0)
+          (a, b) => (a.order || 0) - (b.order || 0),
         );
         setPreviousVideos(Array.isArray(sortedVideos) ? sortedVideos : []);
         console.log("🎥 Loaded videos:", sortedVideos); // ADD THIS
         console.log(
           "🔢 Orders:",
-          sortedVideos.map((v) => ({ id: v.videoId, order: v.order }))
+          sortedVideos.map((v) => ({ id: v.videoId, order: v.order })),
         ); // ADD THIS
         if (sortedVideos.length > 0) {
           const maxOrder = Math.max(...sortedVideos.map((v) => v.order || 0));
@@ -182,7 +182,7 @@ export default function VideoUploader({
         courseId,
         videoId,
         newIndex + 1,
-        token
+        token,
       );
 
       // 🔍 ADD THIS LOG:
@@ -200,7 +200,7 @@ export default function VideoUploader({
         // 🔍 ADD THIS LOG:
         console.log(
           "✅ State updated with:",
-          result.videos.map((v) => ({ id: v.videoId, order: v.order }))
+          result.videos.map((v) => ({ id: v.videoId, order: v.order })),
         );
       }
     } catch (error) {
@@ -230,7 +230,7 @@ export default function VideoUploader({
 
     // Check if already uploaded
     const isDuplicate = previousVideos.some(
-      (v) => v.title === file.name && Math.abs(v.duration || 0) < 1
+      (v) => v.title === file.name && Math.abs(v.duration || 0) < 1,
     );
     if (isDuplicate) {
       return "فيديو بنفس الاسم موجود بالفعل";
@@ -298,7 +298,7 @@ export default function VideoUploader({
       const uploadResult = await startUpload(
         selectedVideo.file,
         courseId,
-        token
+        token,
       );
       if (!uploadResult.playbackId) {
         setError("فشل في الحصول على معرف التشغيل من Mux");
@@ -344,7 +344,7 @@ export default function VideoUploader({
 
     if (
       !confirm(
-        `هل أنت متأكد من حذف الفيديو "${videoTitle}"؟\n\nهذا الإجراء لا يمكن التراجع عنه.`
+        `هل أنت متأكد من حذف الفيديو "${videoTitle}"؟\n\nهذا الإجراء لا يمكن التراجع عنه.`,
       )
     ) {
       return;
@@ -427,12 +427,12 @@ export default function VideoUploader({
           isVisible: editForm.isVisible,
           isFreePreview: editForm.isFreePreview,
         },
-        token
+        token,
       );
       if (result.success) {
         // Update local state
         setPreviousVideos((prev) =>
-          prev.map((v) => (v.videoId === videoId ? { ...v, ...editForm } : v))
+          prev.map((v) => (v.videoId === videoId ? { ...v, ...editForm } : v)),
         );
         setEditingVideoId(null);
       } else {
@@ -802,7 +802,7 @@ export default function VideoUploader({
                               setPlayingVideoId(
                                 playingVideoId === video.videoId
                                   ? null
-                                  : video.videoId
+                                  : video.videoId,
                               );
                               setEditingVideoId(null);
                             }}

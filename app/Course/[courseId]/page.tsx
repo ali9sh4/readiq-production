@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { Metadata } from "next";
+import { getCourseProgress } from "@/app/actions/progress_actions";
 
 // ✅ Helper function to clean Firestore data
 function cleanCourseData(course: any) {
@@ -136,9 +137,9 @@ export default async function WatchCoursePage({
   const cookieStore = await cookies();
   const token = cookieStore.get("firebaseAuthToken")?.value;
   let isFavorited = false;
+  let userProgress: any[] = []; // ✅ NEW
 
   if (!token) {
-    // ✅ Check if deleted for guests
     if (cleanedCourse.isDeleted === true) {
       return <CourseDeleted />;
     }
@@ -148,7 +149,6 @@ export default async function WatchCoursePage({
   const authResult = await getCurrentUser({ token });
 
   if (!authResult.success || !authResult.user) {
-    // ✅ Check if deleted for invalid tokens
     if (cleanedCourse.isDeleted === true) {
       return <CourseDeleted />;
     }
@@ -163,12 +163,23 @@ export default async function WatchCoursePage({
   const isAdmin = authResult.isAdmin || false;
   const isInstructor = cleanedCourse.createdBy === user.uid;
 
-  // ✅ Admin bypass - full access even to deleted courses
+  // ✅ Admin bypass
   if (isAdmin) {
-    return <CoursePlayer course={cleanedCourse} isEnrolled={true} />;
+    // ✅ Load progress for admin too
+    const progressResult = await getCourseProgress(courseId, token);
+    if (progressResult.success && progressResult.progress) {
+      userProgress = progressResult.progress.videos;
+    }
+
+    return (
+      <CoursePlayer
+        course={cleanedCourse}
+        isEnrolled={true}
+        userProgress={userProgress}
+      />
+    );
   }
 
-  // ✅ Now check if deleted (after admin check)
   if (cleanedCourse.isDeleted === true) {
     return <CourseDeleted />;
   }
@@ -176,12 +187,33 @@ export default async function WatchCoursePage({
   const enrollmentResult = await checkUserEnrollments(user.uid, [courseId]);
   const isEnrolled = enrollmentResult.enrollments?.[courseId] || false;
 
+  // ✅ Load progress if enrolled
+  if (isEnrolled || isInstructor) {
+    const progressResult = await getCourseProgress(courseId, token);
+    if (progressResult.success && progressResult.progress) {
+      userProgress = progressResult.progress.videos;
+    }
+  }
+
   // 4. Render based on enrollment status
   if (isInstructor) {
-    return <CoursePlayer course={cleanedCourse} isEnrolled={true} />;
+    return (
+      <CoursePlayer
+        course={cleanedCourse}
+        isEnrolled={true}
+        userProgress={userProgress}
+      />
+    );
   }
+
   if (isEnrolled) {
-    return <CoursePlayer course={cleanedCourse} isEnrolled={true} />;
+    return (
+      <CoursePlayer
+        course={cleanedCourse}
+        isEnrolled={true}
+        userProgress={userProgress}
+      />
+    );
   }
 
   return (

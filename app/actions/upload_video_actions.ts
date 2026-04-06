@@ -26,7 +26,7 @@ interface SaveCourseVideoParam {
 
 const ratelimit = new Ratelimit({
   redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(5, "10 m"),
+  limiter: Ratelimit.slidingWindow(10, "10 m"),
 });
 
 export async function createMuxUpload(formData: FormData) {

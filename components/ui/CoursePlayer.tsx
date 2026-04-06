@@ -37,6 +37,7 @@ import {
   viewCourseFile,
 } from "@/app/actions/upload_File_actions";
 import { CourseFile } from "../fileUplaodtoR2";
+import { saveVideoProgress } from "@/app/actions/progress_actions";
 
 // --- Types ---
 interface VideoProgress {
@@ -112,17 +113,25 @@ export default function CoursePlayer({
       window.history.replaceState(null, "", window.location.pathname);
     }
   }, [searchParams]);
+  useEffect(() => {
+    if (userProgress && userProgress.length > 0) {
+      const completed = new Set(
+        userProgress.filter((v) => v.completed).map((v) => v.videoId),
+      );
+      setCompletedVideos(completed);
+    }
+  }, [userProgress]);
 
   // State
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [activeTab, setActiveTab] = useState<"sections" | "resources">(
-    "sections"
+    "sections",
   );
   const [completedVideos, setCompletedVideos] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
 
   const [isLoadingVideo, setIsLoadingVideo] = useState(false);
@@ -178,7 +187,7 @@ export default function CoursePlayer({
 
   const allVideos = useMemo(
     () => Object.values(videosBySections).flat(),
-    [videosBySections]
+    [videosBySections],
   );
 
   const currentVideo = allVideos[currentVideoIndex];
@@ -193,7 +202,7 @@ export default function CoursePlayer({
   const currentVideoFiles = useMemo(() => {
     return (
       course?.files?.filter(
-        (f) => f.relatedVideoId === currentVideo?.videoId
+        (f) => f.relatedVideoId === currentVideo?.videoId,
       ) || []
     );
   }, [course?.files, currentVideo]);
@@ -205,7 +214,7 @@ export default function CoursePlayer({
   const progress = useMemo(() => {
     if (!allVideos.length) return 0;
     const completed = allVideos.filter((v) =>
-      completedVideos.has(v.videoId)
+      completedVideos.has(v.videoId),
     ).length;
     return Math.round((completed / allVideos.length) * 100);
   }, [completedVideos, allVideos]);
@@ -220,7 +229,7 @@ export default function CoursePlayer({
   useEffect(() => {
     const handleFullscreenChange = () => {
       const watermark = document.querySelector(
-        ".watermark-container"
+        ".watermark-container",
       ) as HTMLElement;
 
       if (!watermark) return;
@@ -258,34 +267,50 @@ export default function CoursePlayer({
       document.removeEventListener("fullscreenchange", handleFullscreenChange);
       document.removeEventListener(
         "webkitfullscreenchange",
-        handleFullscreenChange
+        handleFullscreenChange,
       );
       document.removeEventListener(
         "mozfullscreenchange",
-        handleFullscreenChange
+        handleFullscreenChange,
       );
       document.removeEventListener(
         "MSFullscreenChange",
-        handleFullscreenChange
+        handleFullscreenChange,
       );
     };
   }, []);
 
   const handleVideoComplete = useCallback(async () => {
-    if (!currentVideo || completedVideos.has(currentVideo.videoId)) return;
+    if (
+      !currentVideo ||
+      !auth?.user ||
+      completedVideos.has(currentVideo.videoId)
+    ) {
+      return;
+    }
 
+    // Update local state immediately
     setCompletedVideos((prev) => new Set(prev).add(currentVideo.videoId));
 
-    if (onProgressUpdate) {
-      try {
-        await onProgressUpdate(currentVideo.videoId, true);
-      } catch (error) {
-        console.error("Failed to save progress:", {
-          message: error instanceof Error ? error.message : "Unknown error",
-        });
-      }
+    // Save to Firebase
+    try {
+      const token = await auth.user.getIdToken(true); // Force refresh token
+
+      await saveVideoProgress(
+        course.id,
+        currentVideo.videoId,
+        currentVideo.duration || 0, // watched full duration
+        true, // completed
+        token,
+      );
+
+      console.log("✅ Progress saved to Firebase");
+    } catch (error) {
+      console.error("❌ Failed to save progress:", error);
+      // Don't remove from local state even if save fails
+      // User still sees it as complete
     }
-  }, [currentVideo, completedVideos, onProgressUpdate]);
+  }, [currentVideo, completedVideos, auth, course.id]);
 
   const handleMarkComplete = async () => {
     if (!currentVideo) return;
@@ -330,10 +355,10 @@ export default function CoursePlayer({
       {Object.entries(videosBySections).map(([section, videos]) => {
         const isExpanded = expandedSections.has(section);
         const sectionCompleted = videos.filter((v) =>
-          completedVideos.has(v.videoId)
+          completedVideos.has(v.videoId),
         ).length;
         const sectionProgress = Math.round(
-          (sectionCompleted / videos.length) * 100
+          (sectionCompleted / videos.length) * 100,
         );
 
         return (
@@ -428,9 +453,7 @@ export default function CoursePlayer({
                   const isActive = videoIndex === currentVideoIndex;
                   const isCompleted = completedVideos.has(video.videoId);
                   const isLocked =
-                    !video.isFreePreview &&
-                    course.price !== 0 &&
-                    !isEnrolled;
+                    !video.isFreePreview && course.price !== 0 && !isEnrolled;
 
                   return (
                     <button
@@ -457,8 +480,8 @@ export default function CoursePlayer({
                           isCompleted
                             ? "bg-gradient-to-br from-green-500 to-emerald-600 text-white"
                             : isActive
-                            ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white"
-                            : "bg-gray-100 text-gray-600"
+                              ? "bg-gradient-to-br from-blue-600 to-indigo-600 text-white"
+                              : "bg-gray-100 text-gray-600"
                         }`}
                       >
                         {isLocked ? (
@@ -550,9 +573,11 @@ export default function CoursePlayer({
               <h1 className="text-sm lg:text-lg font-semibold truncate">
                 {course.title}
               </h1>
-              <p className="text-xs text-gray-600 truncate hidden sm:block">
-                {course.instructorName || "مدرب غير معروف"} •{" "}
-                {course.level ? translateLevel(course.level) : "جميع المستويات"}
+              <p className="hidden sm:inline-flex mt-1 items-center gap-1.5 px-2 py-1 rounded-full bg-gradient-to-r from-slate-100 to-gray-100 border border-slate-200 text-slate-700 text-xs font-medium max-w-fit">
+                <User className="w-3 h-3 text-slate-500" />
+                <span className="truncate max-w-[220px]">
+                  {course.instructorName || "مدرب غير معروف"}
+                </span>
               </p>
             </div>
           </div>
