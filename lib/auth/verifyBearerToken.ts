@@ -20,6 +20,13 @@ export interface VerifiedAuth {
   userId: string;
   email: string | null;
   isAdmin: boolean;
+  /**
+   * The raw bearer token string. Provided so route handlers can pass it down
+   * to existing server actions (e.g. `addToFavorites`) that take a token.
+   * Re-extracting from the Authorization header in the caller would work too,
+   * but exposing it here keeps that detail in one place.
+   */
+  token: string;
 }
 
 function extractBearer(req: Request): string {
@@ -53,6 +60,7 @@ export async function verifyBearerToken(req: Request): Promise<VerifiedAuth> {
       userId: decoded.uid,
       email: decoded.email ?? null,
       isAdmin: decoded.admin === true,
+      token,
     };
   } catch (err: unknown) {
     const code = (err as { code?: string } | null)?.code;

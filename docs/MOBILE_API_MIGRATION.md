@@ -1,5 +1,20 @@
 # Mobile API Migration Plan
 
+## Status
+
+At-a-glance progress against the steps in section E. Update this list as steps land. The detailed living status board is `docs/MOBILE_PROJECT_STATE.md`.
+
+- **Step 1 — API foundation: SHIPPED** (`9a43fc3`). `verifyBearerToken`, `lib/api/response.ts`, validation skeleton, `lib/R2/presignedUpload.ts`, `lib/mux/playbackToken.ts`, middleware matcher comment, `/api/health/me` smoke route.
+- **Step 2 — 8 read-only endpoints: SHIPPED** (`386d15d`). `GET` for `/api/me`, `/api/wallet`, `/api/wallet/transactions`, `/api/wallet/topup/history`, `/api/me/enrollments`, `/api/me/favorites`, `/api/courses`, `/api/courses/[courseId]`. DRM gate enforced — non-preview videos return `playbackId: null`.
+- **Step 3B — Mux playback-token endpoint: SHIPPED** (`f8acbb5`). `POST /api/mux/playback-token` issues short-lived signed Mux JWTs (RS256) with auth, course-visibility, free-preview bypass, and enrollment gate. End-to-end playback test deferred until 3.5 flips uploads to signed.
+- **Step 3A — flip uploads to signed: DEFERRED to Step 3.5.** Cannot land standalone; would silently break the three existing web Mux player surfaces.
+- **Step 3.5 — `SignedMuxPlayer` + 3-surface migration: DEFERRED.** Scoped in this doc under "Step 3.5 scope". Unblocks production Mux signing for both mobile and web.
+- **Step 4 — profile + favorites writes: IN PROGRESS.** `PATCH /api/me`, `POST /api/me/favorites`, `DELETE /api/me/favorites/[courseId]`. Wraps existing server actions; testing recipes already drafted in `docs/MOBILE_API_TESTING.md`.
+- **Step 5 — top-up flow: NOT STARTED.** `POST /api/wallet/topup/upload-receipt`, `POST /api/wallet/topup/request`. First step that introduces the new `paymentMethod` + `receiptUrl` fields on `topup_requests`.
+- **Step 6 — enrollment purchase: NOT STARTED.** `POST /api/enrollments`, free + paid paths, idempotent against retries.
+
+---
+
 Goal: stand up a parallel, mobile-friendly REST surface under `/api/*` that a future React Native (Expo) **student** app can consume, without touching existing web behavior.
 
 ## Ground rules (apply to every new route)
@@ -360,6 +375,7 @@ These are explicitly out of scope for the API migration. Each is a separate PR a
 3. **Update `/admin-dashboard/topup-approvals` UI** to show `paymentMethod` and a thumbnail/preview of `receiptUrl` (presigned R2 GET).
 4. **iOS screen-capture detection** in the mobile app (v1.1).
 5. **Mux signing key rotation policy** — short doc covering when to rotate `MUX_SIGNING_PRIVATE_KEY`, how to do it without downtime (Mux supports overlapping signing keys), and where the new key/cert lives.
+6. **Remove `/api/health/me`** — the temporary auth-helper smoke endpoint added in Step 1. Delete before production. It echoes the decoded bearer token's `userId`, `email`, and `isAdmin` flag, which is fine for dev but unnecessary surface area in prod.
 
 ---
 

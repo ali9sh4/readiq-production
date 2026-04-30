@@ -15,7 +15,9 @@
       "Bash(vercel link *)",
       "Bash(vercel --prod --yes)",
       "Bash(tee /tmp/vercel-deploy.log)",
-      "Bash(awk '/^## Step 3.5 scope$/,/^## F\\\\./' /home/ali-alhadidi/readiq-production/docs/MOBILE_API_MIGRATION.md)"
+      "Bash(awk '/^## Step 3.5 scope$/,/^## F\\\\./' /home/ali-alhadidi/readiq-production/docs/MOBILE_API_MIGRATION.md)",
+      "Bash(npx tsc *)",
+      "Bash(git *)"
     ],
     "deny": [],
     "ask": []

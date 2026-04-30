@@ -2,6 +2,59 @@
 
 `curl` recipes for hitting the new `/api/*` mobile endpoints.
 
+## How to use this doc
+
+### Test env vars
+
+Test credentials live in `~/readiq-test-env.sh` on the dev machine (not in
+the repo — it contains a real password). Source it once per shell. Example
+shape (substitute your own values):
+
+```bash
+# ~/readiq-test-env.sh
+export FIREBASE_API_KEY="<firebase-web-api-key>"   # same key as firebase/client.ts
+export TEST_EMAIL="<your-test-account@example.com>"
+export TEST_PASSWORD="<your-test-password>"
+export API_BASE="http://localhost:3000"
+```
+
+```bash
+source ~/readiq-test-env.sh
+```
+
+The recipes below use `BASE_URL` and `FIREBASE_WEB_API_KEY`; if your env file
+uses different names (`API_BASE`, `FIREBASE_API_KEY`), either rename in the
+file or alias them in your shell — both styles work.
+
+### Get a fresh Firebase ID token
+
+ID tokens expire after **1 hour**. Standard recipe:
+
+```bash
+ID_TOKEN=$(curl -s -X POST \
+  "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$FIREBASE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"$TEST_EMAIL\",\"password\":\"$TEST_PASSWORD\",\"returnSecureToken\":true}" \
+  | jq -r .idToken)
+
+echo "$ID_TOKEN" | head -c 40; echo "..."
+```
+
+If the test account doesn't exist yet, register it through the web app's
+`/register` page first.
+
+### Recommended testing pattern
+
+Work through endpoints in **small batches of 3–4 curls at a time** rather
+than firing off the whole list. After each batch, paste the output back into
+the conversation, confirm the response shape and status codes match
+expectations, and only then move to the next batch. This catches regressions
+early — a misshaped JSON body or wrong status code is much cheaper to fix
+when only one batch has run than after a full sweep.
+
+For a fresh `npm run dev` session, start with `/api/health/me` (Step 1) to
+prove auth wiring before touching any data routes.
+
 ## Setup
 
 ### 1. Get a Firebase ID token for a test user
@@ -50,16 +103,29 @@ If the test account doesn't exist yet, register it through the web app's
 
 ### 3. First-time Firestore index setup
 
-Two endpoints need composite indexes that the existing web doesn't use. The
+Some endpoints need composite indexes that the existing web doesn't use. The
 first time you hit them on a fresh project you'll see a `500
 INTERNAL_ERROR` and a Firebase index-creation URL in server logs (`npm run
 dev` console). Click each URL once — it autopopulates the right index in the
 Firebase console.
 
-| Endpoint | Index needed |
+**Indexes created during Step 2 testing on the dev project** (per commit
+`386d15d`):
+
+| Endpoint | Index |
 |---|---|
 | `GET /api/wallet/topup/history` | `topup_requests`: `userId ASC, createdAt DESC` |
-| `GET /api/me/enrollments` | `enrollments`: `userId ASC, status ASC, enrolledAt DESC` |
+| `GET /api/courses?level=...` | `courses`: `status ASC, isApproved ASC, level ASC, createdAt DESC` (TODO: confirm exact field order in Firebase Console — this repo doesn't track `firestore.indexes.json`, so the canonical source is the console). The same query also reads `isRejected` and `isDeleted`, which Firestore may fold into the same index automatically. |
+
+**May also be required on a fresh project**:
+
+| Endpoint | Probable index |
+|---|---|
+| `GET /api/me/enrollments` | `enrollments`: `userId ASC, status ASC, enrolledAt DESC` (was not explicitly created during Step 2 testing — either the dev project already had a compatible index, or Firestore satisfied the query from existing single-field indexes). If you see a 500 on a fresh project, follow the auto-create link. |
+
+The category and `category + level` filter combinations on `/api/courses`
+intentionally do **not** have indexes yet — see "Known limitations" in
+`MOBILE_API_MIGRATION.md` section G. Mobile v1 only filters by `level`.
 
 The other paginated endpoints (`/api/wallet/transactions`, `/api/me/favorites`)
 reuse indexes already in use by the web.
@@ -245,25 +311,29 @@ curl -i "$BASE_URL/api/courses/does-not-exist"
 
 `videos[].playbackId` is **only** included when `isFreePreview === true`.
 Everything else has `playbackId: null` — mobile must call
-`POST /api/mux/playback-token` (Step 3) to actually play those videos.
+`POST /api/mux/playback-token` (Step 3B) to actually play those videos.
 
 ---
 
-## Step 3 — Mux signed playback (`POST /api/mux/playback-token`)
+## Step 3B — Mux signed playback (`POST /api/mux/playback-token`)
 
-Returns a short-lived (2-hour) Mux JWT scoped to a single `playbackId`. The
-mobile app must call this every time it starts a video.
+Returns a short-lived Mux JWT scoped to a single `playbackId`. The mobile
+app must call this every time it starts a video.
 
-> **Until Step 3.5 lands, no signed Mux assets exist. The endpoint is
-> structurally correct but cannot be end-to-end tested with a real video —
-> playback ID inputs would correspond to public-policy assets, and Mux
-> refuses to issue signed JWTs for those. End-to-end test happens after 3.5
-> flips uploads to signed.**
-
-You can still verify the routing, auth, validation, enrollment gate, and
-error codes against the recipes below — the endpoint will issue a JWT for
-any `playbackId` it finds; that JWT just won't play against a public-policy
-asset on `stream.mux.com`.
+> ⚠️ **Status: endpoint shipped (commit `f8acbb5`), end-to-end playback
+> blocked until Step 3.5 lands.** Step 3.5 flips `createMuxUpload` to
+> `playback_policy: ["signed"]` and migrates the three web Mux player
+> surfaces (`components/video_uploader.tsx`, `components/CoursePreview.tsx`,
+> `components/ui/CoursePlayer.tsx`) onto a `SignedMuxPlayer` wrapper. Until
+> then, every existing Mux asset is public-policy, and Mux refuses to issue
+> signed JWTs against public-policy assets — so a request that hits this
+> endpoint returns a JWT, but that JWT will not play against
+> `stream.mux.com` for any current course video.
+>
+> You **can** still verify routing, auth, validation, error codes, the
+> course-visibility filter, the free-preview bypass, and the enrollment gate
+> against the recipes below. Only the final "stream the bytes" step in (i)
+> is gated on Step 3.5.
 
 Set a couple of variables for the recipes below:
 
@@ -382,3 +452,130 @@ double-check the asset was uploaded *after* Step 3 (so it's `signed`).
 | `videoId` not in course | 404 | `VIDEO_NOT_FOUND` |
 | Course/video exists but `playbackId` not yet set | 409 | `VIDEO_NOT_READY` |
 | Paid video, user not enrolled | 403 | `NOT_ENROLLED` |
+
+---
+
+## Step 4 — small write endpoints
+
+Three low-risk write routes that wrap existing server actions.
+
+### `PATCH /api/me`
+
+Updates the authenticated user's profile. Only `displayName` and `language`
+are mutable from mobile. At least one field must be provided.
+
+Body shape: `{ displayName?: string (1..100), language?: 'ar' | 'en' }`.
+
+Returns the same shape as `GET /api/me` (post-update).
+
+```bash
+# Happy path → 200 with the updated profile
+curl -i -X PATCH -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"displayName":"Ali","language":"ar"}' \
+  "$BASE_URL/api/me"
+
+# Single-field update is fine
+curl -i -X PATCH -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"language":"en"}' \
+  "$BASE_URL/api/me"
+
+# Auth failure → 401 NO_TOKEN
+curl -i -X PATCH -H "Content-Type: application/json" \
+  -d '{"displayName":"Ali"}' \
+  "$BASE_URL/api/me"
+
+# Validation failure (empty body) → 400 VALIDATION_ERROR
+curl -i -X PATCH -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}' \
+  "$BASE_URL/api/me"
+
+# Validation failure (bad enum) → 400 VALIDATION_ERROR
+curl -i -X PATCH -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"language":"fr"}' \
+  "$BASE_URL/api/me"
+
+# 404 PROFILE_NOT_FOUND → authed user has no users/{uid} doc
+# (same reproduction as GET /api/me)
+```
+
+### `POST /api/me/favorites`
+
+Adds a course to the authenticated user's favorites. Idempotent — re-adding
+returns success. The course must be publicly visible (published, approved,
+not rejected, not soft-deleted) or you get 404 `COURSE_NOT_FOUND`. Wraps the
+existing `addToFavorites` server action.
+
+Body shape: `{ courseId: string (non-empty) }`.
+
+```bash
+export COURSE_ID="<published-course-id>"
+
+# Happy path → 200 { courseId, addedAt }
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_ID\"}" \
+  "$BASE_URL/api/me/favorites"
+
+# Re-add same course → 200 (idempotent, no error)
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_ID\"}" \
+  "$BASE_URL/api/me/favorites"
+
+# Auth failure → 401 NO_TOKEN
+curl -i -X POST -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_ID\"}" \
+  "$BASE_URL/api/me/favorites"
+
+# Validation failure (empty courseId) → 400 VALIDATION_ERROR
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"courseId":""}' \
+  "$BASE_URL/api/me/favorites"
+
+# 404 COURSE_NOT_FOUND → bogus id, draft, unapproved, or soft-deleted course
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"courseId":"does-not-exist"}' \
+  "$BASE_URL/api/me/favorites"
+```
+
+### `DELETE /api/me/favorites/[courseId]`
+
+Removes a course from the authenticated user's favorites. Idempotent — if the
+course isn't in favorites, still returns success with the same shape. Wraps
+the existing `removeFromFavorites` server action. **Does not** check course
+visibility (a course that becomes unpublished must still be removable).
+
+Path param: `courseId` (non-empty).
+
+```bash
+export COURSE_ID="<any-course-id>"
+
+# Happy path → 200 { courseId, removed: true }
+curl -i -X DELETE -H "Authorization: Bearer $ID_TOKEN" \
+  "$BASE_URL/api/me/favorites/$COURSE_ID"
+
+# Repeat call (already removed) → 200 (idempotent, same shape)
+curl -i -X DELETE -H "Authorization: Bearer $ID_TOKEN" \
+  "$BASE_URL/api/me/favorites/$COURSE_ID"
+
+# Auth failure → 401 NO_TOKEN
+curl -i -X DELETE "$BASE_URL/api/me/favorites/$COURSE_ID"
+
+# Validation failure (empty path segment isn't routable, so the closest
+# analogue is sending whitespace which Zod min(1) catches after URL decode):
+curl -i -X DELETE -H "Authorization: Bearer $ID_TOKEN" \
+  "$BASE_URL/api/me/favorites/%20"
+# → 400 VALIDATION_ERROR if the route param fails min(1) after decoding,
+# otherwise treated as a non-existent favorite and returns 200 (idempotent).
+```
+
+Note: there is no 404 case — DELETE on a non-favorited course is success, by
+design. If the underlying Firestore delete throws, you'll see 500
+`INTERNAL_ERROR` and the cause is logged server-side under
+`[api/me/favorites DELETE] removeFromFavorites failed`.

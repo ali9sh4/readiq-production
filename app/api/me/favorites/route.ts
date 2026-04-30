@@ -1,8 +1,11 @@
 import { NextRequest } from "next/server";
 import { db } from "@/firebase/service";
 import { verifyBearerToken } from "@/lib/auth/verifyBearerToken";
-import { handleApiError, ok } from "@/lib/api/response";
+import { fail, handleApiError, ok } from "@/lib/api/response";
 import { paginationQuery } from "@/lib/validation/api/pagination";
+import { addFavoriteBody } from "@/lib/validation/api/favorites";
+import { isCoursePubliclyVisible } from "@/lib/courses/visibility";
+import { addToFavorites } from "@/app/actions/favorites_actions";
 
 export async function GET(req: NextRequest) {
   try {
@@ -69,6 +72,39 @@ export async function GET(req: NextRequest) {
       hasMore && favDocs.length > 0 ? favDocs[favDocs.length - 1].id : null;
 
     return ok({ items, nextCursor, hasMore });
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const auth = await verifyBearerToken(req);
+    const body = addFavoriteBody.parse(await req.json());
+
+    // Visibility gate before write so a hidden / soft-deleted / unapproved
+    // course can't be silently favorited.
+    const courseSnap = await db
+      .collection("courses")
+      .doc(body.courseId)
+      .get();
+    if (!courseSnap.exists || !isCoursePubliclyVisible(courseSnap.data()!)) {
+      return fail("COURSE_NOT_FOUND", "Course not found", 404);
+    }
+
+    const result = await addToFavorites(auth.token, body.courseId);
+    if (!result.success) {
+      console.error(
+        "[api/me/favorites POST] addToFavorites failed:",
+        result
+      );
+      throw new Error(result.error ?? "Failed to add favorite");
+    }
+
+    return ok({
+      courseId: body.courseId,
+      addedAt: new Date().toISOString(),
+    });
   } catch (err) {
     return handleApiError(err);
   }
