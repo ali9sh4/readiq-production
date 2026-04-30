@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { db } from "@/firebase/service";
 import { fail, handleApiError, ok } from "@/lib/api/response";
+import { isCoursePubliclyVisible } from "@/lib/courses/visibility";
 
 // PUBLIC: no Authorization required.
 export async function GET(
@@ -17,14 +18,7 @@ export async function GET(
 
     const c = snap.data()!;
 
-    // Same visibility rules the public catalog uses.
-    const isPublicVisible =
-      c.status === "published" &&
-      c.isApproved === true &&
-      c.isRejected !== true &&
-      c.isDeleted !== true;
-
-    if (!isPublicVisible) {
+    if (!isCoursePubliclyVisible(c)) {
       return fail("COURSE_NOT_FOUND", "Course not found", 404);
     }
 

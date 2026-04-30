@@ -200,9 +200,9 @@ Smallest, lowest-risk first. Each step is independently shippable.
    - `GET /api/wallet/topup/history`
    - These are read-only and the failure mode is "wrong data shown to one user" — easy to roll back.
 
-3. **Mux signed playback (uploads + token endpoint).** Two changes shipped together:
-   - **Flip new uploads to signed-only.** One-line change in `createMuxUpload` (`upload_video_actions.ts`): `playback_policy: ["signed"]`. No other instructor-flow changes. The existing web player still uses public playback IDs from older test uploads — that's fine, they're throwaway.
-   - **Build `POST /api/mux/playback-token`.** Real Mux JWT signing (RS256) using `MUX_SIGNING_KEY_ID` / `MUX_SIGNING_PRIVATE_KEY`. Add those env vars to the project before this step lands. Verify the enrollment gate against a known-enrolled and known-not-enrolled user, and verify the signed token actually plays the video while an unsigned/expired token does not.
+3. **Mux signed playback** — split into 3B and 3.5 after the web-side audit.
+   - **Step 3B (DONE).** `POST /api/mux/playback-token` endpoint with auth, course-visibility check, video lookup, free-preview bypass, enrollment gate (`enrollments/{uid}_{courseId}` with `status === "completed"`), and (future) owner gating. Real Mux JWT signing (RS256) using `MUX_SIGNING_KEY_ID` / `MUX_SIGNING_PRIVATE_KEY`. Endpoint is dormant on web until 3.5 ships and becomes mobile-ready when needed.
+   - **Step 3.5 (DEFERRED).** Flip `createMuxUpload` to `playback_policy: ["signed"]` AND migrate the three web player surfaces that currently consume raw `playbackId` (`components/video_uploader.tsx`, `components/CoursePreview.tsx`, `components/ui/CoursePlayer.tsx`). The flip cannot land standalone — every new instructor upload would silently break those three surfaces. Scope below in **Step 3.5 scope**.
 
 4. **Profile and favorites writes.**
    - `PATCH /api/me`
@@ -218,6 +218,72 @@ Smallest, lowest-risk first. Each step is independently shippable.
 6. **Enrollment purchase.**
    - `POST /api/enrollments`
    - Most complex: Firestore transaction, wallet deduction, instructor credit, idempotency. Port logic directly from `purchaseCourseWithWallet`. Test free path (`price === 0`) and paid path separately.
+
+---
+
+## Step 3.5 scope
+
+Recommended approach from the web-side audit, verbatim.
+
+Three things that make this clean:
+
+1. Ownership is already a single field check (createdBy === uid) — no co-instructor matrix to design.
+2. The signed-playback API already exists (/api/mux/playback-token); it just needs an instructor branch added.
+3. /course/[courseId]/page.tsx already routes the owner to CoursePlayer (line 199, if (isInstructor)), so the natural surface for instructor preview is the existing viewer — not a new instructor-only player.
+
+### 1. Server owner branch
+
+Step 1 — server: extend the playback-token endpoint to authorize the owner.
+In app/api/mux/playback-token/route.ts, add an owner branch alongside the free-preview / enrollment checks:
+
+```ts
+const isOwner = course.createdBy === auth.userId;
+const isAdmin = auth.isAdmin === true; // verifyBearerToken would need to surface this
+if (!isFreePreview && !isOwner && !isAdmin) {
+  // existing enrollment check
+}
+```
+
+This keeps a single token-issuance code path; mobile and web both consume it.
+
+### 2. `useMuxPlaybackToken` hook
+
+Step 2 — client: add a tiny useMuxPlaybackToken(courseId, videoId) hook.
+Calls auth.user.getIdToken(), POSTs to /api/mux/playback-token with Authorization: Bearer ..., returns { token, expiresAt } plus a refresh-on-expiry effect (the API already returns expiresAt). One hook covers all three player sites.
+
+### 3. `SignedMuxPlayer` wrapper
+
+Step 3 — wrap MuxPlayer once.
+Create components/SignedMuxPlayer.tsx that takes { courseId, videoId, playbackId, ...muxProps }, calls the hook, and renders:
+
+```tsx
+<MuxPlayer playbackId={playbackId} playbackToken={token} ... />
+```
+
+Replace the three direct <MuxPlayer /> call sites (video_uploader.tsx:857, CoursePreview.tsx:326, CoursePlayer.tsx:644) with this wrapper. Same component, three behaviors driven by the API:
+
+- Instructor upload card → owner branch issues a token.
+- /course/[courseId] for unenrolled visitor → free-preview branch issues a token.
+- /course/[courseId] for enrolled / owner / admin → enrollment / owner / admin branch issues a token.
+
+### 4. Thumbnail token endpoint
+
+Step 4 — thumbnails.
+Replace the raw https://image.mux.com/${playbackId}/thumbnail.jpg URLs with a similar API call (or extend the existing endpoint to also return a thumbnail token, aud: "t"). The instructor card thumbnail in video_uploader.tsx:741 is the most visible failure point.
+
+### 5. Legacy public-asset coexistence
+
+Step 5 — handle the legacy public-asset mix.
+Since older assets stay public, the API can return token: null for assets where the playback policy is public — SignedMuxPlayer then omits playbackToken. Easiest path: store the policy on the video doc at upload time and key off it.
+
+### What to avoid
+
+- A separate "instructor preview" route or component. The owner already lands in CoursePlayer via isInstructor — duplicating that for upload-time preview is the wrong axis to split on. Solve token issuance once, reuse the player everywhere.
+- Building this around instructorName. The display-name field is denormalized; ownership is createdBy. Use the uid.
+
+### Single-field ownership reference
+
+The audit confirmed: course doc field is createdBy (Firebase uid, set on course creation in app/course-upload/action.ts at lines 72 and 129). No co-instructors. No alternate ownership fields. Global admin override via verifiedToken.admin === true.
 
 ---
 

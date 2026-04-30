@@ -246,3 +246,139 @@ curl -i "$BASE_URL/api/courses/does-not-exist"
 `videos[].playbackId` is **only** included when `isFreePreview === true`.
 Everything else has `playbackId: null` — mobile must call
 `POST /api/mux/playback-token` (Step 3) to actually play those videos.
+
+---
+
+## Step 3 — Mux signed playback (`POST /api/mux/playback-token`)
+
+Returns a short-lived (2-hour) Mux JWT scoped to a single `playbackId`. The
+mobile app must call this every time it starts a video.
+
+> **Until Step 3.5 lands, no signed Mux assets exist. The endpoint is
+> structurally correct but cannot be end-to-end tested with a real video —
+> playback ID inputs would correspond to public-policy assets, and Mux
+> refuses to issue signed JWTs for those. End-to-end test happens after 3.5
+> flips uploads to signed.**
+
+You can still verify the routing, auth, validation, enrollment gate, and
+error codes against the recipes below — the endpoint will issue a JWT for
+any `playbackId` it finds; that JWT just won't play against a public-policy
+asset on `stream.mux.com`.
+
+Set a couple of variables for the recipes below:
+
+```bash
+export COURSE_ID="<published-course-id>"
+export VIDEO_ID="video_1"   # the videoId field on course.videos[], not the Mux asset id
+```
+
+### a) Happy path — enrolled user, paid video → 200
+
+```bash
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_ID\",\"videoId\":\"$VIDEO_ID\"}" \
+  "$BASE_URL/api/mux/playback-token"
+# {"success":true,"data":{"playbackId":"...","token":"<jwt>","expiresAt":"..."}}
+```
+
+Capture the response into shell variables for the playback test below:
+
+```bash
+RESP=$(curl -s -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_ID\",\"videoId\":\"$VIDEO_ID\"}" \
+  "$BASE_URL/api/mux/playback-token")
+
+PLAYBACK_ID=$(echo "$RESP" | jq -r .data.playbackId)
+TOKEN=$(echo "$RESP" | jq -r .data.token)
+```
+
+### b) Free preview — any authed user, regardless of enrollment → 200
+
+```bash
+# Same request as (a) but with a videoId whose isFreePreview === true.
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_ID\",\"videoId\":\"<free-preview-video-id>\"}" \
+  "$BASE_URL/api/mux/playback-token"
+```
+
+### c) Not enrolled, paid video → 403 `NOT_ENROLLED`
+
+```bash
+# Sign in as a user who has not enrolled in $COURSE_ID, then:
+curl -i -X POST -H "Authorization: Bearer $OTHER_USER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_ID\",\"videoId\":\"$VIDEO_ID\"}" \
+  "$BASE_URL/api/mux/playback-token"
+# {"success":false,"error":{"code":"NOT_ENROLLED", ...}}  HTTP 403
+```
+
+### d) Course not found / not visible → 404 `COURSE_NOT_FOUND`
+
+```bash
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"does-not-exist\",\"videoId\":\"$VIDEO_ID\"}" \
+  "$BASE_URL/api/mux/playback-token"
+# 404 COURSE_NOT_FOUND. Same response if the course is draft/unapproved/deleted.
+```
+
+### e) Video not in course → 404 `VIDEO_NOT_FOUND`
+
+```bash
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_ID\",\"videoId\":\"video_999\"}" \
+  "$BASE_URL/api/mux/playback-token"
+```
+
+### f) Upload still processing → 409 `VIDEO_NOT_READY`
+
+Reproducible by hitting the endpoint between `createMuxUpload` and the moment
+`saveCourseVideoToFireStore` writes back the `playbackId`. Rare in practice.
+
+### g) No auth → 401 `NO_TOKEN`
+
+```bash
+curl -i -X POST -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_ID\",\"videoId\":\"$VIDEO_ID\"}" \
+  "$BASE_URL/api/mux/playback-token"
+```
+
+### h) Validation failure → 400 `VALIDATION_ERROR`
+
+```bash
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"\",\"videoId\":\"\"}" \
+  "$BASE_URL/api/mux/playback-token"
+```
+
+### i) Use the token to actually play the video
+
+The token goes on the Mux playback URL as `?token=<jwt>`. HEAD the HLS
+playlist to confirm Mux accepts the signature:
+
+```bash
+curl -I "https://stream.mux.com/${PLAYBACK_ID}.m3u8?token=${TOKEN}"
+# HTTP/2 200  → token accepted.
+# HTTP/2 403  → signed-policy asset rejecting an unsigned/invalid/expired token.
+```
+
+A `200` response means the player can stream it. A `403` here means either
+the token is expired/wrong-key, or the asset's playback policy is wrong —
+double-check the asset was uploaded *after* Step 3 (so it's `signed`).
+
+### Quick failure-mode reference
+
+| Case | Status | `error.code` |
+|---|---|---|
+| No `Authorization` header | 401 | `NO_TOKEN` |
+| Bad/expired/revoked bearer | 401 | `INVALID_TOKEN` / `EXPIRED_TOKEN` / `REVOKED_TOKEN` |
+| Body missing fields | 400 | `VALIDATION_ERROR` |
+| Course id doesn't exist or isn't publicly visible | 404 | `COURSE_NOT_FOUND` |
+| `videoId` not in course | 404 | `VIDEO_NOT_FOUND` |
+| Course/video exists but `playbackId` not yet set | 409 | `VIDEO_NOT_READY` |
+| Paid video, user not enrolled | 403 | `NOT_ENROLLED` |
