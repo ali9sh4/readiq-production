@@ -750,3 +750,206 @@ curl -I "$RECEIPT_URL"
 | Already have a `pending` request | 400 | `VALIDATION_ERROR` |
 | `usedToday + amount > wallet.dailyLimit` | 400 | `DAILY_LIMIT_EXCEEDED` |
 | Wallet auto-provision failed (rare) | 404 | `WALLET_NOT_FOUND` |
+
+---
+
+## Step 6 — enroll in a course (`POST /api/enrollments`)
+
+The money-moving endpoint. Thin wrapper around the existing
+`purchaseCourseWithWallet` (paid) and `enrollInFreeCourse` (free) server
+actions — the atomic Firestore transaction in those actions is the source
+of truth for both web and mobile and is **not** re-implemented here.
+
+The route does pre-flight checks (course exists & visible, not already
+enrolled, wallet exists, balance sufficient) for clean error codes, then
+delegates. The underlying transaction re-validates inside Firestore so the
+small race window between pre-check and commit is still safe — we just map
+the resulting Arabic error string back to a stable error code.
+
+### Body
+
+```json
+{ "courseId": "<courseId>" }
+```
+
+### Success response
+
+```json
+{
+  "success": true,
+  "data": {
+    "enrollmentId": "<userId>_<courseId>",
+    "courseId": "<courseId>",
+    "status": "completed",
+    "enrolledAt": "2026-05-01T12:34:56.000Z",
+    "walletBalance": 47000,
+    "transactionId": "enroll_<userId>_<courseId>_<timestamp>"
+  }
+}
+```
+
+`transactionId` is `null` for free courses (no wallet_transactions row is
+written for free enrollments). For paid courses it equals the
+`protectionKey` written to both the enrollment doc (`transactionId` field)
+and the buyer's `wallet_transactions` row (`protectionKey` field).
+
+### Failure mode reference
+
+| Case | Status | `error.code` | Notes |
+|---|---|---|---|
+| No `Authorization` header | 401 | `NO_TOKEN` | |
+| Bad/expired/revoked bearer | 401 | `INVALID_TOKEN` / `EXPIRED_TOKEN` / `REVOKED_TOKEN` | |
+| Body missing/invalid `courseId` | 400 | `VALIDATION_ERROR` | `error.fields[]` carries the path |
+| Course id doesn't exist or isn't publicly visible | 404 | `COURSE_NOT_FOUND` | Same response for draft/unapproved/rejected/soft-deleted |
+| User already enrolled (status=`completed`) | 409 | `ALREADY_ENROLLED` | `details` carries the existing `{ enrollmentId, courseId, status, enrolledAt, transactionId }` so mobile can navigate to player without re-purchase |
+| Paid course, balance < price | 402 | `INSUFFICIENT_BALANCE` | `details: { currentBalance, requiredPrice, shortfall }` |
+| User has no wallet doc (very rare) | 404 | `WALLET_NOT_FOUND` | Auto-provision happens on first `GET /api/wallet`; this only fires if the user never hit that endpoint |
+| Buying your own course | 403 | `CANNOT_BUY_OWN_COURSE` | From the underlying transaction's instructor === buyer guard |
+| Protection-key collision (effectively impossible) | 409 | `IDEMPOTENCY_CONFLICT` | Defensive — tells mobile to refetch `/api/me/enrollments` and only retry if missing |
+
+### Recipes
+
+```bash
+export COURSE_FREE_ID="<published-free-course-id>"
+export COURSE_PAID_ID="<published-paid-course-id>"
+```
+
+#### a) Free course → 200
+
+```bash
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_FREE_ID\"}" \
+  "$BASE_URL/api/enrollments"
+# {"success":true,"data":{"enrollmentId":"...", "transactionId":null, ...}}
+```
+
+#### b) Paid course, sufficient balance → 200
+
+Top up first via Step 5 if your test wallet is empty (or hand-set
+`wallets/{uid}.balance` in Firestore for a quick test).
+
+```bash
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_PAID_ID\"}" \
+  "$BASE_URL/api/enrollments"
+# {"success":true,"data":{"enrollmentId":"...", "walletBalance":<new>, "transactionId":"enroll_..."}}
+```
+
+Verify the side-effects (admin lens):
+
+```bash
+# Enrollment doc
+# → Firestore console: enrollments/<userId>_<courseId> with status=completed
+# Wallet debit
+# → wallets/<userId>.balance decreased by the effective price
+# Audit row
+# → wallet_transactions where userId=<userId> AND protectionKey=enroll_...
+# Instructor credit
+# → wallets/<course.createdBy>.balance increased by the same amount,
+#   wallet_transactions row with type=earning for the instructor
+# Course counter
+# → courses/<courseId>.enrollmentCount += 1
+```
+
+#### c) Paid course, insufficient balance → 402
+
+Reproduce by topping up less than the course price (or attempting any
+paid course on a fresh wallet with `balance: 0`).
+
+```bash
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_PAID_ID\"}" \
+  "$BASE_URL/api/enrollments"
+# HTTP/1.1 402
+# {"success":false,"error":{"code":"INSUFFICIENT_BALANCE",
+#  "details":{"currentBalance":0,"requiredPrice":50000,"shortfall":50000}}}
+```
+
+#### d) Already enrolled → 409
+
+Re-run any successful (a) or (b) to trigger.
+
+```bash
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_PAID_ID\"}" \
+  "$BASE_URL/api/enrollments"
+# HTTP/1.1 409
+# {"success":false,"error":{"code":"ALREADY_ENROLLED",
+#  "details":{"enrollmentId":"...","courseId":"...","status":"completed",
+#             "enrolledAt":"...","transactionId":"enroll_..."}}}
+```
+
+Mobile reads `details.enrollmentId` and routes the user straight to the
+course player — no error toast needed.
+
+#### e) Course not found / not visible → 404
+
+```bash
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"courseId":"does-not-exist"}' \
+  "$BASE_URL/api/enrollments"
+# {"success":false,"error":{"code":"COURSE_NOT_FOUND", ...}}
+
+# Same response for a draft/unapproved/rejected/soft-deleted course id.
+```
+
+#### f) Validation failure → 400
+
+```bash
+# Empty courseId
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"courseId":""}' \
+  "$BASE_URL/api/enrollments"
+
+# Missing field
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{}' \
+  "$BASE_URL/api/enrollments"
+```
+
+Both → 400 `VALIDATION_ERROR` with `error.fields[0].path === "courseId"`.
+
+#### g) No auth → 401
+
+```bash
+curl -i -X POST -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_PAID_ID\"}" \
+  "$BASE_URL/api/enrollments"
+# {"success":false,"error":{"code":"NO_TOKEN", ...}}
+```
+
+#### h) Trying to buy your own course → 403 (defensive)
+
+Sign in as the user listed as `course.createdBy` for `$COURSE_PAID_ID`,
+then run (b). Returns 403 `CANNOT_BUY_OWN_COURSE`.
+
+### What the transaction touches (for verifying side-effects)
+
+The underlying `purchaseCourseWithWallet` writes are **unchanged** by this
+route. For a paid enrollment, one atomic transaction commits all of:
+
+1. `wallets/{buyerId}` — `balance -= price`, `totalSpent += price`,
+   `updatedAt`.
+2. `wallets/{instructorId}` — created if missing; `balance += price`,
+   `totalEarnings += price`.
+3. `wallet_transactions` (buyer row) — `type=purchase`, `amount=-price`,
+   carries the `protectionKey` for idempotency.
+4. `wallet_transactions` (instructor row) — `type=earning`, `amount=+price`.
+5. `enrollments/{userId}_{courseId}` — `status=completed`,
+   `paymentMethod=wallet`, `enrollmentType=paid`, `transactionId=<protectionKey>`.
+6. `courses/{courseId}` — `enrollmentCount += 1`.
+
+For a free enrollment (`enrollInFreeCourse` server action, batch write):
+
+1. `enrollments/{userId}_{courseId}` — `enrollmentType=free`,
+   `status=completed`. **No** `transactionId` field.
+2. `courses/{courseId}` — `enrollmentCount += 1`.
+
+Free enrollments do **not** write `wallet_transactions` rows.
