@@ -46,8 +46,8 @@ export default function PaymentSelector({
       ),
       color: "bg-purple-700",
       disabled: false,
-      badge: "قريباً",
-      badgeColor: "bg-yellow-500 text-gray-900",
+      badge: "متاح الآن",
+      badgeColor: "bg-green-600 text-white",
     },
     {
       id: "areeba" as PaymentMethod,
@@ -158,17 +158,17 @@ export default function PaymentSelector({
       </div>
       {/* Info notices */}
       <div className="space-y-2">
-        {/* Wallet info */}
+        {/* Wallet & ZainCash info */}
         <div className="bg-green-100 border-2 border-green-500 rounded-lg p-2 sm:p-3">
           <p className="text-xs sm:text-sm text-green-900 font-bold text-center">
-            ✅ الدفع عبر المحفظة متاح الآن - رصيد آمن وسريع
+            ✅ الدفع عبر المحفظة و ZainCash متاح الآن - آمن وسريع
           </p>
         </div>
 
-        {/* Coming soon for other methods */}
+        {/* Coming soon for bank cards */}
         <div className="bg-yellow-100 border-2 border-yellow-500 rounded-lg p-2 sm:p-3">
           <p className="text-xs sm:text-sm text-yellow-900 font-semibold text-center">
-            ⏳ طرق الدفع الأخرى ( والبطاقات البنكية) قيد التفعيل
+            ⏳ البطاقات البنكية قيد التفعيل
           </p>
         </div>
       </div>
