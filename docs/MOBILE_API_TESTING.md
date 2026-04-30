@@ -579,3 +579,174 @@ Note: there is no 404 case — DELETE on a non-favorited course is success, by
 design. If the underlying Firestore delete throws, you'll see 500
 `INTERNAL_ERROR` and the cause is logged server-side under
 `[api/me/favorites DELETE] removeFromFavorites failed`.
+
+---
+
+## Step 5 — wallet topup with manual receipt upload
+
+Two new endpoints make up the mobile topup flow. The web flow
+(`createTopupRequest` server action) is **untouched** and continues to work.
+
+Both endpoints are mobile-only — they layer additive fields onto the existing
+`topup_requests` collection. Old web-created docs predate `paymentMethod`,
+`receiptKey`, `receiptUrl`, `receiptContentType`, and `note`; the history
+route already surfaces those as `null` for backwards compatibility.
+
+End-to-end flow:
+
+1. Client picks a file, calls `POST /api/wallet/topup/upload-receipt` with
+   the file's contentType and size → gets a presigned PUT URL + an R2 key.
+2. Client `PUT`s the file body directly to the presigned URL.
+3. Client calls `POST /api/wallet/topup/request` with the R2 key + amount
+   + paymentMethod + senderName → server verifies the upload, enforces
+   daily limit, writes the topup_requests doc, returns the request id.
+4. Admin sees it in the existing topup-approvals page (UI update for the new
+   fields is a Step 5 follow-up — see `MOBILE_API_MIGRATION.md` section H).
+   Clients can poll `GET /api/wallet/topup/history` to see status.
+
+### Bounds and rules
+
+| Field | Rule |
+|---|---|
+| `contentType` | one of `image/jpeg`, `image/png`, `image/webp`, `application/pdf` |
+| `sizeBytes` | integer in `[1, 5_000_000]` |
+| `amount` | integer IQD in `[1_000, 1_000_000]` |
+| `paymentMethod` | one of `bank_transfer`, `personal_wallet`, `fastpay`, `other` |
+| `senderName` | 1..100 chars |
+| `note` | optional, ≤ 500 chars |
+| receipt key ownership | the `receiptKey` body field MUST start with `topup-receipts/{userId}/` — server rejects mismatches |
+| daily-limit window | UTC calendar day; sum of `pending` + `approved` `amount` for the user since today's UTC midnight |
+| pending policy | only one `pending` request per user at a time (mirrors web) |
+
+### `POST /api/wallet/topup/upload-receipt`
+
+Returns a 10-minute presigned PUT URL and the R2 key the client must pass
+back to `/topup/request`.
+
+```bash
+# Happy path → 200 { uploadUrl, key, expiresAt }
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"contentType":"image/jpeg","sizeBytes":204800}' \
+  "$BASE_URL/api/wallet/topup/upload-receipt"
+
+# Auth failure → 401 NO_TOKEN
+curl -i -X POST -H "Content-Type: application/json" \
+  -d '{"contentType":"image/jpeg","sizeBytes":204800}' \
+  "$BASE_URL/api/wallet/topup/upload-receipt"
+
+# Validation: bad contentType → 400 VALIDATION_ERROR
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"contentType":"image/gif","sizeBytes":1000}' \
+  "$BASE_URL/api/wallet/topup/upload-receipt"
+
+# Validation: oversized sizeBytes → 400 VALIDATION_ERROR
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"contentType":"image/jpeg","sizeBytes":9999999}' \
+  "$BASE_URL/api/wallet/topup/upload-receipt"
+```
+
+### `POST /api/wallet/topup/request`
+
+Creates a pending topup request after the receipt has been PUT to R2.
+
+```bash
+# Happy path → 200 { topupRequestId, status:"pending", expiresAt }
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"amount\":50000,\"paymentMethod\":\"bank_transfer\",\"receiptKey\":\"$RECEIPT_KEY\",\"senderName\":\"Ali\",\"note\":\"branch deposit\"}" \
+  "$BASE_URL/api/wallet/topup/request"
+
+# Auth failure → 401 NO_TOKEN
+curl -i -X POST -H "Content-Type: application/json" \
+  -d "{\"amount\":50000,\"paymentMethod\":\"bank_transfer\",\"receiptKey\":\"$RECEIPT_KEY\",\"senderName\":\"Ali\"}" \
+  "$BASE_URL/api/wallet/topup/request"
+
+# Validation: amount below 1000 → 400 VALIDATION_ERROR
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"amount\":500,\"paymentMethod\":\"bank_transfer\",\"receiptKey\":\"$RECEIPT_KEY\",\"senderName\":\"Ali\"}" \
+  "$BASE_URL/api/wallet/topup/request"
+
+# Validation: foreign receiptKey (not under topup-receipts/{your-uid}/)
+# → 400 VALIDATION_ERROR ("receiptKey does not belong to this user")
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"amount":50000,"paymentMethod":"bank_transfer","receiptKey":"topup-receipts/some-other-uid/123_abc.jpg","senderName":"Ali"}' \
+  "$BASE_URL/api/wallet/topup/request"
+
+# RECEIPT_NOT_UPLOADED → key looks valid but the object isn't in R2
+# (skipped the PUT step or used a stale key after expiry)
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"amount\":50000,\"paymentMethod\":\"bank_transfer\",\"receiptKey\":\"topup-receipts/$YOUR_UID/0_deadbeef.jpg\",\"senderName\":\"Ali\"}" \
+  "$BASE_URL/api/wallet/topup/request"
+
+# DAILY_LIMIT_EXCEEDED → sum of today's approved+pending + amount > wallet.dailyLimit
+# (default dailyLimit is 5,000,000 IQD; reproduce by topping up close to the
+# cap or by lowering dailyLimit on your test wallet doc)
+```
+
+### End-to-end recipe (upload → PUT → request → history)
+
+```bash
+# 1. Get a presigned PUT URL
+UPLOAD_RESP=$(curl -s -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"contentType":"image/jpeg","sizeBytes":'"$(stat -c%s ./receipt.jpg)"'}' \
+  "$BASE_URL/api/wallet/topup/upload-receipt")
+
+UPLOAD_URL=$(echo "$UPLOAD_RESP" | jq -r .data.uploadUrl)
+RECEIPT_KEY=$(echo "$UPLOAD_RESP" | jq -r .data.key)
+echo "key: $RECEIPT_KEY"
+
+# 2. PUT the file body directly to R2. Content-Type MUST match what you sent
+# in step 1 — the presigned URL was signed against that header.
+curl -i -X PUT \
+  -H "Content-Type: image/jpeg" \
+  --upload-file ./receipt.jpg \
+  "$UPLOAD_URL"
+# Expect HTTP/1.1 200. A 403 means the Content-Type header doesn't match
+# what was signed; a 400 means the URL has expired (10 min TTL).
+
+# 3. File the topup request
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"amount\":50000,\"paymentMethod\":\"bank_transfer\",\"receiptKey\":\"$RECEIPT_KEY\",\"senderName\":\"Ali\",\"note\":\"test\"}" \
+  "$BASE_URL/api/wallet/topup/request"
+
+# 4. Confirm it shows up in history with paymentMethod + receiptUrl populated
+curl -s -H "Authorization: Bearer $ID_TOKEN" \
+  "$BASE_URL/api/wallet/topup/history" | jq '.data.items[0]'
+# Expect:
+# {
+#   "id": "...",
+#   "amount": 50000,
+#   "status": "pending",
+#   "paymentMethod": "bank_transfer",
+#   "receiptUrl": "https://<bucket>.r2.cloudflarestorage.com/topup-receipts/...",
+#   "senderName": "Ali",
+#   ...
+# }
+
+# 5. (Optional) The receiptUrl is a 24h signed GET. Sanity-check it:
+RECEIPT_URL=$(curl -s -H "Authorization: Bearer $ID_TOKEN" \
+  "$BASE_URL/api/wallet/topup/history" | jq -r '.data.items[0].receiptUrl')
+curl -I "$RECEIPT_URL"
+# HTTP/2 200 → admin UI can render the image/PDF directly.
+```
+
+### Quick failure-mode reference
+
+| Case | Status | `error.code` |
+|---|---|---|
+| No `Authorization` header | 401 | `NO_TOKEN` |
+| Bad/expired/revoked bearer | 401 | `INVALID_TOKEN` / `EXPIRED_TOKEN` / `REVOKED_TOKEN` |
+| Body missing/invalid fields | 400 | `VALIDATION_ERROR` |
+| `receiptKey` not under `topup-receipts/{userId}/` | 400 | `VALIDATION_ERROR` |
+| `receiptKey` looks valid but R2 has no such object | 400 | `RECEIPT_NOT_UPLOADED` |
+| Already have a `pending` request | 400 | `VALIDATION_ERROR` |
+| `usedToday + amount > wallet.dailyLimit` | 400 | `DAILY_LIMIT_EXCEEDED` |
+| Wallet auto-provision failed (rare) | 404 | `WALLET_NOT_FOUND` |
