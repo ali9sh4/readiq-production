@@ -79,9 +79,18 @@ export async function middleware(request: NextRequest) {
   }
 }
 
+// IMPORTANT: /api/* is intentionally NOT in this matcher.
+//
+// Mobile API routes use bearer-token auth via `Authorization: Bearer <id token>`,
+// verified in each handler with `lib/auth/verifyBearerToken.ts`. They must NOT
+// hit the cookie-based redirect logic above — mobile clients don't send cookies.
+//
+// Existing API routes (`/api/refresh-token`, `/api/payments/zainCash/*`) also
+// rely on bypassing middleware. Adding `/api/:path*` here will break both the
+// future mobile app and the existing payment flow. Don't do it.
 export const config = {
   matcher: [
-    "/admin-dashboard/:path*", 
+    "/admin-dashboard/:path*",
     "/login",
     "/register",
     "/forget-password",
