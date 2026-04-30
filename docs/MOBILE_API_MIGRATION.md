@@ -248,7 +248,44 @@ All 401s **must** be JSON responses, not redirects. Verify by passing `--max-red
 
 ---
 
-## G. Post-mobile follow-ups
+## G. Known limitations
+
+Things that work today but have a documented edge worth knowing about.
+
+### Course catalog filters (`GET /api/courses`)
+
+`level` filtering works. `category` filtering and combined `category + level`
+filtering both **return 500** on a clean Firebase project because they need
+composite indexes that aren't yet created. Mobile v1 only filters by `level`,
+so we're deferring the index work until a screen actually needs it.
+
+| Query | Composite index needed |
+|---|---|
+| `?category=...` | `courses`: `status ASC, isApproved ASC, category ASC, createdAt DESC` |
+| `?category=...&level=...` | `courses`: `status ASC, isApproved ASC, category ASC, level ASC, createdAt DESC` |
+
+(`isRejected ASC` and `isDeleted ASC` may also need to be in the index
+depending on how Firestore plans the query — Firebase will print the exact
+required shape in the error URL when you hit it.)
+
+When mobile UI starts using these filters, hit the endpoint once, click the
+auto-create URL Firebase prints in the dev logs, done.
+
+### Search
+
+Searching courses or instructors by **name** is **not** in the API surface.
+Firestore can't do free-text search efficiently; doing it via prefix-matching
+on `title`/`instructorName` would mislead users into thinking it's a real
+search.
+
+A dedicated search service (likely Algolia, which integrates cleanly with
+Firestore via the official extension) is the right answer. **Deferred to a
+post-mobile-v1 task** — mobile v1 ships with category/level filters only,
+no search bar.
+
+---
+
+## H. Post-mobile follow-ups
 
 These are explicitly out of scope for the API migration. Each is a separate PR after the mobile app is live.
 
