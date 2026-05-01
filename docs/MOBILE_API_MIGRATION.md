@@ -7,6 +7,7 @@ At-a-glance progress against the steps in section E. Update this list as steps l
 - **Step 1 — API foundation: SHIPPED** (`9a43fc3`). `verifyBearerToken`, `lib/api/response.ts`, validation skeleton, `lib/R2/presignedUpload.ts`, `lib/mux/playbackToken.ts`, middleware matcher comment, `/api/health/me` smoke route.
 - **Step 2 — 8 read-only endpoints: SHIPPED** (`386d15d`). `GET` for `/api/me`, `/api/wallet`, `/api/wallet/transactions`, `/api/wallet/topup/history`, `/api/me/enrollments`, `/api/me/favorites`, `/api/courses`, `/api/courses/[courseId]`. DRM gate enforced — non-preview videos return `playbackId: null`.
 - **Step 3B — Mux playback-token endpoint: SHIPPED** (`f8acbb5`). `POST /api/mux/playback-token` issues short-lived signed Mux JWTs (RS256) with auth, course-visibility, free-preview bypass, and enrollment gate. End-to-end playback test deferred until 3.5 flips uploads to signed.
+- **Step 3.5-prep — owner + admin branches on `/api/mux/playback-token`: SHIPPED** (Path D from the audit). The route now has owner (`course.createdBy === auth.userId`) and admin (`auth.isAdmin === true`) branches; both bypass the visibility gate and the enrollment check. The route is now structurally complete — Step 3.5 itself no longer touches the route. Reduces the surface area of the eventual 3.5 PR.
 - **Step 3A — flip uploads to signed: DEFERRED to Step 3.5.** Cannot land standalone; would silently break the three existing web Mux player surfaces.
 - **Step 3.5 — `SignedMuxPlayer` + 3-surface migration: DEFERRED.** Scoped in this doc under "Step 3.5 scope". Unblocks production Mux signing for both mobile and web.
 - **Step 4 — profile + favorites writes: IN PROGRESS.** `PATCH /api/me`, `POST /api/me/favorites`, `DELETE /api/me/favorites/[courseId]`. Wraps existing server actions; testing recipes already drafted in `docs/MOBILE_API_TESTING.md`.
@@ -215,9 +216,10 @@ Smallest, lowest-risk first. Each step is independently shippable.
    - `GET /api/wallet/topup/history`
    - These are read-only and the failure mode is "wrong data shown to one user" — easy to roll back.
 
-3. **Mux signed playback** — split into 3B and 3.5 after the web-side audit.
-   - **Step 3B (DONE).** `POST /api/mux/playback-token` endpoint with auth, course-visibility check, video lookup, free-preview bypass, enrollment gate (`enrollments/{uid}_{courseId}` with `status === "completed"`), and (future) owner gating. Real Mux JWT signing (RS256) using `MUX_SIGNING_KEY_ID` / `MUX_SIGNING_PRIVATE_KEY`. Endpoint is dormant on web until 3.5 ships and becomes mobile-ready when needed.
-   - **Step 3.5 (DEFERRED).** Flip `createMuxUpload` to `playback_policy: ["signed"]` AND migrate the three web player surfaces that currently consume raw `playbackId` (`components/video_uploader.tsx`, `components/CoursePreview.tsx`, `components/ui/CoursePlayer.tsx`). The flip cannot land standalone — every new instructor upload would silently break those three surfaces. Scope below in **Step 3.5 scope**.
+3. **Mux signed playback** — split into 3B, 3.5-prep, and 3.5 after the web-side audit.
+   - **Step 3B (DONE).** `POST /api/mux/playback-token` endpoint with auth, course-visibility check, video lookup, free-preview bypass, enrollment gate (`enrollments/{uid}_{courseId}` with `status === "completed"`). Real Mux JWT signing (RS256) using `MUX_SIGNING_KEY_ID` / `MUX_SIGNING_PRIVATE_KEY`. Endpoint is dormant on web until 3.5 ships and becomes mobile-ready when needed.
+   - **Step 3.5-prep (DONE — Path D).** Added owner + admin branches to the route. Owner (`course.createdBy === auth.userId`) and admin (`auth.isAdmin === true`) both bypass the visibility gate AND the enrollment check. Route is now structurally complete; Step 3.5 itself no longer needs to touch it.
+   - **Step 3.5 (DEFERRED).** Flip `createMuxUpload` to `playback_policy: ["signed"]` AND migrate the three web player surfaces that currently consume raw `playbackId` (`components/video_uploader.tsx`, `components/CoursePreview.tsx`, `components/ui/CoursePlayer.tsx`). The flip cannot land standalone — every new instructor upload would silently break those three surfaces. Scope below in **Step 3.5 scope** (note: section 1 "Server owner branch" is now done as part of 3.5-prep).
 
 4. **Profile and favorites writes.**
    - `PATCH /api/me`
@@ -246,20 +248,11 @@ Three things that make this clean:
 2. The signed-playback API already exists (/api/mux/playback-token); it just needs an instructor branch added.
 3. /course/[courseId]/page.tsx already routes the owner to CoursePlayer (line 199, if (isInstructor)), so the natural surface for instructor preview is the existing viewer — not a new instructor-only player.
 
-### 1. Server owner branch
+### 1. Server owner branch — DONE (Path D / Step 3.5-prep)
 
-Step 1 — server: extend the playback-token endpoint to authorize the owner.
-In app/api/mux/playback-token/route.ts, add an owner branch alongside the free-preview / enrollment checks:
+Shipped ahead of the rest of Step 3.5 as a risk-free pre-cursor. The route now has owner + admin branches that both bypass the visibility gate AND the enrollment check. Single token-issuance code path; mobile and web both consume it. See `app/api/mux/playback-token/route.ts` and the test recipes in `MOBILE_API_TESTING.md` (sections c.1, c.2).
 
-```ts
-const isOwner = course.createdBy === auth.userId;
-const isAdmin = auth.isAdmin === true; // verifyBearerToken would need to surface this
-if (!isFreePreview && !isOwner && !isAdmin) {
-  // existing enrollment check
-}
-```
-
-This keeps a single token-issuance code path; mobile and web both consume it.
+The remaining sections (2–5 below) are still TODO for Step 3.5.
 
 ### 2. `useMuxPlaybackToken` hook
 

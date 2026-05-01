@@ -385,6 +385,76 @@ curl -i -X POST -H "Authorization: Bearer $OTHER_USER_TOKEN" \
 # {"success":false,"error":{"code":"NOT_ENROLLED", ...}}  HTTP 403
 ```
 
+### c.1) Course owner — bypasses enrollment AND visibility gate → 200
+
+The owner branch (added in Path D / Step 3.5-prep) lets the instructor
+fetch a token for any course where `course.createdBy === auth.userId`,
+including drafts, unapproved courses, and unpublished courses. This is what
+unblocks the instructor preview surface in `components/video_uploader.tsx`
+once Step 3.5 lands.
+
+```bash
+# Sign in as the user listed as course.createdBy for $COURSE_ID, then:
+curl -i -X POST -H "Authorization: Bearer $OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_ID\",\"videoId\":\"$VIDEO_ID\"}" \
+  "$BASE_URL/api/mux/playback-token"
+# 200, server log shows: reason=owner
+
+# Now hit it against a DRAFT course you own (status !== "published")
+export DRAFT_COURSE_ID="<a-course-you-own-that-is-NOT-publicly-visible>"
+curl -i -X POST -H "Authorization: Bearer $OWNER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$DRAFT_COURSE_ID\",\"videoId\":\"video_1\"}" \
+  "$BASE_URL/api/mux/playback-token"
+# 200 — owner bypasses the visibility gate.
+# Server log shows: reason=owner
+
+# Sanity-check: same draft course as a non-owner → 404 COURSE_NOT_FOUND
+# (the visibility gate still applies to everyone else)
+curl -i -X POST -H "Authorization: Bearer $OTHER_USER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$DRAFT_COURSE_ID\",\"videoId\":\"video_1\"}" \
+  "$BASE_URL/api/mux/playback-token"
+# 404 COURSE_NOT_FOUND
+```
+
+### c.2) Global admin — bypasses enrollment AND visibility gate → 200
+
+Same behavior as the owner branch but driven by the `admin === true`
+custom claim on the Firebase ID token (surfaced as `auth.isAdmin`). This is
+what lets admins review pending / unapproved courses in the dashboard.
+
+```bash
+# Sign in as a Firebase user with admin === true custom claim:
+export ADMIN_TOKEN=$(curl -s -X POST \
+  "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$FIREBASE_WEB_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\",\"returnSecureToken\":true}" \
+  | jq -r .idToken)
+
+# Pending / unapproved course (status:"pending" OR isApproved:false)
+export PENDING_COURSE_ID="<a-course-pending-admin-review>"
+curl -i -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$PENDING_COURSE_ID\",\"videoId\":\"video_1\"}" \
+  "$BASE_URL/api/mux/playback-token"
+# 200 — admin bypasses the visibility gate.
+# Server log shows: reason=admin
+```
+
+If `auth.isAdmin` is `false`, the route falls through to the regular
+student gating. Confirm the custom claim is set:
+
+```bash
+# Hit the auth-debug endpoint and look for "isAdmin": true
+curl -s -H "Authorization: Bearer $ADMIN_TOKEN" "$BASE_URL/api/health/me" | jq .
+```
+
+If `isAdmin: false`, set the claim via Firebase Admin SDK first
+(`adminAuth.setCustomUserClaims(uid, { admin: true })`) and re-sign in to
+pick it up — custom claims propagate on next ID token refresh.
+
 ### d) Course not found / not visible → 404 `COURSE_NOT_FOUND`
 
 ```bash
@@ -392,7 +462,8 @@ curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d "{\"courseId\":\"does-not-exist\",\"videoId\":\"$VIDEO_ID\"}" \
   "$BASE_URL/api/mux/playback-token"
-# 404 COURSE_NOT_FOUND. Same response if the course is draft/unapproved/deleted.
+# 404 COURSE_NOT_FOUND. Same response if the course is draft/unapproved/deleted
+# AND the caller is not the owner / not an admin.
 ```
 
 ### e) Video not in course → 404 `VIDEO_NOT_FOUND`
@@ -406,8 +477,26 @@ curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
 
 ### f) Upload still processing → 409 `VIDEO_NOT_READY`
 
-Reproducible by hitting the endpoint between `createMuxUpload` and the moment
-`saveCourseVideoToFireStore` writes back the `playbackId`. Rare in practice.
+Returned when the video doc exists in `course.videos[]` but its
+`playbackId` field is missing or empty. This happens between the moment
+`createMuxUpload` returns and the moment Mux finishes ingest +
+`saveCourseVideoToFireStore` writes back the `playbackId`. Rare in
+practice but the wrapper must distinguish this from `VIDEO_NOT_FOUND`
+(retry vs. give up).
+
+Easiest way to reproduce in dev: open Firestore console, find a video in
+`courses/{id}.videos[]`, blank out its `playbackId` field, then curl:
+
+```bash
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"courseId\":\"$COURSE_ID\",\"videoId\":\"<id-of-video-with-blank-playbackId>\"}" \
+  "$BASE_URL/api/mux/playback-token"
+# HTTP/1.1 409
+# {"success":false,"error":{"code":"VIDEO_NOT_READY","message":"Video upload has not finished processing"}}
+```
+
+Restore the `playbackId` field after testing.
 
 ### g) No auth → 401 `NO_TOKEN`
 
@@ -448,10 +537,14 @@ double-check the asset was uploaded *after* Step 3 (so it's `signed`).
 | No `Authorization` header | 401 | `NO_TOKEN` |
 | Bad/expired/revoked bearer | 401 | `INVALID_TOKEN` / `EXPIRED_TOKEN` / `REVOKED_TOKEN` |
 | Body missing fields | 400 | `VALIDATION_ERROR` |
-| Course id doesn't exist or isn't publicly visible | 404 | `COURSE_NOT_FOUND` |
+| Course id doesn't exist | 404 | `COURSE_NOT_FOUND` |
+| Course not publicly visible AND caller is not owner/admin | 404 | `COURSE_NOT_FOUND` |
 | `videoId` not in course | 404 | `VIDEO_NOT_FOUND` |
-| Course/video exists but `playbackId` not yet set | 409 | `VIDEO_NOT_READY` |
-| Paid video, user not enrolled | 403 | `NOT_ENROLLED` |
+| Video in course but `playbackId` missing (still processing) | 409 | `VIDEO_NOT_READY` |
+| Paid video, user not enrolled, not owner, not admin | 403 | `NOT_ENROLLED` |
+| Owner (`course.createdBy === auth.userId`) | 200 | — bypasses visibility + enrollment, server log `reason=owner` |
+| Admin (`auth.isAdmin === true`) | 200 | — bypasses visibility + enrollment, server log `reason=admin` |
+| Free preview (`video.isFreePreview === true`) | 200 | — any authed user, server log `reason=free-preview` |
 
 ---
 

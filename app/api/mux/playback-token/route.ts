@@ -19,7 +19,16 @@ export async function POST(req: NextRequest) {
     }
 
     const course = courseSnap.data()!;
-    if (!isCoursePubliclyVisible(course)) {
+    const isOwner = course.createdBy === auth.userId;
+    const isAdmin = auth.isAdmin === true;
+    const isPrivileged = isOwner || isAdmin;
+
+    // Visibility gate applies to the student / free-preview path only.
+    // Owners must be able to preview their own drafts; admins must be able
+    // to review pending / unapproved courses. Both still require the course
+    // doc to exist (the !courseSnap.exists check above), so this does not
+    // leak unrelated course state to non-privileged callers.
+    if (!isPrivileged && !isCoursePubliclyVisible(course)) {
       return fail("COURSE_NOT_FOUND", "Course not found", 404);
     }
 
@@ -45,7 +54,9 @@ export async function POST(req: NextRequest) {
 
     const isFreePreview = video.isFreePreview === true;
 
-    if (!isFreePreview) {
+    // Owner / admin / free-preview all bypass the enrollment check.
+    // Everything else requires a completed enrollment.
+    if (!isPrivileged && !isFreePreview) {
       const enrollmentSnap = await db
         .collection("enrollments")
         .doc(`${auth.userId}_${body.courseId}`)
@@ -70,9 +81,19 @@ export async function POST(req: NextRequest) {
     });
     const expiresAt = new Date(Date.now() + TTL_SECONDS * 1000).toISOString();
 
-    // Server-side audit log. Never log the token itself.
+    // Server-side audit log. Never log the token itself. The reason field
+    // makes "why was this token issued" greppable in production logs —
+    // important for chasing down "owner accidentally got served the
+    // unenrolled-student error" or vice-versa during the 3.5 rollout.
+    const accessReason = isOwner
+      ? "owner"
+      : isAdmin
+        ? "admin"
+        : isFreePreview
+          ? "free-preview"
+          : "enrolled";
     console.log(
-      `mux-playback issued userId=${auth.userId} courseId=${body.courseId} videoId=${body.videoId} playbackId=${playbackId} ttl=${TTL_SECONDS}`
+      `mux-playback issued userId=${auth.userId} courseId=${body.courseId} videoId=${body.videoId} playbackId=${playbackId} reason=${accessReason} ttl=${TTL_SECONDS}`
     );
 
     return ok({ playbackId, token, expiresAt });
