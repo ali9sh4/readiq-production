@@ -9,7 +9,6 @@ import {
   User,
   Award,
   BookOpen,
-  Settings,
   LogOut,
   Heart,
 } from "lucide-react";
@@ -50,12 +49,6 @@ const navItems = [
     label: "الشهادات",
     icon: Award,
     value: "certificates",
-  },
-  {
-    href: "/user_dashboard/updatePassword",
-    label: "تحديث كلمة المرور",
-    icon: Settings,
-    value: "updatePassword",
   },
 ];
 

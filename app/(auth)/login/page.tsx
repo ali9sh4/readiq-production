@@ -7,20 +7,21 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import LoginForm from "./login-form";
 
 export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-8">
       <Card className="w-full max-w-md shadow-lg">
-        <CardHeader>
+        <CardHeader className="space-y-2">
           <CardTitle className="text-3xl font-bold">
             تسجيل الدخول إلى حسابك
           </CardTitle>
+          <CardDescription className="text-base">
+            تسجيل الدخول متاح عبر حساب جوجل فقط
+          </CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-6">
-          <LoginForm />
           <ContWithGoogleButton />
 
           <div className="relative">

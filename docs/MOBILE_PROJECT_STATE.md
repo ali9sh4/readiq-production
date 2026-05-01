@@ -171,3 +171,7 @@ Drop everything and ship Path A immediately if any of these become true:
 ---
 
 This file gets updated at the end of every step. Treat it as a living document.
+
+## Auth migration log
+
+2026-05-01 — Email/password sign-in hidden from UI. All 10 production customers were already on Google sign-in. Login and register pages now show only the Google button. Forgot-password link removed (route still reachable by direct URL but unused). Update-password tab in user dashboard sidebar removed. Email/password code paths (loginWithEmail in authContext.tsx, RegisterAction server action, signInWithEmailAndPassword import) intentionally left in place for a one-week rollback window. Cleanup PR scheduled for 2026-05-08+ after confirming no customer-support issues.

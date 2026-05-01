@@ -1,3 +1,4 @@
+// ORPHANED 2026-05-01 — not imported anywhere. Email/password sign-in was hidden from UI in favor of Google-only. File kept on disk for fast rollback. Scheduled for deletion after one week of stable Google-only operation. See docs/MOBILE_PROJECT_STATE.md "Auth migration" entry.
 "use client";
 
 import { useState } from "react";
