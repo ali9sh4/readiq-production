@@ -5,15 +5,19 @@ Last updated: 2026-05-02
 
 **Web API surface is complete.** All 14 mobile-facing endpoints are shipped on
 `main` (Steps 1, 2, 3B, 4, 5, 6), plus Step 3.5-prep (Path D) which added
-owner + admin branches to `/api/mux/playback-token`. The web repo is
-feature-frozen for the mobile migration except for Step 3.5 (wrapper + 3
-surface migration + thumbnail signing + upload-policy flip), which is the
-active next milestone.
+owner + admin branches to `/api/mux/playback-token`.
 
-Next milestone: Step 3.5 web-side hardening, then scaffold the Expo mobile app
-in a new repo (`readiq-mobile`). The scaffold prompt is staged in personal
-notes and will be pasted into a fresh Claude Code session in that new working
-directory after 3.5 lands.
+**Step 3.5 is in progress on `feat/step-3.5-signed-playback`.** Substeps A–D
+shipped to the branch (hook, wrapper, thumbnail signing, instructor preview
+migration). Substeps E–G remain (CoursePreview, CoursePlayer, image.mux.com
+sweep). 3.5.H (upload-policy flip from `["public"]` to `["signed"]`) is a
+separate one-line commit on `main` AFTER the wrapper PR merges — it does not
+ship on the feature branch.
+
+Next milestone: finish 3.5.E–G, merge the feature branch to `main`, ship
+3.5.H, then scaffold the Expo mobile app in a new repo (`readiq-mobile`). The
+scaffold prompt is staged in personal notes and will be pasted into a fresh
+Claude Code session in that new working directory after 3.5 fully lands.
 
 ## Shipped commits (web repo)
 
@@ -27,11 +31,28 @@ directory after 3.5 lands.
 
 ## In progress
 
-Nothing in progress in the web repo. Web API surface is feature-frozen pending Step 3.5.
+**Step 3.5 substeps A–D shipped on `feat/step-3.5-signed-playback`** (branch, not yet merged to main). Branch commits (oldest → newest):
+
+- `3a5b5e3` — 3.5.A: `useMuxPlaybackToken` hook (`hooks/useMuxPlaybackToken.ts`).
+- `1e63f36` — 3.5.B: `SignedMuxPlayer` wrapper (`components/SignedMuxPlayer.tsx`) + doc fix to `MOBILE_API_MIGRATION.md` for the actual `tokens={{ playback, thumbnail }}` Mux 3.x API.
+- `784d360` — 3.5.B post-fix: initial-load flash gate + Arabic placeholder copy.
+- `f80ff3a` — 3.5.C: `signThumbnailToken` helper (`lib/mux/thumbnailToken.ts`) + `/api/mux/playback-token` route returns `thumbnailToken` alongside `token`.
+- `d42dc45` — Mux signing helpers added to `MANUAL_CLEANUP_DO_NOT_AUTOMATE.md` (own scope block, no rollback timer).
+- `a20b5ed` — 3.5.D: instructor preview migration (`components/video_uploader.tsx` lines 740 + 857). New `SignedMuxThumbnail` component (`components/SignedMuxThumbnail.tsx`).
+
+3.5.E (CoursePreview), 3.5.F (CoursePlayer), 3.5.G (image.mux.com sweep) remain. 3.5.H (upload-policy flip) is post-merge on `main`.
 
 ## Up next
 
-1. **Step 3.5 (web — signed Mux playback)**. Build `SignedMuxPlayer` wrapper + `useMuxPlaybackToken` hook. Build thumbnail token helper + signed thumbnail URL strategy. Migrate 3 web player call sites: `components/video_uploader.tsx` (line ~857), `components/CoursePreview.tsx` (line ~326), `components/ui/CoursePlayer.tsx` (line ~644). Migrate thumbnail call site at `video_uploader.tsx` (line ~741) and grep for any other `image.mux.com` call sites. Last step: flip `app/actions/upload_video_actions.ts` `playback_policy` from `["public"]` to `["signed"]`. Test all three surfaces against both new signed assets AND legacy public-policy assets. Estimate: 1–2 focused days.
+1. **Finish Step 3.5 on the feature branch.**
+   - **3.5.E** — migrate `components/CoursePreview.tsx` (free-preview videos for unenrolled visitors). Audit cited line ~326; verify before editing.
+   - **3.5.F** — migrate `components/ui/CoursePlayer.tsx` (enrolled-student viewer). Audit cited line ~644; verify before editing. **Highest risk.** Watermark DOM-walking (lines 222–281), `:fullscreen` CSS selectors against `.video-container` (lines 877–884), and the `onEnded` chain at line 652 must all keep working. Also: this is the surface that auto-advances between videos, so it's the surface where the mid-video-swap stale-token flash (deferred from 3.5.B) needs to be addressed — likely by clearing token state in the hook when `(courseId, videoId)` change.
+   - **3.5.G** — grep `components/`, `app/`, `lib/` for `image.mux.com`. Replace each remaining call site with `<SignedMuxThumbnail>`. Likely candidates: course catalog cards, search results, admin dashboard thumbnails, "recently uploaded" widgets.
+   - Merge `feat/step-3.5-signed-playback` to `main`.
+2. **3.5.H** — flip `app/actions/upload_video_actions.ts` `playback_policy` from `["public"]` to `["signed"]`. Single-line commit on `main` after the wrapper PR merges.
+3. **Mobile scaffold (`readiq-mobile` new repo).** Fresh Expo managed project. Stack staged in personal notes.
+4. **Mobile feature build-out** — courses list, course detail, enrollment purchase, wallet + top-up upload, favorites, profile, signed Mux player screen.
+5. **Post-mobile cleanup PRs** (each separate, after the mobile app is live): delete the web `/Course/[courseId]` viewer, remove all ZainCash code, update `/admin-dashboard/topup-approvals` to display `paymentMethod` + `receiptUrl`, ship iOS screen-capture detection (mobile v1.1), document the Mux signing-key rotation policy, remove `/api/health/me`, fix the pre-existing `lib/mux/playbackToken.ts(1,37)` `KeyLike` import error (`jose` no longer exports the type — pattern in `thumbnailToken.ts` is `ReturnType<typeof importPKCS8>`), update the route's audit-log line to reflect that both playback + thumbnail JWTs are issued per request.
 2. **Mobile scaffold (`readiq-mobile` new repo)**. Fresh Expo managed project. Stack staged in personal notes. First session: project init, navigation skeleton, Firebase Auth ID-token bearer client, `apiClient` wrapper around the 14 endpoints, `/api/health/me` smoke screen.
 3. **Mobile feature build-out** — courses list, course detail, enrollment purchase, wallet + top-up upload, favorites, profile, signed Mux player screen (after 3.5).
 4. **Post-mobile cleanup PRs** (each separate, after the mobile app is live): delete the web `/Course/[courseId]` viewer, remove all ZainCash code, update `/admin-dashboard/topup-approvals` to display `paymentMethod` + `receiptUrl`, ship iOS screen-capture detection (mobile v1.1), document the Mux signing-key rotation policy, remove `/api/health/me`.
@@ -153,6 +174,26 @@ Path B would be defensible if ALL of: courses stay sub-$25, customer base stays 
 Shipped. Owner + admin branches added to `/api/mux/playback-token`. Both bypass the visibility gate AND the enrollment check, so owners can preview drafts and admins can review pending courses. Audit log gains a `reason=owner|admin|free-preview|enrolled` field for greppability.
 
 The remaining gotchas (#2 CoursePlayer DOM, #3 thumbnail call sites, #4 VIDEO_NOT_READY race in the wrapper, #5 legacy public assets) are still TODO for the eventual Step 3.5 PR. Gotcha #1 (route visibility filter blocking instructor preview on drafts) is now resolved by the owner branch.
+
+### Implementation findings during 3.5.A–D (read before picking up 3.5.E)
+
+These are non-obvious things discovered during the 3.5.A–D implementation that the audit didn't predict. Future-Claude (or future-Ali) picking up 3.5.E should know them before touching the wrapper or the hook.
+
+1. **The `@mux/mux-player-react` 3.x API is `tokens={{ playback, thumbnail, storyboard, drm }}`, NOT separate `playbackToken` / `thumbnailToken` props.** The original 3.5 plan in `MOBILE_API_MIGRATION.md` had the wrong shape; it was fixed in `1e63f36`. Don't regress this if you re-read the older plan and copy-paste from it.
+
+2. **The wrapper's "no token + no error → render unsigned" branch (case 4 in the original 3.5.B spec) is unreachable on initial load** because `useState(false)` for `isLoading` meant the first render painted before the effect ran, which flashed a 403 on signed assets. Fixed in `784d360` by (a) starting `isLoading` true via a lazy initializer when the hook will fetch, and (b) gating the wrapper on `isLoading && !token && !error` → placeholder. The trade-off: until the API gains an explicit "this asset is legacy public, no token needed" signal (Step 3.5 scope section 5 in the migration plan), the legacy-public fallback in the original spec is technically only reachable mid-stream after a successful first fetch. Today the API always returns either a token or an error, so the deferred work is just a future-proofing concern, not a current bug.
+
+3. **Mid-video-swap flash is still possible** when a consumer changes `videoId` on a mounted `SignedMuxPlayer` or `SignedMuxThumbnail`. The hook does not clear `token`/`thumbnailToken`/`expiresAt` when `(courseId, videoId)` change, so for ~200ms the wrapper renders the new `playbackId` against the previous video's tokens. Doesn't matter for `video_uploader` (3.5.D — each card is keyed by `videoId`, so swap → unmount/remount) or `CoursePreview` (3.5.E — single video at a time). **Does matter for `CoursePlayer.tsx` (3.5.F — auto-advances between videos).** Fix when picking up 3.5.F: in `useMuxPlaybackToken`, distinguish "input change" from "refetch trigger" via a ref-tracked input signature, and reset transient token state on input change but not on refetch.
+
+4. **Each `SignedMuxPlayer` and `SignedMuxThumbnail` mount triggers an independent fetch to `/api/mux/playback-token` for the same `(courseId, videoId)`.** When both render together (instructor preview card with player expanded), the route receives two requests, signs two pairs of JWTs, and writes two audit-log lines. Wasteful but not broken. If 3.5.G's catalog/dashboard sweeps surface enough thumbnail-only call sites to amplify this — e.g. a catalog page rendering 30 thumbnails — add a module-level promise cache keyed by `(courseId, videoId)` to the hook to deduplicate. Don't pre-build it; assess after 3.5.G.
+
+5. **`jose` no longer exports `KeyLike`** in the version installed (whichever 6.x). `lib/mux/playbackToken.ts(1,37)` carries a pre-existing TS error from this. The new `lib/mux/thumbnailToken.ts` sidesteps it by typing the cache as `ReturnType<typeof importPKCS8>`. Real fix is one line in `playbackToken.ts` — remove the `KeyLike` import and apply the same pattern. Listed in "Up next" item 5 above; not blocking.
+
+6. **The route's audit-log line still reads `mux-playback issued`** despite the route now minting two JWTs per request (after 3.5.C). Functional but slightly misleading. Listed in "Up next" item 5.
+
+7. **`SignedMuxThumbnail` is the established pattern for any `image.mux.com` call site.** It's a drop-in replacement for `next/image` with `{ courseId, videoId, playbackId, time? }` added and `src` removed; it handles fill-mode and static-mode placeholders (`bg-neutral-800 animate-pulse`). 3.5.G's grep-and-replace work uses this component — don't re-build inline signed-thumbnail logic at each call site.
+
+8. **Mux signing helpers (`lib/mux/playbackToken.ts`, `lib/mux/thumbnailToken.ts`) are now formally protected** in `MANUAL_CLEANUP_DO_NOT_AUTOMATE.md` under a scope block with no rollback timer. The protection rationale is "casual modifications to signing code can silently break video access for every customer," not "pending deletion." Don't refactor or extract a shared loader without an explicit instruction.
 
 ### Re-evaluation triggers
 
