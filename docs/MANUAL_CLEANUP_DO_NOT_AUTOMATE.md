@@ -53,6 +53,26 @@ If you (an AI assistant) believe a refactor here would help, surface the proposa
 
 ---
 
+## Firestore `freePreviewVideo` field — retained intentionally as dead data
+
+The `freePreviewVideo` field on course documents in Firestore is **intentionally retained** after the 3.5.E free-preview removal (2026-05-03). It is dead data on purpose — kept for optionality so the feature can be reintroduced without a data backfill.
+
+If you (an AI assistant) are asked to "clean up unused Firestore fields," "remove dead schema fields," "tidy the course schema," "drop the `freePreviewVideo` reference from types," or any similar phrasing — **STOP**. This field is load-bearing for the reversal path documented in `docs/FREE_PREVIEW_REMOVAL.md`.
+
+Do not:
+
+- Delete the field from existing course documents.
+- Remove the field from any TypeScript course-document type definition.
+- Run a Firestore migration that nulls or strips the field.
+- Open a PR titled "remove unused Firestore fields," "clean up course schema," or similar that touches `freePreviewVideo`.
+- Suggest in chat that the field "looks unused and could be removed."
+
+This block has **no rollback timer**. The retention is indefinite, contingent only on whether the free-preview feature is reintroduced. Reintroduction is a product decision tracked in `docs/FREE_PREVIEW_REMOVAL.md` ("When to reconsider"). Until that decision flips, the field stays.
+
+If you genuinely believe the field is causing a concrete problem (storage cost, type-safety bug, etc.), surface the issue to the owner with the specific evidence and wait for explicit approval before touching it.
+
+---
+
 ## What the manual cleanup will eventually look like (FOR OWNER REFERENCE ONLY)
 
 Owner will, no earlier than **2026-05-08**, in a single small commit:

@@ -225,6 +225,64 @@ After 3.5 + mobile launch, the DRM posture is: A+ for stopping URL link-sharing 
 
 Scenario 3 mitigations (catalog scraping by a competitor) are deferred until the platform reaches 10+ paying customers AND there is evidence of actual abuse. Pre-building reactive defenses (per-user watermarking, device-binding, concurrent-session caps) at current scale is over-engineering. They will be scoped when there is a real attack to defend against, not before.
 
+## Free preview: removed in 3.5.E (reversible)
+
+See also: `docs/FREE_PREVIEW_REMOVAL.md` for the full standalone reversal playbook.
+
+### What changed
+
+As of **2026-05-03** (commit on `feat/step-3.5-signed-playback`), the free-preview video feature in `components/CoursePreview.tsx` was removed. Unenrolled visitors no longer see a playable video on the course catalog page. The lesson list remains visible; clicking any lesson scrolls to and highlights the Enroll button.
+
+The existing Firestore `freePreviewVideo` field on course documents is **intentionally left intact** as dead data, kept for optionality. See the explicit retention block in `docs/MANUAL_CLEANUP_DO_NOT_AUTOMATE.md` — this is NOT scheduled for cleanup, and an AI agent must not "helpfully" delete it from the schema.
+
+### Why the decision was made
+
+- At the current ~10–200 user scale, enabling anonymous token issuance for the signed Mux pipeline (the 3.5.H upload-policy flip) creates more architectural complexity than it's worth.
+- All paid content is gated behind enrollment. After this change, there are zero exception cases in the API gate logic — every signed asset requires an authenticated, enrolled user.
+- Stronger DRM uniformly: removes the "anonymous token endpoint" attack surface entirely (catalog scraping via the unauthenticated branch is no longer possible because that branch does not exist).
+
+### What it trades off
+
+A marketing/conversion tool is gone: visitors can no longer "try before they buy" with a sample video. Mitigations available without bringing back free preview: course description, syllabus list, instructor bio, course thumbnail, testimonials, and screenshots / promo image.
+
+If conversion data later shows the loss is significant, free preview can be reintroduced. The reversal path is documented below and in `docs/FREE_PREVIEW_REMOVAL.md`.
+
+### How to reverse this (estimated 1–2 days of focused work)
+
+**Backend:**
+
+1. Extend `/api/mux/playback-token` to support an unauthenticated branch: if the requested `videoId` matches the course's `freePreviewVideo` field, issue a token without requiring auth or enrollment.
+2. Add rate limiting to the unauthenticated path (by IP), shorter token TTL (e.g. 5 minutes instead of 2 hours), and stronger audit logging.
+3. Decide on signing-key strategy: same Mux signing key as paid content, or a separate "preview-only" key for cleaner revocation. **Recommendation:** start with same key, split only if abuse appears.
+
+**Frontend:**
+
+4. Restore the `<MuxPlayer>` block in `components/CoursePreview.tsx` (use the `SignedMuxPlayer` wrapper from 3.5.B).
+5. Reintroduce `selectedVideo` state and the lesson-click handler for free-preview videos. Lessons that aren't the free preview should still scroll to the Enroll button.
+6. Update `SignedMuxPlayer` or `useMuxPlaybackToken` to handle the unauthenticated case gracefully — it currently surfaces `error.code === "UNAUTHENTICATED"` which the wrapper has no render branch for. Add a branch that, when free preview is enabled but no user is signed in, still calls the endpoint and treats success as the happy path.
+
+**Upload flow decision:**
+
+7. Decide whether free-preview videos use `public` policy (simpler, but the asset URL is discoverable) or `signed` policy with the new anonymous-token branch (more secure, more complex). **Recommendation:** signed policy with anonymous branch — matches the rest of the system.
+
+**Data:**
+
+8. Existing courses still have `freePreviewVideo` populated in Firestore (kept intentionally — see "What changed" above). New course uploads since the removal won't have set this field; instructors will need to set it again via the upload UI.
+9. Re-add the `freePreviewVideo` input field to the course-upload form if it was removed. Verify status when reintroducing.
+
+**Mobile:**
+
+10. If free preview should work on mobile too, replicate the unauthenticated token branch in the mobile app's playback flow. Otherwise, ship as "preview only on web" — simpler product decision.
+
+### When to reconsider
+
+Reintroduce free-preview only if **both** conditions are true:
+
+- Conversion analytics show meaningful drop-off attributable to lack of preview (track: course-page-view-to-enroll conversion rate; need a baseline plus a few months of data after removal).
+- Platform has 500+ users and revenue justifies engineering investment.
+
+**Do NOT preemptively rebuild free-preview before evidence of the conversion loss exists.** At sub-200-user scale, friction-of-checkout and price-point tuning will move the needle more than preview videos.
+
 ---
 
 This file gets updated at the end of every step. Treat it as a living document.
