@@ -9,7 +9,7 @@ At-a-glance progress against the steps in section E. Update this list as steps l
 - **Step 3B — Mux playback-token endpoint: SHIPPED** (`f8acbb5`). `POST /api/mux/playback-token` issues short-lived signed Mux JWTs (RS256) with auth, course-visibility, free-preview bypass, and enrollment gate. End-to-end playback test deferred until 3.5 flips uploads to signed.
 - **Step 3.5-prep — owner + admin branches on `/api/mux/playback-token`: SHIPPED** (Path D from the audit). The route now has owner (`course.createdBy === auth.userId`) and admin (`auth.isAdmin === true`) branches; both bypass the visibility gate and the enrollment check. The route is now structurally complete — Step 3.5 itself no longer touches the route. Reduces the surface area of the eventual 3.5 PR.
 - **Step 3A — flip uploads to signed: DEFERRED to Step 3.5.** Cannot land standalone; would silently break the three existing web Mux player surfaces.
-- **Step 3.5 — `SignedMuxPlayer` + 3-surface migration: DEFERRED.** Scoped in this doc under "Step 3.5 scope". Unblocks production Mux signing for both mobile and web.
+- **Step 3.5 — `SignedMuxPlayer` + 3-surface migration: ACTIVE — next milestone.** Scoped in this doc under "Step 3.5 scope". Unblocks production Mux signing for both mobile and web.
 - **Step 4 — profile + favorites writes: IN PROGRESS.** `PATCH /api/me`, `POST /api/me/favorites`, `DELETE /api/me/favorites/[courseId]`. Wraps existing server actions; testing recipes already drafted in `docs/MOBILE_API_TESTING.md`.
 - **Step 5 — top-up flow: NOT STARTED.** `POST /api/wallet/topup/upload-receipt`, `POST /api/wallet/topup/request`. First step that introduces the new `paymentMethod` + `receiptUrl` fields on `topup_requests`.
 - **Step 6 — enrollment purchase: NOT STARTED.** `POST /api/enrollments`, free + paid paths, idempotent against retries.
@@ -219,7 +219,7 @@ Smallest, lowest-risk first. Each step is independently shippable.
 3. **Mux signed playback** — split into 3B, 3.5-prep, and 3.5 after the web-side audit.
    - **Step 3B (DONE).** `POST /api/mux/playback-token` endpoint with auth, course-visibility check, video lookup, free-preview bypass, enrollment gate (`enrollments/{uid}_{courseId}` with `status === "completed"`). Real Mux JWT signing (RS256) using `MUX_SIGNING_KEY_ID` / `MUX_SIGNING_PRIVATE_KEY`. Endpoint is dormant on web until 3.5 ships and becomes mobile-ready when needed.
    - **Step 3.5-prep (DONE — Path D).** Added owner + admin branches to the route. Owner (`course.createdBy === auth.userId`) and admin (`auth.isAdmin === true`) both bypass the visibility gate AND the enrollment check. Route is now structurally complete; Step 3.5 itself no longer needs to touch it.
-   - **Step 3.5 (DEFERRED).** Flip `createMuxUpload` to `playback_policy: ["signed"]` AND migrate the three web player surfaces that currently consume raw `playbackId` (`components/video_uploader.tsx`, `components/CoursePreview.tsx`, `components/ui/CoursePlayer.tsx`). The flip cannot land standalone — every new instructor upload would silently break those three surfaces. Scope below in **Step 3.5 scope** (note: section 1 "Server owner branch" is now done as part of 3.5-prep).
+   - **Step 3.5 (ACTIVE — next milestone).** Flip `createMuxUpload` to `playback_policy: ["signed"]` AND migrate the three web player surfaces that currently consume raw `playbackId` (`components/video_uploader.tsx`, `components/CoursePreview.tsx`, `components/ui/CoursePlayer.tsx`). The flip cannot land standalone — every new instructor upload would silently break those three surfaces. Scope below in **Step 3.5 scope** (note: section 1 "Server owner branch" is now done as part of 3.5-prep).
 
 4. **Profile and favorites writes.**
    - `PATCH /api/me`
@@ -292,6 +292,22 @@ Since older assets stay public, the API can return token: null for assets where 
 ### Single-field ownership reference
 
 The audit confirmed: course doc field is createdBy (Firebase uid, set on course creation in app/course-upload/action.ts at lines 72 and 129). No co-instructors. No alternate ownership fields. Global admin override via verifiedToken.admin === true.
+
+### Test plan before merging
+
+Before merging Step 3.5, manually verify all six of these flows on a local dev server:
+
+1. Instructor uploads a NEW video to a draft course → preview card plays the video correctly (uses owner branch on `/api/mux/playback-token`, signed token, ~200-300ms first-play delay).
+2. Instructor uploads a NEW video to a published course → preview card plays correctly.
+3. Public visitor opens the course detail page → free-preview videos play correctly (uses free-preview branch on `/api/mux/playback-token`).
+4. Enrolled student opens a paid course → CoursePlayer plays paid videos correctly (uses enrollment branch).
+5. Enrolled student opens a course with mixed legacy + new videos → both types play (wrapper handles unsigned legacy AND signed new).
+6. After all of the above, the watermark stays positioned correctly across fullscreen transitions in CoursePlayer (the DOM-walking quirk noted in the migration gotchas).
+7. Admin opens `/api/mux/playback-token` for a course they don't own and aren't enrolled in (admin custom claim set, course is publicly visible) → admin branch fires, signed token issued, server log shows `reason=admin`. (Path D shipped this; covering it in the test plan ensures it doesn't regress when the wrapper is added.)
+8. Instructor uploads a NEW video to any course → after Mux processes it, the per-video card thumbnail renders correctly (signed thumbnail URL via `/api/mux/thumbnail-token` or via the playback-token endpoint's `thumbnailToken` field, depending on which approach Step 3.5.C picks). NO broken-image icons anywhere in instructor or admin surfaces.
+9. Instructor uploads a NEW video and immediately tries to preview it before Mux finishes processing → `SignedMuxPlayer` wrapper surfaces a "processing" state cleanly. Token endpoint returns `409 VIDEO_NOT_READY` without throwing. Player retries automatically once `playbackId` becomes available, OR shows a clear "video is processing, please wait" message. No infinite spinner, no console errors, no poisoned state.
+
+If any of those nine fail, do NOT flip upload policy to `["signed"]`. The flip is the LAST step and should be done in a separate commit after the wrapper is proven across all surfaces.
 
 ---
 

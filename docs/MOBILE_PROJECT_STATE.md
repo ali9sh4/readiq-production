@@ -1,19 +1,19 @@
 # Readiq Mobile Project State
-Last updated: 2026-05-01
+Last updated: 2026-05-02
 
 ## Where we are
 
 **Web API surface is complete.** All 14 mobile-facing endpoints are shipped on
 `main` (Steps 1, 2, 3B, 4, 5, 6), plus Step 3.5-prep (Path D) which added
 owner + admin branches to `/api/mux/playback-token`. The web repo is
-feature-frozen for the mobile migration except for the remaining Step 3.5
-work (wrapper + 3 surface migration + thumbnail signing + upload-policy
-flip), which is deferred until just before the mobile player screen is
-built.
+feature-frozen for the mobile migration except for Step 3.5 (wrapper + 3
+surface migration + thumbnail signing + upload-policy flip), which is the
+active next milestone.
 
-Next milestone: scaffold the Expo mobile app in a new repo (`readiq-mobile`).
-The scaffold prompt is staged in personal notes and will be pasted into a fresh
-Claude Code session in that new working directory.
+Next milestone: Step 3.5 web-side hardening, then scaffold the Expo mobile app
+in a new repo (`readiq-mobile`). The scaffold prompt is staged in personal
+notes and will be pasted into a fresh Claude Code session in that new working
+directory after 3.5 lands.
 
 ## Shipped commits (web repo)
 
@@ -23,24 +23,18 @@ Claude Code session in that new working directory.
 - `026ac29` — Step 4: profile + favorites writes (`PATCH /api/me`, `POST /api/me/favorites`, `DELETE /api/me/favorites/[courseId]`) + docs pass
 - `ef0e629` — Step 5: wallet top-up flow with manual receipt upload (presigned R2 PUT + `topup_requests` write with `paymentMethod` + `receiptUrl`)
 - `6e01b6b` — Step 6: enrollment purchase endpoint (`POST /api/enrollments`, free + paid, idempotent via `generateProtectionKey`) + project state docs
-- _(unstaged)_ — Step 3.5-prep / Path D: owner + admin branches on `/api/mux/playback-token` (`route.ts`), bypass visibility gate + enrollment check; audit-log `reason=` field. New `MOBILE_API_TESTING.md` recipes c.1 (owner draft), c.2 (admin pending), expanded f) (VIDEO_NOT_READY).
+- `529b236` — Step 3.5-prep / Path D: owner + admin branches on `/api/mux/playback-token` (`route.ts`), bypass visibility gate + enrollment check; audit-log `reason=` field. New `MOBILE_API_TESTING.md` recipes c.1 (owner draft), c.2 (admin pending), expanded f) (VIDEO_NOT_READY).
 
 ## In progress
 
-Path D (Mux playback-token owner/admin branch) is half-done and uncommitted. Code change is in `app/api/mux/playback-token/route.ts` locally. Two blocking issues prevent commit:
-
-- **`.env.local` whitespace bug.** Lines `MUX_SIGNING_KEY_ID` and `MUX_SIGNING_PRIVATE_KEY` have leading characters that look like 4 spaces but resist `sed -i 's/^[[:space:]]*...//'`. Suggests the indent is NBSP, tab, or another whitespace variant. Need to inspect with `xxd` or rewrite the file in a different editor.
-- **Mux private key is PKCS#1, not PKCS#8.** Mux dashboard issued `-----BEGIN RSA PRIVATE KEY-----`. The `lib/mux/playbackToken.ts` helper (jose's `importPKCS8`) only accepts PKCS#8. Two ways to fix: convert with `openssl pkcs8 -topk8 -nocrypt`, or change the helper to use Node's `crypto.createPrivateKey` which accepts both formats. Decided against changing the helper to avoid altering a security-critical code path. Will run the openssl conversion next session.
-
-Once both issues are resolved and T3 returns 200 with a real signed JWT, Path D commits and the chapter closes.
+Nothing in progress in the web repo. Web API surface is feature-frozen pending Step 3.5.
 
 ## Up next
 
-1. **Resolve Path D blockers (~30 min next session).** In order: (a) inspect `.env.local` indent characters with `xxd` and rewrite the two MUX_SIGNING_* lines from scratch in a known editor, (b) base64-decode the existing key to a temp PEM file, (c) `openssl pkcs8 -topk8 -nocrypt -in /tmp/mux-pkcs1.pem -out /tmp/mux-pkcs8.pem`, (d) re-encode with `base64 -w0` and update the env var, (e) restart dev server, (f) confirm T3 returns 200, (g) commit Path D.
-2. **Scaffold `readiq-mobile`** — fresh Expo (managed) project in a new repo. Scaffold prompt is staged in personal notes.
-3. **Step 3.5 (web repo)** — must land *before* the mobile player screen is built. Scope (reduced — route work is now done in 3.5-prep): `SignedMuxPlayer` wrapper, `useMuxPlaybackToken` hook, thumbnail-token handling (separate JWT, `aud:"t"`), replace the three direct `<MuxPlayer />` call sites (`components/video_uploader.tsx:857`, `components/CoursePreview.tsx:326`, `components/ui/CoursePlayer.tsx:644`), then flip `createMuxUpload` to `playback_policy: ["signed"]`. Unblocks production Mux signing for both web and mobile.
-4. **Mobile feature build-out** — courses list, course detail, enrollment purchase, wallet + top-up upload, favorites, profile, signed Mux player screen (after 3.5).
-5. **Post-mobile cleanup PRs** (each separate, after the mobile app is live): delete the web `/Course/[courseId]` viewer, remove all ZainCash code, update `/admin-dashboard/topup-approvals` to display `paymentMethod` + `receiptUrl`, ship iOS screen-capture detection (mobile v1.1), document the Mux signing-key rotation policy, remove `/api/health/me`.
+1. **Step 3.5 (web — signed Mux playback)**. Build `SignedMuxPlayer` wrapper + `useMuxPlaybackToken` hook. Build thumbnail token helper + signed thumbnail URL strategy. Migrate 3 web player call sites: `components/video_uploader.tsx` (line ~857), `components/CoursePreview.tsx` (line ~326), `components/ui/CoursePlayer.tsx` (line ~644). Migrate thumbnail call site at `video_uploader.tsx` (line ~741) and grep for any other `image.mux.com` call sites. Last step: flip `app/actions/upload_video_actions.ts` `playback_policy` from `["public"]` to `["signed"]`. Test all three surfaces against both new signed assets AND legacy public-policy assets. Estimate: 1–2 focused days.
+2. **Mobile scaffold (`readiq-mobile` new repo)**. Fresh Expo managed project. Stack staged in personal notes. First session: project init, navigation skeleton, Firebase Auth ID-token bearer client, `apiClient` wrapper around the 14 endpoints, `/api/health/me` smoke screen.
+3. **Mobile feature build-out** — courses list, course detail, enrollment purchase, wallet + top-up upload, favorites, profile, signed Mux player screen (after 3.5).
+4. **Post-mobile cleanup PRs** (each separate, after the mobile app is live): delete the web `/Course/[courseId]` viewer, remove all ZainCash code, update `/admin-dashboard/topup-approvals` to display `paymentMethod` + `receiptUrl`, ship iOS screen-capture detection (mobile v1.1), document the Mux signing-key rotation policy, remove `/api/health/me`.
 
 ## Key decisions log
 
@@ -49,9 +43,9 @@ Once both issues are resolved and T3 returns 200 with a real signed JWT, Path D 
 - **Manual top-up via receipt upload.** No automated payment provider. Students upload a receipt image to R2 via a presigned URL; admins approve in the existing dashboard.
 - **Search deferred to Algolia post-v1.** Firestore can't do free-text efficiently and prefix-match would mislead users. Mobile v1 ships with category/level filters only.
 - **Step 3 split into 3B (endpoint) + 3.5 (web migration).** The original Step 3 bundled the playback-token endpoint with flipping uploads to signed playback. Flipping uploads standalone would silently break the three existing web Mux player surfaces, so the endpoint shipped first (3B) and the surface migration + upload flip is its own scoped step (3.5).
-- **Step 3.5 deferred (Path C), not skipped (Path B).** Considered shipping 3.5 immediately (Path A), skipping it forever (Path B), or doing nothing (no Path D=do route work only). Picked deferral until the week before the mobile player screen is built. Threat model and rationale documented in the "Step 3.5 — audit & decision rationale" section below. Re-evaluate immediately if any of: a leak incident occurs, course price crosses ~$50/course equivalent, an instructor contract requires DRM, or the mobile timeline compresses to <2 weeks.
+- **Step 3.5 deferred (Path C), not skipped (Path B).** **Superseded 2026-05-02.** Decision reversed — Step 3.5 is now the next milestone, ahead of mobile scaffolding. See 'DRM strategy and threat scope' below for current rationale. This entry retained as historical record. Considered shipping 3.5 immediately (Path A), skipping it forever (Path B), or doing nothing (no Path D=do route work only). Picked deferral until the week before the mobile player screen is built. Threat model and rationale documented in the "Step 3.5 — audit & decision rationale" section below. Re-evaluate immediately if any of: a leak incident occurs, course price crosses ~$50/course equivalent, an instructor contract requires DRM, or the mobile timeline compresses to <2 weeks.
 - **Course ownership = `createdBy` field (Firebase uid), no co-instructors.** Confirmed by the web-side audit. `instructorName` is a denormalized display field, not authoritative. Global admin override via `verifiedToken.admin === true`.
-- **Mux signing key incident (2026-05-01).** During Path D verification testing, the Mux signing key was unintentionally pasted into the conversation history. The key was rotated immediately. Going forward: (a) never paste secrets, real or example, into any chat or commit message; (b) when describing key format, describe the SHAPE only (length, header line, base64 vs PEM) — never the value. The leak window was minutes, scope was Mux playback signing only (no AWS/Firebase/R2/payments), no exposed playback IDs in the public catalog, post-rotation impact = zero. Lesson logged.
+- **Mux signing key incident (2026-05-01, twice same day).** First exposure: during Path D verification testing, the Mux signing key was unintentionally pasted into the conversation history; rotated immediately. Second exposure (same day, post-rotation): `.env.local` was the active IDE selection during a later session, and the IDE auto-share surfaced both `MUX_SIGNING_KEY_ID` and `MUX_SIGNING_PRIVATE_KEY` (PKCS#8 base64) into a system-reminder tool message. Rotated again. Going forward: (a) never paste secrets, real or example, into any chat or commit message; (b) when describing key format, describe the SHAPE only (length, header line, base64 vs PEM) — never the value; (c) **do not keep `.env.local` open as the active editor selection during AI-assisted sessions** — the IDE forwards the selected file to tool context. Both leak windows were minutes, scope was Mux playback signing only (no AWS/Firebase/R2/payments), no exposed playback IDs in the public catalog, post-rotation impact = zero. Lesson logged.
 
 ## Web instructor flow status
 
@@ -128,6 +122,8 @@ A rival platform pays for one enrollment, uses yt-dlp + ffmpeg to pull every vid
 
 ### Why Path C (defer to week before mobile launch)
 
+**Superseded 2026-05-02.** Decision reversed — Step 3.5 is now the next milestone, ahead of mobile scaffolding. See 'DRM strategy and threat scope' below for current rationale. This entry retained as historical record.
+
 - Zero coupling between current mobile work and 3.5. The mobile API surface already shipped does not touch any signed-playback code path. Mobile screens (auth → catalog → enrollment → wallet → my-courses) come before the player screen, which is the LAST thing built and the only consumer of `/api/mux/playback-token`.
 - Mux upload policy can't be undone per-asset, so the "do it now to keep the asset population pure" argument is fictional unless course publishing is paused for 4–6 weeks. The wrapper has to handle a two-tier (legacy public + new signed) state regardless.
 - Doing 3.5 today means shipping the wrapper 4–6 weeks before its consumer (mobile player) exists. Edge cases get learned twice — once in cold review now, once when integrating with a real mobile player later. Path C lets that learning happen once, in context.
@@ -167,6 +163,26 @@ Drop everything and ship Path A immediately if any of these become true:
 - Any instructor contract requires DRM.
 - A B2B / enterprise / multi-seat tier is added to the product.
 - Mobile launch timeline compresses to under 2 weeks (the deferral window is no longer worth the context-switch cost).
+- Scenario 3 mitigations (per-user watermarking, device-binding, concurrent-session caps) are reactive defenses. Scope them ONLY when: (a) the platform has 10+ paying customers AND (b) there is documented evidence of catalog scraping or sharing-ring abuse. Do not pre-build at current scale.
+
+## DRM strategy and threat scope
+
+After 3.5 + mobile launch, the DRM posture is: A+ for stopping URL link-sharing (the loud, scalable, embarrassing attack), B+ for stopping casual credential-sharing among friends, C for stopping a determined enrolled paying user with technical knowledge (impossible to fully solve, true for every platform on Earth including Netflix/HBO), F for stopping content repackaging via AI summarization (also impossible, also true everywhere). The goal is not zero piracy. The goal is "leaking is annoying enough that paying is easier." That is a realistic and successful DRM outcome for an Iraqi-market dental/medical e-learning platform.
+
+### What 3.5 actually changes for users
+
+- Existing 10 paying customers: zero perceptible change. Old videos uploaded before 3.5 stay public-policy in Mux and continue playing through the new wrapper component. Maybe a 200-300ms delay on first play of new signed videos. Nothing else.
+- Instructors: same upload UI, same flow. Owner branch in `/api/mux/playback-token` (shipped in Path D) lets them preview their own draft/unpublished course videos.
+- Old uploaded videos (the 17 in "From Diagnosis to Extraction", the Exoplan course): stay public-policy permanently. Mux does not allow flipping an existing asset's policy. They are dev/test content per existing project notes; real production content will be uploaded after 3.5 lands.
+- New uploads (after 3.5): signed-policy only. No public m3u8 URL exists for them.
+
+### What 3.5 does NOT change
+
+- Old public-policy assets remain leakable via direct Mux URL until they are deleted and re-uploaded.
+- A determined enrolled student can still extract video via screen-record or yt-dlp-with-token.
+- Friend-credential-sharing (Scenario 2) is reduced by Google-only auth + mobile-only viewing, not eliminated.
+
+Scenario 3 mitigations (catalog scraping by a competitor) are deferred until the platform reaches 10+ paying customers AND there is evidence of actual abuse. Pre-building reactive defenses (per-user watermarking, device-binding, concurrent-session caps) at current scale is over-engineering. They will be scoped when there is a real attack to defend against, not before.
 
 ---
 
