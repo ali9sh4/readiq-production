@@ -40,6 +40,19 @@ Also do not:
 
 ---
 
+## Cryptographic signing helpers — owner-review-only edits
+
+These files implement Mux JWT signing. They are NOT orphaned and NOT awaiting deletion. They are protected because casual modifications to signing code can silently break video access for every customer (a typo in `aud`, a wrong TTL, an accidentally logged secret). Edits require explicit instruction from the owner with a clear reason — never as part of a "cleanup," "tidy," or "consolidate" pass.
+
+- `lib/mux/playbackToken.ts` — signs the playback JWT (`aud:"v"`). Do not modify, refactor, or "extract a shared helper" out of it without an explicit owner instruction. Specifically: do not change the algorithm, audience, TTL handling, key-loading branches (PEM vs base64-PKCS8), or error messages.
+- `lib/mux/thumbnailToken.ts` — signs the thumbnail JWT (`aud:"t"`). Same rules as above. The deliberate duplication of key-loading logic between this file and `playbackToken.ts` is intentional — extracting a shared loader is a future scoped change, not a casual cleanup.
+
+This block does NOT have the one-week rollback timer that the auth section above has. There is no expiry date. These files stay protected indefinitely.
+
+If you (an AI assistant) believe a refactor here would help, surface the proposal to the owner and wait for explicit approval before touching either file.
+
+---
+
 ## What the manual cleanup will eventually look like (FOR OWNER REFERENCE ONLY)
 
 Owner will, no earlier than **2026-05-08**, in a single small commit:
