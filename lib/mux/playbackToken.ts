@@ -1,10 +1,10 @@
-import { SignJWT, importPKCS8, type KeyLike } from "jose";
+import { SignJWT, importPKCS8 } from "jose";
 
 const ALGORITHM = "RS256";
 
-let cachedKey: Promise<KeyLike | Uint8Array> | null = null;
+let cachedKey: ReturnType<typeof importPKCS8> | null = null;
 
-function loadSigningKey(): Promise<KeyLike | Uint8Array> {
+function loadSigningKey(): ReturnType<typeof importPKCS8> {
   if (cachedKey) return cachedKey;
 
   const privateKey = process.env.MUX_SIGNING_PRIVATE_KEY;
