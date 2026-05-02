@@ -265,8 +265,14 @@ Step 3 — wrap MuxPlayer once.
 Create components/SignedMuxPlayer.tsx that takes { courseId, videoId, playbackId, ...muxProps }, calls the hook, and renders:
 
 ```tsx
-<MuxPlayer playbackId={playbackId} playbackToken={token} ... />
+<MuxPlayer
+  playbackId={playbackId}
+  tokens={{ playback: token, thumbnail: thumbnailToken }}
+  ...
+/>
 ```
+
+The `@mux/mux-player-react` 3.x API uses a single `tokens` object (`{ playback, thumbnail, storyboard, drm }`), not separate `playbackToken` / `thumbnailToken` props. The wrapper builds `tokens` conditionally and omits the prop entirely for legacy public-policy assets (no `tokens={undefined}`).
 
 Replace the three direct <MuxPlayer /> call sites (video_uploader.tsx:857, CoursePreview.tsx:326, CoursePlayer.tsx:644) with this wrapper. Same component, three behaviors driven by the API:
 
@@ -282,7 +288,7 @@ Replace the raw https://image.mux.com/${playbackId}/thumbnail.jpg URLs with a si
 ### 5. Legacy public-asset coexistence
 
 Step 5 — handle the legacy public-asset mix.
-Since older assets stay public, the API can return token: null for assets where the playback policy is public — SignedMuxPlayer then omits playbackToken. Easiest path: store the policy on the video doc at upload time and key off it.
+Since older assets stay public, the API can return token: null for assets where the playback policy is public — SignedMuxPlayer then omits the `tokens` prop entirely (not `tokens={undefined}`). Easiest path: store the policy on the video doc at upload time and key off it.
 
 ### What to avoid
 
