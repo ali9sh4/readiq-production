@@ -5,7 +5,7 @@ import { Course } from "@/types/types";
 
 import { Search } from "lucide-react";
 import CourseSearch from "./courseSearch";
-import CoursesCardList from "./CoursesCardList.tsx  ";
+import CoursesCardList from "./CoursesCardList";
 
 interface HomeCoursesSection {
   initialCourses: Course[];

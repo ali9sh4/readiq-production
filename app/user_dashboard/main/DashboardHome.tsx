@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Award, Plus, AlertCircle } from "lucide-react";
-import CoursesCardList from "@/components/CoursesCardList.tsx  ";
+import CoursesCardList from "@/components/CoursesCardList";
 import { Course } from "@/types/types";
 
 interface DashboardStats {

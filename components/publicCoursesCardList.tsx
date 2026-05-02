@@ -1,7 +1,7 @@
 import { getCourses } from "@/data/courses";
 import { CourseResponse } from "@/types/types";
 import NextBackButton from "./loadMoreButoon";
-import CoursesCardList from "./CoursesCardList.tsx  ";
+import CoursesCardList from "./CoursesCardList";
 
 type CourseLevel = "beginner" | "intermediate" | "advanced" | "all_levels";
 

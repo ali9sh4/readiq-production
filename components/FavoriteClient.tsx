@@ -25,7 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/authContext";
 import { getUserFavorites } from "@/app/actions/favorites_actions";
 import { Course } from "@/types/types"; // ✅ Import the actual Course type
-import CoursesCardList from "@/components/CoursesCardList.tsx  ";
+import CoursesCardList from "@/components/CoursesCardList";
 
 interface FavoritesClientProps {
   initialFavorites?: Course[];
