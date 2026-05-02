@@ -1,6 +1,6 @@
 "use client";
-import MuxPlayer from "@mux/mux-player-react";
-import Image from "next/image";
+import SignedMuxPlayer from "@/components/SignedMuxPlayer";
+import SignedMuxThumbnail from "@/components/SignedMuxThumbnail";
 
 import { useState, useRef, useEffect } from "react";
 import {
@@ -737,11 +737,13 @@ export default function VideoUploader({
                             togglePlayVideo(video.videoId);
                           }}
                         >
-                          <Image
-                            src={`https://image.mux.com/${video.playbackId}/thumbnail.jpg?time=0`}
+                          <SignedMuxThumbnail
+                            courseId={courseId}
+                            videoId={video.videoId}
+                            playbackId={video.playbackId}
                             alt={video.title}
                             fill
-                            sizes="128px" // Changed - matches w-32 (32 * 4px = 128px)
+                            sizes="128px"
                             className="object-cover"
                           />
                           <div className="absolute inset-0 bg-opacity-20 group-hover:bg-opacity-40 transition-all flex items-center justify-center z-10">
@@ -854,7 +856,9 @@ export default function VideoUploader({
                       {playingVideoId === video.videoId && (
                         <div className="border-t border-green-200">
                           <div className="aspect-video bg-black">
-                            <MuxPlayer
+                            <SignedMuxPlayer
+                              courseId={courseId}
+                              videoId={video.videoId}
                               playbackId={video.playbackId}
                               streamType="on-demand"
                               metadata={{
