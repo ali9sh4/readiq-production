@@ -53,9 +53,6 @@ Claude Code session in that new working directory after 3.5 fully lands.
 3. **Mobile scaffold (`readiq-mobile` new repo).** Fresh Expo managed project. Stack staged in personal notes.
 4. **Mobile feature build-out** — courses list, course detail, enrollment purchase, wallet + top-up upload, favorites, profile, signed Mux player screen.
 5. **Post-mobile cleanup PRs** (each separate, after the mobile app is live): delete the web `/Course/[courseId]` viewer, remove all ZainCash code, update `/admin-dashboard/topup-approvals` to display `paymentMethod` + `receiptUrl`, ship iOS screen-capture detection (mobile v1.1), document the Mux signing-key rotation policy, remove `/api/health/me`, fix the pre-existing `lib/mux/playbackToken.ts(1,37)` `KeyLike` import error (`jose` no longer exports the type — pattern in `thumbnailToken.ts` is `ReturnType<typeof importPKCS8>`), update the route's audit-log line to reflect that both playback + thumbnail JWTs are issued per request.
-2. **Mobile scaffold (`readiq-mobile` new repo)**. Fresh Expo managed project. Stack staged in personal notes. First session: project init, navigation skeleton, Firebase Auth ID-token bearer client, `apiClient` wrapper around the 14 endpoints, `/api/health/me` smoke screen.
-3. **Mobile feature build-out** — courses list, course detail, enrollment purchase, wallet + top-up upload, favorites, profile, signed Mux player screen (after 3.5).
-4. **Post-mobile cleanup PRs** (each separate, after the mobile app is live): delete the web `/Course/[courseId]` viewer, remove all ZainCash code, update `/admin-dashboard/topup-approvals` to display `paymentMethod` + `receiptUrl`, ship iOS screen-capture detection (mobile v1.1), document the Mux signing-key rotation policy, remove `/api/health/me`.
 
 ## Key decisions log
 
