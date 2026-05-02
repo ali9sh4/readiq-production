@@ -53,7 +53,14 @@ export function useMuxPlaybackToken({
   const [thumbnailToken, setThumbnailToken] = useState<string | null>(null);
   const [playbackId, setPlaybackId] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  // Start `true` when we know we'll fetch on mount, so the first render
+  // already reflects the loading state and the consumer never paints a
+  // pre-fetch frame. Without this, signed assets briefly try to play
+  // unsigned (no `tokens` prop) and the player flashes a 403 before the
+  // hook's effect runs.
+  const [isLoading, setIsLoading] = useState<boolean>(
+    () => enabled && Boolean(courseId) && Boolean(videoId)
+  );
   const [error, setError] = useState<MuxPlaybackTokenError | null>(null);
 
   // Bumping this re-runs the fetch effect. Used by both the public refetch()

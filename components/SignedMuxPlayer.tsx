@@ -22,13 +22,22 @@ const SignedMuxPlayer = forwardRef<MuxPlayerRef, SignedMuxPlayerProps>(
     { courseId, videoId, playbackId, ...muxProps },
     ref
   ) {
-    const { token, thumbnailToken, error } = useMuxPlaybackToken({
+    const { token, thumbnailToken, error, isLoading } = useMuxPlaybackToken({
       courseId,
       videoId,
       enabled: Boolean(playbackId),
     });
 
     if (!playbackId || error?.code === "VIDEO_NOT_READY") {
+      return <ProcessingPlaceholder className={muxProps.className} />;
+    }
+
+    // Initial-load gate. Until the hook reports a token or an error, the
+    // wrapper can't tell whether to send a `tokens` prop or omit it.
+    // Rendering MuxPlayer here would flash a 403 on signed assets while
+    // the JWT is in flight. Holding the placeholder for ~200ms is the
+    // cleaner UX.
+    if (isLoading && !token && !error) {
       return <ProcessingPlaceholder className={muxProps.className} />;
     }
 
@@ -59,11 +68,12 @@ function ProcessingPlaceholder({ className }: { className?: string }) {
     <div
       role="status"
       aria-live="polite"
+      dir="rtl"
       className={`flex aspect-video w-full items-center justify-center bg-neutral-900 text-center text-sm text-neutral-300${
         className ? ` ${className}` : ""
       }`}
     >
-      Video is processing — please refresh in a moment.
+      جارٍ تجهيز الفيديو…
     </div>
   );
 }
