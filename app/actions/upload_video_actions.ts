@@ -95,11 +95,8 @@ export async function createMuxUpload(formData: FormData) {
     // ✅ Create Mux upload
     const upload = await mux.video.uploads.create({
       new_asset_settings: {
-        // TODO(step-3.5): Flip to ["signed"] after SignedMuxPlayer wrapper + thumbnail signing land.
-        // Three web player surfaces consume raw playbackId today: components/video_uploader.tsx,
-        // components/CoursePreview.tsx, components/ui/CoursePlayer.tsx. All must migrate before
-        // this flip, or those surfaces will silently break on every new upload.
-        playback_policy: ["public"],
+        playback_policy: ["signed"],
+        mp4_support: "none",
         encoding_tier: "smart",
         normalize_audio: true,
       },
