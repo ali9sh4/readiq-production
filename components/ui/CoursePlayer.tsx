@@ -138,6 +138,15 @@ export default function CoursePlayer({
   const [videoError, setVideoError] = useState<string | null>(null);
   const [markingComplete, setMarkingComplete] = useState(false);
 
+  // Signed playback token state. Kept separate from videoError /
+  // isLoadingVideo so token-mint failures stay distinguishable from
+  // playback failures during the 3.5 rollout.
+  const [playbackToken, setPlaybackToken] = useState<string | null>(null);
+  const [thumbnailToken, setThumbnailToken] = useState<string | null>(null);
+  const [tokenLoading, setTokenLoading] = useState(false);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [tokenRetryCount, setTokenRetryCount] = useState(0);
+
   // --- Organize Videos ---
   const videosBySections = useMemo(() => {
     const videos = (course?.videos || []).filter((v) => v.isVisible);
@@ -279,6 +288,88 @@ export default function CoursePlayer({
       );
     };
   }, []);
+
+  // Mint a signed playback JWT whenever the active lesson changes.
+  // Keyed on videoId (stable lesson identity), not playbackId (derived
+  // asset reference). AbortController prevents stale tokens from a slow
+  // request landing after the user has clicked a different lesson.
+  useEffect(() => {
+    if (!currentVideo || !auth?.user || !canAccessVideo) {
+      setPlaybackToken(null);
+      setThumbnailToken(null);
+      setTokenError(null);
+      setTokenLoading(false);
+      return;
+    }
+
+    if (!currentVideo.playbackId) {
+      setPlaybackToken(null);
+      setThumbnailToken(null);
+      setTokenError(null);
+      setTokenLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    let cancelled = false;
+
+    setTokenLoading(true);
+    setTokenError(null);
+    setPlaybackToken(null);
+    setThumbnailToken(null);
+
+    (async () => {
+      try {
+        const idToken = await auth.user!.getIdToken(true);
+        const res = await fetch("/api/mux/playback-token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            videoId: currentVideo.videoId,
+            courseId: course.id,
+          }),
+          signal: controller.signal,
+        });
+
+        const json = await res.json().catch(() => null);
+        if (cancelled) return;
+
+        if (!res.ok || !json?.success || !json?.data?.token) {
+          const message =
+            json?.error?.message || "تعذّر تحميل الفيديو. حاول مرة أخرى.";
+          setTokenError(message);
+          setTokenLoading(false);
+          return;
+        }
+
+        setPlaybackToken(json.data.token);
+        setThumbnailToken(json.data.thumbnailToken ?? null);
+        setTokenLoading(false);
+      } catch (err) {
+        if (cancelled) return;
+        if (err instanceof Error && err.name === "AbortError") return;
+        setTokenError(
+          err instanceof Error ? err.message : "حدث خطأ غير متوقع",
+        );
+        setTokenLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    currentVideo?.videoId,
+    canAccessVideo,
+    course.id,
+    auth?.user,
+    tokenRetryCount,
+  ]);
 
   const handleVideoComplete = useCallback(async () => {
     if (
@@ -629,7 +720,8 @@ export default function CoursePlayer({
           {/* Video Player */}
           {!videoError && currentVideo && canAccessVideo && (
             <>
-              {!currentVideo.playbackId && !currentVideo.muxPlaybackId ? (
+              {/* playbackId is the canonical Mux asset reference for this file. */}
+              {!currentVideo.playbackId ? (
                 <div className="aspect-video flex flex-col items-center justify-center text-center p-4 lg:p-6">
                   <AlertCircle className="w-12 h-12 lg:w-16 lg:h-16 text-yellow-500 mb-4" />
                   <h3 className="text-lg lg:text-xl font-semibold text-white mb-2">
@@ -641,19 +733,49 @@ export default function CoursePlayer({
                 </div>
               ) : (
                 <div className="relative w-full aspect-video video-container">
-                  <MuxPlayer
-                    playbackId={currentVideo.playbackId}
-                    streamType="on-demand"
-                    metadata={{
-                      video_id: currentVideo.videoId,
-                      video_title: currentVideo.title,
-                    }}
-                    className="w-full h-full aspect-video bg-black"
-                    onEnded={() => {
-                      handleVideoComplete();
-                      goToNextVideo();
-                    }}
-                  />
+                  {tokenLoading && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+                      <Loader2 className="w-8 h-8 lg:w-12 lg:h-12 text-blue-500 animate-spin" />
+                    </div>
+                  )}
+
+                  {tokenError && !tokenLoading && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 lg:p-6 bg-black z-10">
+                      <AlertCircle className="w-12 h-12 lg:w-16 lg:h-16 text-red-500 mb-4" />
+                      <p className="text-white mb-4 text-sm lg:text-base">
+                        {tokenError}
+                      </p>
+                      <Button
+                        onClick={() => setTokenRetryCount((n) => n + 1)}
+                        variant="outline"
+                        size="sm"
+                        className="text-white border-white hover:bg-white/10"
+                      >
+                        إعادة المحاولة
+                      </Button>
+                    </div>
+                  )}
+
+                  {!tokenLoading && !tokenError && playbackToken && (
+                    <MuxPlayer
+                      key={currentVideo.videoId}
+                      playbackId={currentVideo.playbackId}
+                      tokens={{
+                        playback: playbackToken,
+                        thumbnail: thumbnailToken ?? undefined,
+                      }}
+                      streamType="on-demand"
+                      metadata={{
+                        video_id: currentVideo.videoId,
+                        video_title: currentVideo.title,
+                      }}
+                      className="w-full h-full aspect-video bg-black"
+                      onEnded={() => {
+                        handleVideoComplete();
+                        goToNextVideo();
+                      }}
+                    />
+                  )}
 
                   {isEnrolled && <VideoWatermark text={watermarkText} />}
                 </div>

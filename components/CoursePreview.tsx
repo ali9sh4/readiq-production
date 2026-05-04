@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { Course } from "@/types/types";
 import {
-  Play,
   Clock,
   Users,
   Award,
@@ -17,10 +16,10 @@ import {
   Globe,
   BarChart3,
   Video,
+  ArrowDown,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import MuxPlayer from "@mux/mux-player-react";
 import EnrollButton from "./EnrollButton";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
@@ -48,7 +47,23 @@ export default function CoursePreview({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(["المقدمة"]) // Auto-expand intro section
   );
-  const [showVideoPlayer, setShowVideoPlayer] = useState(false);
+
+  const enrollWrapperRef = useRef<HTMLDivElement | null>(null);
+  const setEnrollWrapperRef = useCallback((el: HTMLDivElement | null) => {
+    if (el && el.offsetParent !== null) {
+      enrollWrapperRef.current = el;
+    }
+  }, []);
+
+  const scrollToEnroll = useCallback(() => {
+    const el = enrollWrapperRef.current;
+    if (!el || el.offsetParent === null) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("scroll-target-pulse");
+    window.setTimeout(() => {
+      el.classList.remove("scroll-target-pulse");
+    }, 1500);
+  }, []);
 
   useEffect(() => {
     const paymentStatus = searchParams.get("payment");
@@ -64,14 +79,6 @@ export default function CoursePreview({
       window.history.replaceState(null, "", window.location.pathname);
     }
   }, [searchParams]);
-
-  // Get the first free preview video (from المقدمة section)
-  const freePreviewVideo = useMemo(() => {
-    return course.videos?.find(
-      (v) => v.section === "المقدمة" && v.isVisible !== false
-    );
-  }, [course.videos]);
-  const [selectedVideo, setSelectedVideo] = useState(freePreviewVideo);
 
   // Organize videos by section
   const videosBySections = useMemo(() => {
@@ -298,7 +305,7 @@ export default function CoursePreview({
                   </div>
 
                   {/* Enroll Button */}
-                  <div className="mb-2">
+                  <div className="mb-2" ref={setEnrollWrapperRef}>
                     <EnrollButton
                       courseTitle={course.title}
                       price={actualPrice}
@@ -318,55 +325,30 @@ export default function CoursePreview({
               </div>
             </div>
 
-            {/* Right: Video Preview */}
+            {/* Right: Course Thumbnail */}
             <div className="lg:sticky lg:top-4">
               <Card className="overflow-hidden shadow-2xl border-0">
                 <div className="relative bg-black">
-                  {showVideoPlayer && selectedVideo?.playbackId ? (
-                    <MuxPlayer
-                      playbackId={selectedVideo.playbackId}
-                      streamType="on-demand"
-                      metadata={{
-                        video_id: selectedVideo.videoId,
-                        video_title: selectedVideo.title,
-                      }}
-                      className="w-full aspect-video"
+                  <div className="relative aspect-video">
+                    <Image
+                      src={
+                        course.thumbnailUrl ||
+                        "/images/course-placeholder.jpg"
+                      }
+                      alt={course.title}
+                      fill
+                      className="object-cover"
                     />
-                  ) : (
-                    <div className="relative aspect-video">
-                      <Image
-                        src={
-                          course.thumbnailUrl ||
-                          "/images/course-placeholder.jpg"
-                        }
-                        alt={course.title}
-                        fill
-                        className="object-cover"
-                      />
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        {freePreviewVideo?.playbackId ? (
-                          <button
-                            onClick={() => setShowVideoPlayer(true)}
-                            className="group flex flex-col items-center gap-2 sm:gap-3"
-                          >
-                            <div className="bg-white rounded-full p-3 sm:p-4 md:p-5 group-hover:scale-110 transition-transform shadow-2xl">
-                              <Play className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-gray-900 fill-current" />
-                            </div>
-                            <p className="text-white font-bold text-sm sm:text-base md:text-lg px-4 text-center">
-                              مشاهدة المعاينة المجانية
-                            </p>
-                          </button>
-                        ) : (
-                          <div className="flex flex-col items-center gap-2 sm:gap-3">
-                            <Lock className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-white/60" />
-                            <p className="text-white/80 text-xs sm:text-sm">
-                              لا توجد معاينة متاحة
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                    <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                    <button
+                      type="button"
+                      onClick={scrollToEnroll}
+                      className="absolute inset-x-0 bottom-0 mx-auto mb-4 sm:mb-6 flex items-center justify-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white text-sm sm:text-base font-semibold rounded-full px-4 py-2 sm:px-5 sm:py-2.5 ring-1 ring-white/30 transition-colors w-fit"
+                    >
+                      <span>اشترك للمشاهدة</span>
+                      <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
+                  </div>
                 </div>
 
                 {/* ========================================
@@ -400,7 +382,7 @@ export default function CoursePreview({
                     </div>
 
                     {/* Enroll Button */}
-                    <div className="mb-3">
+                    <div className="mb-3" ref={setEnrollWrapperRef}>
                       <EnrollButton
                         courseTitle={course.title}
                         price={actualPrice}
@@ -478,13 +460,6 @@ export default function CoursePreview({
                 <div className="space-y-2 sm:space-y-3">
                   {videosBySections.map(([section, videos]) => {
                     const isExpanded = expandedSections.has(section);
-                    const isFreeSection = section === "المقدمة";
-                    const isVideoFree = (video: any) => {
-                      return (
-                        video.section === "المقدمة" ||
-                        video.isFreePreview === true
-                      );
-                    };
                     const sectionDuration = videos.reduce(
                       (sum, v) => sum + (v.duration || 0),
                       0
@@ -510,11 +485,6 @@ export default function CoursePreview({
                               <h3 className="font-bold text-gray-900 text-sm sm:text-base">
                                 {section}
                               </h3>
-                              {isFreeSection && (
-                                <span className="text-xs text-green-600 font-medium">
-                                  معاينة مجانية
-                                </span>
-                              )}
                             </div>
                           </div>
                           <div className="text-xs sm:text-sm text-gray-600 whitespace-nowrap mr-2">
@@ -526,58 +496,32 @@ export default function CoursePreview({
                         {/* Videos List */}
                         {isExpanded && (
                           <div className="divide-y divide-gray-100 bg-white">
-                            {videos.map((video, idx) => {
-                              const isThisVideoFree = isVideoFree(video);
-                              return (
-                                <div
-                                  key={video.videoId}
-                                  onClick={() => {
-                                    if (isThisVideoFree) {
-                                      setSelectedVideo(video);
-                                      setShowVideoPlayer(true);
-                                      window.scrollTo({
-                                        top: 0,
-                                        behavior: "smooth",
-                                      });
-                                    }
-                                  }}
-                                  className={`p-3 sm:p-4 flex items-center justify-between ${
-                                    isThisVideoFree
-                                      ? "cursor-pointer hover:bg-gray-50"
-                                      : "cursor-default"
-                                  }`}
-                                >
-                                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                                    <div
-                                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                        isThisVideoFree
-                                          ? "bg-green-100"
-                                          : "bg-gray-100"
-                                      }`}
-                                    >
-                                      {isThisVideoFree ? (
-                                        <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-600" />
-                                      ) : (
-                                        <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
-                                      )}
-                                    </div>
-                                    <div className="flex-1 text-right min-w-0">
-                                      <p className="font-medium text-gray-900 text-xs sm:text-sm truncate">
-                                        {video.title}
-                                      </p>
-                                      {video.description && (
-                                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                                          {video.description}
-                                        </p>
-                                      )}
-                                    </div>
+                            {videos.map((video) => (
+                              <div
+                                key={video.videoId}
+                                onClick={scrollToEnroll}
+                                className="p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                              >
+                                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-100">
+                                    <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
                                   </div>
-                                  <span className="text-xs sm:text-sm text-gray-600 font-medium mr-2 sm:mr-4 whitespace-nowrap">
-                                    {formatDuration(video.duration)}
-                                  </span>
+                                  <div className="flex-1 text-right min-w-0">
+                                    <p className="font-medium text-gray-900 text-xs sm:text-sm truncate">
+                                      {video.title}
+                                    </p>
+                                    {video.description && (
+                                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                                        {video.description}
+                                      </p>
+                                    )}
+                                  </div>
                                 </div>
-                              );
-                            })}
+                                <span className="text-xs sm:text-sm text-gray-600 font-medium mr-2 sm:mr-4 whitespace-nowrap">
+                                  {formatDuration(video.duration)}
+                                </span>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
@@ -702,7 +646,10 @@ export default function CoursePreview({
                 </div>
 
                 {/* Enroll Button */}
-                <div className="pt-3 border-t border-gray-200">
+                <div
+                  className="pt-3 border-t border-gray-200"
+                  ref={setEnrollWrapperRef}
+                >
                   <EnrollButton
                     courseTitle={course.title}
                     price={actualPrice}

@@ -9,7 +9,7 @@ At-a-glance progress against the steps in section E. Update this list as steps l
 - **Step 3B — Mux playback-token endpoint: SHIPPED** (`f8acbb5`). `POST /api/mux/playback-token` issues short-lived signed Mux JWTs (RS256) with auth, course-visibility, free-preview bypass, and enrollment gate. End-to-end playback test deferred until 3.5 flips uploads to signed.
 - **Step 3.5-prep — owner + admin branches on `/api/mux/playback-token`: SHIPPED** (Path D from the audit). The route now has owner (`course.createdBy === auth.userId`) and admin (`auth.isAdmin === true`) branches; both bypass the visibility gate and the enrollment check. The route is now structurally complete — Step 3.5 itself no longer touches the route. Reduces the surface area of the eventual 3.5 PR.
 - **Step 3A — flip uploads to signed: DEFERRED to Step 3.5.** Cannot land standalone; would silently break the three existing web Mux player surfaces.
-- **Step 3.5 — `SignedMuxPlayer` + 3-surface migration: ACTIVE — next milestone.** Scoped in this doc under "Step 3.5 scope". Unblocks production Mux signing for both mobile and web.
+- **Step 3.5 — `SignedMuxPlayer` + 3-surface migration: IN PROGRESS on `feat/step-3.5-signed-playback`.** Substeps A–D shipped to the branch (hook, wrapper, thumbnail signing, instructor-preview surface). Substeps E (CoursePreview), F (CoursePlayer), G (image.mux.com sweep) remain. Substep H (upload-policy flip) is a separate one-line commit on `main` after the wrapper PR merges. Detailed substep status in the **Step 3.5 scope** section below. See `docs/MOBILE_PROJECT_STATE.md` "Implementation findings during 3.5.A–D" for non-obvious gotchas the audit didn't predict.
 - **Step 4 — profile + favorites writes: IN PROGRESS.** `PATCH /api/me`, `POST /api/me/favorites`, `DELETE /api/me/favorites/[courseId]`. Wraps existing server actions; testing recipes already drafted in `docs/MOBILE_API_TESTING.md`.
 - **Step 5 — top-up flow: NOT STARTED.** `POST /api/wallet/topup/upload-receipt`, `POST /api/wallet/topup/request`. First step that introduces the new `paymentMethod` + `receiptUrl` fields on `topup_requests`.
 - **Step 6 — enrollment purchase: NOT STARTED.** `POST /api/enrollments`, free + paid paths, idempotent against retries.
@@ -248,41 +248,60 @@ Three things that make this clean:
 2. The signed-playback API already exists (/api/mux/playback-token); it just needs an instructor branch added.
 3. /course/[courseId]/page.tsx already routes the owner to CoursePlayer (line 199, if (isInstructor)), so the natural surface for instructor preview is the existing viewer — not a new instructor-only player.
 
+### Substep status (current as of 3.5.D shipping to the branch)
+
+| Substep | Scope | Status | Commit |
+|---|---|---|---|
+| 3.5.A | `useMuxPlaybackToken` hook | DONE | `3a5b5e3` |
+| 3.5.B | `SignedMuxPlayer` wrapper | DONE | `1e63f36` + `784d360` (post-fix gate) |
+| 3.5.C | Thumbnail token signing (`lib/mux/thumbnailToken.ts` + extended route response) | DONE | `f80ff3a` |
+| 3.5.D | `components/video_uploader.tsx` (instructor preview, lines 740 + 857) | DONE | `a20b5ed` |
+| 3.5.E | `components/CoursePreview.tsx` (free-preview, line ~326) | TODO | — |
+| 3.5.F | `components/ui/CoursePlayer.tsx` (enrolled viewer, line ~644). Highest risk — watermark DOM-walking + `:fullscreen` selectors + `onEnded` chain + auto-advance (mid-video-swap flash needs hook fix). | TODO | — |
+| 3.5.G | Grep `image.mux.com` across `components/`, `app/`, `lib/`. Replace each with `<SignedMuxThumbnail>`. | TODO | — |
+| 3.5.H | Flip `app/actions/upload_video_actions.ts` `playback_policy` from `["public"]` to `["signed"]`. **Separate one-line commit on `main` after the wrapper PR merges — NOT on the feature branch.** | TODO | — |
+
 ### 1. Server owner branch — DONE (Path D / Step 3.5-prep)
 
 Shipped ahead of the rest of Step 3.5 as a risk-free pre-cursor. The route now has owner + admin branches that both bypass the visibility gate AND the enrollment check. Single token-issuance code path; mobile and web both consume it. See `app/api/mux/playback-token/route.ts` and the test recipes in `MOBILE_API_TESTING.md` (sections c.1, c.2).
 
-The remaining sections (2–5 below) are still TODO for Step 3.5.
+### 2. `useMuxPlaybackToken` hook — DONE (3.5.A, `3a5b5e3`)
 
-### 2. `useMuxPlaybackToken` hook
+`hooks/useMuxPlaybackToken.ts`. Takes `{ courseId, videoId, enabled? }`. Calls `user.getIdToken()` from `useAuth()`, POSTs to `/api/mux/playback-token`, returns `{ token, thumbnailToken, playbackId, expiresAt, isLoading, error, refetch }`. Auto-refreshes 5 min before `expiresAt`. AbortController on input change. Treats every API failure (including `409 VIDEO_NOT_READY`) as `error` state — never throws. `isLoading` initialized via lazy initializer (post-fix in `784d360`) so render 1 already shows the loading state and consumers don't paint a pre-fetch frame.
 
-Step 2 — client: add a tiny useMuxPlaybackToken(courseId, videoId) hook.
-Calls auth.user.getIdToken(), POSTs to /api/mux/playback-token with Authorization: Bearer ..., returns { token, expiresAt } plus a refresh-on-expiry effect (the API already returns expiresAt). One hook covers all three player sites.
+### 3. `SignedMuxPlayer` wrapper — DONE (3.5.B, `1e63f36` + `784d360`)
 
-### 3. `SignedMuxPlayer` wrapper
-
-Step 3 — wrap MuxPlayer once.
-Create components/SignedMuxPlayer.tsx that takes { courseId, videoId, playbackId, ...muxProps }, calls the hook, and renders:
+`components/SignedMuxPlayer.tsx`. `forwardRef<MuxPlayerRef, SignedMuxPlayerProps>` so refs reach the underlying mux-player element (CoursePlayer's watermark DOM-walking depends on this). Renders `<MuxPlayer>` directly (no wrapping div) so `:fullscreen` / `.video-container` CSS selectors keep working. Passthrough for `className`, `metadata`, `onEnded`, `streamType`, etc. via `{...muxProps}` first, controlled props (`ref`, `playbackId`, `tokens`) after. The wrapper signature is:
 
 ```tsx
-<MuxPlayer playbackId={playbackId} playbackToken={token} ... />
+<MuxPlayer
+  playbackId={playbackId}
+  tokens={{ playback: token, thumbnail: thumbnailToken }}
+  ...
+/>
 ```
 
-Replace the three direct <MuxPlayer /> call sites (video_uploader.tsx:857, CoursePreview.tsx:326, CoursePlayer.tsx:644) with this wrapper. Same component, three behaviors driven by the API:
+The `@mux/mux-player-react` 3.x API uses a single `tokens` object (`{ playback, thumbnail, storyboard, drm }`), not separate `playbackToken` / `thumbnailToken` props. The wrapper builds `tokens` conditionally and omits the prop entirely for legacy public-policy assets (no `tokens={undefined}`).
 
-- Instructor upload card → owner branch issues a token.
-- /course/[courseId] for unenrolled visitor → free-preview branch issues a token.
-- /course/[courseId] for enrolled / owner / admin → enrollment / owner / admin branch issues a token.
+The three call sites get migrated in order: 3.5.D `video_uploader.tsx:857` (DONE), 3.5.E `CoursePreview.tsx:326` (TODO), 3.5.F `CoursePlayer.tsx:644` (TODO). Same component, three behaviors driven by the route's gate:
 
-### 4. Thumbnail token endpoint
+- Instructor upload card → owner branch issues both JWTs.
+- `/course/[courseId]` for unenrolled visitor → free-preview branch.
+- `/course/[courseId]` for enrolled / owner / admin → enrollment / owner / admin branch.
 
-Step 4 — thumbnails.
-Replace the raw https://image.mux.com/${playbackId}/thumbnail.jpg URLs with a similar API call (or extend the existing endpoint to also return a thumbnail token, aud: "t"). The instructor card thumbnail in video_uploader.tsx:741 is the most visible failure point.
+### 4. Thumbnail token signing — DONE (3.5.C, `f80ff3a`)
 
-### 5. Legacy public-asset coexistence
+Option 1 picked from the audit: extended the existing `/api/mux/playback-token` endpoint to also return `thumbnailToken` (alongside `token`) in the same response. Same gate logic, single round-trip, hook + wrapper already wired.
 
-Step 5 — handle the legacy public-asset mix.
-Since older assets stay public, the API can return token: null for assets where the playback policy is public — SignedMuxPlayer then omits playbackToken. Easiest path: store the policy on the video doc at upload time and key off it.
+`lib/mux/thumbnailToken.ts` mirrors `lib/mux/playbackToken.ts` — same algorithm, same key, same TTL. Only structural difference: `aud="t"` instead of `aud="v"`. Mux validates `aud` per request type, so a playback JWT can't fetch a thumbnail and vice versa.
+
+The signed thumbnail URL form is `https://image.mux.com/<playbackId>/thumbnail.jpg?time=<n>&token=<jwt>`. The 3.5.D `<SignedMuxThumbnail>` component (`components/SignedMuxThumbnail.tsx`) is the established pattern — drop-in for `next/image`, takes `Omit<ImageProps, "src">` plus `{ courseId, videoId, playbackId, time? }`. 3.5.G's grep-and-replace work uses this component at every remaining `image.mux.com` call site.
+
+### 5. Legacy public-asset coexistence — partially handled
+
+The wrapper already handles the client side: when the hook returns no token (and no error), the `tokens` prop is omitted entirely (not `tokens={undefined}`), so legacy public-policy assets render unsigned. This works today because the route still issues a signed JWT for every asset, and Mux ignores the JWT for public assets.
+
+The server-side half — having the route return `token: null` explicitly for public-policy assets — is NOT yet built. It would require storing the playback policy on the video doc at upload time and keying off it. Not urgent: the existing 17 dev/test public-policy videos play fine through the wrapper today, and the 3.5.H upload-policy flip means new uploads are signed-only. Defer until there's a concrete reason to add the explicit signal (e.g., catalog perf concerns from unnecessary JWT minting on legacy assets).
 
 ### What to avoid
 

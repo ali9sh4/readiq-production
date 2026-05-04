@@ -14,9 +14,9 @@ function loadSigningKey(): ReturnType<typeof importPKCS8> {
     );
   }
 
-  // Mux exports the signing key as base64-encoded PKCS8. Accept either form:
-  //   1) Raw PKCS8 PEM ("-----BEGIN PRIVATE KEY----- ...")
-  //   2) Base64-encoded PKCS8 PEM (paste-from-Mux convenience)
+  // Mirrors lib/mux/playbackToken.ts. Mux exports the signing key as
+  // base64-encoded PKCS8; accept either raw PEM or base64-encoded PEM so
+  // env config matches the dashboard's paste-ready format.
   const pem = privateKey.includes("BEGIN")
     ? privateKey.replace(/\\n/g, "\n")
     : Buffer.from(privateKey, "base64").toString("utf8");
@@ -26,12 +26,14 @@ function loadSigningKey(): ReturnType<typeof importPKCS8> {
 }
 
 /**
- * Sign a Mux playback JWT for a single playbackId. RS256, aud="v" (video).
+ * Sign a Mux thumbnail JWT for a single playbackId. RS256, aud="t".
  *
- * Lazy validation: env vars are not checked at import time. The first call
- * with missing MUX_SIGNING_KEY_ID / MUX_SIGNING_PRIVATE_KEY throws.
+ * Same signing key, same library, and same TTL semantics as
+ * signPlaybackToken — only the audience differs (aud="t" vs aud="v").
+ * Mux validates `aud` per request type, so a playback JWT cannot be
+ * used to fetch a thumbnail and vice versa.
  */
-export async function signPlaybackToken({
+export async function signThumbnailToken({
   playbackId,
   ttlSeconds,
 }: {
@@ -51,7 +53,7 @@ export async function signPlaybackToken({
   return new SignJWT({})
     .setProtectedHeader({ alg: ALGORITHM, kid: keyId, typ: "JWT" })
     .setSubject(playbackId)
-    .setAudience("v")
+    .setAudience("t")
     .setIssuedAt(now)
     .setExpirationTime(now + ttlSeconds)
     .sign(key);

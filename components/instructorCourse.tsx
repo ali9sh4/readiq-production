@@ -3,7 +3,7 @@ import { cookies } from "next/headers"; // ✅ ADD THIS IMPORT
 import { getCurrentUser } from "@/data/auth-server";
 import NextBackButton from "./loadMoreButoon";
 import { CourseResponse } from "@/types/types";
-import CoursesCardList from "./CoursesCardList.tsx  ";
+import CoursesCardList from "./CoursesCardList";
 
 type CourseLevel = "beginner" | "intermediate" | "advanced" | "all_levels";
 

@@ -4,6 +4,7 @@ import { verifyBearerToken } from "@/lib/auth/verifyBearerToken";
 import { fail, handleApiError, ok } from "@/lib/api/response";
 import { isCoursePubliclyVisible } from "@/lib/courses/visibility";
 import { signPlaybackToken } from "@/lib/mux/playbackToken";
+import { signThumbnailToken } from "@/lib/mux/thumbnailToken";
 import { playbackTokenBody } from "@/lib/validation/api/mux";
 
 const TTL_SECONDS = 7200; // 2 hours — mobile play session.
@@ -75,10 +76,10 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const token = await signPlaybackToken({
-      playbackId,
-      ttlSeconds: TTL_SECONDS,
-    });
+    const [token, thumbnailToken] = await Promise.all([
+      signPlaybackToken({ playbackId, ttlSeconds: TTL_SECONDS }),
+      signThumbnailToken({ playbackId, ttlSeconds: TTL_SECONDS }),
+    ]);
     const expiresAt = new Date(Date.now() + TTL_SECONDS * 1000).toISOString();
 
     // Server-side audit log. Never log the token itself. The reason field
@@ -96,7 +97,7 @@ export async function POST(req: NextRequest) {
       `mux-playback issued userId=${auth.userId} courseId=${body.courseId} videoId=${body.videoId} playbackId=${playbackId} reason=${accessReason} ttl=${TTL_SECONDS}`
     );
 
-    return ok({ playbackId, token, expiresAt });
+    return ok({ playbackId, token, thumbnailToken, expiresAt });
   } catch (err) {
     return handleApiError(err);
   }
