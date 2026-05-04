@@ -142,6 +142,7 @@ export default function CoursePlayer({
   // isLoadingVideo so token-mint failures stay distinguishable from
   // playback failures during the 3.5 rollout.
   const [playbackToken, setPlaybackToken] = useState<string | null>(null);
+  const [thumbnailToken, setThumbnailToken] = useState<string | null>(null);
   const [tokenLoading, setTokenLoading] = useState(false);
   const [tokenError, setTokenError] = useState<string | null>(null);
   const [tokenRetryCount, setTokenRetryCount] = useState(0);
@@ -295,6 +296,7 @@ export default function CoursePlayer({
   useEffect(() => {
     if (!currentVideo || !auth?.user || !canAccessVideo) {
       setPlaybackToken(null);
+      setThumbnailToken(null);
       setTokenError(null);
       setTokenLoading(false);
       return;
@@ -302,6 +304,7 @@ export default function CoursePlayer({
 
     if (!currentVideo.playbackId) {
       setPlaybackToken(null);
+      setThumbnailToken(null);
       setTokenError(null);
       setTokenLoading(false);
       return;
@@ -313,6 +316,7 @@ export default function CoursePlayer({
     setTokenLoading(true);
     setTokenError(null);
     setPlaybackToken(null);
+    setThumbnailToken(null);
 
     (async () => {
       try {
@@ -342,6 +346,7 @@ export default function CoursePlayer({
         }
 
         setPlaybackToken(json.data.token);
+        setThumbnailToken(json.data.thumbnailToken ?? null);
         setTokenLoading(false);
       } catch (err) {
         if (cancelled) return;
@@ -755,7 +760,10 @@ export default function CoursePlayer({
                     <MuxPlayer
                       key={currentVideo.videoId}
                       playbackId={currentVideo.playbackId}
-                      tokens={{ playback: playbackToken }}
+                      tokens={{
+                        playback: playbackToken,
+                        thumbnail: thumbnailToken ?? undefined,
+                      }}
                       streamType="on-demand"
                       metadata={{
                         video_id: currentVideo.videoId,
