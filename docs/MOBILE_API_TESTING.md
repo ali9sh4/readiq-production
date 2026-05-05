@@ -170,9 +170,12 @@ curl -i -H "Authorization: Bearer $ID_TOKEN" "$BASE_URL/api/me"
 # Auth failure → 401 NO_TOKEN
 curl -i "$BASE_URL/api/me"
 
-# 404 PROFILE_NOT_FOUND → user authed but never went through web registration
-# (the web register flow is what creates users/{uid}). Reproduce by signing in
-# with a Firebase Auth user that has no Firestore doc.
+# 404 PROFILE_NOT_FOUND → authed user has no users/{uid} doc yet.
+# Web users get the doc auto-created on first auth state change by
+# context/authContext.tsx → createOrUpdateUser. Mobile users bootstrap
+# it explicitly with POST /api/me (see Step 4). Reproduce the 404 by
+# signing in with a Firebase Auth user whose Firestore doc was never
+# created (or was deleted).
 ```
 
 ### `GET /api/wallet`
@@ -551,6 +554,36 @@ double-check the asset was uploaded *after* Step 3 (so it's `signed`).
 ## Step 4 — small write endpoints
 
 Three low-risk write routes that wrap existing server actions.
+
+### `POST /api/me`
+
+Bootstraps the authenticated user's `users/{uid}` Firestore profile after a
+fresh sign-in (typically Google OAuth on mobile). Mobile clients call this
+once, after sign-in, to ensure GET/PATCH `/api/me` no longer return 404.
+
+**Idempotent.** If the doc already exists, it is returned unchanged with
+status 200 — no `PROFILE_ALREADY_EXISTS` error. The `displayName` and
+`photoURL` are sourced from the Firebase Auth record (`adminAuth.getUser`),
+so a Google sign-in carries those over automatically.
+
+Body: empty (no JSON to send).
+
+Returns the same 8-field projection as `GET /api/me`.
+
+```bash
+# Happy path (no doc yet) → 200 with the newly-created profile
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" "$BASE_URL/api/me"
+
+# Idempotent re-call (doc already exists) → 200, same profile, doc unchanged
+curl -i -X POST -H "Authorization: Bearer $ID_TOKEN" "$BASE_URL/api/me"
+
+# Auth failure → 401 NO_TOKEN
+curl -i -X POST "$BASE_URL/api/me"
+
+# Round-trip sanity check: POST then GET should return identical envelopes
+curl -s -X POST -H "Authorization: Bearer $ID_TOKEN" "$BASE_URL/api/me" | jq .
+curl -s        -H "Authorization: Bearer $ID_TOKEN" "$BASE_URL/api/me" | jq .
+```
 
 ### `PATCH /api/me`
 
