@@ -48,3 +48,6 @@ next-env.d.ts
 # Personal session notes / staged prompts (per-machine)
 docs/Propmt*.md
 docs/Prompt*.md
+
+# Local helper scripts (per-machine, never commit)
+/scripts/
