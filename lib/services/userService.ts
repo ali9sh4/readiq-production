@@ -1,14 +1,15 @@
 // lib/services/userService.ts
 import { db } from "@/firebase/client";
-import { 
-  doc, 
-  setDoc, 
-  getDoc, 
-  updateDoc, 
+import {
+  doc,
+  setDoc,
+  getDoc,
+  updateDoc,
   serverTimestamp,
-  Timestamp 
+  Timestamp
 } from "firebase/firestore";
 import { User } from "firebase/auth";
+import { buildNewUserDocFields } from "@/lib/services/userDoc";
 
 export interface UserProfile {
   uid: string;
@@ -43,16 +44,12 @@ export async function createOrUpdateUser(user: User): Promise<void> {
     if (!userDoc.exists()) {
       // New user - create with defaults
       await setDoc(userRef, {
-        uid: user.uid,
-        email: user.email || "",
-        displayName: user.displayName || "",
-        photoURL: user.photoURL || null,
-        createdCourses: [],
-        enrolledCourses: [],
-        walletBalance: 0,
-        coursesCompleted: 0,
-        language: "ar",
-        notifications: true,
+        ...buildNewUserDocFields({
+          uid: user.uid,
+          email: user.email,
+          displayName: user.displayName,
+          photoURL: user.photoURL,
+        }),
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });

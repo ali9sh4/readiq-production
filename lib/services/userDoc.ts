@@ -1,0 +1,43 @@
+// lib/services/userDoc.ts
+//
+// SDK-agnostic helpers for the `users/{uid}` Firestore document.
+// Both the client SDK (`createOrUpdateUser` in `userService.ts`) and the
+// admin SDK (`POST /api/me` in `app/api/me/route.ts`) build new user docs
+// from this shape, so the field defaults live in exactly one place.
+// Timestamps stay SDK-specific at each call site (client `serverTimestamp()`
+// vs admin `FieldValue.serverTimestamp()`).
+
+export interface NewUserDocInput {
+  uid: string;
+  email: string | null | undefined;
+  displayName: string | null | undefined;
+  photoURL: string | null | undefined;
+}
+
+export interface NewUserDocFields {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL: string | null;
+  createdCourses: string[];
+  enrolledCourses: string[];
+  walletBalance: number;
+  coursesCompleted: number;
+  language: "ar" | "en";
+  notifications: boolean;
+}
+
+export function buildNewUserDocFields(input: NewUserDocInput): NewUserDocFields {
+  return {
+    uid: input.uid,
+    email: input.email || "",
+    displayName: input.displayName || "",
+    photoURL: input.photoURL || null,
+    createdCourses: [],
+    enrolledCourses: [],
+    walletBalance: 0,
+    coursesCompleted: 0,
+    language: "ar",
+    notifications: true,
+  };
+}
