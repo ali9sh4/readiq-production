@@ -1,5 +1,5 @@
 "use server";
-import { checkUserEnrollments } from "@/app/actions/enrollment_action";
+import { getEnrollmentDetails } from "@/app/actions/enrollment_action";
 import { checkIfFavorited } from "@/app/actions/favorites_actions";
 import { getCourseById } from "@/app/course-upload/action";
 import CoursePreview from "@/components/CoursePreview";
@@ -184,8 +184,13 @@ export default async function WatchCoursePage({
     return <CourseDeleted />;
   }
 
-  const enrollmentResult = await checkUserEnrollments(user.uid, [courseId]);
-  const isEnrolled = enrollmentResult.enrollments?.[courseId] || false;
+  // Phase 2 (sectional purchasing): read the full enrollment doc so we can
+  // pass sectional metadata (`accessScope`, `ownedSectionIds`) into
+  // CoursePlayer. The boolean still drives the player-vs-preview decision —
+  // per-video access is enforced server-side by the Mux token route.
+  const enrollmentDetails = await getEnrollmentDetails(user.uid, [courseId]);
+  const enrollment = enrollmentDetails[courseId];
+  const isEnrolled = enrollment?.status === "completed";
 
   // ✅ Load progress if enrolled
   if (isEnrolled || isInstructor) {
@@ -212,6 +217,8 @@ export default async function WatchCoursePage({
         course={cleanedCourse}
         isEnrolled={true}
         userProgress={userProgress}
+        accessScope={enrollment?.accessScope}
+        ownedSectionIds={enrollment?.ownedSectionIds}
       />
     );
   }

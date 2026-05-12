@@ -55,17 +55,39 @@ export async function POST(req: NextRequest) {
 
     const isFreePreview = video.isFreePreview === true;
 
-    // Owner / admin / free-preview all bypass the enrollment check.
-    // Everything else requires a completed enrollment.
+    // Sectional-purchasing gate. Owner / admin / free-preview keep the
+    // existing bypass. Everything else must hold a completed enrollment;
+    // for courses with `purchaseMode === 'sectional'` we additionally
+    // verify the *specific* section the video belongs to is owned, unless
+    // the enrollment has `accessScope` unset (legacy) or set to `'full'`
+    // (bundle buyer) — both grant the whole course.
+    //
+    // Discriminator rule (Phase 2, locked): sectional logic activates *only*
+    // when `course.purchaseMode === 'sectional'`. The presence of
+    // `course.sections[]` does NOT mean sectional — the Phase 1 backfill
+    // populated `sections[]` on every multi-section course in the catalog,
+    // none of which are sectional yet. Reading the array's length as the
+    // discriminator would silently lock the entire catalog.
+    //
+    // Sub-reason emitted on the grant log (sectional path only), one of:
+    //   sectional_legacy_full     — accessScope unset; legacy student on a
+    //                               course that was later flipped sectional
+    //   sectional_bundle          — accessScope === 'full'; bundle buyer
+    //   sectional_owned_section   — accessScope === 'sectional' and the
+    //                               video's sectionId is in ownedSectionIds
+    //   sectional_untagged_video  — sectional course, sectional enrollment,
+    //                               but the video has no sectionId. Grants
+    //                               per Phase 1 spec; logged so we can find
+    //                               and tag the video.
+    let sectionalGrantSubReason: string | null = null;
     if (!isPrivileged && !isFreePreview) {
       const enrollmentSnap = await db
         .collection("enrollments")
         .doc(`${auth.userId}_${body.courseId}`)
         .get();
 
-      const isEnrolled =
-        enrollmentSnap.exists &&
-        enrollmentSnap.data()?.status === "completed";
+      const enrollment = enrollmentSnap.exists ? enrollmentSnap.data() : null;
+      const isEnrolled = enrollment?.status === "completed";
 
       if (!isEnrolled) {
         return fail(
@@ -73,6 +95,57 @@ export async function POST(req: NextRequest) {
           "You must be enrolled in this course to play this video",
           403
         );
+      }
+
+      // Default `purchaseMode` to 'full' explicitly so an undefined value
+      // never accidentally satisfies a `=== 'sectional'` check.
+      const purchaseMode: "full" | "sectional" =
+        course.purchaseMode === "sectional" ? "sectional" : "full";
+
+      if (purchaseMode === "sectional") {
+        const rawAccessScope = enrollment?.accessScope;
+
+        if (rawAccessScope !== "sectional") {
+          // Either accessScope is unset (legacy enrollment on a course
+          // later flipped to sectional) or explicitly 'full' (bundle
+          // buyer). Both grant the whole course; the distinction is for
+          // log diagnostics only.
+          sectionalGrantSubReason =
+            rawAccessScope === "full"
+              ? "sectional_bundle"
+              : "sectional_legacy_full";
+        } else {
+          // Genuine sectional enrollment — must own the section.
+          const videoSectionId =
+            typeof video.sectionId === "string" && video.sectionId.length > 0
+              ? video.sectionId
+              : null;
+
+          if (videoSectionId === null) {
+            // Untagged video on a sectional course — Phase 1 spec keeps
+            // these accessible. Log for diagnostics; this should not happen
+            // for content authored after sectional mode is enabled.
+            sectionalGrantSubReason = "sectional_untagged_video";
+            console.log(
+              `mux-playback DIAG userId=${auth.userId} courseId=${body.courseId} videoId=${body.videoId} reason=sectional_video_missing_section_id`
+            );
+          } else {
+            const owned = Array.isArray(enrollment?.ownedSectionIds)
+              ? (enrollment!.ownedSectionIds as string[])
+              : [];
+            if (!owned.includes(videoSectionId)) {
+              console.log(
+                `mux-playback DENIED userId=${auth.userId} courseId=${body.courseId} videoId=${body.videoId} sectionId=${videoSectionId} reason=sectional_section_not_owned`
+              );
+              return fail(
+                "SECTION_NOT_OWNED",
+                "You have not purchased this section of the course",
+                403
+              );
+            }
+            sectionalGrantSubReason = "sectional_owned_section";
+          }
+        }
       }
     }
 
@@ -86,13 +159,15 @@ export async function POST(req: NextRequest) {
     // makes "why was this token issued" greppable in production logs —
     // important for chasing down "owner accidentally got served the
     // unenrolled-student error" or vice-versa during the 3.5 rollout.
+    // For sectional grants, the sub-reason explains *which* sectional path
+    // allowed the grant (bundle / legacy-full / owned-section / untagged).
     const accessReason = isOwner
       ? "owner"
       : isAdmin
         ? "admin"
         : isFreePreview
           ? "free-preview"
-          : "enrolled";
+          : sectionalGrantSubReason ?? "enrolled";
     console.log(
       `mux-playback issued userId=${auth.userId} courseId=${body.courseId} videoId=${body.videoId} playbackId=${playbackId} reason=${accessReason} ttl=${TTL_SECONDS}`
     );

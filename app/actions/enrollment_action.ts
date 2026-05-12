@@ -1,5 +1,34 @@
 "use server";
 import { adminAuth, db } from "@/firebase/service";
+import type { Enrollment } from "@/types/types";
+
+// Sibling of `checkUserEnrollments` introduced in Phase 2 of the sectional
+// purchasing rollout. Returns the full enrollment doc (or null) per courseId
+// so callers that need `accessScope` / `ownedSectionIds` — currently the
+// Mux playback-token route and the course page — can read them without
+// changing the boolean signature every other caller depends on.
+export async function getEnrollmentDetails(
+  uid: string,
+  courseIds: string[]
+): Promise<Record<string, Enrollment | null>> {
+  if (!uid || courseIds.length === 0) {
+    return {};
+  }
+
+  const snaps = await Promise.all(
+    courseIds.map((courseId) =>
+      db.collection("enrollments").doc(`${uid}_${courseId}`).get()
+    )
+  );
+
+  const result: Record<string, Enrollment | null> = {};
+  snaps.forEach((snap, i) => {
+    result[courseIds[i]] = snap.exists
+      ? ({ ...(snap.data() as Enrollment) } as Enrollment)
+      : null;
+  });
+  return result;
+}
 
 export async function checkUserEnrollments(
   userId: string,

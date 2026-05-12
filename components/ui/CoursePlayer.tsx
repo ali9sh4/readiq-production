@@ -76,17 +76,31 @@ function getFileIcon(filename: string) {
 }
 
 // --- Component ---
+// Phase 2 (sectional purchasing): accepts optional `accessScope` and
+// `ownedSectionIds` for future per-section UI gating. **Not consumed yet** —
+// behavior is unchanged. Phase 6 will use these to render locked-section
+// UI and per-section "Buy" CTAs. Wired through now so the page → player
+// data flow is in place before the UI work starts.
 export default function CoursePlayer({
   course,
   isEnrolled = false,
   userProgress = [],
   onProgressUpdate,
+  accessScope,
+  ownedSectionIds,
 }: {
   course: Course;
   isEnrolled?: boolean;
   userProgress?: VideoProgress[];
   onProgressUpdate?: (videoId: string, completed: boolean) => Promise<void>;
+  accessScope?: "full" | "sectional";
+  ownedSectionIds?: string[];
 }) {
+  // Phase 2.5: props are accepted but not consumed yet. Reference them
+  // here so the unused-vars rule doesn't trip and so a future grep for
+  // "ownedSectionIds" lands somewhere meaningful when Phase 6 starts.
+  void accessScope;
+  void ownedSectionIds;
   const searchParams = useSearchParams();
   const { videoContainerProps } = useVideoProtection({
     onScreenCaptureDetected: () => {
