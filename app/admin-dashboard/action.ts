@@ -2,6 +2,10 @@
 
 import { adminAuth, db } from "@/firebase/service";
 import { revalidatePath } from "next/cache";
+import {
+  assertCourseMutationAllowed,
+  CourseMutationLockedError,
+} from "@/lib/courses/assertCourseMutationAllowed";
 
 export const approveCourse = async (
   courseId: string,
@@ -19,19 +23,40 @@ export const approveCourse = async (
       };
     }
 
+    const approveUpdate = {
+      isApproved: approve,
+      isRejected: !approve,
+      approvedAt: approve ? new Date().toISOString() : null,
+      rejectedAt: approve ? null : new Date().toISOString(),
+      approvedBy: verifyAuthToken.uid,
+      updatedAt: new Date().toISOString(),
+      rejectionReason: !approve && reason ? reason : null,
+    };
+
+    const courseSnap = await db.collection("courses").doc(courseId).get();
+    if (!courseSnap.exists) {
+      return { error: true, message: "الدورة غير موجودة" };
+    }
+    const courseData = courseSnap.data();
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        approveUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { error: true, message: lockErr.message };
+      }
+      throw lockErr;
+    }
+
     // Update course with approval status
-    await db
-      .collection("courses")
-      .doc(courseId)
-      .update({
-        isApproved: approve,
-        isRejected: !approve, // Track rejection explicitly
-        approvedAt: approve ?  new Date().toISOString() : null,
-        rejectedAt: approve ? null :  new Date().toISOString(),
-        approvedBy: verifyAuthToken.uid,
-        updatedAt:  new Date().toISOString(),
-        rejectionReason: !approve && reason ? reason : null, // ✅ Add this
-      });
+    await db.collection("courses").doc(courseId).update(approveUpdate);
 
     return {
       success: true,
@@ -60,8 +85,7 @@ export const resetCourseStatus = async (courseId: string, token: string) => {
       };
     }
 
-    // Reset course to pending status
-    await db.collection("courses").doc(courseId).update({
+    const resetUpdate = {
       isApproved: false,
       isRejected: false,
       approvedAt: null,
@@ -70,7 +94,32 @@ export const resetCourseStatus = async (courseId: string, token: string) => {
       rejectedBy: null,
       rejectionReason: null,
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    const courseSnap = await db.collection("courses").doc(courseId).get();
+    if (!courseSnap.exists) {
+      return { error: true, message: "الدورة غير موجودة" };
+    }
+    const courseData = courseSnap.data();
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        resetUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { error: true, message: lockErr.message };
+      }
+      throw lockErr;
+    }
+
+    // Reset course to pending status
+    await db.collection("courses").doc(courseId).update(resetUpdate);
 
     return {
       success: true,

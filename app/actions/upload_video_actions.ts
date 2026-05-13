@@ -6,6 +6,10 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { revalidatePath } from "next/cache";
 import { CourseVideo } from "@/types/types";
+import {
+  assertCourseMutationAllowed,
+  CourseMutationLockedError,
+} from "@/lib/courses/assertCourseMutationAllowed";
 
 // ✅ Fixed: Match what you're actually storing
 
@@ -276,10 +280,28 @@ export async function saveCourseVideoToFireStore({
       .sort((a, b) => (a.order || 0) - (b.order || 0))
       .map((video, index) => ({ ...video, order: index + 1 }));
 
-    await db.collection("courses").doc(courseId).update({
+    const saveVideosUpdate = {
       videos: normalizedVideos,
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        saveVideosUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { success: false, error: lockErr.message };
+      }
+      throw lockErr;
+    }
+
+    await db.collection("courses").doc(courseId).update(saveVideosUpdate);
 
     revalidatePath(`/course/${courseId}`);
 
@@ -344,10 +366,28 @@ export async function updateVideoDetails(
       return video;
     });
 
-    await db.collection("courses").doc(courseId).update({
+    const updateVideoUpdate = {
       videos: updatedVideos,
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        updateVideoUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { success: false, error: lockErr.message };
+      }
+      throw lockErr;
+    }
+
+    await db.collection("courses").doc(courseId).update(updateVideoUpdate);
 
     revalidatePath(`/course/${courseId}`);
 
@@ -411,11 +451,29 @@ export async function deleteCourseVideo(
         order: index + 1,
       }));
 
-    // ✅ FIX 3: Save normalized videos
-    await db.collection("courses").doc(courseId).update({
+    const deleteVideoUpdate = {
       videos: normalizedVideos,
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        deleteVideoUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { success: false, error: lockErr.message };
+      }
+      throw lockErr;
+    }
+
+    // ✅ FIX 3: Save normalized videos
+    await db.collection("courses").doc(courseId).update(deleteVideoUpdate);
 
     revalidatePath(`/course/${courseId}`);
 
@@ -473,10 +531,28 @@ export async function reorderCourseVideos(
       order: index + 1,
     }));
 
-    await db.collection("courses").doc(courseId).update({
+    const reorderUpdate = {
       videos: normalizedVideos,
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        reorderUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { success: false, error: lockErr.message };
+      }
+      throw lockErr;
+    }
+
+    await db.collection("courses").doc(courseId).update(reorderUpdate);
 
     revalidatePath(`/course/${courseId}`);
     return { success: true, videos: normalizedVideos };

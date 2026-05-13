@@ -4,6 +4,10 @@
 import { adminAuth, db } from "@/firebase/service";
 import { CourseDataSchema, QuickCourseSchema } from "@/validation/courseSchema";
 import z from "zod";
+import {
+  assertCourseMutationAllowed,
+  CourseMutationLockedError,
+} from "@/lib/courses/assertCourseMutationAllowed";
 
 // Types
 interface UploadedFile {
@@ -195,11 +199,35 @@ export const SaveImages = async (
       };
     }
 
-    // Update course with images using v8 Admin SDK syntax
-    await db.collection("courses").doc(courseId).update({
+    const imagesUpdate = {
       images,
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    const courseSnap = await db.collection("courses").doc(courseId).get();
+    if (!courseSnap.exists) {
+      return { error: true, message: "الدورة غير موجودة" };
+    }
+    const courseData = courseSnap.data();
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        imagesUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { error: true, message: lockErr.message };
+      }
+      throw lockErr;
+    }
+
+    // Update course with images using v8 Admin SDK syntax
+    await db.collection("courses").doc(courseId).update(imagesUpdate);
 
     return {
       success: true,
@@ -283,14 +311,32 @@ export async function saveCourseFilesTpFireStore({
     // ✅ Combine existing files with new files
     const allFiles = [...existingFiles, ...newFilesData];
 
-    // Update the course document using v8 Admin SDK syntax
-    await db.collection("courses").doc(courseId).update({
-      files: allFiles, // ✅ This preserves existing files and adds new ones
+    const filesEditUpdate = {
+      files: allFiles,
       hasFiles: true,
-      filesCount: allFiles.length, // ✅ Total count of all files
+      filesCount: allFiles.length,
       updatedAt: new Date().toISOString(),
-      status: "complete", // Mark course as complete
-    });
+      status: "complete",
+    };
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        filesEditUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { success: false, error: true, message: lockErr.message };
+      }
+      throw lockErr;
+    }
+
+    // Update the course document using v8 Admin SDK syntax
+    await db.collection("courses").doc(courseId).update(filesEditUpdate);
 
     return {
       success: true,
@@ -426,10 +472,34 @@ export async function updateCourseStatus(
       };
     }
 
-    await db.collection("courses").doc(courseId).update({
+    const statusEditUpdate = {
       status,
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    const courseSnap = await db.collection("courses").doc(courseId).get();
+    if (!courseSnap.exists) {
+      return { success: false, error: true, message: "الدورة غير موجودة" };
+    }
+    const courseData = courseSnap.data();
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        statusEditUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { success: false, error: true, message: lockErr.message };
+      }
+      throw lockErr;
+    }
+
+    await db.collection("courses").doc(courseId).update(statusEditUpdate);
 
     return {
       success: true,
@@ -481,16 +551,34 @@ export async function deleteCourseFileFromFireStore(
       (file) => file.id !== fileId
     );
 
+    const editDeleteFileUpdate = {
+      files: updatedFiles,
+      filesCount: updatedFiles.length,
+      hasFiles: updatedFiles.length > 0,
+      updatedAt: new Date().toISOString(),
+    };
+
+    const courseSnap = await db.collection("courses").doc(courseId).get();
+    const courseData = courseSnap.data();
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        editDeleteFileUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { success: false, error: true, message: lockErr.message };
+      }
+      throw lockErr;
+    }
+
     // Update course with new files array
-    await db
-      .collection("courses")
-      .doc(courseId)
-      .update({
-        files: updatedFiles,
-        filesCount: updatedFiles.length,
-        hasFiles: updatedFiles.length > 0,
-        updatedAt: new Date().toISOString(),
-      });
+    await db.collection("courses").doc(courseId).update(editDeleteFileUpdate);
 
     return {
       success: true,

@@ -2,6 +2,10 @@
 
 import { adminAuth, db } from "@/firebase/service";
 import { revalidatePath } from "next/cache";
+import {
+  assertCourseMutationAllowed,
+  CourseMutationLockedError,
+} from "@/lib/courses/assertCourseMutationAllowed";
 
 export async function restoreDeletedCourse(courseId: string, token: string) {
   try {
@@ -231,15 +235,33 @@ export async function softDeleteCourse(courseId: string, token: string) {
       return { success: false, error: "الدورة محذوفة بالفعل" };
     }
 
-    // Soft delete
-    await db.collection("courses").doc(courseId).update({
+    const softDeleteUpdate = {
       isDeleted: true,
       deletionStatus: "approved",
       deletedAt: new Date().toISOString(),
       deletedBy: verifiedToken.uid,
       status: "archived",
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        softDeleteUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { success: false, error: lockErr.message };
+      }
+      throw lockErr;
+    }
+
+    // Soft delete
+    await db.collection("courses").doc(courseId).update(softDeleteUpdate);
 
     revalidatePath("/course-upload");
     revalidatePath(`/course/${courseId}`);

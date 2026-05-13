@@ -90,6 +90,23 @@ export async function POST(req: NextRequest) {
       const isEnrolled = enrollment?.status === "completed";
 
       if (!isEnrolled) {
+        // Two distinct denial reasons share the NOT_ENROLLED response code
+        // (the API contract stays stable) but emit different structured
+        // logs so production can tell "user never enrolled" from "purchase
+        // in flight, enrollment doc exists but not yet completed".
+        if (!enrollmentSnap.exists) {
+          console.log(
+            `mux-playback DENIED userId=${auth.userId} courseId=${body.courseId} videoId=${body.videoId} reason=not_enrolled_no_doc`
+          );
+        } else {
+          const actualStatus =
+            typeof enrollment?.status === "string"
+              ? enrollment.status
+              : "unknown";
+          console.log(
+            `mux-playback DENIED userId=${auth.userId} courseId=${body.courseId} videoId=${body.videoId} reason=not_enrolled_status_${actualStatus}`
+          );
+        }
         return fail(
           "NOT_ENROLLED",
           "You must be enrolled in this course to play this video",

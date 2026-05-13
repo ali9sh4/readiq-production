@@ -2,6 +2,10 @@
 
 import { adminAuth, db } from "@/firebase/service";
 import { revalidatePath } from "next/cache";
+import {
+  assertCourseMutationAllowed,
+  CourseMutationLockedError,
+} from "@/lib/courses/assertCourseMutationAllowed";
 
 // ===== UPDATE COURSE BASIC INFO =====
 export async function updateCourseBasicInfo(
@@ -39,13 +43,28 @@ export async function updateCourseBasicInfo(
       Object.entries(updates).filter(([v]) => v !== undefined)
     );
 
-    await db
-      .collection("courses")
-      .doc(courseId)
-      .update({
-        ...cleanUpdates,
-        updatedAt: new Date().toISOString(),
-      });
+    const updateData = {
+      ...cleanUpdates,
+      updatedAt: new Date().toISOString(),
+    };
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        updateData
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { success: false, error: lockErr.message };
+      }
+      throw lockErr;
+    }
+
+    await db.collection("courses").doc(courseId).update(updateData);
 
     revalidatePath(`/course/${courseId}`);
     return { success: true };
@@ -89,6 +108,22 @@ export async function updateCoursePricing(
       updatedAt: new Date().toISOString(),
     };
 
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        updates
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { success: false, error: lockErr.message };
+      }
+      throw lockErr;
+    }
+
     await db.collection("courses").doc(courseId).update(updates);
 
     revalidatePath(`/course/${courseId}`);
@@ -123,10 +158,28 @@ export async function updateCourseLearningPoints(
       return { success: false, error: "Permission denied" };
     }
 
-    await db.collection("courses").doc(courseId).update({
+    const learningUpdate = {
       learningPoints,
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        learningUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { success: false, error: lockErr.message };
+      }
+      throw lockErr;
+    }
+
+    await db.collection("courses").doc(courseId).update(learningUpdate);
 
     revalidatePath(`/course/${courseId}`);
     return { success: true };
@@ -162,10 +215,28 @@ export async function updateCourseRequirements(
       return { success: false, error: "Permission denied" };
     }
 
-    await db.collection("courses").doc(courseId).update({
+    const requirementsUpdate = {
       requirements,
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        requirementsUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { success: false, error: lockErr.message };
+      }
+      throw lockErr;
+    }
+
+    await db.collection("courses").doc(courseId).update(requirementsUpdate);
 
     revalidatePath(`/course/${courseId}`);
     return { success: true };
@@ -208,11 +279,29 @@ export async function publishCourse(courseId: string, token: string) {
       };
     }
 
-    await db.collection("courses").doc(courseId).update({
+    const publishUpdate = {
       status: "published",
       publishedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        publishUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { success: false, error: lockErr.message };
+      }
+      throw lockErr;
+    }
+
+    await db.collection("courses").doc(courseId).update(publishUpdate);
 
     revalidatePath(`/course/${courseId}`);
     return { success: true, message: "تم نشر الدورة بنجاح" };
@@ -242,10 +331,28 @@ export async function unpublishCourse(courseId: string, token: string) {
       return { success: false, error: "Permission denied" };
     }
 
-    await db.collection("courses").doc(courseId).update({
+    const unpublishUpdate = {
       status: "draft",
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        unpublishUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { success: false, error: lockErr.message };
+      }
+      throw lockErr;
+    }
+
+    await db.collection("courses").doc(courseId).update(unpublishUpdate);
 
     revalidatePath(`/course/${courseId}`);
     return { success: true, message: "تم إلغاء نشر الدورة" };
@@ -280,11 +387,29 @@ export async function updateCourseThumbnail(
       return { success: false, error: "Permission denied" };
     }
 
-    // ✅ Update or remove thumbnail
-    await db.collection("courses").doc(courseId).update({
-      thumbnail: thumbnailPath, // Store just the path
+    const thumbUpdate = {
+      thumbnail: thumbnailPath,
       updatedAt: new Date().toISOString(),
-    });
+    };
+
+    try {
+      await assertCourseMutationAllowed(
+        {
+          id: courseId,
+          sections: courseData?.sections,
+          purchaseMode: courseData?.purchaseMode,
+        },
+        thumbUpdate
+      );
+    } catch (lockErr) {
+      if (lockErr instanceof CourseMutationLockedError) {
+        return { success: false, error: lockErr.message };
+      }
+      throw lockErr;
+    }
+
+    // ✅ Update or remove thumbnail
+    await db.collection("courses").doc(courseId).update(thumbUpdate);
 
     revalidatePath(`/course/${courseId}`);
     revalidatePath(`/course-upload/edit/${courseId}`);
