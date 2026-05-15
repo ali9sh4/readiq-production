@@ -67,6 +67,7 @@ import { toast } from "sonner";
 
 import ThumbNailUploader from "./thumb_nail_uploder";
 import { DeleteThumbnail, SaveThumbnail } from "@/app/course-upload/action";
+import SectionListEditor from "@/components/sectional/SectionListEditor";
 
 interface Props {
   defaultValues: Course;
@@ -878,6 +879,12 @@ export default function CourseDashboard({ defaultValues }: Props) {
                     </CardDescription>
                   </CardHeader>
                   <CardContent dir="rtl" className="p-5 md:p-6 pt-0">
+                    {course.purchaseMode === "sectional" ? (
+                      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900 text-right leading-relaxed">
+                        هذه الدورة في وضع البيع بالأقسام — يتم إدارة الأسعار من
+                        قسم &quot;إعدادات البيع بالأقسام&quot; أدناه.
+                      </div>
+                    ) : (
                     <Form {...pricingForm}>
                       <form
                         onSubmit={pricingForm.handleSubmit(onSubmitPricing)}
@@ -1045,10 +1052,37 @@ export default function CourseDashboard({ defaultValues }: Props) {
                         </Button>
                       </form>
                     </Form>
+                    )}
                   </CardContent>
                 </Card>
               </div>
             </div>
+
+            {/* Sectional sales settings - Full width */}
+            <Card className="shadow-sm border-gray-200">
+              <CardHeader className="text-right space-y-1 p-5 md:p-6">
+                <CardTitle className="text-xl md:text-2xl font-semibold text-gray-800">
+                  إعدادات البيع بالأقسام
+                </CardTitle>
+                <CardDescription className="text-sm md:text-base text-gray-500">
+                  اختر هل تباع الدورة كاملة أو على شكل أقسام منفصلة.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-5 md:p-6 pt-0">
+                <SectionListEditor
+                  courseId={course.id}
+                  initialCourse={course}
+                  onSaved={() => router.refresh()}
+                />
+                {course.purchaseMode === "sectional" &&
+                  (course.sections?.length ?? 0) === 0 && (
+                    <p className="mt-4 text-sm text-gray-600 text-right">
+                      هذه الدورة لا تحتوي على أقسام بعد. أضف القسم الذي يجب أن
+                      تنتمي إليه كل فيديو من صفحة المحتوى.
+                    </p>
+                  )}
+              </CardContent>
+            </Card>
 
             {/* Thumbnail Section - Full width */}
             <Card className="shadow-sm border-gray-200">

@@ -110,6 +110,23 @@ export default function SectionListEditor({
   );
   const toggleDisabled = hasLockedSection;
 
+  // `order` must be unique across sections in a single submission. Server
+  // enforces this too (via SectionalConfigSchema), but flagging it
+  // client-side avoids the round-trip and points at the offending rows.
+  const duplicateOrderValues = useMemo(() => {
+    if (purchaseMode !== "sectional") return new Set<number>();
+    const counts = new Map<number, number>();
+    for (const s of sections) {
+      counts.set(s.order, (counts.get(s.order) ?? 0) + 1);
+    }
+    return new Set(
+      Array.from(counts.entries())
+        .filter(([, n]) => n > 1)
+        .map(([order]) => order)
+    );
+  }, [sections, purchaseMode]);
+  const hasDuplicateOrder = duplicateOrderValues.size > 0;
+
   const updateSection = (
     sectionId: string,
     patch: Partial<EditableSection>
@@ -122,6 +139,13 @@ export default function SectionListEditor({
   const handleSave = async () => {
     if (!auth?.user) {
       toast.error("يرجى تسجيل الدخول");
+      return;
+    }
+
+    if (hasDuplicateOrder) {
+      setServerError({
+        message: "لا يمكن أن يتشارك قسمان نفس الترتيب. عدّل الأرقام أولًا.",
+      });
       return;
     }
 
@@ -286,8 +310,10 @@ export default function SectionListEditor({
             ) : (
               <div className="space-y-4">
                 {sections.map((section) => {
+                  const hasDuplicateRow = duplicateOrderValues.has(section.order);
                   const highlightError =
-                    serverError?.sectionId === section.sectionId;
+                    serverError?.sectionId === section.sectionId ||
+                    hasDuplicateRow;
                   return (
                     <div
                       key={section.sectionId}
@@ -329,6 +355,11 @@ export default function SectionListEditor({
                             }}
                             className="text-right h-10"
                           />
+                          {hasDuplicateRow && (
+                            <p className="mt-1 text-xs text-red-600">
+                              ترتيب مكرر — اختر رقمًا فريدًا
+                            </p>
+                          )}
                         </div>
                         <div>
                           <Label className="text-right block text-sm mb-1">
@@ -401,11 +432,20 @@ export default function SectionListEditor({
         </div>
       )}
 
+      {hasDuplicateOrder && (
+        <div className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-4">
+          <AlertCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-red-800 text-right">
+            هناك أقسام تتشارك نفس رقم الترتيب. اجعل الترتيب فريدًا قبل الحفظ.
+          </p>
+        </div>
+      )}
+
       <div className="flex justify-end">
         <Button
           type="button"
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || hasDuplicateOrder}
           className="gap-2 h-11 px-6 text-base font-medium"
         >
           {saving ? (

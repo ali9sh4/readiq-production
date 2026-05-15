@@ -54,6 +54,14 @@ export const SectionalConfigSchema = z
       message: "يجب أن يكون سعر التخفيض أقل من السعر الأصلي لكل قسم",
       path: ["sections"],
     }
+  )
+  .refine(
+    (data) => {
+      if (!data.sections) return true;
+      const orders = data.sections.map((s) => s.order);
+      return new Set(orders).size === orders.length;
+    },
+    { message: "يجب أن يكون ترتيب الأقسام فريدًا", path: ["sections"] }
   );
 
 export type SectionalConfigInput = z.infer<typeof SectionalConfigSchema>;
