@@ -6,9 +6,9 @@
 // The legacy `purchaseCourseWithWallet` continues to handle full-mode
 // courses; the two paths are mutually exclusive at the course level.
 //
-// Two pure helpers expose the pricing math: `computeSmartSubtractPrice`
-// computes "buy up to here" pricing with already-owned sections subtracted,
-// and `computeBundleBreakEven` decides when to upsell the bundle CTA.
+// The pure pricing helpers (`computeSmartSubtractPrice`,
+// `computeBundleBreakEven`) live in `lib/sectional/pricing.ts` — this file
+// carries "use server", so it can only export async server actions.
 //
 // Idempotency uses the same `protectionKey` pattern as
 // `purchaseCourseWithWallet`: a row in `wallet_transactions` keyed by
@@ -741,65 +741,4 @@ export async function purchaseBundleWithWallet(
     );
     return fail(code, message);
   }
-}
-
-// ===== Pure helpers =====
-
-type SmartSubtractResult =
-  | { sectionIdsToCharge: string[]; totalPrice: number }
-  | { error: "SECTION_NOT_PRICEABLE" };
-
-export function computeSmartSubtractPrice(
-  course: Pick<Course, "sections">,
-  targetSectionId: string,
-  ownedSectionIds: string[]
-): SmartSubtractResult {
-  const sections = Array.isArray(course.sections) ? course.sections : [];
-  const target = sections.find((s) => s.sectionId === targetSectionId);
-  if (!target) {
-    return { sectionIdsToCharge: [], totalPrice: 0 };
-  }
-  const ownedSet = new Set(ownedSectionIds);
-  const upTo = sections.filter((s) => s.order <= target.order);
-  const sortedUpTo = upTo.slice().sort((a, b) => a.order - b.order);
-
-  const sectionIdsToCharge: string[] = [];
-  let totalPrice = 0;
-  for (const s of sortedUpTo) {
-    if (ownedSet.has(s.sectionId)) continue;
-    const effective = s.salePrice ?? s.price;
-    if (typeof effective !== "number" || effective <= 0) {
-      return { error: "SECTION_NOT_PRICEABLE" };
-    }
-    sectionIdsToCharge.push(s.sectionId);
-    totalPrice += effective;
-  }
-
-  return { sectionIdsToCharge, totalPrice };
-}
-
-type BundleBreakEvenResult =
-  | { offerBundle: false }
-  | {
-      offerBundle: true;
-      bundleDelta: number;
-      savingsVsSectional: number;
-    };
-
-export function computeBundleBreakEven(
-  course: Pick<Course, "fullCoursePrice">,
-  enrollmentTotalSpent: number,
-  proposedSectionPurchasePrice: number
-): BundleBreakEvenResult {
-  const fullPrice = course.fullCoursePrice;
-  if (typeof fullPrice !== "number" || fullPrice <= 0) {
-    return { offerBundle: false };
-  }
-  const projectedSpent = enrollmentTotalSpent + proposedSectionPurchasePrice;
-  if (projectedSpent < fullPrice) {
-    return { offerBundle: false };
-  }
-  const bundleDelta = Math.max(0, fullPrice - enrollmentTotalSpent);
-  const savingsVsSectional = proposedSectionPurchasePrice - bundleDelta;
-  return { offerBundle: true, bundleDelta, savingsVsSectional };
 }
