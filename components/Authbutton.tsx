@@ -18,7 +18,10 @@ import NavigationButton from "./NavigationButton";
 export const AuthButton = () => {
   const router = useRouter();
   const auth = useAuth();
-  if (!auth.isClient) {
+  // Keep the skeleton until Firebase Auth has actually fired
+  // onAuthStateChanged — otherwise logged-in users briefly see the
+  // login/register buttons before the avatar replaces them.
+  if (!auth.isClient || auth.isLoading) {
     return (
       <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>
     );

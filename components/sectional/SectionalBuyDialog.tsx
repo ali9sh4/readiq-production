@@ -25,6 +25,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { doc, onSnapshot } from "firebase/firestore";
 import {
@@ -419,10 +420,10 @@ export default function SectionalBuyDialog({
             <div className="flex flex-col sm:flex-row gap-2 pt-2">
               {insufficientBalance ? (
                 <Button asChild className="flex-1 gap-2">
-                  <a href="/wallet/topup">
+                  <Link href="/wallet/topup">
                     <WalletIcon className="w-4 h-4" />
                     اشحن المحفظة
-                  </a>
+                  </Link>
                 </Button>
               ) : (
                 <Button

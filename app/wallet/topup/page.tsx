@@ -45,12 +45,15 @@ export default function TopUpPage() {
     return numbers.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated. Wait for auth to resolve — without
+  // the isLoading gate, the initial null-user state (Firebase Auth not
+  // yet hydrated) would fire a spurious push to /login, where middleware
+  // sees the valid cookie and bounces the user home.
   useEffect(() => {
-    if (!auth.user) {
+    if (!auth.isLoading && !auth.user) {
       router.push("/login?redirect=/wallet/topup");
     }
-  }, [auth.user, router]);
+  }, [auth.isLoading, auth.user, router]);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
@@ -111,7 +114,15 @@ export default function TopUpPage() {
     }
   };
 
-  // Show nothing while redirecting
+  // Show a small loading state while auth hydrates, and nothing once
+  // we've decided to redirect (auth resolved as unauthenticated).
+  if (auth.isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
   if (!auth.user) {
     return null;
   }
