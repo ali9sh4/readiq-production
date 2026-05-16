@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { Course } from "@/types/types";
+import { Course, Enrollment } from "@/types/types";
 import {
   Clock,
   Users,
@@ -25,6 +25,8 @@ import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 import FavoriteButton from "./favoritesButton";
 import { groupVideosBySection } from "@/lib/sectional/grouping";
+import SectionalCoursePurchase from "@/components/sectional/SectionalCoursePurchase";
+import SectionalBuyButtons from "@/components/sectional/SectionalBuyButtons";
 
 // React key for the synthetic "unassigned" bucket (GroupedSection.sectionId
 // is `null` there).
@@ -33,12 +35,20 @@ const UNASSIGNED_KEY = "__unassigned__";
 interface CoursePreviewProps {
   course: Course;
   initialIsFavorited: boolean;
+  // Phase 6b: present only when a logged-in user lands on the preview
+  // page WITHOUT being enrolled (sectional buyers with partial ownership
+  // typically route to CoursePlayer instead, so this is usually null).
+  // When provided, sectional CTAs use it for smart-subtract pricing and
+  // bundle break-even math.
+  enrollment?: Enrollment | null;
 }
 
 export default function CoursePreview({
   course,
   initialIsFavorited: initialIsFavorite = false,
+  enrollment = null,
 }: CoursePreviewProps) {
+  const isSectional = course.purchaseMode === "sectional";
   const searchParams = useSearchParams();
   const actualPrice = useMemo(() => {
     if (
@@ -63,7 +73,25 @@ export default function CoursePreview({
     }
   }, []);
 
+  // Phase 6b: sectional courses scroll the curriculum block into view
+  // (where per-section CTAs live) instead of the now-hidden enroll button.
+  const curriculumRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollToCurriculum = useCallback(() => {
+    const el = curriculumRef.current;
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    el.classList.add("scroll-target-pulse");
+    window.setTimeout(() => {
+      el.classList.remove("scroll-target-pulse");
+    }, 1500);
+  }, []);
+
   const scrollToEnroll = useCallback(() => {
+    if (isSectional) {
+      scrollToCurriculum();
+      return;
+    }
     const el = enrollWrapperRef.current;
     if (!el || el.offsetParent === null) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -71,7 +99,7 @@ export default function CoursePreview({
     window.setTimeout(() => {
       el.classList.remove("scroll-target-pulse");
     }, 1500);
-  }, []);
+  }, [isSectional, scrollToCurriculum]);
 
   useEffect(() => {
     const paymentStatus = searchParams.get("payment");
@@ -267,40 +295,51 @@ export default function CoursePreview({
                   ======================================== */}
               <div className="lg:hidden">
                 <div className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
-                  {/* Price Display */}
-                  <div className="mb-3">
-                    {/* Show sale price if available */}
-                    {(course.salePrice ?? 0) > 0 &&
-                    course.salePrice! < (course.price ?? 0) ? (
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-green-600">
-                          {course.salePrice!.toLocaleString()} د.ع
-                        </span>
-                        <span className="text-sm text-gray-400 line-through">
-                          {course.price!.toLocaleString()} د.ع
-                        </span>
+                  {isSectional ? (
+                    <div className="mb-2" ref={setEnrollWrapperRef}>
+                      <SectionalCoursePurchase
+                        course={course}
+                        enrollment={enrollment}
+                        onScrollToCurriculum={scrollToCurriculum}
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      {/* Price Display */}
+                      <div className="mb-3">
+                        {(course.salePrice ?? 0) > 0 &&
+                        course.salePrice! < (course.price ?? 0) ? (
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-bold text-green-600">
+                              {course.salePrice!.toLocaleString()} د.ع
+                            </span>
+                            <span className="text-sm text-gray-400 line-through">
+                              {course.price!.toLocaleString()} د.ع
+                            </span>
+                          </div>
+                        ) : course.price === 0 ? (
+                          <span className="text-2xl font-bold text-green-600">
+                            مجاني
+                          </span>
+                        ) : (
+                          <span className="text-2xl font-bold text-gray-900">
+                            {course.price!.toLocaleString()} د.ع
+                          </span>
+                        )}
                       </div>
-                    ) : course.price === 0 ? (
-                      <span className="text-2xl font-bold text-green-600">
-                        مجاني
-                      </span>
-                    ) : (
-                      <span className="text-2xl font-bold text-gray-900">
-                        {course.price!.toLocaleString()} د.ع
-                      </span>
-                    )}
-                  </div>
 
-                  {/* Enroll Button */}
-                  <div className="mb-2" ref={setEnrollWrapperRef}>
-                    <EnrollButton
-                      courseTitle={course.title}
-                      price={actualPrice}
-                      courseId={course.id}
-                      isFree={course.price === 0}
-                      fullWidth
-                    />
-                  </div>
+                      {/* Enroll Button */}
+                      <div className="mb-2" ref={setEnrollWrapperRef}>
+                        <EnrollButton
+                          courseTitle={course.title}
+                          price={actualPrice}
+                          courseId={course.id}
+                          isFree={course.price === 0}
+                          fullWidth
+                        />
+                      </div>
+                    </>
+                  )}
 
                   {/* Favorite Button */}
                   <FavoriteButton
@@ -344,40 +383,51 @@ export default function CoursePreview({
                     ======================================== */}
                 <div className="hidden lg:block">
                   <CardContent className="p-5 bg-white border-t border-gray-200">
-                    {/* Price Display - Centered */}
-                    <div className="text-center mb-4">
-                      {/* Show sale price if available */}
-                      {(course.salePrice ?? 0) > 0 &&
-                      course.salePrice! < (course.price ?? 0) ? (
-                        <div className="flex items-baseline justify-center gap-3">
-                          <span className="text-3xl font-bold text-green-600">
-                            {course.salePrice!.toLocaleString()} د.ع
-                          </span>
-                          <span className="text-lg text-gray-400 line-through">
-                            {course.price!.toLocaleString()} د.ع
-                          </span>
+                    {isSectional ? (
+                      <div className="mb-3" ref={setEnrollWrapperRef}>
+                        <SectionalCoursePurchase
+                          course={course}
+                          enrollment={enrollment}
+                          onScrollToCurriculum={scrollToCurriculum}
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        {/* Price Display - Centered */}
+                        <div className="text-center mb-4">
+                          {(course.salePrice ?? 0) > 0 &&
+                          course.salePrice! < (course.price ?? 0) ? (
+                            <div className="flex items-baseline justify-center gap-3">
+                              <span className="text-3xl font-bold text-green-600">
+                                {course.salePrice!.toLocaleString()} د.ع
+                              </span>
+                              <span className="text-lg text-gray-400 line-through">
+                                {course.price!.toLocaleString()} د.ع
+                              </span>
+                            </div>
+                          ) : course.price === 0 ? (
+                            <span className="text-3xl font-bold text-green-600">
+                              مجاني
+                            </span>
+                          ) : (
+                            <span className="text-3xl font-bold text-gray-900">
+                              {course.price!.toLocaleString()} د.ع
+                            </span>
+                          )}
                         </div>
-                      ) : course.price === 0 ? (
-                        <span className="text-3xl font-bold text-green-600">
-                          مجاني
-                        </span>
-                      ) : (
-                        <span className="text-3xl font-bold text-gray-900">
-                          {course.price!.toLocaleString()} د.ع
-                        </span>
-                      )}
-                    </div>
 
-                    {/* Enroll Button */}
-                    <div className="mb-3" ref={setEnrollWrapperRef}>
-                      <EnrollButton
-                        courseTitle={course.title}
-                        price={actualPrice}
-                        courseId={course.id}
-                        isFree={course.price === 0}
-                        fullWidth
-                      />
-                    </div>
+                        {/* Enroll Button */}
+                        <div className="mb-3" ref={setEnrollWrapperRef}>
+                          <EnrollButton
+                            courseTitle={course.title}
+                            price={actualPrice}
+                            courseId={course.id}
+                            isFree={course.price === 0}
+                            fullWidth
+                          />
+                        </div>
+                      </>
+                    )}
 
                     {/* Favorite Button */}
                     <FavoriteButton
@@ -429,6 +479,7 @@ export default function CoursePreview({
             )}
 
             {/* Course Content (Curriculum) */}
+            <div ref={curriculumRef}>
             <Card className="border-0 shadow-lg">
               <CardContent className="p-4 sm:p-6 md:p-8">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
@@ -445,7 +496,7 @@ export default function CoursePreview({
                 </div>
 
                 <div className="space-y-2 sm:space-y-3">
-                  {groupedSections.map((group) => {
+                  {groupedSections.map((group, idx) => {
                     const sectionKey = group.sectionId ?? UNASSIGNED_KEY;
                     const videos = group.videos;
                     const isExpanded = expandedSections.has(sectionKey);
@@ -453,6 +504,14 @@ export default function CoursePreview({
                       (sum, v) => sum + (v.duration || 0),
                       0
                     );
+                    // Look up the canonical section (carries price/lock
+                    // metadata) — null for the synthetic "unassigned"
+                    // bucket, where buy buttons don't apply.
+                    const realSection = group.sectionId
+                      ? course.sections?.find(
+                          (s) => s.sectionId === group.sectionId
+                        ) ?? null
+                      : null;
 
                     return (
                       <div
@@ -481,6 +540,18 @@ export default function CoursePreview({
                             {formatDuration(sectionDuration)}
                           </div>
                         </button>
+
+                        {/* Per-section CTAs (sectional courses only) */}
+                        {isSectional && realSection && (
+                          <div className="px-3 sm:px-4 py-2 bg-white border-t border-gray-100">
+                            <SectionalBuyButtons
+                              course={course}
+                              section={realSection}
+                              enrollment={enrollment}
+                              positionInOrder={idx}
+                            />
+                          </div>
+                        )}
 
                         {/* Videos List */}
                         {isExpanded && (
@@ -519,6 +590,7 @@ export default function CoursePreview({
                 </div>
               </CardContent>
             </Card>
+            </div>
 
             {/* Requirements */}
             {course.requirements && course.requirements.length > 0 && (
@@ -639,13 +711,21 @@ export default function CoursePreview({
                   className="pt-3 border-t border-gray-200"
                   ref={setEnrollWrapperRef}
                 >
-                  <EnrollButton
-                    courseTitle={course.title}
-                    price={actualPrice}
-                    courseId={course.id}
-                    isFree={course.price === 0}
-                    fullWidth
-                  />
+                  {isSectional ? (
+                    <SectionalCoursePurchase
+                      course={course}
+                      enrollment={enrollment}
+                      onScrollToCurriculum={scrollToCurriculum}
+                    />
+                  ) : (
+                    <EnrollButton
+                      courseTitle={course.title}
+                      price={actualPrice}
+                      courseId={course.id}
+                      isFree={course.price === 0}
+                      fullWidth
+                    />
+                  )}
                 </div>
 
                 {/* Trust Badge */}

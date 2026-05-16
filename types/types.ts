@@ -140,6 +140,9 @@ export interface Enrollment {
   updatedAt?: string;
   accessScope?: EnrollmentAccessScope;
   ownedSectionIds?: string[];
+  // Cumulative IQD this user has paid into this enrollment. Set by the
+  // sectional wallet actions (Phase 3); used by bundle break-even math.
+  totalSpent?: number;
 }
 
 // ===== API RESPONSE TYPES =====

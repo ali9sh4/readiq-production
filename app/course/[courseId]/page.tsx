@@ -143,7 +143,13 @@ export default async function WatchCoursePage({
     if (cleanedCourse.isDeleted === true) {
       return <CourseDeleted />;
     }
-    return <CoursePreview course={cleanedCourse} initialIsFavorited={false} />;
+    return (
+      <CoursePreview
+        course={cleanedCourse}
+        initialIsFavorited={false}
+        enrollment={null}
+      />
+    );
   }
 
   const authResult = await getCurrentUser({ token });
@@ -152,7 +158,13 @@ export default async function WatchCoursePage({
     if (cleanedCourse.isDeleted === true) {
       return <CourseDeleted />;
     }
-    return <CoursePreview course={cleanedCourse} initialIsFavorited={false} />;
+    return (
+      <CoursePreview
+        course={cleanedCourse}
+        initialIsFavorited={false}
+        enrollment={null}
+      />
+    );
   }
 
   const favResult = await checkIfFavorited(token, courseId);
@@ -219,12 +231,22 @@ export default async function WatchCoursePage({
         userProgress={userProgress}
         accessScope={enrollment?.accessScope}
         ownedSectionIds={enrollment?.ownedSectionIds}
+        enrollment={enrollment ?? null}
       />
     );
   }
 
+  // Non-enrolled (or pending/failed enrollment) with a known account —
+  // pass any existing enrollment doc so CoursePreview can render correct
+  // section ownership, smart-subtract prices, and bundle break-even math
+  // for sectional courses. Most visitors have no enrollment; `null` is
+  // the common case.
   return (
-    <CoursePreview course={cleanedCourse} initialIsFavorited={isFavorited} />
+    <CoursePreview
+      course={cleanedCourse}
+      initialIsFavorited={isFavorited}
+      enrollment={enrollment ?? null}
+    />
   );
 }
 

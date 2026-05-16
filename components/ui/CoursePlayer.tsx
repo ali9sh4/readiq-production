@@ -23,7 +23,7 @@ import {
   AlertCircle,
   List,
 } from "lucide-react";
-import { Course } from "@/types/types";
+import { Course, Enrollment } from "@/types/types";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { translateLevel } from "@/utils/translation";
@@ -39,7 +39,10 @@ import {
 import { CourseFile } from "../fileUplaodtoR2";
 import { saveVideoProgress } from "@/app/actions/progress_actions";
 import { groupVideosBySection } from "@/lib/sectional/grouping";
-import { isVideoLockedForUser } from "@/lib/sectional/access";
+import { isVideoLockedForUser, getLockReason } from "@/lib/sectional/access";
+import SectionalBuyDialog from "@/components/sectional/SectionalBuyDialog";
+import SectionalBuyButtons from "@/components/sectional/SectionalBuyButtons";
+import { ShoppingCart } from "lucide-react";
 
 // Sentinel React key used for the synthetic "unassigned" bucket, since
 // GroupedSection.sectionId is `null` there.
@@ -93,6 +96,7 @@ export default function CoursePlayer({
   onProgressUpdate,
   accessScope,
   ownedSectionIds,
+  enrollment = null,
 }: {
   course: Course;
   isEnrolled?: boolean;
@@ -100,6 +104,10 @@ export default function CoursePlayer({
   onProgressUpdate?: (videoId: string, completed: boolean) => Promise<void>;
   accessScope?: "full" | "sectional";
   ownedSectionIds?: string[];
+  // Phase 6b: needed by SectionalBuyDialog (for totalSpent / break-even
+  // math). Existing `accessScope` and `ownedSectionIds` props remain for
+  // backward compat and continue to drive the lock predicate.
+  enrollment?: Enrollment | null;
 }) {
   const searchParams = useSearchParams();
   const { videoContainerProps } = useVideoProtection({
@@ -151,6 +159,13 @@ export default function CoursePlayer({
   const [isLoadingVideo, setIsLoadingVideo] = useState(false);
   const [videoError, setVideoError] = useState<string | null>(null);
   const [markingComplete, setMarkingComplete] = useState(false);
+
+  // Phase 6b: open state for the sectional buy dialog invoked from the
+  // locked-content placeholder. Mode is fixed to 'single' here — the
+  // dialog's break-even row lets the user upgrade to bundle in place.
+  const [lockedDialogMode, setLockedDialogMode] = useState<
+    "single" | "cumulative" | null
+  >(null);
 
   // Signed playback token state. Kept separate from videoError /
   // isLoadingVideo so token-mint failures stay distinguishable from
@@ -428,9 +443,10 @@ export default function CoursePlayer({
   }, [allVideos]);
 
   // Sections Component (reusable for both sidebar and mobile tab)
+  const isSectionalCourse = course.purchaseMode === "sectional";
   const SectionsContent = () => (
     <div className="divide-y divide-gray-200">
-      {groupedSections.map((group) => {
+      {groupedSections.map((group, idx) => {
         const sectionKey = group.sectionId ?? UNASSIGNED_KEY;
         const videos = group.videos;
         const isExpanded = expandedSections.has(sectionKey);
@@ -440,6 +456,11 @@ export default function CoursePlayer({
         const sectionProgress = Math.round(
           (sectionCompleted / videos.length) * 100,
         );
+        const realSection = group.sectionId
+          ? (course.sections ?? []).find(
+              (s) => s.sectionId === group.sectionId,
+            ) ?? null
+          : null;
 
         return (
           <div key={sectionKey} className="bg-gray-50/30">
@@ -524,6 +545,19 @@ export default function CoursePlayer({
                 </div>
               </div>
             </button>
+
+            {/* Per-section CTAs (sectional courses only). The component
+                hides itself for owned sections / non-sectional access. */}
+            {isSectionalCourse && realSection && (
+              <div className="px-3 lg:px-4 py-2 bg-white border-t border-gray-100">
+                <SectionalBuyButtons
+                  course={course}
+                  section={realSection}
+                  enrollment={enrollment}
+                  positionInOrder={idx}
+                />
+              </div>
+            )}
 
             {/* Videos */}
             {isExpanded && (
@@ -777,38 +811,89 @@ export default function CoursePlayer({
 
           {/* Locked Content */}
           {!videoError && currentVideo && !canAccessVideo && (() => {
-            // Sectional-locked: enrolled with sectional scope, but this
-            // video's section is not in ownedSectionIds. Distinct headline
-            // so the user knows it's a section to buy, not "log in / pay".
-            const sectionalLock =
-              isEnrolled &&
-              accessScope === "sectional" &&
-              typeof currentVideo.sectionId === "string" &&
-              !(ownedSectionIds ?? []).includes(currentVideo.sectionId);
+            // Phase 6b: switch on the granular lock reason so we can render
+            // the right copy + CTA. `sectional-not-owned` gets a "Buy this
+            // section" button that opens SectionalBuyDialog; the dialog
+            // handles bundle break-even upsell internally.
+            const reason = getLockReason(currentVideo, course, {
+              isEnrolled,
+              accessScope,
+              ownedSectionIds,
+            });
+
+            const headline =
+              reason === "sectional-not-owned"
+                ? "هذا القسم غير مشترى بعد"
+                : "محتوى مقفل";
+            const body =
+              reason === "sectional-not-owned"
+                ? "اشترِ هذا القسم لمتابعة المشاهدة."
+                : reason === "not-enrolled"
+                ? "قم بالتسجيل في الدورة للوصول إلى هذا المحتوى"
+                : "هذا الفيديو غير متاح حالياً";
+
+            // Section title (when known) helps the user confirm what
+            // they're about to buy. Fall back to "هذا القسم" if missing.
+            const sectionTitle =
+              (course.sections ?? []).find(
+                (s) => s.sectionId === currentVideo.sectionId,
+              )?.title ?? "هذا القسم";
 
             return (
               <div className="aspect-video flex flex-col items-center justify-center text-center p-4 lg:p-6 bg-gradient-to-br from-gray-100 to-gray-200">
                 <Lock className="w-12 h-12 lg:w-16 lg:h-16 mb-4 text-gray-400" />
                 <h3 className="text-lg lg:text-xl font-semibold mb-2 text-gray-900">
-                  {sectionalLock ? "هذا القسم غير مشترى بعد" : "محتوى مقفل"}
+                  {headline}
                 </h3>
+                {reason === "sectional-not-owned" && (
+                  <p className="text-sm text-gray-500 mb-1">{sectionTitle}</p>
+                )}
                 <p className="text-sm lg:text-base text-gray-600 mb-4">
-                  {sectionalLock
-                    ? "لم تقم بشراء هذا القسم بعد."
-                    : isEnrolled
-                    ? "هذا الفيديو غير متاح حالياً"
-                    : "قم بالتسجيل في الدورة للوصول إلى هذا المحتوى"}
+                  {body}
                 </p>
-                {!isEnrolled && (
+                {reason === "not-enrolled" && (
                   <Link href={`/courses/${course.id}`}>
                     <Button className="bg-blue-600 hover:bg-blue-700" size="sm">
                       التسجيل في الدورة
                     </Button>
                   </Link>
                 )}
+                {reason === "sectional-not-owned" && currentVideo.sectionId && (
+                  <div className="flex flex-col sm:flex-row gap-2 items-center">
+                    <Button
+                      onClick={() => setLockedDialogMode("single")}
+                      className="bg-blue-600 hover:bg-blue-700 gap-2"
+                      size="sm"
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      شراء هذا القسم
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => setLockedDialogMode("cumulative")}
+                      className="text-xs text-blue-700 hover:text-blue-900 underline"
+                    >
+                      أو اشترِ حتى هنا
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })()}
+
+          {/* Phase 6b: dialog mount for the locked-content CTA. Open state
+              survives across lock-reason re-renders; closes on success
+              via the dialog's internal flow. */}
+          {currentVideo?.sectionId && (
+            <SectionalBuyDialog
+              open={lockedDialogMode !== null}
+              onOpenChange={(o) => !o && setLockedDialogMode(null)}
+              mode={lockedDialogMode ?? "single"}
+              course={course}
+              targetSectionId={currentVideo.sectionId}
+              enrollment={enrollment}
+            />
+          )}
 
           {/* No Video Selected */}
           {!currentVideo && (
