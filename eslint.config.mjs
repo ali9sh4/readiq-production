@@ -25,7 +25,7 @@ const eslintConfig = [
       "@typescript-eslint/no-explicit-any": "off", // Changed from "off" to "warn"
       "@typescript-eslint/no-empty-object-type": "off",
       "@typescript-eslint/no-non-null-assertion": "off",
-      "@typescript-eslint/ban-ts-comment": "offnpm run lint",
+      "@typescript-eslint/ban-ts-comment": "off",
 
       // ===== CRITICAL ERRORS (Will catch bugs) =====
       "no-debugger": "error",
