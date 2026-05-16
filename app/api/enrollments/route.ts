@@ -34,6 +34,25 @@ export async function POST(req: NextRequest) {
       return fail("COURSE_NOT_FOUND", "Course not found", 404);
     }
 
+    // P0 hotfix: sectional courses must NOT route through the legacy
+    // full-course purchase path. Without this guard, this endpoint would
+    // charge `course.price` / `salePrice` (the legacy full-course price)
+    // and create an enrollment with `accessScope` unset — the Mux gate
+    // then treats undefined as `sectional_legacy_full` and grants the
+    // entire course, bypassing both the instructor's sectional pricing
+    // and the per-section lock. The web UI suppresses this entry point
+    // for sectional courses (Phase 6b); the API now enforces it too.
+    if (course.purchaseMode === "sectional") {
+      console.log(
+        `enrollments REJECTED courseId=${courseId} userId=${auth.userId} reason=COURSE_NOT_SECTIONAL`
+      );
+      return fail(
+        "COURSE_NOT_SECTIONAL",
+        "This course requires sectional purchase. Use the sectional purchase endpoints, or buy on the web.",
+        400
+      );
+    }
+
     const enrollmentId = `${auth.userId}_${courseId}`;
 
     // 2. Already enrolled? Return the existing enrollment shape so mobile
