@@ -13,6 +13,7 @@ import { useAuth } from "@/context/authContext";
 import FavoriteButton from "./favoritesButton";
 import { checkUserFavorites } from "@/app/actions/favorites_actions";
 import { softDeleteCourse } from "@/app/actions/course_deletion_action";
+import { getCourseDisplayPrice } from "@/lib/sectional/displayPrice";
 
 // ===== TYPES =====
 
@@ -104,13 +105,14 @@ const CourseCard = memo(
     const rating = course.rating || 4.7;
     const studentsCount = course.studentsCount || 0;
     const instructor = course.instructorName || "مدرب غير معروف";
-    const originalPrice = course.price ?? 99.99;
-    const salePrice = course.salePrice || null;
-    const currentPrice = salePrice || originalPrice;
+    const displayPrice = getCourseDisplayPrice(course);
 
     const showBestseller = studentsCount > 20;
-    const showPremium = originalPrice > 0;
-    const showFree = originalPrice === 0;
+    // Premium / free badges now key off the canonical helper output —
+    // sectional bundle price, legacy price, or "unset" treated as
+    // not-yet-priced (no badge). Drops the prior `?? 99.99` fallback.
+    const showPremium = displayPrice.isPriced && !displayPrice.isFree;
+    const showFree = displayPrice.isFree;
 
     // Admin View
     if (isAdminView) {
@@ -334,16 +336,25 @@ const CourseCard = memo(
           </div>
 
           {/* Price */}
-          <div className="flex justify-end items-baseline gap-1.5 md:gap-2 lg:gap-2">
-            <span className="text-base md:text-lg lg:text-base font-bold text-gray-900">
-              {currentPrice === 0
-                ? "مجاني"
-                : `${currentPrice.toLocaleString()} د.ع`}
-            </span>
+          <div className="flex flex-col items-end gap-0.5">
+            <div className="flex items-baseline gap-1.5 md:gap-2 lg:gap-2">
+              <span className="text-base md:text-lg lg:text-base font-bold text-gray-900">
+                {displayPrice.primary}
+              </span>
 
-            {salePrice && salePrice < originalPrice && (
-              <span className="text-sm md:text-base lg:text-xs text-gray-400 line-through">
-                {originalPrice.toLocaleString()} د.ع
+              {displayPrice.strikethrough && (
+                <span className="text-sm md:text-base lg:text-xs text-gray-400 line-through">
+                  {displayPrice.strikethrough}
+                </span>
+              )}
+            </div>
+
+            {/* Sectional disclosure — discovery surface, describes what
+                the course is, not what to do. Pairs visually with the
+                bundle price above. */}
+            {displayPrice.isSectional && (
+              <span className="text-xs md:text-sm lg:text-xs text-blue-600 font-medium">
+                دورة مقسّمة
               </span>
             )}
           </div>

@@ -68,12 +68,6 @@ export async function generateMetadata({
 
   const course = result.course;
 
-  // Calculate price to display
-  let displayPrice = course.price || 0;
-  if (course.salePrice && course.salePrice < displayPrice) {
-    displayPrice = course.salePrice;
-  }
-
   return {
     title: `${course.title} | Rubik - روبيك`,
     description:

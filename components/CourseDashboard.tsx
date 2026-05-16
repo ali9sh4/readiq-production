@@ -68,6 +68,7 @@ import { toast } from "sonner";
 import ThumbNailUploader from "./thumb_nail_uploder";
 import { DeleteThumbnail, SaveThumbnail } from "@/app/course-upload/action";
 import SectionListEditor from "@/components/sectional/SectionListEditor";
+import { getCourseDisplayPrice } from "@/lib/sectional/displayPrice";
 
 interface Props {
   defaultValues: Course;
@@ -574,10 +575,19 @@ export default function CourseDashboard({ defaultValues }: Props) {
                   <DollarSign className="h-5 w-5 md:h-6 md:w-6 text-orange-600" />
                 </div>
                 <div className="text-right flex-1 min-w-0">
-                  <p className="text-sm text-gray-600 truncate">السعر</p>
-                  <p className="text-xl md:text-2xl font-bold text-gray-900 truncate">
-                    {course.price || 0} د.ع
-                  </p>
+                  {(() => {
+                    const display = getCourseDisplayPrice(course);
+                    return (
+                      <>
+                        <p className="text-sm text-gray-600 truncate">
+                          {display.isSectional ? "سعر الحزمة" : "السعر"}
+                        </p>
+                        <p className="text-xl md:text-2xl font-bold text-gray-900 truncate">
+                          {display.primary}
+                        </p>
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             </CardContent>

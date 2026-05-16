@@ -26,6 +26,7 @@ import {
   rejectTopupRequest,
 } from "@/app/actions/wallet_actions";
 import { Course, FirestoreTimestamp } from "@/types/types";
+import { getCourseDisplayPrice } from "@/lib/sectional/displayPrice";
 import type { TopupRequest } from "@/types/wallets";
 import Link from "next/link";
 import {
@@ -527,10 +528,17 @@ export default function AdminDashboard() {
                         </p>
                       </div>
                       <div>
-                        <span className="font-medium text-gray-500">
-                          السعر:
-                        </span>
-                        <p className="text-gray-900">{course.price} د.ع</p>
+                        {(() => {
+                          const display = getCourseDisplayPrice(course);
+                          return (
+                            <>
+                              <span className="font-medium text-gray-500">
+                                {display.isSectional ? "سعر الحزمة:" : "السعر:"}
+                              </span>
+                              <p className="text-gray-900">{display.primary}</p>
+                            </>
+                          );
+                        })()}
                       </div>
                       <div>
                         <span className="font-medium text-gray-500">
@@ -710,8 +718,17 @@ export default function AdminDashboard() {
                       </p>
                     </div>
                     <div>
-                      <span className="font-medium text-gray-500">السعر:</span>
-                      <p className="text-gray-900">{course.price} د.ع</p>
+                      {(() => {
+                        const display = getCourseDisplayPrice(course);
+                        return (
+                          <>
+                            <span className="font-medium text-gray-500">
+                              {display.isSectional ? "سعر الحزمة:" : "السعر:"}
+                            </span>
+                            <p className="text-gray-900">{display.primary}</p>
+                          </>
+                        );
+                      })()}
                     </div>
                     <div>
                       <span className="font-medium text-gray-500">المدة:</span>
