@@ -1027,50 +1027,6 @@ export default function VideoUploader({
                               </p>
                             </div>
 
-                            {/* Section */}
-
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                القسم
-                              </label>
-                              <select
-                                value={editForm.section || ""} // ✅ Fixed: Read from section
-                                onChange={(e) =>
-                                  setEditForm((prev) => ({
-                                    ...prev,
-                                    section: e.target.value, // ✅ Fixed: Write to section
-                                  }))
-                                }
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
-                              >
-                                <option value="">بدون قسم</option>
-                                <option value="المقدمة"> المقدمة</option>
-                                <option value="القسم 1">القسم 1</option>
-                                <option value="القسم 2">القسم 2</option>
-                                <option value="القسم 3">القسم 3</option>
-                                <option value="القسم 4">القسم 4</option>
-                                <option value="القسم 5">القسم 5</option>
-                                <option value="القسم 6">القسم 6</option>
-                                <option value="القسم 7">القسم 7</option>
-                                <option value="القسم 8">القسم 8</option>
-                                <option value="القسم 9">القسم 9</option>
-                                <option value="القسم 10">القسم 10</option>
-                                <option value="الخاتمة">الخاتمة</option>
-                              </select>
-                              {editForm.section === "المقدمة" && (
-                                <div className="flex items-center gap-2 text-md text-green-600 bg-green-50 p-2 rounded-lg mt-2">
-                                  <CheckCircle className="w-4 h-4" />
-                                  <span>
-                                    جميع الفيديوهات في هذا القسم ستكون مجانية
-                                    للمعاينة
-                                  </span>
-                                </div>
-                              )}
-                              <p className="text-s text-gray-500 mt-1">
-                                اختر القسم لتنظيم الفيديوهات (اختياري)
-                              </p>
-                            </div>
-
                             {/* Description */}
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-2">
