@@ -245,10 +245,9 @@ export async function saveCourseVideoToFireStore({
         assetId: video.assetId,
         playbackId: video.playbackId,
         title: video.title,
-        originalFilename: video.title, // NEW: Keep original
-        description: "", // NEW: Empty by default
-        section: "",
-        isVisible: true, // NEW: Visible by default
+        originalFilename: video.title,
+        description: "",
+        isVisible: true,
         isFreePreview: false,
         uploadedAt: new Date().toISOString(),
         courseId: courseId,

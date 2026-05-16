@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 import FavoriteButton from "./favoritesButton";
 import { groupVideosBySection } from "@/lib/sectional/grouping";
+import { getCourseDisplayPrice } from "@/lib/sectional/displayPrice";
 import SectionalCoursePurchase from "@/components/sectional/SectionalCoursePurchase";
 import SectionalBuyButtons from "@/components/sectional/SectionalBuyButtons";
 
@@ -50,15 +51,11 @@ export default function CoursePreview({
 }: CoursePreviewProps) {
   const isSectional = course.purchaseMode === "sectional";
   const searchParams = useSearchParams();
-  const actualPrice = useMemo(() => {
-    if (
-      (course.salePrice ?? 0) > 0 &&
-      course.salePrice! < (course.price ?? 0)
-    ) {
-      return course.salePrice!;
-    }
-    return course.price ?? 0;
-  }, [course.price, course.salePrice]);
+  // Only consumed by the legacy <EnrollButton> below, which is gated
+  // behind !isSectional. Sectional courses use SectionalCoursePurchase
+  // and never read this value. Derived from the same helper that drives
+  // every other price surface so the math stays in one place.
+  const actualPrice = getCourseDisplayPrice(course).numeric ?? 0;
   // Initial expansion: first non-empty section (matches the spirit of the
   // legacy "auto-expand المقدمة" behavior — section 1 is whatever the
   // instructor put first, ordered by `course.sections[].order`).

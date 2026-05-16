@@ -177,12 +177,14 @@ export default function CoursePlayer({
   const [tokenRetryCount, setTokenRetryCount] = useState(0);
 
   // --- Organize Videos ---
-  // Filter to visible videos first, then group by section. Preserve the
-  // legacy `v.isVisible` truthy filter exactly (treats `undefined` as
-  // hidden) to avoid accidentally surfacing videos that were previously
-  // hidden in the player.
+  // Filter to visible videos first, then group by section. `isVisible
+  // !== false` treats undefined as visible — matches CoursePreview's
+  // filter and the upload-default of `true`. Only explicitly-hidden
+  // videos (instructor toggled off) are filtered out.
   const groupedSections = useMemo(() => {
-    const visibleVideos = (course?.videos || []).filter((v) => v.isVisible);
+    const visibleVideos = (course?.videos || []).filter(
+      (v) => v.isVisible !== false,
+    );
     return groupVideosBySection({
       sections: course?.sections,
       videos: visibleVideos,
