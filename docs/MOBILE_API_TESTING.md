@@ -55,6 +55,20 @@ when only one batch has run than after a full sweep.
 For a fresh `npm run dev` session, start with `/api/health/me` (Step 1) to
 prove auth wiring before touching any data routes.
 
+### Sectional courses (Phase 7a — read-only on mobile)
+
+Phase 7a added sectional read fields to `/api/courses`, `/api/courses/:id`,
+`/api/me/enrollments`, and `/api/me/favorites` (see "Sectional Purchasing —
+Field Reference" in `MOBILE_API_MIGRATION.md` for the field list). The
+mobile contract is **reader-app**: it can display sectional structure,
+per-section prices, and per-user lock state, but it cannot purchase
+sections or bundles client-side — purchase is web-only. Mobile-side
+sectional test coverage is therefore intentionally absent here: the
+purchase flow (`purchaseSectionsWithWallet`, `purchaseBundleWithWallet`)
+is exercised by the web manual test plans and `scripts/test-purchase.mjs`.
+`POST /api/enrollments` rejects sectional courses with `COURSE_NOT_SECTIONAL`
+(400) — mobile must surface that response as "buy on web."
+
 ## Setup
 
 ### 1. Get a Firebase ID token for a test user

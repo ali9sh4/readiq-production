@@ -13,6 +13,7 @@ At-a-glance progress against the steps in section E. Update this list as steps l
 - **Step 4 — profile + favorites writes: IN PROGRESS.** `PATCH /api/me`, `POST /api/me/favorites`, `DELETE /api/me/favorites/[courseId]`. Wraps existing server actions; testing recipes already drafted in `docs/MOBILE_API_TESTING.md`.
 - **Step 5 — top-up flow: NOT STARTED.** `POST /api/wallet/topup/upload-receipt`, `POST /api/wallet/topup/request`. First step that introduces the new `paymentMethod` + `receiptUrl` fields on `topup_requests`.
 - **Step 6 — enrollment purchase: NOT STARTED.** `POST /api/enrollments`, free + paid paths, idempotent against retries. Sectional courses are rejected at the API boundary with `COURSE_NOT_SECTIONAL` (400) — mobile must surface this as "purchase this course on the web" with a help link.
+- **Phase 7a — sectional read parity: SHIPPED.** Additive fields on `/api/courses`, `/api/courses/:id`, `/api/me/enrollments`, `/api/me/favorites` so the reader-app mobile client can render sectional structure, prices, and lock state correctly. See "Sectional Purchasing — Field Reference" below.
 
 ---
 
@@ -30,6 +31,57 @@ Goal: stand up a parallel, mobile-friendly REST surface under `/api/*` that a fu
 
 ---
 
+## Sectional Purchasing — Field Reference (Phase 7a)
+
+Sectional purchasing is a server-authoritative feature with read-side parity exposed across four mobile endpoints. Mobile is **reader-app**: it can display sectional structure and lock state, but cannot purchase sections or bundles (Phase 7 plan). The legacy `POST /api/enrollments` rejects sectional courses with `COURSE_NOT_SECTIONAL` (400) — surface that as "buy on web."
+
+### Discriminators
+
+- **Course is sectional iff `course.purchaseMode === "sectional"`.** Missing or `"full"` means legacy full-course. The presence of `course.sections[]` is NOT a discriminator (the Phase 1 backfill populated `sections[]` on multi-section courses regardless of mode).
+- **Enrollment is sectional iff `enrollment.accessScope === "sectional"`.** Missing or `"full"` grants the entire course (legacy grandfathered, or explicit bundle buyer).
+
+### Course fields (exposed on `/api/courses`, `/api/courses/:id`, `/api/me/favorites`, `/api/me/enrollments` embedded course)
+
+| Field | Type | Notes |
+|---|---|---|
+| `price` | number | Legacy full-course price. **Misleading for sectional courses** — kept for back-compat only. |
+| `salePrice` | number \| null | Legacy. **Misleading for sectional courses.** |
+| `purchaseMode` | `"full" \| "sectional"` | Always present. Default `"full"` when unset upstream. The single discriminator. |
+| `fullCoursePrice` | number \| null | The bundle price for sectional courses. Use this (not `price`/`salePrice`) when `purchaseMode === "sectional"`. |
+| `sections` | `CourseSection[]` | Only on `/api/courses/:id` (detail). Each: `{ sectionId, title, order, price?, salePrice?, isLocked? }`. Mobile reader-app displays structure; ignores pricing for purchase since purchase is web-only. |
+
+### Video fields (within `course.videos[]` on `/api/courses/:id`)
+
+| Field | Type | Notes |
+|---|---|---|
+| `section` | string \| null | Legacy free-text section label. Kept for back-compat. |
+| `sectionId` | string \| null | Stable FK to `course.sections[].sectionId`. **Use this** to group videos by section client-side (matches the Phase 6a `groupVideosBySection` helper). |
+
+### Enrollment fields (on `/api/me/enrollments` items)
+
+| Field | Type | Notes |
+|---|---|---|
+| `status` | `"completed" \| "pending" \| "failed" \| "refunded" \| null` | Enrollment lifecycle status. |
+| `accessScope` | `"full" \| "sectional"` | Always present. Default `"full"`. |
+| `ownedSectionIds` | string[] | Always present, possibly empty. Only meaningful when `accessScope === "sectional"`. |
+| `totalSpent` | number | Cumulative IQD spent on this enrollment. Drives bundle break-even math on web; informational on mobile. Default `0`. |
+
+### Mobile lock-state recipe
+
+For a video V in a course C with enrollment E:
+
+1. If `V.isFreePreview === true` → unlocked.
+2. If `C.price === 0` → unlocked.
+3. If no enrollment → locked.
+4. If `C.purchaseMode !== "sectional"` → unlocked (legacy full-course buyer).
+5. If `E.accessScope !== "sectional"` → unlocked (bundle / grandfathered).
+6. If `V.sectionId ∈ E.ownedSectionIds` → unlocked.
+7. Otherwise → locked.
+
+This mirrors the server-side Mux gate (`/api/mux/playback-token`) exactly. The client only renders affordances — the server is authoritative.
+
+---
+
 ## A. New `/api/*` routes for mobile
 
 All routes below are new files under `app/api/`. They must conform to the ground rules.
@@ -38,11 +90,11 @@ All routes below are new files under `app/api/`. They must conform to the ground
 
 | Method | Path | Purpose | Notes |
 |---|---|---|---|
-| GET | `/api/courses` | Paginated public catalog | Filter: `status === "published"`, `isApproved === true`, `isDeleted !== true`. Query params: `pageSize` (default 20, max 50), `cursor` (last doc id), optional `category`, `level`, `language`, `search` (later). |
-| GET | `/api/courses/:courseId` | Single course detail | Same visibility filter as above. Strip instructor-only fields (`deletionStatus`, `rejectionReason`, internal flags). Return `videos` with `videoId`, `title`, `description`, `section`, `order`, `duration`, `isFreePreview` — but **never** the raw `playbackId` for paid courses (use `/api/mux/playback-token` to gate access). For free courses or `isFreePreview === true` videos the `playbackId` may be returned. |
+| GET | `/api/courses` | Paginated public catalog | Filter: `status === "published"`, `isApproved === true`, `isDeleted !== true`. Query params: `pageSize` (default 20, max 50), `cursor` (last doc id), optional `category`, `level`, `language`, `search` (later). **Phase 7a:** each tile includes `purchaseMode` + `fullCoursePrice` (no structured `sections[]` — that's on detail). |
+| GET | `/api/courses/:courseId` | Single course detail | Same visibility filter as above. Strip instructor-only fields (`deletionStatus`, `rejectionReason`, internal flags). Return `videos` with `videoId`, `title`, `description`, `section`, `sectionId`, `order`, `duration`, `isFreePreview` — but **never** the raw `playbackId` for paid courses (use `/api/mux/playback-token` to gate access). For free courses or `isFreePreview === true` videos the `playbackId` may be returned. **Phase 7a:** course includes `purchaseMode`, `fullCoursePrice`, `sections[]` (see Sectional Field Reference above). |
 | GET | `/api/me` | Current user profile | Reads `users/{uid}` doc. Returns `displayName`, `email`, `photoURL`, `language`, `notifications`. |
-| GET | `/api/me/enrollments` | Courses the user is enrolled in | Query `enrollments where userId == uid and status == "completed"`, batch-fetch course docs (filter out `isDeleted`). Paginate. |
-| GET | `/api/me/favorites` | Favorited course IDs (and optionally hydrated courses) | Query param `hydrate=1` returns full `Course` docs (mirrors `getUserFavorites`). Default returns `{ courseIds: string[] }`. |
+| GET | `/api/me/enrollments` | Courses the user is enrolled in | Query `enrollments where userId == uid and status == "completed"`, batch-fetch course docs (filter out `isDeleted`). Paginate. **Phase 7a:** each item includes `status`, `accessScope`, `ownedSectionIds`, `totalSpent`; embedded `course` includes `purchaseMode` + `fullCoursePrice`. |
+| GET | `/api/me/favorites` | Favorited course IDs (and optionally hydrated courses) | Query param `hydrate=1` returns full `Course` docs (mirrors `getUserFavorites`). Default returns `{ courseIds: string[] }`. **Phase 7a:** hydrated entries include `purchaseMode` + `fullCoursePrice`. |
 | GET | `/api/wallet` | Current wallet balance | Reads `wallets/{uid}`. Auto-create empty wallet doc if missing (mirrors `createTopupRequest` first-time logic) so this endpoint never 404s for a logged-in user. |
 | GET | `/api/wallet/transactions` | Paginated wallet transactions | Cursor pagination via `lastDocId`. Mirrors `getWalletTransactions`. Default `limit=20`, max `50`. |
 | GET | `/api/wallet/topup/history` | Student's own topup requests with status | Query `topup_requests where userId == uid` ordered by `createdAt desc`. Return `id`, `amount`, `paymentMethod`, `receiptUrl`, `status`, `rejectionReason`, `adminNotes`, `createdAt`, `processedAt`. |

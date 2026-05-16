@@ -36,6 +36,10 @@ export async function GET(
             title: (v.title as string) ?? "",
             description: (v.description as string | undefined) ?? null,
             section: (v.section as string | undefined) ?? null,
+            // Phase 7a: stable section FK for sectional courses. The legacy
+            // `section` string above stays for back-compat; new code should
+            // group by `sectionId` (matches the Phase 6a grouping helper).
+            sectionId: (v.sectionId as string | undefined) ?? null,
             order: (v.order as number | undefined) ?? null,
             duration: (v.duration as number | undefined) ?? null,
             isFreePreview: v.isFreePreview === true,
@@ -60,6 +64,15 @@ export async function GET(
       instructorName: c.instructorName ?? null,
       price: c.price ?? 0,
       salePrice: c.salePrice ?? null,
+      // Phase 7a sectional fields. `purchaseMode` is the discriminator —
+      // when `"sectional"`, mobile should display `fullCoursePrice` (not
+      // the legacy `price`/`salePrice` above) and read `sections[]` for
+      // per-section structure/pricing. When `"full"` or unset, the legacy
+      // fields are authoritative and these stay null/empty.
+      purchaseMode: c.purchaseMode === "sectional" ? "sectional" : "full",
+      fullCoursePrice:
+        typeof c.fullCoursePrice === "number" ? c.fullCoursePrice : null,
+      sections: Array.isArray(c.sections) ? c.sections : [],
       rating: c.rating ?? null,
       ratingCount: c.ratingCount ?? null,
       enrollmentCount: c.enrollmentCount ?? 0,

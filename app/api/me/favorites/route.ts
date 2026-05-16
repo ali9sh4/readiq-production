@@ -61,6 +61,11 @@ export async function GET(req: NextRequest) {
           language: c.language ?? null,
           price: c.price ?? 0,
           salePrice: c.salePrice ?? null,
+          // Phase 7a: mirror the catalog projection so favorites tiles
+          // render the same sectional-aware price as the main catalog.
+          purchaseMode: c.purchaseMode === "sectional" ? "sectional" : "full",
+          fullCoursePrice:
+            typeof c.fullCoursePrice === "number" ? c.fullCoursePrice : null,
           rating: c.rating ?? null,
           ratingCount: c.ratingCount ?? null,
           enrollmentCount: c.enrollmentCount ?? 0,

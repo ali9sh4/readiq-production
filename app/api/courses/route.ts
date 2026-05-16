@@ -62,6 +62,14 @@ function stripCourseForList(c: Course) {
     instructorName: c.instructorName ?? null,
     price: c.price ?? 0,
     salePrice: c.salePrice ?? null,
+    // Phase 7a: catalog tiles need to know if a course is sectional so
+    // they can render `fullCoursePrice` instead of legacy `price`. The
+    // full structured `sections[]` is intentionally NOT included here —
+    // catalog responses stay lean; section structure is on the detail
+    // endpoint.
+    purchaseMode: c.purchaseMode === "sectional" ? "sectional" : "full",
+    fullCoursePrice:
+      typeof c.fullCoursePrice === "number" ? c.fullCoursePrice : null,
     rating: c.rating ?? null,
     ratingCount: c.ratingCount ?? null,
     enrollmentCount: c.enrollmentCount ?? 0,

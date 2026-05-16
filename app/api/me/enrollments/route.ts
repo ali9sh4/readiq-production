@@ -57,12 +57,30 @@ export async function GET(req: NextRequest) {
           enrollmentId: eDoc.id,
           courseId: courseSnap.id,
           enrolledAt: e.enrolledAt ?? e.createdAt ?? null,
+          // Phase 7a sectional fields. `accessScope` defaults to `"full"`
+          // when unset — matches the Phase 2.5 grandfathered rule and the
+          // Mux gate's "sectional_legacy_full" fallback. Mobile can treat
+          // `"full"` and unset identically (saves a null check); only
+          // `"sectional"` requires consulting `ownedSectionIds`.
+          status: e.status ?? null,
+          accessScope: e.accessScope === "sectional" ? "sectional" : "full",
+          ownedSectionIds: Array.isArray(e.ownedSectionIds)
+            ? (e.ownedSectionIds as string[])
+            : [],
+          totalSpent: typeof e.totalSpent === "number" ? e.totalSpent : 0,
           course: {
             id: courseSnap.id,
             title: c.title ?? "",
             thumbnailUrl: c.thumbnailUrl ?? null,
             instructorName: c.instructorName ?? null,
             language: c.language ?? null,
+            // Embedded course summary needs `purchaseMode` so mobile can
+            // render the right price on the "my courses" tile without
+            // round-tripping for the course detail.
+            purchaseMode:
+              c.purchaseMode === "sectional" ? "sectional" : "full",
+            fullCoursePrice:
+              typeof c.fullCoursePrice === "number" ? c.fullCoursePrice : null,
           },
         };
       })
