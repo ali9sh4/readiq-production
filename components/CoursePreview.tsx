@@ -24,6 +24,11 @@ import EnrollButton from "./EnrollButton";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 import FavoriteButton from "./favoritesButton";
+import { groupVideosBySection } from "@/lib/sectional/grouping";
+
+// React key for the synthetic "unassigned" bucket (GroupedSection.sectionId
+// is `null` there).
+const UNASSIGNED_KEY = "__unassigned__";
 
 interface CoursePreviewProps {
   course: Course;
@@ -44,8 +49,11 @@ export default function CoursePreview({
     }
     return course.price ?? 0;
   }, [course.price, course.salePrice]);
+  // Initial expansion: first non-empty section (matches the spirit of the
+  // legacy "auto-expand المقدمة" behavior — section 1 is whatever the
+  // instructor put first, ordered by `course.sections[].order`).
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set(["المقدمة"]) // Auto-expand intro section
+    () => new Set(),
   );
 
   const enrollWrapperRef = useRef<HTMLDivElement | null>(null);
@@ -80,60 +88,39 @@ export default function CoursePreview({
     }
   }, [searchParams]);
 
-  // Organize videos by section
-  const videosBySections = useMemo(() => {
-    const videos = course.videos || [];
-    const sections: Record<string, any[]> = {};
+  // Organize videos by section. Preserves the legacy preview visibility
+  // filter (`v.isVisible !== false`, treats `undefined` as visible) — note
+  // CoursePlayer uses a stricter `v.isVisible` check; the two have always
+  // differed and Phase 6a does not change that.
+  const groupedSections = useMemo(() => {
+    const visibleVideos = (course.videos || []).filter(
+      (v) => v.isVisible !== false,
+    );
+    return groupVideosBySection({
+      sections: course.sections,
+      videos: visibleVideos,
+    }).filter((g) => g.videos.length > 0);
+  }, [course.videos, course.sections]);
 
-    videos
-      .filter((v) => v.isVisible !== false)
-      .forEach((v) => {
-        const sectionKey = v.section || "دروس الدورة";
-        if (!sections[sectionKey]) sections[sectionKey] = [];
-        sections[sectionKey].push(v);
-      });
-
-    // Sort videos by order
-    Object.keys(sections).forEach((section) => {
-      sections[section].sort((a, b) => (a.order || 0) - (b.order || 0));
+  // Auto-expand the first section on first render (or when the section
+  // list changes from empty to non-empty), without clobbering subsequent
+  // user toggles.
+  useEffect(() => {
+    if (groupedSections.length === 0) return;
+    setExpandedSections((prev) => {
+      if (prev.size > 0) return prev;
+      const firstKey = groupedSections[0].sectionId ?? UNASSIGNED_KEY;
+      return new Set([firstKey]);
     });
-    const sectionOrder = [
-      "المقدمة",
-      "القسم 1",
-      "القسم 2",
-      "القسم 3",
-      "القسم 4",
-      "القسم 5",
-      "القسم 6",
-      "القسم 7",
-      "القسم 8",
-      "القسم 9",
-      "القسم 10",
-      "الخاتمة",
-      "دروس الدورة", // No section - at end
-    ];
-    const sortedSections: [string, any[]][] = [];
-    sectionOrder.forEach((sectionName) => {
-      if (sections[sectionName]) {
-        sortedSections.push([sectionName, sections[sectionName]]);
-      }
-    });
-    Object.keys(sections).forEach((key) => {
-      if (!sectionOrder.includes(key)) {
-        sortedSections.push([key, sections[key]]);
-      }
-    });
+  }, [groupedSections]);
 
-    return sortedSections;
-  }, [course.videos]);
-
-  const toggleSection = (section: string) => {
+  const toggleSection = (sectionKey: string) => {
     setExpandedSections((prev) => {
       const next = new Set(prev);
-      if (next.has(section)) {
-        next.delete(section);
+      if (next.has(sectionKey)) {
+        next.delete(sectionKey);
       } else {
-        next.add(section);
+        next.add(sectionKey);
       }
       return next;
     });
@@ -458,8 +445,10 @@ export default function CoursePreview({
                 </div>
 
                 <div className="space-y-2 sm:space-y-3">
-                  {videosBySections.map(([section, videos]) => {
-                    const isExpanded = expandedSections.has(section);
+                  {groupedSections.map((group) => {
+                    const sectionKey = group.sectionId ?? UNASSIGNED_KEY;
+                    const videos = group.videos;
+                    const isExpanded = expandedSections.has(sectionKey);
                     const sectionDuration = videos.reduce(
                       (sum, v) => sum + (v.duration || 0),
                       0
@@ -467,12 +456,12 @@ export default function CoursePreview({
 
                     return (
                       <div
-                        key={section}
+                        key={sectionKey}
                         className="border border-gray-200 rounded-lg overflow-hidden hover:border-gray-300 transition-colors"
                       >
                         {/* Section Header */}
                         <button
-                          onClick={() => toggleSection(section)}
+                          onClick={() => toggleSection(sectionKey)}
                           className="w-full p-3 sm:p-4 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
                         >
                           <div className="flex items-center gap-2 sm:gap-3">
@@ -483,7 +472,7 @@ export default function CoursePreview({
                             />
                             <div className="text-right">
                               <h3 className="font-bold text-gray-900 text-sm sm:text-base">
-                                {section}
+                                {group.title}
                               </h3>
                             </div>
                           </div>

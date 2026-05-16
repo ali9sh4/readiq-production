@@ -38,6 +38,12 @@ import {
 } from "@/app/actions/upload_File_actions";
 import { CourseFile } from "../fileUplaodtoR2";
 import { saveVideoProgress } from "@/app/actions/progress_actions";
+import { groupVideosBySection } from "@/lib/sectional/grouping";
+import { isVideoLockedForUser } from "@/lib/sectional/access";
+
+// Sentinel React key used for the synthetic "unassigned" bucket, since
+// GroupedSection.sectionId is `null` there.
+const UNASSIGNED_KEY = "__unassigned__";
 
 // --- Types ---
 interface VideoProgress {
@@ -47,7 +53,7 @@ interface VideoProgress {
 }
 
 // --- Helpers ---
-function formatDuration(seconds: number) {
+function formatDuration(seconds: number | undefined) {
   if (!seconds) return "0:00";
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
@@ -76,11 +82,10 @@ function getFileIcon(filename: string) {
 }
 
 // --- Component ---
-// Phase 2 (sectional purchasing): accepts optional `accessScope` and
-// `ownedSectionIds` for future per-section UI gating. **Not consumed yet** —
-// behavior is unchanged. Phase 6 will use these to render locked-section
-// UI and per-section "Buy" CTAs. Wired through now so the page → player
-// data flow is in place before the UI work starts.
+// Phase 6a: consumes `accessScope` + `ownedSectionIds` via
+// `isVideoLockedForUser` so sectional buyers see correct lock states. The
+// Mux token route is still the source of truth — these props only drive
+// the UI's lock affordances.
 export default function CoursePlayer({
   course,
   isEnrolled = false,
@@ -96,11 +101,6 @@ export default function CoursePlayer({
   accessScope?: "full" | "sectional";
   ownedSectionIds?: string[];
 }) {
-  // Phase 2.5: props are accepted but not consumed yet. Reference them
-  // here so the unused-vars rule doesn't trip and so a future grep for
-  // "ownedSectionIds" lands somewhere meaningful when Phase 6 starts.
-  void accessScope;
-  void ownedSectionIds;
   const searchParams = useSearchParams();
   const { videoContainerProps } = useVideoProtection({
     onScreenCaptureDetected: () => {
@@ -162,65 +162,33 @@ export default function CoursePlayer({
   const [tokenRetryCount, setTokenRetryCount] = useState(0);
 
   // --- Organize Videos ---
-  const videosBySections = useMemo(() => {
-    const videos = (course?.videos || []).filter((v) => v.isVisible);
-    const sections: Record<string, any[]> = {};
-
-    videos.forEach((v) => {
-      const sectionKey = v.section || "دروس الدورة";
-      if (!sections[sectionKey]) sections[sectionKey] = [];
-      sections[sectionKey].push(v);
-    });
-
-    Object.keys(sections).forEach((section) => {
-      sections[section].sort((a, b) => (a.order || 0) - (b.order || 0));
-    });
-
-    const sectionOrder = [
-      "المقدمة",
-      "القسم 1",
-      "القسم 2",
-      "القسم 3",
-      "القسم 4",
-      "القسم 5",
-      "القسم 6",
-      "القسم 7",
-      "القسم 8",
-      "القسم 9",
-      "القسم 10",
-      "الخاتمة",
-      "دروس الدورة",
-    ];
-
-    const sortedSections: Record<string, any[]> = {};
-    sectionOrder.forEach((sectionName) => {
-      if (sections[sectionName]) {
-        sortedSections[sectionName] = sections[sectionName];
-      }
-    });
-
-    Object.keys(sections).forEach((key) => {
-      if (!sortedSections[key]) {
-        sortedSections[key] = sections[key];
-      }
-    });
-
-    return sortedSections;
-  }, [course?.videos]);
+  // Filter to visible videos first, then group by section. Preserve the
+  // legacy `v.isVisible` truthy filter exactly (treats `undefined` as
+  // hidden) to avoid accidentally surfacing videos that were previously
+  // hidden in the player.
+  const groupedSections = useMemo(() => {
+    const visibleVideos = (course?.videos || []).filter((v) => v.isVisible);
+    return groupVideosBySection({
+      sections: course?.sections,
+      videos: visibleVideos,
+    }).filter((g) => g.videos.length > 0);
+  }, [course?.videos, course?.sections]);
 
   const allVideos = useMemo(
-    () => Object.values(videosBySections).flat(),
-    [videosBySections],
+    () => groupedSections.flatMap((g) => g.videos),
+    [groupedSections],
   );
 
   const currentVideo = allVideos[currentVideoIndex];
 
   const canAccessVideo = useMemo(() => {
     if (!currentVideo) return false;
-    if (currentVideo.isFreePreview) return true;
-    if (course.price === 0) return true;
-    return isEnrolled;
-  }, [currentVideo, course.price, isEnrolled]);
+    return !isVideoLockedForUser(currentVideo, course, {
+      isEnrolled,
+      accessScope,
+      ownedSectionIds,
+    });
+  }, [currentVideo, course, isEnrolled, accessScope, ownedSectionIds]);
 
   const currentVideoFiles = useMemo(() => {
     return (
@@ -243,11 +211,16 @@ export default function CoursePlayer({
   }, [completedVideos, allVideos]);
 
   useEffect(() => {
-    if (currentVideo) {
-      const section = currentVideo.section || "دروس الدورة";
-      setExpandedSections((prev) => new Set(prev).add(section));
-    }
-  }, [currentVideo]);
+    if (!currentVideo) return;
+    const containingGroup = groupedSections.find((g) =>
+      g.videos.some((v) => v.videoId === currentVideo.videoId),
+    );
+    if (!containingGroup) return;
+    const key = containingGroup.sectionId ?? UNASSIGNED_KEY;
+    setExpandedSections((prev) =>
+      prev.has(key) ? prev : new Set(prev).add(key),
+    );
+  }, [currentVideo, groupedSections]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -457,8 +430,10 @@ export default function CoursePlayer({
   // Sections Component (reusable for both sidebar and mobile tab)
   const SectionsContent = () => (
     <div className="divide-y divide-gray-200">
-      {Object.entries(videosBySections).map(([section, videos]) => {
-        const isExpanded = expandedSections.has(section);
+      {groupedSections.map((group) => {
+        const sectionKey = group.sectionId ?? UNASSIGNED_KEY;
+        const videos = group.videos;
+        const isExpanded = expandedSections.has(sectionKey);
         const sectionCompleted = videos.filter((v) =>
           completedVideos.has(v.videoId),
         ).length;
@@ -467,10 +442,10 @@ export default function CoursePlayer({
         );
 
         return (
-          <div key={section} className="bg-gray-50/30">
+          <div key={sectionKey} className="bg-gray-50/30">
             {/* Section Header */}
             <button
-              onClick={() => toggleSection(section)}
+              onClick={() => toggleSection(sectionKey)}
               className="w-full p-3 lg:p-4 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-2 lg:gap-3">
@@ -487,7 +462,7 @@ export default function CoursePlayer({
                 </div>
                 <div className="text-right">
                   <h3 className="font-semibold text-sm lg:text-base text-gray-900">
-                    {section}
+                    {group.title}
                   </h3>
                   <p className="text-xs text-gray-500">
                     {videos.length} دروس • {sectionCompleted} مكتمل
@@ -557,8 +532,11 @@ export default function CoursePlayer({
                   const videoIndex = allVideos.indexOf(video);
                   const isActive = videoIndex === currentVideoIndex;
                   const isCompleted = completedVideos.has(video.videoId);
-                  const isLocked =
-                    !video.isFreePreview && course.price !== 0 && !isEnrolled;
+                  const isLocked = isVideoLockedForUser(video, course, {
+                    isEnrolled,
+                    accessScope,
+                    ownedSectionIds,
+                  });
 
                   return (
                     <button
@@ -798,26 +776,39 @@ export default function CoursePlayer({
           )}
 
           {/* Locked Content */}
-          {!videoError && currentVideo && !canAccessVideo && (
-            <div className="aspect-video flex flex-col items-center justify-center text-center p-4 lg:p-6 bg-gradient-to-br from-gray-100 to-gray-200">
-              <Lock className="w-12 h-12 lg:w-16 lg:h-16 mb-4 text-gray-400" />
-              <h3 className="text-lg lg:text-xl font-semibold mb-2 text-gray-900">
-                محتوى مقفل
-              </h3>
-              <p className="text-sm lg:text-base text-gray-600 mb-4">
-                {isEnrolled
-                  ? "هذا الفيديو غير متاح حالياً"
-                  : "قم بالتسجيل في الدورة للوصول إلى هذا المحتوى"}
-              </p>
-              {!isEnrolled && (
-                <Link href={`/courses/${course.id}`}>
-                  <Button className="bg-blue-600 hover:bg-blue-700" size="sm">
-                    التسجيل في الدورة
-                  </Button>
-                </Link>
-              )}
-            </div>
-          )}
+          {!videoError && currentVideo && !canAccessVideo && (() => {
+            // Sectional-locked: enrolled with sectional scope, but this
+            // video's section is not in ownedSectionIds. Distinct headline
+            // so the user knows it's a section to buy, not "log in / pay".
+            const sectionalLock =
+              isEnrolled &&
+              accessScope === "sectional" &&
+              typeof currentVideo.sectionId === "string" &&
+              !(ownedSectionIds ?? []).includes(currentVideo.sectionId);
+
+            return (
+              <div className="aspect-video flex flex-col items-center justify-center text-center p-4 lg:p-6 bg-gradient-to-br from-gray-100 to-gray-200">
+                <Lock className="w-12 h-12 lg:w-16 lg:h-16 mb-4 text-gray-400" />
+                <h3 className="text-lg lg:text-xl font-semibold mb-2 text-gray-900">
+                  {sectionalLock ? "هذا القسم غير مشترى بعد" : "محتوى مقفل"}
+                </h3>
+                <p className="text-sm lg:text-base text-gray-600 mb-4">
+                  {sectionalLock
+                    ? "لم تقم بشراء هذا القسم بعد."
+                    : isEnrolled
+                    ? "هذا الفيديو غير متاح حالياً"
+                    : "قم بالتسجيل في الدورة للوصول إلى هذا المحتوى"}
+                </p>
+                {!isEnrolled && (
+                  <Link href={`/courses/${course.id}`}>
+                    <Button className="bg-blue-600 hover:bg-blue-700" size="sm">
+                      التسجيل في الدورة
+                    </Button>
+                  </Link>
+                )}
+              </div>
+            );
+          })()}
 
           {/* No Video Selected */}
           {!currentVideo && (
