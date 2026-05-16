@@ -28,7 +28,7 @@ import {
 } from "@/lib/courses/assertCourseMutationAllowed";
 import { mintSectionId } from "@/lib/sectional/sectionId";
 import { SectionalConfigSchema } from "@/validation/sectional";
-import type { Course, CourseSection } from "@/types/types";
+import type { Course, CourseSection, CourseVideo } from "@/types/types";
 
 // ===== Result shape =====
 
@@ -37,6 +37,8 @@ export type SectionalConfigErrorCode =
   | "FORBIDDEN"
   | "COURSE_NOT_FOUND"
   | "INVALID_INPUT"
+  | "INVALID_SECTION_ID"
+  | "VIDEO_NOT_FOUND"
   | "SECTION_LOCKED"
   | "COURSE_PURCHASE_MODE_LOCKED"
   | "INTERNAL_ERROR";
@@ -239,4 +241,146 @@ export async function updateCourseSectionalConfig(
   );
 
   return { success: true, course: freshCourse };
+}
+
+// ===== Video-to-section assignment (Phase 5c) =====
+//
+// Re-points a single video at a different section (or unassigns it).
+// Mutates only `course.videos[]` — no section/purchaseMode changes. The
+// lock helper short-circuits when the proposed update has neither a
+// `sections` array nor a `purchaseMode` key, so this call is safe to run
+// against locked courses; we still invoke it for future-proofing.
+
+export type UpdateVideoSectionAssignmentResult =
+  | { success: true }
+  | { success: false; error: SectionalConfigErrorCode; message: string };
+
+export async function updateVideoSectionAssignment(
+  token: string,
+  courseId: string,
+  videoId: string,
+  newSectionId: string | null
+): Promise<UpdateVideoSectionAssignmentResult> {
+  // 1. Auth.
+  let userId: string;
+  let isAdmin: boolean;
+  try {
+    const verified = await adminAuth.verifyIdToken(token);
+    userId = verified.uid;
+    isAdmin = verified.admin === true;
+  } catch {
+    return {
+      success: false,
+      error: "AUTH_FAILED",
+      message: "Authentication failed",
+    };
+  }
+
+  // 2. Load + ownership check.
+  const courseRef = db.collection("courses").doc(courseId);
+  const courseSnap = await courseRef.get();
+  if (!courseSnap.exists) {
+    return {
+      success: false,
+      error: "COURSE_NOT_FOUND",
+      message: "Course not found",
+    };
+  }
+  const courseData = courseSnap.data() as Course | undefined;
+  const isOwner = courseData?.createdBy === userId;
+  if (!isOwner && !isAdmin) {
+    return {
+      success: false,
+      error: "FORBIDDEN",
+      message: "You do not have permission to edit this course",
+    };
+  }
+
+  // 3. Validate target section exists (when assigning, not when clearing).
+  if (newSectionId !== null) {
+    const sections = Array.isArray(courseData?.sections)
+      ? (courseData!.sections as CourseSection[])
+      : [];
+    if (!sections.some((s) => s.sectionId === newSectionId)) {
+      return {
+        success: false,
+        error: "INVALID_SECTION_ID",
+        message: "القسم المحدد غير موجود في هذه الدورة",
+      };
+    }
+  }
+
+  // 4. Find the video.
+  const existingVideos: CourseVideo[] = Array.isArray(courseData?.videos)
+    ? (courseData!.videos as CourseVideo[])
+    : [];
+  if (!existingVideos.some((v) => v.videoId === videoId)) {
+    return {
+      success: false,
+      error: "VIDEO_NOT_FOUND",
+      message: "الفيديو غير موجود",
+    };
+  }
+
+  const updatedVideos = existingVideos.map((v) => {
+    if (v.videoId !== videoId) return v;
+    if (newSectionId === null) {
+      // Drop the field entirely on clear (writing the array back without
+      // the key is equivalent to FieldValue.delete() for array elements).
+      const { sectionId: _drop, ...rest } = v;
+      return rest as CourseVideo;
+    }
+    return { ...v, sectionId: newSectionId };
+  });
+
+  const proposedUpdate = {
+    videos: updatedVideos,
+    updatedAt: new Date().toISOString(),
+  };
+
+  // 5. Lock helper guard. No-op today for video-only mutations (no
+  // `sections` array, no `purchaseMode`), but keep the call so a future
+  // rule that touches videos picks it up automatically.
+  try {
+    await assertCourseMutationAllowed(
+      {
+        id: courseId,
+        sections: courseData?.sections,
+        purchaseMode: courseData?.purchaseMode,
+      },
+      proposedUpdate
+    );
+  } catch (lockErr) {
+    if (lockErr instanceof CourseMutationLockedError) {
+      return {
+        success: false,
+        error: lockErr.code,
+        message: lockErr.message,
+      };
+    }
+    throw lockErr;
+  }
+
+  // 6. Persist.
+  try {
+    await courseRef.update(proposedUpdate);
+  } catch (err) {
+    console.error("video-section-assignment write failed", err);
+    return {
+      success: false,
+      error: "INTERNAL_ERROR",
+      message: "Failed to update video section",
+    };
+  }
+
+  revalidatePath(`/course/${courseId}`);
+  revalidatePath(`/course-upload/edit/${courseId}`);
+
+  console.log(
+    `video-section-assignment courseId=${courseId} videoId=${videoId} newSectionId=${
+      newSectionId ?? "null"
+    } by=${userId}`
+  );
+
+  return { success: true };
 }

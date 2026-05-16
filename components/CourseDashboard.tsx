@@ -1148,7 +1148,12 @@ export default function CourseDashboard({ defaultValues }: Props) {
 
           {/* ===== CONTENT TAB - RESPONSIVE ===== */}
           <TabsContent value="content" className="space-y-6">
-            <VideoUploader courseId={course.id} disabled={isAnyActionRunning} />
+            <VideoUploader
+              courseId={course.id}
+              disabled={isAnyActionRunning}
+              sections={course.sections}
+              purchaseMode={course.purchaseMode}
+            />
             <SmartCourseUploader id={course.id} disabled={isAnyActionRunning} />
           </TabsContent>
         </Tabs>

@@ -23,6 +23,7 @@ import {
   Save,
   Gift,
   Eye,
+  Layers,
 } from "lucide-react";
 import { useVideoUpload } from "@/hooks/useVideoUpload";
 import { useAuth } from "@/context/authContext";
@@ -33,8 +34,14 @@ import {
   reorderCourseVideos,
   updateVideoDetails,
 } from "@/app/actions/upload_video_actions";
-import { CourseVideo } from "@/types/types";
+import { updateVideoSectionAssignment } from "@/app/actions/sectional_config_actions";
+import {
+  CourseVideo,
+  CourseSection,
+  CoursePurchaseMode,
+} from "@/types/types";
 import { formatUploadDate } from "@/lib/dateFormater/date";
+import { toast } from "sonner";
 // ===== INTERFACES =====
 interface SelectedVideo {
   file: File;
@@ -46,6 +53,10 @@ interface Props {
   disabled?: boolean;
   maxFileSize?: number;
   maxVideos?: number;
+  // Phase 5c: passed from CourseDashboard so the per-video section picker
+  // knows what's available and whether to flag orphans.
+  sections?: CourseSection[];
+  purchaseMode?: CoursePurchaseMode;
 }
 
 // ===== UTILITY FUNCTIONS =====
@@ -70,6 +81,8 @@ export default function VideoUploader({
   disabled = false,
   maxFileSize = 2 * 1024 * 1024 * 1024,
   maxVideos = 50,
+  sections = [],
+  purchaseMode,
 }: Props) {
   const auth = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -92,6 +105,13 @@ export default function VideoUploader({
   );
   const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
   const [savingVideoId, setSavingVideoId] = useState<string | null>(null);
+  const [assigningSectionVideoId, setAssigningSectionVideoId] = useState<
+    string | null
+  >(null);
+  const sortedSectionsForPicker = [...sections].sort(
+    (a, b) => a.order - b.order
+  );
+  const isSectionalMode = purchaseMode === "sectional";
   const [editForm, setEditForm] = useState({
     title: "",
     description: "",
@@ -443,6 +463,53 @@ export default function VideoUploader({
       setError("حدث خطأ أثناء الحفظ");
     } finally {
       setSavingVideoId(null);
+    }
+  };
+
+  const handleSectionAssignmentChange = async (
+    videoId: string,
+    rawValue: string
+  ) => {
+    if (!auth?.user) {
+      toast.error("يرجى تسجيل الدخول");
+      return;
+    }
+
+    const newSectionId = rawValue === "" ? null : rawValue;
+
+    setAssigningSectionVideoId(videoId);
+    setError("");
+
+    try {
+      const token = await auth.user.getIdToken();
+      const result = await updateVideoSectionAssignment(
+        token,
+        courseId,
+        videoId,
+        newSectionId
+      );
+
+      if (result.success) {
+        setPreviousVideos((prev) =>
+          prev.map((v) => {
+            if (v.videoId !== videoId) return v;
+            if (newSectionId === null) {
+              const { sectionId: _drop, ...rest } = v;
+              return rest as CourseVideo;
+            }
+            return { ...v, sectionId: newSectionId };
+          })
+        );
+        toast.success("تم تحديث قسم الفيديو");
+      } else {
+        toast.error(result.message);
+        setError(result.message);
+      }
+    } catch (err) {
+      console.error("Section assignment failed:", err);
+      toast.error("حدث خطأ أثناء تحديث قسم الفيديو");
+    } finally {
+      setAssigningSectionVideoId(null);
     }
   };
 
@@ -850,6 +917,57 @@ export default function VideoUploader({
                             </span>
                           </button>
                         </div>
+                      </div>
+
+                      {/* Phase 5c: section assignment picker. Always shown
+                          (so instructors can wire videos into sections even
+                          before flipping the course to sectional mode);
+                          orphan warning only fires in sectional mode. */}
+                      <div className="border-t border-green-100 px-4 py-3 bg-white flex flex-wrap items-center gap-3">
+                        <label className="flex items-center gap-2 text-sm text-gray-700 font-medium">
+                          <Layers className="w-4 h-4 text-gray-500" />
+                          القسم:
+                        </label>
+                        <select
+                          value={video.sectionId ?? ""}
+                          onChange={(e) =>
+                            handleSectionAssignmentChange(
+                              video.videoId,
+                              e.target.value
+                            )
+                          }
+                          disabled={
+                            assigningSectionVideoId === video.videoId ||
+                            disabled
+                          }
+                          className="text-sm border border-gray-300 rounded-md px-2 py-1.5 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed min-w-[160px]"
+                        >
+                          <option value="">(بدون قسم)</option>
+                          {sortedSectionsForPicker.map((s) => (
+                            <option key={s.sectionId} value={s.sectionId}>
+                              {s.title}
+                            </option>
+                          ))}
+                        </select>
+                        {assigningSectionVideoId === video.videoId && (
+                          <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                        )}
+                        {isSectionalMode && !video.sectionId && (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800 bg-amber-100 border border-amber-200 rounded-md px-2 py-1">
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            غير مرتبط بقسم — لن يكون متاحًا للشراء
+                          </span>
+                        )}
+                        {isSectionalMode &&
+                          video.sectionId &&
+                          !sortedSectionsForPicker.some(
+                            (s) => s.sectionId === video.sectionId
+                          ) && (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-800 bg-red-100 border border-red-200 rounded-md px-2 py-1">
+                              <AlertCircle className="w-3.5 h-3.5" />
+                              قسم محذوف — أعد التعيين
+                            </span>
+                          )}
                       </div>
 
                       {/* Video Player (Expandable) */}

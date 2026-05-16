@@ -1,13 +1,16 @@
-// Phase 5a section-list editor.
+// Phase 5a/5b/5c section-list editor.
 //
 // Renders the sectional purchasing config for one course:
 //   - purchaseMode toggle (full vs sectional)
 //   - fullCoursePrice input (sectional mode only)
-//   - per-section price/salePrice/order inputs (sectional mode only)
+//   - per-section title/order/price/salePrice inputs (sectional mode only)
+//   - section creation + deletion (Phase 5c)
 //
 // Lock-aware: sold sections (isLocked: true) show a lock icon and restrict
 // client-side edits to what the server-side `assertCourseMutationAllowed`
-// helper would accept (raise price ok, lower price blocked, reorder blocked).
+// helper would accept (raise price ok, lower price blocked, reorder blocked,
+// delete blocked — title rename ok). New sections (no `sectionId` yet) are
+// created locally and the server mints the id on save.
 //
 // Talks to `updateCourseSectionalConfig` server action. Re-renders from the
 // course doc returned on success so the displayed state always matches what
@@ -17,7 +20,14 @@
 
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Save, Lock, AlertCircle } from "lucide-react";
+import {
+  Loader2,
+  Save,
+  Lock,
+  AlertCircle,
+  Plus,
+  Trash2,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,30 +50,48 @@ type Props = {
   onSaved?: (course: Course) => void;
 };
 
+// `clientKey` is the stable React key + addressable id for in-editor state.
+// Existing sections also have a `sectionId` (the canonical Firestore id);
+// newly-created sections have `sectionId: undefined` until the server mints
+// one on save.
 type EditableSection = {
-  sectionId: string;
+  clientKey: string;
+  sectionId: string | undefined;
   title: string;
   order: number;
   price: number | undefined;
   salePrice: number | undefined;
   isLocked: boolean;
+  isNew: boolean;
   // Captured at load so we can client-side reject "lower than current"
   // before round-tripping to the server.
   originalPrice: number | undefined;
   originalSalePrice: number | undefined;
 };
 
+function makeClientKey(): string {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
+  }
+  return `tmp-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
 function toEditable(sections: CourseSection[] | undefined): EditableSection[] {
   return (sections ?? [])
     .slice()
     .sort((a, b) => a.order - b.order)
     .map((s) => ({
+      clientKey: makeClientKey(),
       sectionId: s.sectionId,
       title: s.title,
       order: s.order,
       price: s.price,
       salePrice: s.salePrice,
       isLocked: s.isLocked === true,
+      isNew: false,
       originalPrice: s.price,
       originalSalePrice: s.salePrice,
     }));
@@ -128,12 +156,45 @@ export default function SectionListEditor({
   const hasDuplicateOrder = duplicateOrderValues.size > 0;
 
   const updateSection = (
-    sectionId: string,
+    clientKey: string,
     patch: Partial<EditableSection>
   ) => {
     setSections((prev) =>
-      prev.map((s) => (s.sectionId === sectionId ? { ...s, ...patch } : s))
+      prev.map((s) => (s.clientKey === clientKey ? { ...s, ...patch } : s))
     );
+  };
+
+  const addSection = () => {
+    setSections((prev) => {
+      const nextOrder =
+        prev.length === 0 ? 0 : Math.max(...prev.map((s) => s.order)) + 1;
+      return [
+        ...prev,
+        {
+          clientKey: makeClientKey(),
+          sectionId: undefined,
+          title: "قسم جديد",
+          order: nextOrder,
+          price: undefined,
+          salePrice: undefined,
+          isLocked: false,
+          isNew: true,
+          originalPrice: undefined,
+          originalSalePrice: undefined,
+        },
+      ];
+    });
+  };
+
+  const removeSection = (clientKey: string, title: string) => {
+    if (
+      !confirm(
+        `حذف القسم "${title}"؟ سيتم إلغاء ربط الفيديوهات منه. لن يُحفظ الحذف حتى تضغط "حفظ الإعدادات".`
+      )
+    ) {
+      return;
+    }
+    setSections((prev) => prev.filter((s) => s.clientKey !== clientKey));
   };
 
   const handleSave = async () => {
@@ -146,6 +207,13 @@ export default function SectionListEditor({
       setServerError({
         message: "لا يمكن أن يتشارك قسمان نفس الترتيب. عدّل الأرقام أولًا.",
       });
+      return;
+    }
+
+    // Empty title check (server schema also rejects).
+    if (sections.some((s) => s.title.trim() === "")) {
+      setServerError({ message: "عنوان القسم مطلوب لكل قسم." });
+      toast.error("عنوان القسم مطلوب لكل قسم.");
       return;
     }
 
@@ -187,8 +255,9 @@ export default function SectionListEditor({
         purchaseMode,
         fullCoursePrice,
         sections: sections.map((s) => ({
-          sectionId: s.sectionId,
-          title: s.title,
+          // Omit `sectionId` for new rows so the server mints one.
+          ...(s.sectionId ? { sectionId: s.sectionId } : {}),
+          title: s.title.trim(),
           order: s.order,
           price: s.price,
           salePrice: s.salePrice,
@@ -297,45 +366,96 @@ export default function SectionListEditor({
           <CardHeader>
             <CardTitle className="text-right">أقسام الدورة وأسعارها</CardTitle>
             <CardDescription className="text-right">
-              عدّل سعر كل قسم. الأقسام المباعة مُقفلة جزئيًا — يمكن رفع السعر،
-              لا يمكن خفضه أو إعادة ترتيبه.
+              عدّل عنوان وسعر كل قسم. الأقسام المباعة مُقفلة جزئيًا — يمكن
+              رفع السعر وتعديل العنوان، لا يمكن خفض السعر أو حذف القسم أو إعادة
+              ترتيبه.
             </CardDescription>
           </CardHeader>
           <CardContent>
             {sections.length === 0 ? (
-              <p className="text-sm text-gray-500">
-                لا توجد أقسام في هذه الدورة بعد. (إنشاء الأقسام يأتي في المرحلة
-                التالية.)
-              </p>
+              <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-6 text-center">
+                <p className="text-sm text-gray-600 mb-4">
+                  لا توجد أقسام بعد. أضف قسمًا للبدء.
+                </p>
+                <Button
+                  type="button"
+                  onClick={addSection}
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Plus className="w-4 h-4" />
+                  إضافة قسم
+                </Button>
+              </div>
             ) : (
               <div className="space-y-4">
                 {sections.map((section) => {
-                  const hasDuplicateRow = duplicateOrderValues.has(section.order);
+                  const hasDuplicateRow = duplicateOrderValues.has(
+                    section.order
+                  );
                   const highlightError =
-                    serverError?.sectionId === section.sectionId ||
+                    (section.sectionId !== undefined &&
+                      serverError?.sectionId === section.sectionId) ||
                     hasDuplicateRow;
                   return (
                     <div
-                      key={section.sectionId}
+                      key={section.clientKey}
                       className={`rounded-lg border p-4 ${
                         highlightError
                           ? "border-red-400 bg-red-50"
                           : "border-gray-200 bg-white"
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-gray-900 text-base">
-                          {section.title}
-                        </h4>
-                        {section.isLocked && (
-                          <span
-                            className="flex items-center gap-1 text-xs text-amber-700"
-                            title="تم بيع هذا القسم — يمكن رفع السعر فقط، لا يمكن خفضه أو حذف القسم."
+                      <div className="flex items-center justify-between mb-3 gap-3">
+                        <div className="flex-1 min-w-0">
+                          <Label className="text-right block text-sm mb-1">
+                            عنوان القسم *
+                          </Label>
+                          <Input
+                            type="text"
+                            value={section.title}
+                            maxLength={100}
+                            autoFocus={section.isNew}
+                            onChange={(e) =>
+                              updateSection(section.clientKey, {
+                                title: e.target.value,
+                              })
+                            }
+                            placeholder="عنوان القسم"
+                            className="text-right h-10"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0 pt-6">
+                          {section.isLocked && (
+                            <span
+                              className="flex items-center gap-1 text-xs text-amber-700"
+                              title="تم بيع هذا القسم — يمكن رفع السعر فقط، لا يمكن خفضه أو حذف القسم."
+                            >
+                              <Lock className="w-3.5 h-3.5" />
+                              مُقفل
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              !section.isLocked &&
+                              removeSection(
+                                section.clientKey,
+                                section.title || "بدون عنوان"
+                              )
+                            }
+                            disabled={section.isLocked}
+                            title={
+                              section.isLocked
+                                ? "لا يمكن حذف قسم تم بيعه"
+                                : "حذف القسم"
+                            }
+                            className="p-2 rounded-md text-red-600 hover:text-red-800 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-red-600 transition-colors"
+                            aria-label="حذف القسم"
                           >
-                            <Lock className="w-3.5 h-3.5" />
-                            مُقفل (مباع)
-                          </span>
-                        )}
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                         <div>
@@ -349,7 +469,7 @@ export default function SectionListEditor({
                             disabled={section.isLocked}
                             onChange={(e) => {
                               const n = parseInt(e.target.value, 10);
-                              updateSection(section.sectionId, {
+                              updateSection(section.clientKey, {
                                 order: Number.isNaN(n) ? 0 : n,
                               });
                             }}
@@ -376,7 +496,7 @@ export default function SectionListEditor({
                             onChange={(e) => {
                               const val = e.target.value;
                               if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
-                                updateSection(section.sectionId, {
+                                updateSection(section.clientKey, {
                                   price: parseMaybeNumber(val),
                                 });
                               }
@@ -406,7 +526,7 @@ export default function SectionListEditor({
                             onChange={(e) => {
                               const val = e.target.value;
                               if (val === "" || /^\d*\.?\d{0,2}$/.test(val)) {
-                                updateSection(section.sectionId, {
+                                updateSection(section.clientKey, {
                                   salePrice: parseMaybeNumber(val),
                                 });
                               }
@@ -419,6 +539,17 @@ export default function SectionListEditor({
                     </div>
                   );
                 })}
+                <div className="flex justify-start">
+                  <Button
+                    type="button"
+                    onClick={addSection}
+                    variant="outline"
+                    className="gap-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    إضافة قسم
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>
