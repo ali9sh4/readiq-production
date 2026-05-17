@@ -43,10 +43,12 @@ import {
 import { useAuth } from "@/context/authContext";
 import type { Course, CourseSection } from "@/types/types";
 import { updateCourseSectionalConfig } from "@/app/actions/sectional_config_actions";
+import { localizeSectionalError } from "@/lib/sectional/localizeError";
 
 type Props = {
   courseId: string;
   initialCourse: Course;
+  hasAnyEnrollment?: boolean;
   onSaved?: (course: Course) => void;
 };
 
@@ -110,6 +112,7 @@ function parseMaybeNumber(input: string): number | undefined {
 export default function SectionListEditor({
   courseId,
   initialCourse,
+  hasAnyEnrollment = false,
   onSaved,
 }: Props) {
   const auth = useAuth();
@@ -129,14 +132,17 @@ export default function SectionListEditor({
     sectionId?: string;
   } | null>(null);
 
-  // The lock helper rejects flipping purchaseMode if any section is sold.
-  // Bundle-buyer enrollments also trip the server-side guard but aren't
-  // visible from the course doc — server is authoritative either way.
+  // The lock helper rejects flipping purchaseMode if any section is sold
+  // OR if any enrollment exists on the course (bundle buyers on a
+  // sectional course, completed enrollees on a full course). The
+  // section-sold signal is visible in the course doc; the enrollment
+  // signal is passed in from the parent because the course doc only
+  // carries the count, not the individual records.
   const hasLockedSection = useMemo(
     () => sections.some((s) => s.isLocked),
     [sections]
   );
-  const toggleDisabled = hasLockedSection;
+  const toggleDisabled = hasLockedSection || hasAnyEnrollment;
 
   // `order` must be unique across sections in a single submission. Server
   // enforces this too (via SectionalConfigSchema), but flagging it
@@ -279,12 +285,17 @@ export default function SectionListEditor({
           "sectionId" in result.details
             ? ((result.details as { sectionId?: string }).sectionId ?? undefined)
             : undefined;
-        setServerError({ message: result.message, sectionId });
-        toast.error(result.message);
+        const arabicMessage = localizeSectionalError(result);
+        setServerError({ message: arabicMessage, sectionId });
+        toast.error(arabicMessage);
       }
     } catch (err) {
       console.error("sectional-config save error", err);
-      toast.error("حدث خطأ أثناء الحفظ");
+      const detail =
+        process.env.NODE_ENV !== "production" && err instanceof Error
+          ? ` — ${err.message}`
+          : "";
+      toast.error(`حدث خطأ أثناء الحفظ${detail}`);
     } finally {
       setSaving(false);
     }
@@ -323,7 +334,9 @@ export default function SectionListEditor({
           {toggleDisabled && (
             <p className="mt-3 text-sm text-amber-700 flex items-center gap-2">
               <Lock className="w-4 h-4" />
-              لا يمكن تغيير وضع البيع بعد بيع أي قسم.
+              {hasLockedSection
+                ? "لا يمكن تغيير وضع البيع بعد بيع أي قسم."
+                : "لا يمكن تغيير نمط البيع لأن الدورة فيها مشتركون."}
             </p>
           )}
         </CardContent>

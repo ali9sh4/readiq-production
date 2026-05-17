@@ -58,6 +58,7 @@ import {
   purchaseSectionsWithWallet,
   purchaseBundleWithWallet,
 } from "@/app/actions/sectional_wallet_actions";
+import { localizeSectionalError } from "@/lib/sectional/localizeError";
 import type { Course, CourseSection, Enrollment } from "@/types/types";
 
 export type SectionalBuyMode = "single" | "cumulative" | "bundle";
@@ -288,10 +289,11 @@ export default function SectionalBuyDialog({
       }
 
       // Failure cases.
+      const arabicMessage = localizeSectionalError(result);
       if (result.error === "INSUFFICIENT_BALANCE") {
         // Surfaced inline (no toast — the insufficient-balance UI takes
         // over the confirm button).
-        setServerError(result.message);
+        setServerError(arabicMessage);
         return;
       }
       if (
@@ -300,16 +302,20 @@ export default function SectionalBuyDialog({
       ) {
         // The buttons should be hidden for these cases. Defensive: close
         // and refresh so the UI re-syncs.
-        toast.info(result.message);
+        toast.info(arabicMessage);
         onOpenChange(false);
         router.refresh();
         return;
       }
-      setServerError(result.message);
-      toast.error(result.message);
+      setServerError(arabicMessage);
+      toast.error(arabicMessage);
     } catch (err) {
       console.error("sectional purchase error", err);
-      const msg = "حدث خطأ غير متوقع أثناء الشراء";
+      const detail =
+        process.env.NODE_ENV !== "production" && err instanceof Error
+          ? ` — ${err.message}`
+          : "";
+      const msg = `حدث خطأ غير متوقع أثناء الشراء${detail}`;
       setServerError(msg);
       toast.error(msg);
     } finally {

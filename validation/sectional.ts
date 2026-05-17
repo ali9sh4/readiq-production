@@ -51,7 +51,8 @@ export const SectionalConfigSchema = z
       );
     },
     {
-      message: "يجب أن يكون سعر التخفيض أقل من السعر الأصلي لكل قسم",
+      message:
+        "يجب أن يكون سعر التخفيض أقل من السعر الأصلي (وليس مساوياً له)",
       path: ["sections"],
     }
   )

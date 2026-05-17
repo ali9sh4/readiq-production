@@ -1082,6 +1082,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                 <SectionListEditor
                   courseId={course.id}
                   initialCourse={course}
+                  hasAnyEnrollment={(course.enrollmentCount ?? 0) > 0}
                   onSaved={() => router.refresh()}
                 />
                 {course.purchaseMode === "sectional" &&

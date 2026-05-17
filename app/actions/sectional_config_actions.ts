@@ -229,8 +229,19 @@ export async function updateCourseSectionalConfig(
   const freshSnap = await courseRef.get();
   const freshCourse = serializeCourse(courseId, freshSnap.data() ?? {});
 
-  revalidatePath(`/course/${courseId}`);
-  revalidatePath(`/course-upload/edit/${courseId}`);
+  // Revalidation is best-effort: the write already succeeded and Firestore
+  // is the source of truth. A revalidation failure (cache layer hiccup,
+  // route-config change, etc.) must not turn a successful save into a
+  // generic client-side error.
+  try {
+    revalidatePath(`/course/${courseId}`);
+    revalidatePath(`/course-upload/edit/${courseId}`);
+  } catch (revalErr) {
+    console.error(
+      `sectional-config revalidatePath failed courseId=${courseId}`,
+      revalErr
+    );
+  }
 
   console.log(
     `sectional-config updated courseId=${courseId} by=${userId} fields=${Object.keys(

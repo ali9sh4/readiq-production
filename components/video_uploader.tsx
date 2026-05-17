@@ -35,6 +35,7 @@ import {
   updateVideoDetails,
 } from "@/app/actions/upload_video_actions";
 import { updateVideoSectionAssignment } from "@/app/actions/sectional_config_actions";
+import { localizeSectionalError } from "@/lib/sectional/localizeError";
 import {
   CourseVideo,
   CourseSection,
@@ -460,7 +461,11 @@ export default function VideoUploader({
       }
     } catch (error) {
       console.error("Save failed:", error);
-      setError("حدث خطأ أثناء الحفظ");
+      const detail =
+        process.env.NODE_ENV !== "production" && error instanceof Error
+          ? ` — ${error.message}`
+          : "";
+      setError(`حدث خطأ أثناء الحفظ${detail}`);
     } finally {
       setSavingVideoId(null);
     }
@@ -502,12 +507,17 @@ export default function VideoUploader({
         );
         toast.success("تم تحديث قسم الفيديو");
       } else {
-        toast.error(result.message);
-        setError(result.message);
+        const arabicMessage = localizeSectionalError(result);
+        toast.error(arabicMessage);
+        setError(arabicMessage);
       }
     } catch (err) {
       console.error("Section assignment failed:", err);
-      toast.error("حدث خطأ أثناء تحديث قسم الفيديو");
+      const detail =
+        process.env.NODE_ENV !== "production" && err instanceof Error
+          ? ` — ${err.message}`
+          : "";
+      toast.error(`حدث خطأ أثناء تحديث قسم الفيديو${detail}`);
     } finally {
       setAssigningSectionVideoId(null);
     }
