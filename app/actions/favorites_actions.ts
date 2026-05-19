@@ -1,7 +1,7 @@
 "use server";
 
 import { adminAuth, db } from "@/firebase/service";
-import { Course } from "@/types/types";
+import { getUserFavoritesByUid } from "@/lib/dashboard/queries";
 
 // ===== ADD TO FAVORITES =====
 export async function addToFavorites(token: string, courseId: string) {
@@ -120,68 +120,7 @@ export async function getUserFavorites(
 ) {
   try {
     const verifiedToken = await adminAuth.verifyIdToken(token);
-    const userId = verifiedToken.uid;
-
-    let favoritesQuery = db
-      .collection("favorites")
-      .where("userId", "==", userId)
-      .orderBy("createdAt", "desc")
-      .limit(limit);
-
-    if (lastDocId) {
-      const lastDoc = await db.collection("favorites").doc(lastDocId).get();
-      if (lastDoc.exists) {
-        favoritesQuery = favoritesQuery.startAfter(lastDoc);
-      }
-    }
-
-    const snapshot = await favoritesQuery.get();
-
-    const courseIds = snapshot.docs.map((doc) => doc.data().courseId);
-
-    if (courseIds.length === 0) {
-      return {
-        success: true,
-        favorites: [],
-        hasMore: false,
-        lastDocId: null,
-      };
-    }
-
-    // ✅ Batch fetch all courses at once (much faster than loop!)
-    const courseRefs = courseIds.map((id) => db.collection("courses").doc(id));
-    const courseDocs = await db.getAll(...courseRefs);
-
-    // ✅ Map courses with proper type conversion
-    const favorites: Course[] = courseDocs
-      .map((courseDoc) => {
-        if (!courseDoc.exists) return null;
-
-        const data = courseDoc.data();
-        if (data?.isDeleted === true) return null;
-
-        return {
-          id: courseDoc.id,
-          ...data,
-          title: data?.title || "",
-          category: data?.category || "",
-          createdAt: data?.createdAt?.toDate?.()?.toISOString() || null,
-          updatedAt: data?.updatedAt?.toDate?.()?.toISOString() || null,
-          publishedAt: data?.publishedAt?.toDate?.()?.toISOString() || null,
-          approvedAt: data?.approvedAt?.toDate?.()?.toISOString() || null,
-          rejectedAt: data?.rejectedAt?.toDate?.()?.toISOString() || null,
-        } as Course;
-      })
-      .filter((course): course is Course => course !== null); 
-
-    const lastVisible = snapshot.docs[snapshot.docs.length - 1];
-
-    return {
-      success: true,
-      favorites,
-      hasMore: snapshot.size === limit,
-      lastDocId: lastVisible?.id || null,
-    };
+    return await getUserFavoritesByUid(verifiedToken.uid, limit, lastDocId);
   } catch (error: any) {
     console.error("Get favorites error:", error);
     return {

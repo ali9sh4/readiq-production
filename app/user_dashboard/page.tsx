@@ -1,12 +1,14 @@
 // /app/user_dashboard/page.tsx
 import { cookies } from "next/headers";
-import { getCurrentUser } from "@/data/auth-server";
-import { getUserEnrolledCoursesWithStats } from "./actions";
-import { getUserFavorites } from "../actions/favorites_actions";
 import DashboardHome from "./main/DashboardHome";
 import { Course } from "@/types/types";
 import { redirect } from "next/navigation";
 import { adminAuth } from "@/firebase/service";
+import {
+  getEnrolledCoursesAndStatsByUid,
+  getUserFavoritesByUid,
+} from "@/lib/dashboard/queries";
+
 interface DashboardStats {
   enrolledCoursesCount: number;
   createdCoursesCount: number;
@@ -22,32 +24,29 @@ export default async function DashboardPage() {
   }
 
   let enrolledCourses: Course[] = [];
-  let favorites: any = [];
+  let favorites: Course[] = [];
   let stats: DashboardStats | null = null;
 
-  if (token) {
-    try {
-      const userResult = await getCurrentUser({ token });
-      
-      if (userResult.success && userResult.user) {
-        // ✅ Fetch data on server - much faster
-        const [enrolledData, favoritesResult] = await Promise.all([
-          getUserEnrolledCoursesWithStats(token, 20),
-          getUserFavorites(token, 6),
-        ]);
+  try {
+    // Verify once, then fan out — the prior code re-verified the token inside
+    // getCurrentUser + each data loader (3 round-trips to Firebase Auth).
+    const verified = await adminAuth.verifyIdToken(token);
 
-        if (enrolledData.success && enrolledData.courses) {
-          enrolledCourses = enrolledData.courses;
-          stats = enrolledData.stats ?? null;
-        }
+    const [enrolledData, favoritesResult] = await Promise.all([
+      getEnrolledCoursesAndStatsByUid(verified.uid, 20),
+      getUserFavoritesByUid(verified.uid, 6),
+    ]);
 
-        if (favoritesResult.success && favoritesResult.favorites) {
-          favorites = favoritesResult.favorites;
-        }
-      }
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
+    if (enrolledData.success && enrolledData.courses) {
+      enrolledCourses = enrolledData.courses;
+      stats = enrolledData.stats ?? null;
     }
+
+    if (favoritesResult.success && favoritesResult.favorites) {
+      favorites = favoritesResult.favorites;
+    }
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
   }
 
   return (

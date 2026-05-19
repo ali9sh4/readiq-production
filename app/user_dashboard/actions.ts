@@ -1,25 +1,17 @@
 "use server";
 
 import { adminAuth, db } from "@/firebase/service";
-import { Course } from "@/types/types";
 import { revalidatePath } from "next/cache";
+import {
+  getEnrolledCoursesAndStatsByUid,
+  EnrolledCoursesResult,
+} from "@/lib/dashboard/queries";
 
 // ✅ OPTIMIZED - Fetch courses AND stats in ONE function
 export async function getUserEnrolledCoursesWithStats(
   token: string,
   limit?: number
-): Promise<{
-  success: boolean;
-  courses?: Course[];
-  stats?: {
-    enrolledCoursesCount: number;
-    createdCoursesCount: number;
-    completedCoursesCount: number;
-    totalLearningTime: number;
-  };
-  error?: boolean;
-  message?: string;
-}> {
+): Promise<EnrolledCoursesResult> {
   try {
     const verifiedToken = await adminAuth.verifyIdToken(token);
     if (!verifiedToken) {
@@ -30,74 +22,7 @@ export async function getUserEnrolledCoursesWithStats(
       };
     }
 
-    // ✅ Fetch enrollments and created courses in parallel
-    const [enrollmentsSnapshot, createdCoursesSnapshot] = await Promise.all([
-      db
-        .collection("enrollments")
-        .where("userId", "==", verifiedToken.uid)
-        .orderBy("enrolledAt", "desc")
-        .get(),
-      db
-        .collection("courses")
-        .where("createdBy", "==", verifiedToken.uid)
-        .get(),
-    ]);
-
-    const courseIds = enrollmentsSnapshot.docs.map(
-      (doc) => doc.data().courseId
-    );
-
-    if (courseIds.length === 0) {
-      return {
-        success: true,
-        courses: [],
-        stats: {
-          enrolledCoursesCount: 0,
-          createdCoursesCount: createdCoursesSnapshot.size,
-          completedCoursesCount: 0,
-          totalLearningTime: 0,
-        },
-      };
-    }
-
-    // ✅ Limit for dashboard (optional)
-    const idsToFetch = limit ? courseIds.slice(0, limit) : courseIds;
-
-    // ✅ Fetch courses in parallel batches
-    const courseDocs = await fetchCoursesInParallel(idsToFetch);
-
-    // ✅ Calculate stats while mapping courses (single pass)
-    let totalLearningTime = 0;
-    const courses = courseDocs
-      .map((doc) => {
-        const data = doc.data();
-        totalLearningTime += data?.duration ?? 0;
-
-        return {
-          id: doc.id,
-          ...data,
-          title: data.title || "",
-          category: data.category || "",
-          createdAt: data?.createdAt?.toDate?.()?.toISOString() || null,
-          updatedAt: data?.updatedAt?.toDate?.()?.toISOString() || null,
-          publishedAt: data?.publishedAt?.toDate?.()?.toISOString() || null,
-          approvedAt: data?.approvedAt?.toDate?.()?.toISOString() || null,
-          rejectedAt: data?.rejectedAt?.toDate?.()?.toISOString() || null,
-        } as Course;
-      })
-      // ✅ NEW: Filter out deleted courses
-      .filter((course) => !course.isDeleted);
-
-    return {
-      success: true,
-      courses,
-      stats: {
-        enrolledCoursesCount: enrollmentsSnapshot.size,
-        createdCoursesCount: createdCoursesSnapshot.size,
-        completedCoursesCount: 0,
-        totalLearningTime,
-      },
-    };
+    return await getEnrolledCoursesAndStatsByUid(verifiedToken.uid, limit);
   } catch (error) {
     console.error("Error fetching enrolled courses:", error);
     return {
@@ -106,29 +31,6 @@ export async function getUserEnrolledCoursesWithStats(
       message: "حدث خطأ أثناء جلب الدورات المسجلة",
     };
   }
-}
-
-// ✅ Helper: Fetch courses in parallel batches of 10
-async function fetchCoursesInParallel(
-  courseIds: string[]
-): Promise<FirebaseFirestore.QueryDocumentSnapshot[]> {
-  if (courseIds.length === 0) return [];
-
-  // Split into batches of 10 (Firestore 'in' limit)
-  const batches: string[][] = [];
-  for (let i = 0; i < courseIds.length; i += 10) {
-    batches.push(courseIds.slice(i, i + 10));
-  }
-
-  // ✅ Fetch ALL batches in parallel (not sequential!)
-  const batchPromises = batches.map((batch) =>
-    db.collection("courses").where("__name__", "in", batch).get()
-  );
-
-  const batchSnapshots = await Promise.all(batchPromises);
-
-  // Flatten results
-  return batchSnapshots.flatMap((snapshot) => snapshot.docs);
 }
 
 // ✅ Keep these for backward compatibility (they just call the new function)
