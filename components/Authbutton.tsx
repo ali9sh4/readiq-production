@@ -32,17 +32,20 @@ export const AuthButton = () => {
         <DropdownMenu>
           <DropdownMenuTrigger>
             <Avatar>
-              {auth.user.photoURL ? (
+              {auth.user.photoURL && (
                 <AvatarImage
                   src={auth.user.photoURL}
                   alt={`${auth.user.displayName} avatar`}
                 />
-              ) : (
-                <AvatarFallback className="bg-sky-100 text-sky-600">
-                  {(auth.user.displayName ||
-                    auth.user.email)?.[0]?.toUpperCase()}
-                </AvatarFallback>
               )}
+              {/* Always render the fallback as a sibling — Radix shows it
+                  while the image loads and whenever the image fails (stale
+                  Google photo URL, 429, CORS). Without it the circle would
+                  silently render empty on any image error. */}
+              <AvatarFallback className="bg-sky-100 text-sky-600">
+                {(auth.user.displayName ||
+                  auth.user.email)?.[0]?.toUpperCase()}
+              </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent
