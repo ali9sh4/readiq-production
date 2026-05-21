@@ -1,23 +1,22 @@
 # Readiq Mobile Project State
-Last updated: 2026-05-02
+Last updated: 2026-05-21
 
 ## Where we are
 
-**Web API surface is complete.** All 14 mobile-facing endpoints are shipped on
-`main` (Steps 1, 2, 3B, 4, 5, 6), plus Step 3.5-prep (Path D) which added
-owner + admin branches to `/api/mux/playback-token`.
+**The web repo's mobile API surface is complete and signed playback is fully
+shipped.** Everything below is merged to `main`:
 
-**Step 3.5 is in progress on `feat/step-3.5-signed-playback`.** Substeps A–D
-shipped to the branch (hook, wrapper, thumbnail signing, instructor preview
-migration). Substeps E–G remain (CoursePreview, CoursePlayer, image.mux.com
-sweep). 3.5.H (upload-policy flip from `["public"]` to `["signed"]`) is a
-separate one-line commit on `main` AFTER the wrapper PR merges — it does not
-ship on the feature branch.
+- Steps 1–6 — mobile API foundation + 14 endpoints (read-only, profile/favorites
+  writes, top-up flow, enrollment purchase).
+- Step 3.5 signed playback — all substeps A–H, merged via `e1db961`.
+- `POST /api/me` user bootstrap — merged via `4a99c0b`.
+- Sectional purchasing — Phases 1–6 on web, Phase 7a (mobile API read parity).
+- Polish since: wallet top-up wizard, sectional price unification, error
+  localization, `user_dashboard` nav perf.
 
-Next milestone: finish 3.5.E–G, merge the feature branch to `main`, ship
-3.5.H, then scaffold the Expo mobile app in a new repo (`readiq-mobile`). The
-scaffold prompt is staged in personal notes and will be pasted into a fresh
-Claude Code session in that new working directory after 3.5 fully lands.
+**Next milestone: Phase 7b — the React Native reader-app client.** Pure
+client-side work in the separate `readiq-production-mobile` repo. See
+"Decisions" and "Phase 8 backlog" below.
 
 ## Shipped commits (web repo)
 
@@ -28,31 +27,78 @@ Claude Code session in that new working directory after 3.5 fully lands.
 - `ef0e629` — Step 5: wallet top-up flow with manual receipt upload (presigned R2 PUT + `topup_requests` write with `paymentMethod` + `receiptUrl`)
 - `6e01b6b` — Step 6: enrollment purchase endpoint (`POST /api/enrollments`, free + paid, idempotent via `generateProtectionKey`) + project state docs
 - `529b236` — Step 3.5-prep / Path D: owner + admin branches on `/api/mux/playback-token` (`route.ts`), bypass visibility gate + enrollment check; audit-log `reason=` field. New `MOBILE_API_TESTING.md` recipes c.1 (owner draft), c.2 (admin pending), expanded f) (VIDEO_NOT_READY).
+- `ed43dab`–`e1db961` — Step 3.5 signed playback, substeps A–H, merged to `main`. `SignedMuxPlayer` / `SignedMuxThumbnail`, thumbnail token signing, all three web player surfaces migrated, free-preview removed (3.5.E), upload policy flipped to signed-only. `KeyLike` import error fixed in `6c4cb1d`.
+- `2c85e6a` / `4a99c0b` — `POST /api/me`: bootstraps `users/{uid}` for mobile first-login. Merged.
+- `e526aa6`–`0d4dc9f` — Sectional purchasing: Phases 2–6 on web (access gate, server-side purchase, section editor, section-aware player, buyer CTAs / checkout / bundle upsell) + Phase 7a sectional read parity on the mobile API. Phase 4 (ZainCash) deferred. Hotfix `3d56b24` rejects sectional courses from legacy `POST /api/enrollments`.
 
 ## In progress
 
-**Step 3.5 substeps A–D shipped on `feat/step-3.5-signed-playback`** (branch, not yet merged to main). Branch commits (oldest → newest):
+Nothing in flight in the web repo. The mobile API surface is complete. Active
+work moves to Phase 7b in the `readiq-production-mobile` repo (see "Decisions"
+below). The Step 3.5 substep-by-substep history is retained in the
+"Step 3.5 — audit & decision rationale" section further down.
 
-- `3a5b5e3` — 3.5.A: `useMuxPlaybackToken` hook (`hooks/useMuxPlaybackToken.ts`).
-- `1e63f36` — 3.5.B: `SignedMuxPlayer` wrapper (`components/SignedMuxPlayer.tsx`) + doc fix to `MOBILE_API_MIGRATION.md` for the actual `tokens={{ playback, thumbnail }}` Mux 3.x API.
-- `784d360` — 3.5.B post-fix: initial-load flash gate + Arabic placeholder copy.
-- `f80ff3a` — 3.5.C: `signThumbnailToken` helper (`lib/mux/thumbnailToken.ts`) + `/api/mux/playback-token` route returns `thumbnailToken` alongside `token`.
-- `d42dc45` — Mux signing helpers added to `MANUAL_CLEANUP_DO_NOT_AUTOMATE.md` (own scope block, no rollback timer).
-- `a20b5ed` — 3.5.D: instructor preview migration (`components/video_uploader.tsx` lines 740 + 857). New `SignedMuxThumbnail` component (`components/SignedMuxThumbnail.tsx`).
+## Decisions (newly documented — not previously in any doc or commit)
 
-3.5.E (CoursePreview), 3.5.F (CoursePlayer), 3.5.G (image.mux.com sweep) remain. 3.5.H (upload-policy flip) is post-merge on `main`.
+### Mobile is a reader-app — view-only. DECIDED, final.
 
-## Up next
+The mobile app is **view-only**: Google login, "my courses", watch enrolled
+videos, wallet balance display. **No purchase UI, no buy buttons, no in-app
+prices.** Purchasing happens on the web only.
 
-1. **Finish Step 3.5 on the feature branch.**
-   - **3.5.E** — migrate `components/CoursePreview.tsx` (free-preview videos for unenrolled visitors). Audit cited line ~326; verify before editing.
-   - **3.5.F** — migrate `components/ui/CoursePlayer.tsx` (enrolled-student viewer). Audit cited line ~644; verify before editing. **Highest risk.** Watermark DOM-walking (lines 222–281), `:fullscreen` CSS selectors against `.video-container` (lines 877–884), and the `onEnded` chain at line 652 must all keep working. Also: this is the surface that auto-advances between videos, so it's the surface where the mid-video-swap stale-token flash (deferred from 3.5.B) needs to be addressed — likely by clearing token state in the hook when `(courseId, videoId)` change.
-   - **3.5.G** — grep `components/`, `app/`, `lib/` for `image.mux.com`. Replace each remaining call site with `<SignedMuxThumbnail>`. Likely candidates: course catalog cards, search results, admin dashboard thumbnails, "recently uploaded" widgets.
-   - Merge `feat/step-3.5-signed-playback` to `main`.
-2. **3.5.H** — flip `app/actions/upload_video_actions.ts` `playback_policy` from `["public"]` to `["signed"]`. Single-line commit on `main` after the wrapper PR merges.
-3. **Mobile scaffold (`readiq-mobile` new repo).** Fresh Expo managed project. Stack staged in personal notes.
-4. **Mobile feature build-out** — courses list, course detail, enrollment purchase, wallet + top-up upload, favorites, profile, signed Mux player screen.
-5. **Post-mobile cleanup PRs** (each separate, after the mobile app is live): delete the web `/Course/[courseId]` viewer, remove all ZainCash code, update `/admin-dashboard/topup-approvals` to display `paymentMethod` + `receiptUrl`, ship iOS screen-capture detection (mobile v1.1), document the Mux signing-key rotation policy, remove `/api/health/me`, fix the pre-existing `lib/mux/playbackToken.ts(1,37)` `KeyLike` import error (`jose` no longer exports the type — pattern in `thumbnailToken.ts` is `ReturnType<typeof importPKCS8>`), update the route's audit-log line to reflect that both playback + thumbnail JWTs are issued per request, fix Radix UI accessibility warnings (`DialogContent` requires `DialogTitle`, and `aria-describedby={undefined}` warnings — console-only, no functional impact, pre-existing and not caused by 3.5 work; add `VisuallyHidden` `DialogTitle` or wire `DialogDescription` where `DialogContent` is used; low priority — accessibility hygiene).
+Rationale: the Apple App Store and Google Play require their own in-app
+billing (15–30% cut) for digital goods sold in-app. Course access is a digital
+good — there is no exemption (food-delivery / ride-hailing apps are exempt only
+because they sell physical goods/services, not digital content). A single
+static "help" link pointing to the web is permitted (the Netflix / Spotify
+pattern). **There will be no mobile-side purchase endpoints, ever.**
+
+### Phase 7b = the React Native reader-app client.
+
+Consume the sectional read fields Phase 7a exposed, render the view-only UI,
+ship to the App Store and Play Store. Pure client-side work — no backend
+dependency. Repo: **`readiq-production-mobile`** (sibling working directory,
+confirmed present). The legacy repo **`read-iraq-copy` is dead — do NOT touch
+it.**
+
+### Phase 4 (ZainCash sectional) deferred indefinitely.
+
+Wallet-only launch. Documented in `docs/PHASE_4_ZAINCASH_DEFERRED.md`.
+
+## Phase 8 backlog (none urgent — supersedes the old "Up next" item 5)
+
+1. **Web-side Qi Card payment integration.** Qi Card is Iraq's largest card
+   issuer — broader reach than ZainCash. Widens the web payment funnel; does
+   not touch the App Store billing problem.
+2. **ZainCash merchant API for automatic wallet top-up.** Eliminates the manual
+   receipt-approval bottleneck. Merchant account already held.
+3. **Six generic-toast catches** in `CourseDashboard.tsx` + `EnrollButton` /
+   `favoritesButton` / wallet / topup — same Arabic-localization pattern as the
+   recent error-message fix. Lower priority.
+4. **Shared API serializers** (`lib/api/serializers/`) — extract on the next
+   cross-cutting field change, not before.
+5. **Server-side auth via the `firebaseAuthToken` cookie** — fixes a latent
+   hydration race. Multi-week effort, not urgent.
+
+Already done, removed from the old "Up next" item 5: the ESLint config typo
+(`ban-ts-comment`) was fixed in `59bec8e` (2026-05-16); the `jose` `KeyLike`
+import error was fixed in `6c4cb1d`; the audit-log wording and Radix dialog
+a11y items shipped with the Step 3.5 merge.
+
+## Sectional purchasing — invariants
+
+Any future sectional work (web or mobile) must respect these seven invariants:
+
+1. Only `course.purchaseMode === 'sectional'` activates sectional logic — the
+   presence of `sections[]` is **not** a signal.
+2. `enrollment.accessScope` is the single source of truth for access.
+3. An unset `accessScope` means grandfathered full access — **never overwrite it.**
+4. A bundle buyer writes `accessScope: 'full'`.
+5. A per-section buyer writes `accessScope: 'sectional'` and merges into
+   `ownedSectionIds[]`.
+6. The server rejects a per-section buy when `accessScope !== 'sectional'`.
+7. Once a `sectionId` is sold it is immutable; `purchaseMode` locks at the
+   first sale or first enrollment.
 
 ## Key decisions log
 
@@ -66,6 +112,13 @@ Claude Code session in that new working directory after 3.5 fully lands.
 - **Mux signing key incident (2026-05-01, twice same day).** First exposure: during Path D verification testing, the Mux signing key was unintentionally pasted into the conversation history; rotated immediately. Second exposure (same day, post-rotation): `.env.local` was the active IDE selection during a later session, and the IDE auto-share surfaced both `MUX_SIGNING_KEY_ID` and `MUX_SIGNING_PRIVATE_KEY` (PKCS#8 base64) into a system-reminder tool message. Rotated again. Going forward: (a) never paste secrets, real or example, into any chat or commit message; (b) when describing key format, describe the SHAPE only (length, header line, base64 vs PEM) — never the value; (c) **do not keep `.env.local` open as the active editor selection during AI-assisted sessions** — the IDE forwards the selected file to tool context. Both leak windows were minutes, scope was Mux playback signing only (no AWS/Firebase/R2/payments), no exposed playback IDs in the public catalog, post-rotation impact = zero. Lesson logged.
 
 ## Web instructor flow status
+
+> **Historical (pre-2026-05).** This section described the web instructor flow
+> *before* Step 3.5 and sectional purchasing shipped. Both have since landed on
+> `main`: the three web player surfaces were migrated to signed playback and the
+> instructor/course UI gained sectional editing. The "Operational guidance until
+> Step 3.5 lands" sub-section below ("DO NOT upload production videos yet") is
+> **obsolete** — Step 3.5 shipped and new uploads are signed-only. Retained for history.
 
 As of the latest commit on main, the entire web-side instructor experience is unchanged from before mobile API work began. All mobile API additions have been purely additive — no existing web code paths have been modified.
 
@@ -222,63 +275,19 @@ After 3.5 + mobile launch, the DRM posture is: A+ for stopping URL link-sharing 
 
 Scenario 3 mitigations (catalog scraping by a competitor) are deferred until the platform reaches 10+ paying customers AND there is evidence of actual abuse. Pre-building reactive defenses (per-user watermarking, device-binding, concurrent-session caps) at current scale is over-engineering. They will be scoped when there is a real attack to defend against, not before.
 
-## Free preview: removed in 3.5.E (reversible)
+## Free preview: enabled for signed-in users, web + mobile; anonymous preview deferred
 
-See also: `docs/FREE_PREVIEW_REMOVAL.md` for the full standalone reversal playbook.
+**Status (2026-05-21):** free-preview is **enabled for signed-in users across web and mobile**. Anonymous (signed-out) free-preview is deliberately **not** implemented.
 
-### What changed
+Full history, the Option A reversal record, and the Option B (anonymous) playbook live in `docs/FREE_PREVIEW_REMOVAL.md` — the single source of truth for this area.
 
-As of **2026-05-03** (commit on `feat/step-3.5-signed-playback`), the free-preview video feature in `components/CoursePreview.tsx` was removed. Unenrolled visitors no longer see a playable video on the course catalog page. The lesson list remains visible; clicking any lesson scrolls to and highlights the Enroll button.
+Short version:
 
-The existing Firestore `freePreviewVideo` field on course documents is **intentionally left intact** as dead data, kept for optionality. See the explicit retention block in `docs/MANUAL_CLEANUP_DO_NOT_AUTOMATE.md` — this is NOT scheduled for cleanup, and an AI agent must not "helpfully" delete it from the schema.
-
-### Why the decision was made
-
-- At the current ~10–200 user scale, enabling anonymous token issuance for the signed Mux pipeline (the 3.5.H upload-policy flip) creates more architectural complexity than it's worth.
-- All paid content is gated behind enrollment. After this change, there are zero exception cases in the API gate logic — every signed asset requires an authenticated, enrolled user.
-- Stronger DRM uniformly: removes the "anonymous token endpoint" attack surface entirely (catalog scraping via the unauthenticated branch is no longer possible because that branch does not exist).
-
-### What it trades off
-
-A marketing/conversion tool is gone: visitors can no longer "try before they buy" with a sample video. Mitigations available without bringing back free preview: course description, syllabus list, instructor bio, course thumbnail, testimonials, and screenshots / promo image.
-
-If conversion data later shows the loss is significant, free preview can be reintroduced. The reversal path is documented below and in `docs/FREE_PREVIEW_REMOVAL.md`.
-
-### How to reverse this (estimated 1–2 days of focused work)
-
-**Backend:**
-
-1. Extend `/api/mux/playback-token` to support an unauthenticated branch: if the requested `videoId` matches the course's `freePreviewVideo` field, issue a token without requiring auth or enrollment.
-2. Add rate limiting to the unauthenticated path (by IP), shorter token TTL (e.g. 5 minutes instead of 2 hours), and stronger audit logging.
-3. Decide on signing-key strategy: same Mux signing key as paid content, or a separate "preview-only" key for cleaner revocation. **Recommendation:** start with same key, split only if abuse appears.
-
-**Frontend:**
-
-4. Restore the `<MuxPlayer>` block in `components/CoursePreview.tsx` (use the `SignedMuxPlayer` wrapper from 3.5.B).
-5. Reintroduce `selectedVideo` state and the lesson-click handler for free-preview videos. Lessons that aren't the free preview should still scroll to the Enroll button.
-6. Update `SignedMuxPlayer` or `useMuxPlaybackToken` to handle the unauthenticated case gracefully — it currently surfaces `error.code === "UNAUTHENTICATED"` which the wrapper has no render branch for. Add a branch that, when free preview is enabled but no user is signed in, still calls the endpoint and treats success as the happy path.
-
-**Upload flow decision:**
-
-7. Decide whether free-preview videos use `public` policy (simpler, but the asset URL is discoverable) or `signed` policy with the new anonymous-token branch (more secure, more complex). **Recommendation:** signed policy with anonymous branch — matches the rest of the system.
-
-**Data:**
-
-8. Existing courses still have `freePreviewVideo` populated in Firestore (kept intentionally — see "What changed" above). New course uploads since the removal won't have set this field; instructors will need to set it again via the upload UI.
-9. Re-add the `freePreviewVideo` input field to the course-upload form if it was removed. Verify status when reintroducing.
-
-**Mobile:**
-
-10. If free preview should work on mobile too, replicate the unauthenticated token branch in the mobile app's playback flow. Otherwise, ship as "preview only on web" — simpler product decision.
-
-### When to reconsider
-
-Reintroduce free-preview only if **both** conditions are true:
-
-- Conversion analytics show meaningful drop-off attributable to lack of preview (track: course-page-view-to-enroll conversion rate; need a baseline plus a few months of data after removal).
-- Platform has 500+ users and revenue justifies engineering investment.
-
-**Do NOT preemptively rebuild free-preview before evidence of the conversion loss exists.** At sub-200-user scale, friction-of-checkout and price-point tuning will move the needle more than preview videos.
+- The backend playback-token route **always** granted free-preview to any authenticated caller — the `isFreePreview` bypass was never removed. (An earlier claim here that 3.5.E made the gate "zero exception cases / enrolled-only" was wrong and has been corrected in `FREE_PREVIEW_REMOVAL.md`.)
+- 3.5.E (2026-05-03) removed only the free-preview **player UI in `components/CoursePreview.tsx`**, producing an unintended split: backend grants, mobile shows, web hides.
+- Option A (2026-05-21) restored the web player for **signed-in** visitors via `SignedMuxPlayer` + `useMuxPlaybackToken`, keyed off the per-video `isFreePreview` flag. Signed-out visitors get a sign-in prompt and trigger no token request. Free-preview plays regardless of section ownership on sectional courses (it is the highest-priority unlock rule). The route was rate-limited (per-user, fail-open) in the preceding PR.
+- The Firestore course-level `freePreviewVideo` field remains retained dead data (not used by the web player) — see `docs/MANUAL_CLEANUP_DO_NOT_AUTOMATE.md`.
+- Option B (an anonymous/unauthenticated token branch) stays deferred — only revisit at 500+ users with conversion evidence; see `FREE_PREVIEW_REMOVAL.md`.
 
 ---
 

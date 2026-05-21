@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { Course, Enrollment } from "@/types/types";
+import Link from "next/link";
+import { Course, CourseVideo, Enrollment } from "@/types/types";
 import {
   Clock,
   Users,
@@ -17,10 +18,13 @@ import {
   BarChart3,
   Video,
   ArrowDown,
+  Play,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import EnrollButton from "./EnrollButton";
+import SignedMuxPlayer from "@/components/SignedMuxPlayer";
+import { useAuth } from "@/context/authContext";
 import { toast } from "sonner";
 import { useSearchParams } from "next/navigation";
 import FavoriteButton from "./favoritesButton";
@@ -62,6 +66,48 @@ export default function CoursePreview({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     () => new Set(),
   );
+
+  // Free-preview playback (Option A — signed-in visitors only). The signal
+  // is the per-video `isFreePreview` boolean — the same field the backend
+  // playback-token route, CoursePlayer, and `lib/sectional/access.ts`
+  // (`getLockReason`) all key off. Free-preview is the highest-priority
+  // unlock rule there, so a free-preview video plays regardless of section
+  // ownership on a sectional course.
+  const { user, isLoading: authLoading } = useAuth();
+  const isSignedIn = Boolean(user);
+
+  const freePreviewVideos = useMemo(
+    () =>
+      (course.videos || []).filter(
+        (v) => v.isFreePreview === true && v.isVisible !== false,
+      ),
+    [course.videos],
+  );
+  const hasFreePreview = freePreviewVideos.length > 0;
+
+  // Which free-preview lesson is loaded into the player. Defaults to the
+  // first; clicking another free-preview lesson row swaps it.
+  const [selectedPreviewId, setSelectedPreviewId] = useState<string | null>(
+    () => freePreviewVideos[0]?.videoId ?? null,
+  );
+  const selectedPreviewVideo = useMemo(
+    () =>
+      freePreviewVideos.find((v) => v.videoId === selectedPreviewId) ??
+      freePreviewVideos[0] ??
+      null,
+    [freePreviewVideos, selectedPreviewId],
+  );
+
+  // Render the player only for a signed-in visitor — the token route
+  // requires auth, so a signed-out request would just 401. For signed-out
+  // visitors we show the thumbnail + a sign-in prompt and fire no request.
+  const showPreviewPlayer =
+    hasFreePreview && isSignedIn && selectedPreviewVideo !== null;
+
+  const handlePreviewLessonClick = useCallback((video: CourseVideo) => {
+    setSelectedPreviewId(video.videoId);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   const enrollWrapperRef = useRef<HTMLDivElement | null>(null);
   const setEnrollWrapperRef = useCallback((el: HTMLDivElement | null) => {
@@ -352,26 +398,62 @@ export default function CoursePreview({
             <div className="lg:sticky lg:top-4">
               <Card className="overflow-hidden shadow-2xl border-0">
                 <div className="relative bg-black">
-                  <div className="relative aspect-video">
-                    <Image
-                      src={
-                        course.thumbnailUrl ||
-                        "/images/course-placeholder.jpg"
-                      }
-                      alt={course.title}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
-                    <button
-                      type="button"
-                      onClick={scrollToEnroll}
-                      className="absolute inset-x-0 bottom-0 mx-auto mb-4 sm:mb-6 flex items-center justify-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white text-sm sm:text-base font-semibold rounded-full px-4 py-2 sm:px-5 sm:py-2.5 ring-1 ring-white/30 transition-colors w-fit"
-                    >
-                      <span>اشترك للمشاهدة</span>
-                      <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5" />
-                    </button>
-                  </div>
+                  {showPreviewPlayer && selectedPreviewVideo ? (
+                    /* Signed-in visitor — play the free-preview lesson.
+                       SignedMuxPlayer mints the token via useMuxPlaybackToken;
+                       no hand-rolled fetch, no raw Mux URL. */
+                    <div className="relative aspect-video">
+                      <SignedMuxPlayer
+                        key={selectedPreviewVideo.videoId}
+                        courseId={course.id}
+                        videoId={selectedPreviewVideo.videoId}
+                        playbackId={selectedPreviewVideo.playbackId}
+                        streamType="on-demand"
+                        metadata={{
+                          video_id: selectedPreviewVideo.videoId,
+                          video_title: selectedPreviewVideo.title,
+                        }}
+                        className="w-full h-full aspect-video bg-black"
+                      />
+                      <span className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-green-600 text-white text-xs font-semibold rounded-full px-2.5 py-1 pointer-events-none">
+                        <Play className="w-3 h-3 fill-current" />
+                        معاينة مجانية
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="relative aspect-video">
+                      <Image
+                        src={
+                          course.thumbnailUrl ||
+                          "/images/course-placeholder.jpg"
+                        }
+                        alt={course.title}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
+                      {hasFreePreview && !isSignedIn && !authLoading ? (
+                        /* Free preview exists but the visitor is signed out.
+                           Prompt sign-in — do NOT request a token. */
+                        <Link
+                          href="/login"
+                          className="absolute inset-x-0 bottom-0 mx-auto mb-4 sm:mb-6 flex items-center justify-center gap-2 bg-green-600/90 hover:bg-green-600 backdrop-blur-sm text-white text-sm sm:text-base font-semibold rounded-full px-4 py-2 sm:px-5 sm:py-2.5 ring-1 ring-white/30 transition-colors w-fit"
+                        >
+                          <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                          <span>سجّل الدخول لمشاهدة المعاينة المجانية</span>
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={scrollToEnroll}
+                          className="absolute inset-x-0 bottom-0 mx-auto mb-4 sm:mb-6 flex items-center justify-center gap-2 bg-white/15 hover:bg-white/25 backdrop-blur-sm text-white text-sm sm:text-base font-semibold rounded-full px-4 py-2 sm:px-5 sm:py-2.5 ring-1 ring-white/30 transition-colors w-fit"
+                        >
+                          <span>اشترك للمشاهدة</span>
+                          <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* ========================================
@@ -553,32 +635,59 @@ export default function CoursePreview({
                         {/* Videos List */}
                         {isExpanded && (
                           <div className="divide-y divide-gray-100 bg-white">
-                            {videos.map((video) => (
-                              <div
-                                key={video.videoId}
-                                onClick={scrollToEnroll}
-                                className="p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
-                              >
-                                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-gray-100">
-                                    <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
+                            {videos.map((video) => {
+                              // Free-preview lessons are playable (signed-in)
+                              // or prompt sign-in; everything else stays
+                              // locked and scrolls to the Enroll CTA.
+                              const isPreview = video.isFreePreview === true;
+                              return (
+                                <div
+                                  key={video.videoId}
+                                  onClick={() =>
+                                    isPreview
+                                      ? handlePreviewLessonClick(video)
+                                      : scrollToEnroll()
+                                  }
+                                  className="p-3 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                                >
+                                  <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                                    <div
+                                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                        isPreview
+                                          ? "bg-green-100"
+                                          : "bg-gray-100"
+                                      }`}
+                                    >
+                                      {isPreview ? (
+                                        <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-600 fill-current" />
+                                      ) : (
+                                        <Lock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-400" />
+                                      )}
+                                    </div>
+                                    <div className="flex-1 text-right min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <p className="font-medium text-gray-900 text-xs sm:text-sm truncate">
+                                          {video.title}
+                                        </p>
+                                        {isPreview && (
+                                          <span className="text-[10px] sm:text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium whitespace-nowrap flex-shrink-0">
+                                            معاينة مجانية
+                                          </span>
+                                        )}
+                                      </div>
+                                      {video.description && (
+                                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                                          {video.description}
+                                        </p>
+                                      )}
+                                    </div>
                                   </div>
-                                  <div className="flex-1 text-right min-w-0">
-                                    <p className="font-medium text-gray-900 text-xs sm:text-sm truncate">
-                                      {video.title}
-                                    </p>
-                                    {video.description && (
-                                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
-                                        {video.description}
-                                      </p>
-                                    )}
-                                  </div>
+                                  <span className="text-xs sm:text-sm text-gray-600 font-medium mr-2 sm:mr-4 whitespace-nowrap">
+                                    {formatDuration(video.duration)}
+                                  </span>
                                 </div>
-                                <span className="text-xs sm:text-sm text-gray-600 font-medium mr-2 sm:mr-4 whitespace-nowrap">
-                                  {formatDuration(video.duration)}
-                                </span>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         )}
                       </div>
