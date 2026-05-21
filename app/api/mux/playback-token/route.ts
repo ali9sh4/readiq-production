@@ -1,4 +1,6 @@
 import { NextRequest } from "next/server";
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 import { db } from "@/firebase/service";
 import { verifyBearerToken } from "@/lib/auth/verifyBearerToken";
 import { fail, handleApiError, ok } from "@/lib/api/response";
@@ -9,9 +11,49 @@ import { playbackTokenBody } from "@/lib/validation/api/mux";
 
 const TTL_SECONDS = 7200; // 2 hours — mobile play session.
 
+// Per-user rate limit. A real viewer mints one token per video they open —
+// a handful per session, occasionally re-minted after the 2h TTL expires.
+// 30/min sits far above any legitimate pattern while hard-throttling a
+// script that would otherwise mint unlimited tokens and force a Firebase
+// verifyIdToken round-trip on every call. Same @upstash/ratelimit pattern
+// as wallet_actions.ts — Redis.fromEnv() reads UPSTASH_REDIS_REST_URL and
+// UPSTASH_REDIS_REST_TOKEN.
+const ratelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(30, "1 m"),
+  analytics: true,
+  prefix: "mux_playback_token",
+});
+
 export async function POST(req: NextRequest) {
   try {
     const auth = await verifyBearerToken(req);
+
+    // Rate-limit per authenticated user, as early as possible after identity
+    // is known — before the Firebase course lookups so a throttled request
+    // is cheap to reject. Fail OPEN: if the Upstash call itself errors
+    // (network blip, Upstash down) we log and allow the request through.
+    // Rate limiting here is abuse mitigation, not a hard access gate, and a
+    // transient Redis failure must not stop a paying viewer from watching.
+    try {
+      const { success: rateLimitOk } = await ratelimit.limit(auth.userId);
+      if (!rateLimitOk) {
+        console.warn(
+          `mux-playback RATE_LIMITED userId=${auth.userId}`
+        );
+        return fail(
+          "RATE_LIMITED",
+          "Too many playback-token requests. Please slow down.",
+          429
+        );
+      }
+    } catch (rlErr) {
+      console.error(
+        `mux-playback rate-limit check failed (failing open) userId=${auth.userId}:`,
+        rlErr
+      );
+    }
+
     const body = playbackTokenBody.parse(await req.json());
 
     const courseSnap = await db.collection("courses").doc(body.courseId).get();
