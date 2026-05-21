@@ -76,15 +76,15 @@ Run `npx tsc --noEmit` and `npm run lint` before declaring work done.
 
 ## Sectional course purchasing (shipped, web)
 
-A course can be sold as a full bundle OR section-by-section. Invariants — never violate:
+A course can be sold as a full bundle OR section-by-section. The system holds
+together only because of seven non-negotiable invariants — getting one wrong is
+a money or access bug.
 
-1. Only `course.purchaseMode === 'sectional'` activates sectional logic. `sections[]` presence is NOT a signal.
-2. `enrollment.accessScope` is the single source of truth for access.
-3. Unset `accessScope` = grandfathered full access. Never overwrite it.
-4. Bundle buyer writes `accessScope: 'full'`. Per-section buyer writes `'sectional'` and merges `ownedSectionIds[]`.
-5. Server rejects a per-section purchase if `accessScope !== 'sectional'`.
-6. Once a `sectionId` is sold it is immutable; `purchaseMode` locks at first sale or first enrollment.
-7. The Mux playback-token route is the real access gate.
+**The invariants and their consequences live in the `sectional-invariants`
+skill** (`.claude/skills/sectional-invariants/`) — the single source of truth.
+Read it before touching `app/actions/sectional_*`, `lib/sectional/*`,
+`lib/courses/assertCourseMutationAllowed.ts`, the Mux playback-token route,
+enrollment logic, or any access/lock predicate.
 
 Wallet-only — ZainCash sectional is deferred (`docs/PHASE_4_ZAINCASH_DEFERRED.md`).
 Purchase actions: `app/actions/sectional_wallet_actions.ts`. Lock helper: `lib/courses/assertCourseMutationAllowed.ts`.
