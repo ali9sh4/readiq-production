@@ -1,17 +1,33 @@
-# Readiq — Claude / agent guide
+# Rubik (Readiq) — Web Repo — Claude / agent guide
 
 Production codebase. Read this before making changes.
 
+The public brand is **Rubik (روبيك)**; "Readiq" is the internal codename — both appear in code.
+
+## Sibling repo — the mobile app
+
+The React Native app lives in a **separate repo: `readiq-production-mobile`** (Expo, view-only reader-app).
+It consumes this repo's `app/api/*` endpoints, read-only. It never writes enrollment or access data.
+
+**When you change anything under `app/api/`, you are changing the mobile app's contract.**
+The contract is documented in `docs/MOBILE_API_MIGRATION.md` — update that doc in the same commit
+as any `/api/*` change, so the mobile repo always has a current spec to read.
+
+## Source of truth for project state
+
+`docs/MOBILE_PROJECT_STATE.md` — current status, shipped phases, decisions, the sectional invariants.
+Read it at the start of any non-trivial task. Keep it current — a stale board causes wrong assumptions.
+
 ## Stack
 
-- Next.js **15.5.7** (App Router) on React 19, dev uses Turbopack
+- Next.js **15** (App Router) on React 19, dev uses Turbopack
 - TypeScript (strict), path alias `@/*` → repo root
-- Firebase: client SDK + `firebase-admin` (project `readiq-1f109`)
+- Firebase: client SDK + `firebase-admin`
 - Mux (`@mux/mux-node`, `@mux/mux-player-react`) — signed playback + thumbnails
 - Cloudflare R2 via `@aws-sdk/client-s3` for file/image uploads
 - Upstash Redis for rate limiting (`@upstash/ratelimit`)
 - Zod for validation, react-hook-form for forms, Tailwind v4, shadcn/ui (Radix)
-- ZainCash for payments
+- ZainCash for payments; internal wallet credits course enrollments
 
 ## Commands
 
@@ -22,17 +38,21 @@ npm run lint     # next lint
 npm start        # next start (after build)
 ```
 
-No test or typecheck script exists. There is no CI test suite — verify changes manually.
+No test or typecheck script — there is no CI test suite. Verify changes manually.
+Run `npx tsc --noEmit` and `npm run lint` before declaring work done.
 
 ## Layout
 
 - `app/` — App Router. Routes, server actions in `app/actions/*`, REST API in `app/api/*`.
 - `components/` — UI. `ui/` is shadcn primitives. Mux player wrappers: `SignedMuxPlayer.tsx`, `SignedMuxThumbnail.tsx`.
-- `lib/` — server-side helpers:
+  Sectional UI under `components/sectional/`.
+- `lib/` — server-side + shared helpers:
   - `lib/mux/` — `mux.ts` (client), `playbackToken.ts`, `thumbnailToken.ts` (signing)
   - `lib/auth/verifyBearerToken.ts` — bearer auth for `/api/*` (mobile)
   - `lib/api/response.ts` — standard JSON response shape
-  - `lib/courses/visibility.ts`, `lib/admin/`, `lib/payments/zaincash.ts`, `lib/R2/`, `lib/services/`, `lib/purchaseProtection/`
+  - `lib/sectional/` — sectional purchasing helpers (pricing, grouping, access, displayPrice, localizeError)
+  - `lib/courses/` — incl. `assertCourseMutationAllowed.ts` (the sectional lock helper)
+  - `lib/payments/zaincash.ts`, `lib/R2/`, `lib/services/`, `lib/purchaseProtection/`
 - `firebase/client.ts`, `firebase/service.ts` — client + admin SDK init
 - `context/authContext.tsx` — client auth state
 - `hooks/` — `useMuxPlaybackToken`, `useVideoProtection`, `useVideoUpload`
@@ -48,20 +68,39 @@ No test or typecheck script exists. There is no CI test suite — verify changes
 - It sets request headers `x-user-id`, `x-user-email`, `x-user-admin` for downstream handlers.
 - **`/api/*` is intentionally NOT in the middleware matcher.** Mobile clients send `Authorization: Bearer <id token>` and each API handler verifies with `lib/auth/verifyBearerToken.ts`. Adding `/api/:path*` to the matcher will break mobile + ZainCash callbacks. Don't.
 
-## Mux / signed playback (active work — branch `feat/step-3.5-signed-playback`)
+## Mux / signed playback (shipped, stable)
 
-- All playback URLs and thumbnails must be signed. Use `lib/mux/playbackToken.ts` and `lib/mux/thumbnailToken.ts`; client uses `SignedMuxPlayer` / `SignedMuxThumbnail` and `useMuxPlaybackToken`.
-- Never expose `MUX_SIGNING_PRIVATE_KEY` or `MUX_TOKEN_SECRET` to the client. Token minting happens server-side only.
-- Status: see `docs/` and recent commits — A–D shipped, E–G pending.
+- All playback URLs and thumbnails are signed. Use `lib/mux/playbackToken.ts` and `lib/mux/thumbnailToken.ts`; client uses `SignedMuxPlayer` / `SignedMuxThumbnail` and `useMuxPlaybackToken`.
+- Never expose `MUX_SIGNING_PRIVATE_KEY` or `MUX_TOKEN_SECRET` to the client. Token minting is server-side only.
+- The Mux playback-token route enforces sectional access — see below.
+
+## Sectional course purchasing (shipped, web)
+
+A course can be sold as a full bundle OR section-by-section. Invariants — never violate:
+
+1. Only `course.purchaseMode === 'sectional'` activates sectional logic. `sections[]` presence is NOT a signal.
+2. `enrollment.accessScope` is the single source of truth for access.
+3. Unset `accessScope` = grandfathered full access. Never overwrite it.
+4. Bundle buyer writes `accessScope: 'full'`. Per-section buyer writes `'sectional'` and merges `ownedSectionIds[]`.
+5. Server rejects a per-section purchase if `accessScope !== 'sectional'`.
+6. Once a `sectionId` is sold it is immutable; `purchaseMode` locks at first sale or first enrollment.
+7. The Mux playback-token route is the real access gate.
+
+Wallet-only — ZainCash sectional is deferred (`docs/PHASE_4_ZAINCASH_DEFERRED.md`).
+Purchase actions: `app/actions/sectional_wallet_actions.ts`. Lock helper: `lib/courses/assertCourseMutationAllowed.ts`.
 
 ## Mobile API surface
 
-- `app/api/*` is a parallel REST surface for the (separate) React Native app. See `docs/MOBILE_API_MIGRATION.md`, `docs/MOBILE_API_TESTING.md`, `docs/MOBILE_PROJECT_STATE.md`.
-- Use `lib/api/response.ts` for response shape and `lib/auth/verifyBearerToken.ts` for auth. Don't read cookies in `/api/*` handlers.
+- `app/api/*` is a parallel REST surface for the separate React Native app.
+  See `docs/MOBILE_API_MIGRATION.md`, `docs/MOBILE_API_TESTING.md`, `docs/MOBILE_PROJECT_STATE.md`.
+- Use `lib/api/response.ts` for response shape and `lib/auth/verifyBearerToken.ts` for auth.
+  Don't read cookies in `/api/*` handlers.
+- The mobile app is **view-only** — it never purchases in-app. `POST /api/enrollments` rejects
+  sectional courses with `COURSE_NOT_SECTIONAL`. Do not add mobile-side purchase endpoints.
 
 ## Env vars (names only — values live in `.env.local`, gitignored)
 
-- Firebase: `FIREBASE_ADMIN_EMAIL`, plus the rest of the admin service-account vars
+- Firebase admin service-account vars (`FIREBASE_ADMIN_EMAIL`, etc.)
 - Mux: `MUX_TOKEN_ID`, `MUX_TOKEN_SECRET`, `MUX_SIGNING_KEY_ID`, `MUX_SIGNING_PRIVATE_KEY`
 - R2: `R2_*` (account id, bucket, keys)
 - ZainCash: `ZAINCASH_BASE_URL`, `ZAINCASH_MERCHANT_ID`, `ZAINCASH_MSISDN`, `ZAINCASH_SECRET_KEY`
@@ -74,20 +113,23 @@ No test or typecheck script exists. There is no CI test suite — verify changes
 - Validate input with zod at the boundary (action / route handler). Trust internal calls.
 - Standard API response shape via `lib/api/response.ts` — don't hand-roll JSON.
 - Path imports use `@/...` (e.g. `@/lib/mux/playbackToken`).
-- RTL/Arabic content is supported — check `utils/translation.ts` and watch for direction-sensitive UI.
+- RTL/Arabic content is supported — watch for direction-sensitive UI.
+- Server-action failures return a stable `error` code + message; client localizes via `lib/sectional/localizeError.ts` for sectional flows.
 
 ## Gotchas / don'ts
 
-- **`next.config.ts` has `eslint.ignoreDuringBuilds: true` and `typescript.ignoreBuildErrors: true`** ("lenient mode"). The build will not catch type/lint errors — run `npm run lint` and `npx tsc --noEmit` manually before declaring work done.
+- **`next.config.ts` has `eslint.ignoreDuringBuilds: true` and `typescript.ignoreBuildErrors: true`** ("lenient mode"). The build will not catch type/lint errors — run `npm run lint` and `npx tsc --noEmit` manually before declaring work done. A few pre-existing `.next/types/*` errors (sync-enrollments missing default export, Next 15 async-params) are known and unrelated to new work.
 - Server Action body limit is bumped to 100mb (for video uploads). Don't lower it without checking upload flows.
 - Don't add `/api/:path*` to the middleware matcher (see Auth model above).
 - Don't bypass `SignedMuxPlayer` / `SignedMuxThumbnail` with raw Mux URLs.
-- Don't commit `.env.local`, service-account JSON, or anything under `lib/` that hardcodes secrets.
+- Don't commit `.env.local`, service-account JSON, or anything that hardcodes secrets. Never paste secrets/JWTs into chat — describe shape only.
 - Don't add new routes under `pages/` — App Router only.
 - Image domains are pinned in `next.config.ts` — add new hosts there before using `<Image>` with them.
+- Vercel Hobby plan: runtime logs are retained only 1 hour. For production debugging, reproduce live while watching logs.
 
 ## Docs to skim when relevant
 
-- `docs/MOBILE_API_MIGRATION.md` — mobile REST plan
-- `docs/MOBILE_PROJECT_STATE.md` — mobile status board
+- `docs/MOBILE_API_MIGRATION.md` — mobile REST contract (keep current with any `/api/*` change)
+- `docs/MOBILE_PROJECT_STATE.md` — project status board
 - `docs/MANUAL_CLEANUP_DO_NOT_AUTOMATE.md` — items that must stay manual
+- `docs/PHASE_4_ZAINCASH_DEFERRED.md` — why ZainCash sectional is deferred
