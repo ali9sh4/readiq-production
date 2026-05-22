@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { zaincash } from "@/lib/payments/zaincash";
 import { db } from "@/firebase/service";
+import { recordEarningInTransaction } from "@/lib/earnings/recordEarning";
 
 export async function GET(req: NextRequest) {
   try {
@@ -82,12 +83,28 @@ export async function GET(req: NextRequest) {
         const currentEnrollment = await transaction.get(enrollmentRef);
         const courseDoc = await transaction.get(courseRef);
 
-        // Prevent duplicate processing
+        // Prevent duplicate processing — this also makes the earning write
+        // below idempotent: a replayed callback returns here and records
+        // nothing twice.
         if (currentEnrollment.data()?.status === "completed") {
           console.log("⚠️ Already processed:", transactionId);
           return;
         }
         const courseData = courseDoc.data();
+        const enr = currentEnrollment.data() ?? enrollmentData;
+
+        // Read the instructor's user doc (a transaction read) before any
+        // write, so the revenue split can be snapshotted atomically with
+        // the enrollment completing. A card sale is real cash into the
+        // platform's account that it owes the instructor.
+        const buyerId = (enr?.userId as string | undefined) ?? "";
+        const instructorId = courseData?.createdBy as string | undefined;
+        const grossAmount = Number(enr?.amount ?? 0);
+        const shouldRecordEarning =
+          !!instructorId && instructorId !== buyerId && grossAmount > 0;
+        const instructorUserDoc = shouldRecordEarning
+          ? await transaction.get(db.collection("users").doc(instructorId!))
+          : null;
 
         transaction.update(enrollmentRef, {
           status: "completed",
@@ -100,6 +117,19 @@ export async function GET(req: NextRequest) {
           enrollmentCount: (courseData?.enrollmentCount || 0) + 1,
           updatedAt: new Date().toISOString(),
         });
+
+        if (shouldRecordEarning && instructorUserDoc) {
+          recordEarningInTransaction({
+            transaction,
+            instructorId: instructorId!,
+            instructorDocSnap: instructorUserDoc,
+            grossAmount,
+            courseId,
+            enrollmentId: enrollmentDoc.id,
+            buyerId,
+            source: "zaincash",
+          });
+        }
       });
       // ✅ Update audit log
       await db

@@ -4,6 +4,7 @@
 import { adminAuth, db } from "@/firebase/service";
 import { FieldValue } from "firebase-admin/firestore";
 import type { TopupRequest, Wallet, WalletTransaction } from "@/types/wallets";
+import { recordEarningInTransaction } from "@/lib/earnings/recordEarning";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
@@ -181,9 +182,11 @@ export async function purchaseCourseWithWallet(
         throw new Error("لا يمكنك شراء دورتك الخاصة");
       }
 
-      // Read instructor wallet
-      const instructorWalletRef = db.collection("wallets").doc(instructorId);
-      const instructorWalletDoc = await transaction.get(instructorWalletRef);
+      // Read the instructor's user doc — needed to snapshot the revenue
+      // split at sale time. Read here, before any write, per Firestore's
+      // reads-before-writes rule.
+      const instructorUserRef = db.collection("users").doc(instructorId);
+      const instructorUserDoc = await transaction.get(instructorUserRef);
 
       // ===== STEP 2: VALIDATE DATA =====
       if (!walletDoc.exists) {
@@ -209,49 +212,21 @@ export async function purchaseCourseWithWallet(
         updatedAt: new Date().toISOString(),
       });
 
-      // Update or create instructor wallet
-      if (instructorWalletDoc.exists) {
-        const instructorWallet = instructorWalletDoc.data() as Wallet;
-        transaction.update(instructorWalletRef, {
-          balance: instructorWallet.balance + coursePrice,
-          totalEarnings: (instructorWallet.totalEarnings || 0) + coursePrice,
-          updatedAt: new Date().toISOString(),
-        });
-      } else {
-        transaction.set(instructorWalletRef, {
-          userId: instructorId,
-          userName: courseData?.instructorName || "مدرب",
-          balance: coursePrice,
-          totalEarnings: coursePrice,
-          totalTopups: 0,
-          totalSpent: 0,
-          dailyLimit: 5000000,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        });
-      }
-
-      // Log instructor earning transaction
-      const instructorTxnRef = db.collection("wallet_transactions").doc();
-      transaction.set(instructorTxnRef, {
-        userId: instructorId,
-        type: "earning",
-        amount: coursePrice,
-        balanceBefore: instructorWalletDoc.exists
-          ? instructorWalletDoc.data()?.balance || 0
-          : 0,
-        balanceAfter:
-          (instructorWalletDoc.exists
-            ? instructorWalletDoc.data()?.balance || 0
-            : 0) + coursePrice,
-        description: `إيراد من بيع دورة: ${courseData?.title || courseId}`,
-        metadata: {
-          courseId,
-          courseTitle: courseData?.title,
-          enrollmentId,
-          studentId: userId,
-        },
-        createdAt: new Date().toISOString(),
+      // Instructor earning. A sale is a cash payable the platform owes the
+      // instructor, NOT spendable platform credit — so this appends an
+      // immutable entry to the instructor's earnings ledger and bumps
+      // `earningsTotal`, instead of crediting their spend wallet. (The old
+      // code credited `wallets/{instructorId}` and wrote a `type:"earning"`
+      // wallet_transactions row; both were removed here.)
+      recordEarningInTransaction({
+        transaction,
+        instructorId,
+        instructorDocSnap: instructorUserDoc,
+        grossAmount: coursePrice,
+        courseId,
+        enrollmentId,
+        buyerId: userId,
+        source: "wallet",
       });
 
       // Create enrollment

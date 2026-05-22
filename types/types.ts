@@ -220,6 +220,70 @@ export interface InstructorPayout {
   createdAt: string;
 }
 
+// ===== INSTRUCTOR EARNINGS & PAYOUTS =====
+//
+// Instructor earnings are a real-world cash payable the platform owes the
+// instructor — NOT spendable platform credit. A course sale no longer
+// credits the instructor's spend wallet (`wallets/{uid}`); instead it
+// appends an immutable `earning` entry to the instructor's earnings ledger
+// and increments a denormalized `earningsTotal` on their user doc.
+// See `docs/INSTRUCTOR_PAYOUTS.md`.
+//
+// This deliberately mirrors the course-packages owed/paid tally, but is a
+// SEPARATE system — do not conflate the two.
+
+export type PayoutMethod = "bank_transfer" | "zaincash" | "cash";
+
+// One immutable entry in `users/{uid}/earningsLedger/{entryId}`. Entries are
+// the audit trail — never edited or deleted once written.
+export interface EarningLedgerEntry {
+  id: string;
+  kind: "earning" | "payout";
+  // Always positive. For an 'earning' this is the instructor's share; for a
+  // 'payout' it is the amount the admin recorded as paid out of band.
+  amount: number;
+  // FieldValue.serverTimestamp() at write time — a Firestore Timestamp when
+  // read back, never an ISO string.
+  createdAt: unknown;
+  // uid that caused the entry: the buyer for an 'earning', the admin for a
+  // 'payout'.
+  createdBy: string;
+
+  // ===== 'earning' fields — the split is SNAPSHOTTED at sale time so a
+  // later renegotiation of the instructor's rate never rewrites history.
+  grossAmount?: number;
+  // The instructor's % share used for THIS sale (e.g. 70). Copied from the
+  // instructor's user doc inside the purchase transaction.
+  revenueSharePercent?: number;
+  instructorShareAmount?: number; // = round(gross * pct / 100) — equals `amount`
+  platformShareAmount?: number; // = gross − instructorShareAmount
+  courseId?: string;
+  enrollmentId?: string;
+  // Present for per-section purchases; one earning entry covers the whole
+  // purchase event, which may span several sections.
+  sectionIds?: string[];
+  // How the sale was paid — for traceability only.
+  source?: "wallet" | "zaincash" | "backfill";
+
+  // ===== 'payout' fields =====
+  method?: PayoutMethod;
+  note?: string;
+  settledBy?: string; // admin uid that recorded the payout
+}
+
+// Instructor-earnings fields denormalized onto `users/{uid}`.
+// `outstanding` is ALWAYS derived (earningsTotal − payoutsTotal) and is
+// never stored. `revenueSharePercent` is per-instructor and editable; it
+// affects FUTURE sales only — past ledger entries keep their snapshot.
+export interface UserEarningsFields {
+  revenueSharePercent?: number; // instructor's share, default 70
+  earningsTotal?: number; // Σ earning-entry amounts, default 0
+  payoutsTotal?: number; // Σ payout-entry amounts, default 0
+  // Denormalized convenience for the admin list — the ledger remains
+  // authoritative. Firestore Timestamp once read back.
+  lastPayoutAt?: unknown;
+}
+
 // ===== API RESPONSE TYPES =====
 
 export interface CourseResponse {

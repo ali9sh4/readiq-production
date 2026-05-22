@@ -25,7 +25,19 @@ export interface NewUserDocFields {
   coursesCompleted: number;
   language: "ar" | "en";
   notifications: boolean;
+  // Instructor earnings (see docs/INSTRUCTOR_PAYOUTS.md). Set on every new
+  // user since any user may later publish a course. `revenueSharePercent`
+  // is the instructor's share of a sale; editable per-instructor. All sale
+  // and payout code defensively defaults a missing value, so legacy user
+  // docs without these fields behave as 70 / 0 / 0.
+  revenueSharePercent: number;
+  earningsTotal: number;
+  payoutsTotal: number;
 }
+
+// The instructor's default share of a sale, in percent. The launch deal;
+// renegotiated per-instructor later by editing `users/{uid}.revenueSharePercent`.
+export const DEFAULT_REVENUE_SHARE_PERCENT = 70;
 
 export function buildNewUserDocFields(input: NewUserDocInput): NewUserDocFields {
   return {
@@ -39,5 +51,8 @@ export function buildNewUserDocFields(input: NewUserDocInput): NewUserDocFields 
     coursesCompleted: 0,
     language: "ar",
     notifications: true,
+    revenueSharePercent: DEFAULT_REVENUE_SHARE_PERCENT,
+    earningsTotal: 0,
+    payoutsTotal: 0,
   };
 }
