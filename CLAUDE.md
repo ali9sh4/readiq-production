@@ -58,6 +58,7 @@ Run `npx tsc --noEmit` (or `npm run typecheck`) and `npm run lint` before declar
   - `lib/api/response.ts` — standard JSON response shape
   - `lib/sectional/` — sectional purchasing helpers (pricing, grouping, access, displayPrice, localizeError)
   - `lib/courses/` — incl. `assertCourseMutationAllowed.ts` (the sectional lock helper)
+  - `lib/packages/` — course-packages helpers (access predicate, validation, constants)
   - `lib/payments/zaincash.ts`, `lib/R2/`, `lib/services/`, `lib/purchaseProtection/`
 - `firebase/client.ts`, `firebase/service.ts` — client + admin SDK init
 - `context/authContext.tsx` — client auth state
@@ -94,6 +95,17 @@ enrollment logic, or any access/lock predicate.
 
 Wallet-only — ZainCash sectional is deferred (`docs/PHASE_4_ZAINCASH_DEFERRED.md`).
 Purchase actions: `app/actions/sectional_wallet_actions.ts`. Lock helper: `lib/courses/assertCourseMutationAllowed.ts`.
+
+## Course packages (shipped, web)
+
+A package bundles multiple courses (any instructor) at one discounted price; a
+buyer gets full access to every included course. Admin-created only. Unlike
+standalone/sectional sales, a package sale credits the **platform wallet only**
+(`wallets/__platform__`) — instructors are settled out of band against a
+per-instructor payout tally.
+
+Canonical doc: `docs/COURSE_PACKAGES.md`. Purchase: `app/actions/package_wallet_actions.ts`.
+Admin CRUD + payout ledger: `app/actions/package_admin_actions.ts`. Helpers: `lib/packages/`.
 
 ## Mobile API surface
 
@@ -139,3 +151,4 @@ Purchase actions: `app/actions/sectional_wallet_actions.ts`. Lock helper: `lib/c
 - `docs/MOBILE_PROJECT_STATE.md` — project status board
 - `docs/MANUAL_CLEANUP_DO_NOT_AUTOMATE.md` — items that must stay manual
 - `docs/PHASE_4_ZAINCASH_DEFERRED.md` — why ZainCash sectional is deferred
+- `docs/COURSE_PACKAGES.md` — course-packages model, invariants, scaling limits
