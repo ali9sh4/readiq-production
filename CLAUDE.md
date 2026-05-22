@@ -101,7 +101,7 @@ Purchase actions: `app/actions/sectional_wallet_actions.ts`. Lock helper: `lib/c
 A package bundles multiple courses (any instructor) at one discounted price; a
 buyer gets full access to every included course. Admin-created only. Unlike
 standalone/sectional sales, a package sale credits the **platform wallet only**
-(`wallets/__platform__`) — instructors are settled out of band against a
+(`wallets/platform-wallet`) — instructors are settled out of band against a
 per-instructor payout tally.
 
 Canonical doc: `docs/COURSE_PACKAGES.md`. Purchase: `app/actions/package_wallet_actions.ts`.

@@ -15,7 +15,7 @@ shipped.** Everything below is merged to `main`:
   localization, `user_dashboard` nav perf.
 - **Course packages (web, 2026-05-22).** Admin-created multi-course bundles
   sold at one discounted price, wallet-only. A package sale credits the
-  platform wallet only (`wallets/__platform__`); per-instructor payouts are
+  platform wallet only (`wallets/platform-wallet`); per-instructor payouts are
   tracked as a manual owed/paid tally. Mobile is **unaffected** — package
   purchases write standard `accessScope: 'full'` enrollments and add no
   `/api/*` surface. See `docs/COURSE_PACKAGES.md`.

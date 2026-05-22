@@ -15,13 +15,13 @@ standalone (`purchaseMode` unset/'full') or sectional (`purchaseMode ===
 | `packages/{id}` | `CoursePackage` | The bundle: course list, price, per-instructor payout map, status. |
 | `package_sales/{id}` | `PackageSale` | One per sale. Audit trail + source of the owed tally. Carries a payout snapshot. |
 | `instructor_payouts/{id}` | `InstructorPayout` | A manual out-of-band payment the admin recorded. |
-| `wallets/__platform__` | `Wallet` | Dedicated platform wallet. Receives every package sale. Created on first sale. |
+| `wallets/platform-wallet` | `Wallet` | Dedicated platform wallet. Receives every package sale. Created on first sale. |
 
 Types live in `types/types.ts`. Shared helpers/constants in `lib/packages/`.
 
 ## Revenue model
 
-A package sale credits the **platform wallet only** (`wallets/__platform__`)
+A package sale credits the **platform wallet only** (`wallets/platform-wallet`)
 — never individual instructor wallets. This is deliberate and differs from
 standalone/sectional sales, which credit the instructor in-transaction.
 

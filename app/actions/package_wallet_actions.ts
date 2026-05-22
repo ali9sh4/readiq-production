@@ -10,7 +10,7 @@
 // `purchaseBundleWithWallet`). It does not touch either of those paths.
 //
 // Revenue model — deliberate divergence: a package sale credits ONLY the
-// platform wallet (`wallets/__platform__`). It NEVER credits an instructor
+// platform wallet (`wallets/platform-wallet`). It NEVER credits an instructor
 // wallet and writes NO instructor earning row. Instructors are settled out
 // of band against the per-instructor owed tally, which is summed from the
 // payout snapshot stored on each `package_sales` doc.
@@ -494,6 +494,14 @@ export async function purchasePackageWithWallet(
               : code === "ALREADY_OWNS_COURSE"
                 ? "You already have full access to one or more courses in this package"
                 : "Purchase failed";
+    if (code === "INTERNAL_ERROR") {
+      // Surface the real swallowed exception (message + stack) — the coded
+      // throws above are expected control flow, an INTERNAL_ERROR is not.
+      console.error(
+        `package-purchase INTERNAL_ERROR buyerId=${buyerId} packageId=${packageId} rawMessage=${raw}`,
+        err
+      );
+    }
     console.log(
       `package-purchase REJECTED buyerId=${buyerId} packageId=${packageId} reason=${code}`
     );

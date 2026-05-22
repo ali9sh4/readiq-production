@@ -6,10 +6,13 @@
 // separate from the admin's personal wallet so platform package revenue
 // never mixes with the admin's own spendable balance.
 //
-// Firebase uids are 28-char alphanumeric, so this sentinel id cannot
-// collide with a real user wallet. The doc is created on the fly on the
-// first package sale, the same way instructor wallets already are.
-export const PLATFORM_WALLET_ID = "__platform__";
+// The id contains a hyphen, which a Firebase uid (28 alphanumeric chars,
+// no punctuation) never does — so it cannot collide with a real user
+// wallet. It deliberately does NOT use a `__platform__` form: Firestore
+// reserves any doc id matching `__*__` and rejects it with INVALID_ARGUMENT.
+// The doc is created on the fly on the first package sale, the same way
+// instructor wallets already are.
+export const PLATFORM_WALLET_ID = "platform-wallet";
 
 // Display name written onto the platform wallet doc when it is created.
 export const PLATFORM_WALLET_NAME = "المنصة";
