@@ -6,6 +6,7 @@ import { Course } from "@/types/types";
 import { Search } from "lucide-react";
 import CourseSearch from "./courseSearch";
 import CoursesCardList from "./CoursesCardList";
+import PackageUpsellBanner from "./PackageUpsellBanner";
 
 interface HomeCoursesSection {
   initialCourses: Course[];
@@ -39,6 +40,10 @@ export default function HomeCoursesSection({
           onFilteredResults={setFilteredCourses}
         />
       </div>
+
+      {/* Course packages — a separate section above the course grid; the
+          banner self-hides when there is no eligible package. */}
+      <PackageUpsellBanner />
 
       {/* Results */}
       {filteredCourses.length === 0 ? (

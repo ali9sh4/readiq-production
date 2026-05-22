@@ -1,14 +1,17 @@
 "use client";
 
-// Course-page package upsell banner (Phase 4; redesigned in the UI polish
-// pass). Renders on a course detail page when the current course belongs to
-// one or more active, purchasable packages. Shows up to two; opening one
-// launches the checkout modal. Renders nothing when there is no signed-in
-// user or no eligible package — the common case has zero visual footprint.
+// Package banner — used in two places, same amber visual:
 //
-// Amber is the package accent — deliberately distinct from the blue/purple
-// course UI, signalling "bundle / deal". There is no /packages catalog page
-// in v1; discovery is only this banner on included course pages.
+//   - Course page  (`courseId` given): packages that contain that course,
+//     header "متوفّرة ضمن حزمة …", capped at two.
+//   - Main catalog (`courseId` omitted): every active package the viewer
+//     can buy, header "حزم الدورات …", no cap — placed above the course
+//     grid as a clearly separate section.
+//
+// Both modes drop packages the viewer cannot purchase (owns/authored a
+// member course) and open the same PackageCheckoutDialog. Amber is the
+// package accent — deliberately distinct from the blue/purple course UI.
+// Renders nothing when there is no signed-in user or no eligible package.
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/context/authContext";
@@ -16,18 +19,21 @@ import { Button } from "@/components/ui/button";
 import { Layers } from "lucide-react";
 import {
   getPackagesForCourse,
+  getActivePackages,
   type CoursePackageSummary,
 } from "@/app/actions/package_wallet_actions";
 import PackageCheckoutDialog from "@/components/PackageCheckoutDialog";
 import { StackedThumbs } from "@/components/PackageThumbs";
 
-const MAX_SHOWN = 2;
+// Course-page mode shows at most this many; catalog mode shows all.
+const MAX_COURSE_PAGE = 2;
 
 export default function PackageUpsellBanner({
   courseId,
 }: {
-  courseId: string;
+  courseId?: string;
 }) {
+  const catalog = !courseId;
   const { user, isLoading } = useAuth();
   const [packages, setPackages] = useState<CoursePackageSummary[]>([]);
   const [checkoutId, setCheckoutId] = useState<string | null>(null);
@@ -38,10 +44,12 @@ export default function PackageUpsellBanner({
       if (isLoading || !user) return;
       try {
         const token = await user.getIdToken();
-        const res = await getPackagesForCourse(token, courseId);
+        const res = courseId
+          ? await getPackagesForCourse(token, courseId)
+          : await getActivePackages(token);
         if (!cancelled && res.success) setPackages(res.packages);
       } catch (e) {
-        console.error("upsell banner load error", e);
+        console.error("package banner load error", e);
       }
     }
     load();
@@ -52,18 +60,32 @@ export default function PackageUpsellBanner({
 
   if (packages.length === 0) return null;
 
-  const shown = packages.slice(0, MAX_SHOWN);
+  const shown = catalog ? packages : packages.slice(0, MAX_COURSE_PAGE);
+  const heading = catalog
+    ? "حزم الدورات — وفّر بشرائها معاً"
+    : "متوفّرة ضمن حزمة — وفّر بشرائها معاً";
 
   return (
     <>
-      <div dir="rtl" className="mx-auto mt-6 max-w-5xl px-4">
+      <div
+        dir="rtl"
+        className={catalog ? "mb-8 w-full" : "mx-auto mt-6 max-w-5xl px-4"}
+      >
         <div className="overflow-hidden rounded-2xl border border-amber-300 bg-gradient-to-bl from-amber-50 to-white shadow-sm">
-          {/* Header */}
-          <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-100/70 px-4 py-2.5">
-            <Layers className="h-4 w-4 text-amber-700" />
-            <span className="text-sm font-semibold text-amber-900">
-              متوفّرة ضمن حزمة — وفّر بشرائها معاً
-            </span>
+          {/* Section header */}
+          <div className="flex items-center gap-2 border-b border-amber-200 bg-amber-100/70 px-4 py-3">
+            <Layers
+              className={`text-amber-700 ${catalog ? "h-5 w-5" : "h-4 w-4"}`}
+            />
+            <h2
+              className={`text-amber-900 ${
+                catalog
+                  ? "text-base font-bold"
+                  : "text-sm font-semibold"
+              }`}
+            >
+              {heading}
+            </h2>
           </div>
 
           {/* Package rows */}

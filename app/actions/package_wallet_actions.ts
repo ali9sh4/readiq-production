@@ -796,3 +796,96 @@ export async function getPackagesForCourse(
     return { success: false };
   }
 }
+
+// ===== getActivePackages =====
+//
+// Powers the main catalog page's packages strip: every active package the
+// viewer could actually purchase. Uses the SAME per-viewer eligibility
+// filter as getPackagesForCourse — a package where the viewer owns or
+// authored a member course (or a member course is unavailable) is dropped,
+// not shown as a dead-end CTA. Returns the same enriched summary shape the
+// banner already consumes.
+//
+// Pure read. Same scaling note as getPackagesForCourse: `packages` is
+// queried by `status` only, no composite index — see docs/COURSE_PACKAGES.md.
+
+export async function getActivePackages(
+  token: string
+): Promise<
+  | { success: true; packages: CoursePackageSummary[] }
+  | { success: false }
+> {
+  let buyerId: string;
+  try {
+    const verified = await adminAuth.verifyIdToken(token);
+    buyerId = verified.uid;
+  } catch {
+    return { success: false };
+  }
+
+  try {
+    const pkgSnap = await db
+      .collection("packages")
+      .where("status", "==", "active")
+      .get();
+    const candidates = pkgSnap.docs
+      .map((d) => ({ id: d.id, ...d.data() } as CoursePackage))
+      .filter((p) => Array.isArray(p.courseIds) && p.courseIds.length > 0);
+    if (candidates.length === 0) {
+      return { success: true, packages: [] };
+    }
+
+    // Batch-load every course + enrollment referenced across all candidates.
+    const allCourseIds = [...new Set(candidates.flatMap((p) => p.courseIds))];
+    const [courseSnaps, enrollmentSnaps] = await Promise.all([
+      Promise.all(
+        allCourseIds.map((id) => db.collection("courses").doc(id).get())
+      ),
+      Promise.all(
+        allCourseIds.map((id) =>
+          db.collection("enrollments").doc(`${buyerId}_${id}`).get()
+        )
+      ),
+    ]);
+    const courseMap = new Map<string, Course>();
+    const enrollmentMap = new Map<string, Enrollment | undefined>();
+    allCourseIds.forEach((id, i) => {
+      if (courseSnaps[i].exists) {
+        courseMap.set(id, { id, ...courseSnaps[i].data() } as Course);
+      }
+      enrollmentMap.set(
+        id,
+        enrollmentSnaps[i].exists
+          ? (enrollmentSnaps[i].data() as Enrollment)
+          : undefined
+      );
+    });
+
+    const packages: CoursePackageSummary[] = [];
+    for (const p of candidates) {
+      const eligible = p.courseIds.every((cid) => {
+        const c = courseMap.get(cid);
+        if (!isCourseAvailable(c)) return false;
+        if (c!.createdBy === buyerId) return false;
+        return !hasFullAccess(c!, enrollmentMap.get(cid));
+      });
+      if (eligible) {
+        const memberCourses = p.courseIds.map((cid) => courseMap.get(cid));
+        packages.push({
+          id: p.id,
+          title: p.title,
+          price: p.price,
+          total: standaloneTotal(memberCourses),
+          courseCount: p.courseIds.length,
+          thumbnails: memberCourses.map((c) =>
+            typeof c?.thumbnailUrl === "string" ? c.thumbnailUrl : ""
+          ),
+        });
+      }
+    }
+    return { success: true, packages };
+  } catch (e) {
+    console.error("getActivePackages error", e);
+    return { success: false };
+  }
+}
