@@ -6,7 +6,11 @@ export type WalletTransactionType =
   | "refund"
   | "earning"
   | "bonus"
-  | "penalty";
+  | "penalty"
+  // Credited to the dedicated platform wallet on a course-package sale.
+  // Distinct from "earning" (instructor course revenue) so platform
+  // package income is filterable.
+  | "package_revenue";
 
 export type TopupStatus = "pending" | "approved" | "rejected" | "expired";
 
@@ -36,6 +40,8 @@ export interface WalletTransaction {
     courseId?: string;
     courseTitle?: string;
     topupRequestId?: string;
+    packageId?: string;
+    packageTitle?: string;
   };
   createdAt: string;
   protectionKey?: string;

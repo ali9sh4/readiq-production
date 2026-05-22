@@ -12,6 +12,7 @@ import { AlertCircle, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { Metadata } from "next";
 import { getCourseProgress } from "@/app/actions/progress_actions";
+import PackageUpsellBanner from "@/components/PackageUpsellBanner";
 
 // ✅ Helper function to clean Firestore data
 function cleanCourseData(course: any) {
@@ -234,13 +235,17 @@ export default async function WatchCoursePage({
   // pass any existing enrollment doc so CoursePreview can render correct
   // section ownership, smart-subtract prices, and bundle break-even math
   // for sectional courses. Most visitors have no enrollment; `null` is
-  // the common case.
+  // the common case. The upsell banner self-hides unless this course is in
+  // an active, purchasable package.
   return (
-    <CoursePreview
-      course={cleanedCourse}
-      initialIsFavorited={isFavorited}
-      enrollment={enrollment ?? null}
-    />
+    <>
+      <PackageUpsellBanner courseId={courseId} />
+      <CoursePreview
+        course={cleanedCourse}
+        initialIsFavorited={isFavorited}
+        enrollment={enrollment ?? null}
+      />
+    </>
   );
 }
 
