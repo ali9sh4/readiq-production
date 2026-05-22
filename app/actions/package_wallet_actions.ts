@@ -34,6 +34,19 @@ import {
   PLATFORM_WALLET_ID,
   PLATFORM_WALLET_NAME,
 } from "@/lib/packages/constants";
+import { getCourseDisplayPrice } from "@/lib/sectional/displayPrice";
+
+// Display-only "what these courses cost bought separately" — the sum of each
+// course's current effective standalone price (sale price / sectional bundle
+// price, via getCourseDisplayPrice). Unpriced courses contribute 0. This
+// number is for the strikethrough/savings UI ONLY; the package `price` field
+// is the sole figure ever charged.
+function standaloneTotal(courses: (Course | undefined)[]): number {
+  return courses.reduce(
+    (sum, c) => sum + (c ? getCourseDisplayPrice(c).numeric ?? 0 : 0),
+    0
+  );
+}
 
 // ===== Result shapes =====
 
@@ -521,6 +534,9 @@ export type PackagePreviewCourse = {
   courseId: string;
   title: string;
   instructorName: string | null;
+  thumbnailUrl: string | null;
+  durationHours: number | null;
+  lessonCount: number | null;
 };
 
 // Why a package is not purchasable by this buyer. `null` = purchasable.
@@ -539,6 +555,8 @@ export type PackagePreviewResult =
         title: string;
         description: string | null;
         price: number;
+        // Display-only sum of the included courses' standalone prices.
+        total: number;
       };
       courses: PackagePreviewCourse[];
       walletBalance: number;
@@ -600,11 +618,17 @@ export async function getPackagePurchasePreview(
     s.exists ? (s.data() as Enrollment) : undefined
   );
 
-  const previewCourses: PackagePreviewCourse[] = courseIds.map((id, i) => ({
-    courseId: id,
-    title: courses[i]?.title ?? id,
-    instructorName: courses[i]?.instructorName ?? null,
-  }));
+  const previewCourses: PackagePreviewCourse[] = courseIds.map((id, i) => {
+    const c = courses[i];
+    return {
+      courseId: id,
+      title: c?.title ?? id,
+      instructorName: c?.instructorName ?? null,
+      thumbnailUrl: c?.thumbnailUrl ?? null,
+      durationHours: typeof c?.duration === "number" ? c.duration : null,
+      lessonCount: c && Array.isArray(c.videos) ? c.videos.length : null,
+    };
+  });
 
   // Evaluate all blocking conditions; the first non-null reason wins for the
   // top-level message, but blockedCourseTitles collects every offender.
@@ -651,6 +675,7 @@ export async function getPackagePurchasePreview(
       title: pkg.title,
       description: pkg.description ?? null,
       price: pkg.price,
+      total: standaloneTotal(courses),
     },
     courses: previewCourses,
     walletBalance,
@@ -677,7 +702,12 @@ export type CoursePackageSummary = {
   id: string;
   title: string;
   price: number;
+  // Display-only sum of the included courses' standalone prices.
+  total: number;
   courseCount: number;
+  // Included-course thumbnail URLs, in courseIds order ("" when a course
+  // has none). For the banner's stacked-thumbnail visual.
+  thumbnails: string[];
 };
 
 export async function getPackagesForCourse(
@@ -747,11 +777,16 @@ export async function getPackagesForCourse(
         return !hasFullAccess(c!, enrollmentMap.get(cid));
       });
       if (eligible) {
+        const memberCourses = p.courseIds.map((cid) => courseMap.get(cid));
         packages.push({
           id: p.id,
           title: p.title,
           price: p.price,
+          total: standaloneTotal(memberCourses),
           courseCount: p.courseIds.length,
+          thumbnails: memberCourses.map((c) =>
+            typeof c?.thumbnailUrl === "string" ? c.thumbnailUrl : ""
+          ),
         });
       }
     }

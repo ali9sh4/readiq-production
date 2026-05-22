@@ -1,15 +1,14 @@
 "use client";
 
-// Package checkout dialog (Phase 4).
+// Package checkout dialog (Phase 4; redesigned in the UI polish pass).
 //
 // Opened from the course-page upsell banner. On open it fetches the
-// authoritative `getPackagePurchasePreview` and renders:
-//   - the full course list,
-//   - price / wallet balance / balance-after,
-//   - a CONCRETE partial-ownership disclosure naming each sectional course
-//     the buyer partly owns (no refund, sections not credited to price),
-//   - a blocked-package message when the buyer is ineligible.
-// Confirm calls the atomic `purchasePackageWithWallet`.
+// authoritative `getPackagePurchasePreview` and renders the package identity,
+// the savings math, a calm list of the included courses, and the wallet /
+// buy controls. Confirm calls the atomic `purchasePackageWithWallet`.
+//
+// The partial-ownership disclosure and blocked-purchase messaging are
+// unchanged in text and logic — only repositioned in the new layout.
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -23,14 +22,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AlertTriangle, Info, BookOpen } from "lucide-react";
+import { AlertTriangle, Info, CheckCircle2 } from "lucide-react";
 import {
   getPackagePurchasePreview,
   purchasePackageWithWallet,
+  type PackagePreviewCourse,
   type PackagePreviewResult,
 } from "@/app/actions/package_wallet_actions";
 import { generateProtectionKey } from "@/lib/purchaseProtection/protectionKey";
 import { PACKAGE_PURCHASE_ACTION } from "@/lib/packages/constants";
+import { StackedThumbs, thumbSrc } from "@/components/PackageThumbs";
 
 type Props = {
   packageId: string | null;
@@ -73,6 +74,18 @@ function purchaseErrorMessage(code: string): string {
     default:
       return "تعذّر إتمام عملية الشراء. حاول مرة أخرى.";
   }
+}
+
+// Duration / lesson-count sub-label for a course row, when available.
+function courseMeta(c: PackagePreviewCourse): string {
+  const parts: string[] = [];
+  if (c.durationHours != null && c.durationHours > 0) {
+    parts.push(`${c.durationHours} ساعة`);
+  }
+  if (c.lessonCount != null && c.lessonCount > 0) {
+    parts.push(`${c.lessonCount} درس`);
+  }
+  return parts.join(" · ");
 }
 
 export default function PackageCheckoutDialog({
@@ -137,13 +150,14 @@ export default function PackageCheckoutDialog({
     !!ok && ok.purchasable && ok.walletBalance < ok.package.price;
   const canBuy = !!ok && ok.purchasable && !insufficient && !purchasing;
 
+  const saving = ok ? ok.package.total - ok.package.price : 0;
+  const hasSaving = saving > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent dir="rtl" className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent dir="rtl" className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {ok ? ok.package.title : "تفاصيل الحزمة"}
-          </DialogTitle>
+          <DialogTitle>{ok ? ok.package.title : "تفاصيل الحزمة"}</DialogTitle>
         </DialogHeader>
 
         {loading && (
@@ -160,31 +174,88 @@ export default function PackageCheckoutDialog({
         )}
 
         {!loading && ok && (
-          <div className="space-y-4">
+          <div className="space-y-5">
+            {/* Identity: badge + stacked thumbnails + course count */}
+            <div className="flex items-center gap-3">
+              <StackedThumbs thumbnails={ok.courses.map((c) => c.thumbnailUrl ?? "")} />
+              <div>
+                <span className="rounded-md bg-amber-500 px-1.5 py-0.5 text-[11px] font-bold text-white">
+                  حزمة
+                </span>
+                <p className="mt-1 text-sm text-gray-500">
+                  {ok.courses.length} دورات
+                </p>
+              </div>
+            </div>
+
             {ok.package.description && (
-              <p className="text-sm text-gray-600">{ok.package.description}</p>
+              <p className="text-sm leading-relaxed text-gray-600">
+                {ok.package.description}
+              </p>
             )}
 
-            {/* Course list */}
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-1.5">
-                دورات الحزمة ({ok.courses.length})
+            {/* Price block: strikethrough total, package price, savings */}
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-center">
+              {hasSaving && (
+                <p className="text-sm text-gray-400 line-through">
+                  {ok.package.total.toLocaleString()} د.ع
+                </p>
+              )}
+              <p className="text-3xl font-extrabold text-gray-900">
+                {ok.package.price.toLocaleString()} د.ع
               </p>
-              <ul className="border rounded-lg divide-y">
-                {ok.courses.map((c) => (
-                  <li
-                    key={c.courseId}
-                    className="flex items-center gap-2 p-2.5 text-sm"
-                  >
-                    <BookOpen className="h-4 w-4 text-gray-400 shrink-0" />
-                    <span className="flex-1">{c.title}</span>
-                    {c.instructorName && (
-                      <span className="text-xs text-gray-500">
-                        {c.instructorName}
-                      </span>
-                    )}
-                  </li>
-                ))}
+              {hasSaving && (
+                <p className="mt-0.5 text-sm font-semibold text-green-600">
+                  توفّر {saving.toLocaleString()} د.ع
+                </p>
+              )}
+            </div>
+
+            {/* Reassurance */}
+            <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-3 text-sm text-gray-700">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
+              <span>
+                بشراء واحد تحصل على وصول كامل ودائم لكل دورات الحزمة.
+              </span>
+            </div>
+
+            {/* Included courses — calm vertical list */}
+            <div>
+              <p className="mb-1.5 text-sm font-medium text-gray-700">
+                دورات الحزمة
+              </p>
+              <ul className="divide-y rounded-lg border">
+                {ok.courses.map((c) => {
+                  const meta = courseMeta(c);
+                  return (
+                    <li
+                      key={c.courseId}
+                      className="flex items-center gap-3 p-2.5"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={thumbSrc(c.thumbnailUrl)}
+                        alt=""
+                        className="h-12 w-16 shrink-0 rounded-md object-cover"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-gray-900">
+                          {c.title}
+                        </p>
+                        {c.instructorName && (
+                          <p className="truncate text-xs text-gray-500">
+                            {c.instructorName}
+                          </p>
+                        )}
+                      </div>
+                      {meta && (
+                        <span className="shrink-0 text-xs text-gray-400">
+                          {meta}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
 
@@ -217,14 +288,8 @@ export default function PackageCheckoutDialog({
               </Alert>
             )}
 
-            {/* Price + wallet */}
-            <div className="bg-gray-50 rounded-lg p-3 space-y-1.5 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">سعر الحزمة</span>
-                <span className="font-bold text-gray-900">
-                  {ok.package.price.toLocaleString()} د.ع
-                </span>
-              </div>
+            {/* Wallet */}
+            <div className="space-y-1.5 rounded-lg bg-gray-50 p-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">رصيد محفظتك</span>
                 <span className="text-gray-900">
@@ -262,7 +327,11 @@ export default function PackageCheckoutDialog({
           >
             إغلاق
           </Button>
-          <Button onClick={handlePurchase} disabled={!canBuy}>
+          <Button
+            onClick={handlePurchase}
+            disabled={!canBuy}
+            className="bg-amber-600 hover:bg-amber-700"
+          >
             {purchasing
               ? "جارٍ الشراء..."
               : ok
