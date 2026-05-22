@@ -16,9 +16,11 @@ shipped.** Everything below is merged to `main`:
 - **Course packages (web, 2026-05-22).** Admin-created multi-course bundles
   sold at one discounted price, wallet-only. A package sale credits the
   platform wallet only (`wallets/platform-wallet`); per-instructor payouts are
-  tracked as a manual owed/paid tally. Mobile is **unaffected** — package
-  purchases write standard `accessScope: 'full'` enrollments and add no
-  `/api/*` surface. See `docs/COURSE_PACKAGES.md`.
+  tracked as a manual owed/paid tally. Discovery is a course-page upsell
+  banner plus a packages strip on the main catalog page, both visible to
+  signed-out visitors. Mobile is **unaffected** — package purchases write
+  standard `accessScope: 'full'` enrollments and add no `/api/*` surface.
+  See `docs/COURSE_PACKAGES.md`.
 
 **Next milestone: Phase 7b — the React Native reader-app client.** Pure
 client-side work in the separate `readiq-production-mobile` repo. See
@@ -85,6 +87,10 @@ Wallet-only launch. Documented in `docs/PHASE_4_ZAINCASH_DEFERRED.md`.
    cross-cutting field change, not before.
 5. **Server-side auth via the `firebaseAuthToken` cookie** — fixes a latent
    hydration race. Multi-week effort, not urgent.
+6. **CLAUDE.md trim.** `CLAUDE.md` is over the 80–120-line budget (154 lines
+   at 2026-05-22, flagged in two consecutive maintenance passes). Trim back
+   under 120 — the Step 3.5 detail here largely duplicates this file and is
+   the obvious cut.
 
 Already done, removed from the old "Up next" item 5: the ESLint config typo
 (`ban-ts-comment`) was fixed in `59bec8e` (2026-05-16); the `jose` `KeyLike`

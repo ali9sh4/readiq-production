@@ -62,6 +62,25 @@ stays editable.
    `package_purchase_*` that cannot collide with standalone/sectional
    `purchase_*` keys.
 
+## Discovery
+
+Packages are discovered in two places, both rendered by the same
+`PackageUpsellBanner` component (amber styling, deliberately distinct from
+the blue/purple course UI):
+
+- **Course-page upsell banner** — on a course detail page, via
+  `getPackagesForCourse`: packages that contain that course.
+- **Main-catalog strip** — a labelled section above the course grid, via
+  `getActivePackages`: all active packages.
+
+The catalog strip and the `PackageCheckoutDialog` public tier (package
+identity, price/savings, the included-course list) work **signed-out**:
+`getActivePackages` is token-optional and skips the per-viewer eligibility
+filter for anonymous visitors. Wallet balance, eligibility, the
+partial-ownership disclosure, and the buy button stay signed-in only —
+signed-out sees a sign-in CTA. There is deliberately no `/packages` index
+route; the banner and the strip are the only discovery surfaces.
+
 ## Mobile
 
 Zero changes. A package purchase writes only standard
@@ -75,12 +94,13 @@ unchanged `/api/me/enrollments` and the playback gate already unlocks on
 Both are deliberate and accepted at current scale (early platform, small
 catalog, ~10 customers). Documented so they are not rediscovered as bugs:
 
-- **Upsell-banner lookup** (`getPackagesForCourse`) queries `packages` by
-  `status == 'active'` only, then filters `courseIds` in memory. This
-  avoids a Firestore composite index (`courseIds array-contains` + `status`),
-  which would have to be created in the console (rules/indexes are not
-  in-repo). At higher package volume, add that composite index and query
-  directly.
+- **Package discovery queries** — `getPackagesForCourse` (course-page
+  banner) and `getActivePackages` (catalog strip) — query `packages` by
+  `status == 'active'` only, then filter in memory: `getPackagesForCourse`
+  by `courseIds`, and both by per-viewer eligibility. This avoids a
+  Firestore composite index (`courseIds array-contains` + `status`), which
+  would have to be created in the console (rules/indexes are not in-repo).
+  At higher package volume, add that composite index and query directly.
 - **Payout ledger** (`getPayoutLedger`) reads *all* of `package_sales`,
   `instructor_payouts`, and `packages` and aggregates in memory. Fine for
   hundreds of sales; at higher volume it needs pagination or a running
