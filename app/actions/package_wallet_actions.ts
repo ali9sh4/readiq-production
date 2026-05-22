@@ -48,6 +48,25 @@ function standaloneTotal(courses: (Course | undefined)[]): number {
   );
 }
 
+// Project a course doc into the public per-course shape the package banner
+// and checkout modal render. Token-free — rides along in the public
+// `getActivePackages` / `getPackagesForCourse` payloads so signed-out
+// visitors can see what is inside a package. Tolerates a missing course
+// (falls back to the id).
+function toPreviewCourse(
+  courseId: string,
+  c: Course | undefined
+): PackagePreviewCourse {
+  return {
+    courseId,
+    title: c?.title ?? courseId,
+    instructorName: c?.instructorName ?? null,
+    thumbnailUrl: c?.thumbnailUrl ?? null,
+    durationHours: typeof c?.duration === "number" ? c.duration : null,
+    lessonCount: c && Array.isArray(c.videos) ? c.videos.length : null,
+  };
+}
+
 // ===== Result shapes =====
 
 export type PackagePurchaseErrorCode =
@@ -701,6 +720,7 @@ export async function getPackagePurchasePreview(
 export type CoursePackageSummary = {
   id: string;
   title: string;
+  description: string | null;
   price: number;
   // Display-only sum of the included courses' standalone prices.
   total: number;
@@ -708,6 +728,10 @@ export type CoursePackageSummary = {
   // Included-course thumbnail URLs, in courseIds order ("" when a course
   // has none). For the banner's stacked-thumbnail visual.
   thumbnails: string[];
+  // Public per-course detail (title / instructor / thumbnail / duration)
+  // for the checkout modal's course list — token-free, so signed-out
+  // visitors see what is inside the package.
+  courses: PackagePreviewCourse[];
 };
 
 export async function getPackagesForCourse(
@@ -781,11 +805,15 @@ export async function getPackagesForCourse(
         packages.push({
           id: p.id,
           title: p.title,
+          description: typeof p.description === "string" ? p.description : null,
           price: p.price,
           total: standaloneTotal(memberCourses),
           courseCount: p.courseIds.length,
           thumbnails: memberCourses.map((c) =>
             typeof c?.thumbnailUrl === "string" ? c.thumbnailUrl : ""
+          ),
+          courses: p.courseIds.map((cid) =>
+            toPreviewCourse(cid, courseMap.get(cid))
           ),
         });
       }
@@ -889,11 +917,15 @@ export async function getActivePackages(
         packages.push({
           id: p.id,
           title: p.title,
+          description: typeof p.description === "string" ? p.description : null,
           price: p.price,
           total: standaloneTotal(memberCourses),
           courseCount: p.courseIds.length,
           thumbnails: memberCourses.map((c) =>
             typeof c?.thumbnailUrl === "string" ? c.thumbnailUrl : ""
+          ),
+          courses: p.courseIds.map((cid) =>
+            toPreviewCourse(cid, courseMap.get(cid))
           ),
         });
       }

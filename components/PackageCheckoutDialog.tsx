@@ -2,17 +2,21 @@
 
 // Package checkout dialog (Phase 4; redesigned in the UI polish pass).
 //
-// Opened from a package banner. Two modes:
-//   - Signed-in: fetches the authoritative `getPackagePurchasePreview` and
-//     renders package identity, savings math, the included-course list,
-//     wallet / buy controls. Confirm calls `purchasePackageWithWallet`.
-//   - Signed-out: there is no token to fetch a preview with, so it degrades
-//     to a compact view built from the `summary` the banner already loaded
-//     (title, thumbnails, count, price/savings) and prompts sign-in at the
-//     buy step. Purchase is sign-in-gated downstream regardless.
+// Opened from a package banner. The modal renders in two tiers:
 //
-// The partial-ownership disclosure and blocked-purchase messaging are
-// unchanged in text and logic — only repositioned in the new layout.
+//   PUBLIC tier — shown to everyone, signed-in or not. Sourced entirely
+//   from the `summary` the banner already loaded via the token-free
+//   getActivePackages / getPackagesForCourse actions: package identity,
+//   description, price + savings, and the included-course list. A
+//   signed-out visitor sees the whole package before signing in.
+//
+//   PER-VIEWER tier — signed-in only. Sourced from getPackagePurchasePreview
+//   (token-only): wallet balance, eligibility / blocked-purchase messaging,
+//   the partial-ownership disclosure, and the buy button. Signed-out sees a
+//   "سجّل الدخول للشراء" CTA instead.
+//
+// getPackagePurchasePreview is unchanged — it is the per-viewer source only;
+// the course list deliberately does NOT come from it.
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -41,8 +45,9 @@ import { StackedThumbs, thumbSrc } from "@/components/PackageThumbs";
 
 type Props = {
   packageId: string | null;
-  // Loaded by the banner — used to render the signed-out degraded view
-  // without a token, and ignored when a signed-in preview is available.
+  // Loaded by the banner via the token-free actions — the source for the
+  // entire public tier (course list included), for signed-in and signed-out
+  // viewers alike.
   summary: CoursePackageSummary | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -155,34 +160,32 @@ export default function PackageCheckoutDialog({
     }
   };
 
+  const signedOut = !user;
   const ok = preview?.success ? preview : null;
   const insufficient =
     !!ok && ok.purchasable && ok.walletBalance < ok.package.price;
   const canBuy = !!ok && ok.purchasable && !insufficient && !purchasing;
 
-  // Signed-in savings come from the preview; signed-out, from the summary.
-  const signedOut = !user;
-  const priceShown = ok ? ok.package.price : summary?.price ?? 0;
-  const totalShown = ok ? ok.package.total : summary?.total ?? 0;
-  const saving = totalShown - priceShown;
+  // Price + savings are public — straight off the summary.
+  const saving = summary ? summary.total - summary.price : 0;
   const hasSaving = saving > 0;
-
-  const title = ok
-    ? ok.package.title
-    : summary
-      ? summary.title
-      : "تفاصيل الحزمة";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent dir="rtl" className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
+          <DialogTitle>{summary?.title ?? "تفاصيل الحزمة"}</DialogTitle>
         </DialogHeader>
 
-        {/* ===== Signed-out: degraded view from the banner's summary ===== */}
-        {signedOut && summary && (
+        {!summary ? (
+          <p className="py-8 text-center text-gray-500">
+            تعذّر تحميل تفاصيل الحزمة.
+          </p>
+        ) : (
           <div className="space-y-5">
+            {/* ===== PUBLIC TIER — shown to everyone ===== */}
+
+            {/* Identity */}
             <div className="flex items-center gap-3">
               <StackedThumbs thumbnails={summary.thumbnails} />
               <div>
@@ -195,68 +198,9 @@ export default function PackageCheckoutDialog({
               </div>
             </div>
 
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-center">
-              {hasSaving && (
-                <p className="text-sm text-gray-400 line-through">
-                  {totalShown.toLocaleString()} د.ع
-                </p>
-              )}
-              <p className="text-3xl font-extrabold text-gray-900">
-                {priceShown.toLocaleString()} د.ع
-              </p>
-              {hasSaving && (
-                <p className="mt-0.5 text-sm font-semibold text-green-600">
-                  توفّر {saving.toLocaleString()} د.ع
-                </p>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-3 text-sm text-gray-700">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
-              <span>
-                بشراء واحد تحصل على وصول كامل ودائم لكل دورات الحزمة.
-              </span>
-            </div>
-
-            <div className="flex items-center gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
-              <Info className="h-4 w-4 shrink-0" />
-              <span>سجّل الدخول لعرض دورات الحزمة وإتمام الشراء.</span>
-            </div>
-          </div>
-        )}
-
-        {/* ===== Signed-in: full preview ===== */}
-        {!signedOut && loading && (
-          <p className="py-8 text-center text-gray-500">جاري التحميل...</p>
-        )}
-
-        {!signedOut && !loading && preview && !preview.success && (
-          <Alert variant="destructive">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              تعذّر تحميل تفاصيل الحزمة. حاول مرة أخرى.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {!signedOut && !loading && ok && (
-          <div className="space-y-5">
-            {/* Identity: badge + stacked thumbnails + course count */}
-            <div className="flex items-center gap-3">
-              <StackedThumbs thumbnails={ok.courses.map((c) => c.thumbnailUrl ?? "")} />
-              <div>
-                <span className="rounded-md bg-amber-500 px-1.5 py-0.5 text-[11px] font-bold text-white">
-                  حزمة
-                </span>
-                <p className="mt-1 text-sm text-gray-500">
-                  {ok.courses.length} دورات
-                </p>
-              </div>
-            </div>
-
-            {ok.package.description && (
+            {summary.description && (
               <p className="text-sm leading-relaxed text-gray-600">
-                {ok.package.description}
+                {summary.description}
               </p>
             )}
 
@@ -264,11 +208,11 @@ export default function PackageCheckoutDialog({
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-center">
               {hasSaving && (
                 <p className="text-sm text-gray-400 line-through">
-                  {ok.package.total.toLocaleString()} د.ع
+                  {summary.total.toLocaleString()} د.ع
                 </p>
               )}
               <p className="text-3xl font-extrabold text-gray-900">
-                {ok.package.price.toLocaleString()} د.ع
+                {summary.price.toLocaleString()} د.ع
               </p>
               {hasSaving && (
                 <p className="mt-0.5 text-sm font-semibold text-green-600">
@@ -285,13 +229,13 @@ export default function PackageCheckoutDialog({
               </span>
             </div>
 
-            {/* Included courses — calm vertical list */}
+            {/* Included courses — public, calm vertical list */}
             <div>
               <p className="mb-1.5 text-sm font-medium text-gray-700">
                 دورات الحزمة
               </p>
               <ul className="divide-y rounded-lg border">
-                {ok.courses.map((c) => {
+                {summary.courses.map((c) => {
                   const meta = courseMeta(c);
                   return (
                     <li
@@ -325,62 +269,96 @@ export default function PackageCheckoutDialog({
               </ul>
             </div>
 
-            {/* Partial-ownership disclosure — concrete, per course */}
-            {ok.partialOwnershipCourses.length > 0 && (
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertTitle>ملاحظة قبل الشراء</AlertTitle>
-                <AlertDescription>
-                  <ul className="list-disc pr-4 space-y-1">
-                    {ok.partialOwnershipCourses.map((c) => (
-                      <li key={c.courseId}>
-                        أنت تملك أقساماً من دورة «{c.title}». ستحصل على وصول
-                        كامل لها ضمن الحزمة. الأقسام التي اشتريتها مسبقاً لا
-                        تُحتسب من سعر الحزمة ولا تُسترد.
-                      </li>
-                    ))}
-                  </ul>
-                </AlertDescription>
-              </Alert>
+            {/* ===== PER-VIEWER TIER — signed-in only ===== */}
+
+            {/* Signed-in, preview still loading */}
+            {!signedOut && loading && (
+              <p className="py-1 text-center text-sm text-gray-500">
+                جارٍ التحقق من رصيدك...
+              </p>
             )}
 
-            {/* Blocked-package message */}
-            {!ok.purchasable && ok.blockedReason && (
+            {/* Signed-in, preview failed — the public tier above still shows */}
+            {!signedOut && !loading && preview && !preview.success && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
-                  {blockedMessage(ok.blockedReason, ok.blockedCourseTitles)}
+                  تعذّر التحقق من رصيدك وأهليتك للشراء. حاول مرة أخرى.
                 </AlertDescription>
               </Alert>
             )}
 
-            {/* Wallet */}
-            <div className="space-y-1.5 rounded-lg bg-gray-50 p-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">رصيد محفظتك</span>
-                <span className="text-gray-900">
-                  {ok.walletBalance.toLocaleString()} د.ع
-                </span>
-              </div>
-              {canBuy && (
-                <div className="flex justify-between border-t pt-1.5">
-                  <span className="text-gray-600">الرصيد بعد الشراء</span>
-                  <span className="text-gray-900">
-                    {(ok.walletBalance - ok.package.price).toLocaleString()} د.ع
-                  </span>
+            {/* Signed-in, preview loaded */}
+            {!signedOut && ok && (
+              <>
+                {/* Partial-ownership disclosure — concrete, per course */}
+                {ok.partialOwnershipCourses.length > 0 && (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertTitle>ملاحظة قبل الشراء</AlertTitle>
+                    <AlertDescription>
+                      <ul className="list-disc pr-4 space-y-1">
+                        {ok.partialOwnershipCourses.map((c) => (
+                          <li key={c.courseId}>
+                            أنت تملك أقساماً من دورة «{c.title}». ستحصل على وصول
+                            كامل لها ضمن الحزمة. الأقسام التي اشتريتها مسبقاً لا
+                            تُحتسب من سعر الحزمة ولا تُسترد.
+                          </li>
+                        ))}
+                      </ul>
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Blocked-package message */}
+                {!ok.purchasable && ok.blockedReason && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      {blockedMessage(ok.blockedReason, ok.blockedCourseTitles)}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Wallet */}
+                <div className="space-y-1.5 rounded-lg bg-gray-50 p-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">رصيد محفظتك</span>
+                    <span className="text-gray-900">
+                      {ok.walletBalance.toLocaleString()} د.ع
+                    </span>
+                  </div>
+                  {canBuy && (
+                    <div className="flex justify-between border-t pt-1.5">
+                      <span className="text-gray-600">الرصيد بعد الشراء</span>
+                      <span className="text-gray-900">
+                        {(ok.walletBalance - ok.package.price).toLocaleString()}{" "}
+                        د.ع
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Insufficient balance */}
-            {insufficient && (
-              <Alert variant="destructive">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription>
-                  رصيد محفظتك لا يغطي سعر الحزمة — تحتاج إلى شحن{" "}
-                  {(ok.package.price - ok.walletBalance).toLocaleString()} د.ع.
-                </AlertDescription>
-              </Alert>
+                {/* Insufficient balance */}
+                {insufficient && (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription>
+                      رصيد محفظتك لا يغطي سعر الحزمة — تحتاج إلى شحن{" "}
+                      {(ok.package.price - ok.walletBalance).toLocaleString()}{" "}
+                      د.ع.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </>
+            )}
+
+            {/* Signed-out — prompt sign-in for the purchase step */}
+            {signedOut && (
+              <div className="flex items-center gap-2 rounded-lg bg-amber-50 p-3 text-sm text-amber-900">
+                <Info className="h-4 w-4 shrink-0" />
+                <span>سجّل الدخول لإتمام عملية الشراء.</span>
+              </div>
             )}
           </div>
         )}
@@ -405,8 +383,8 @@ export default function PackageCheckoutDialog({
             >
               {purchasing
                 ? "جارٍ الشراء..."
-                : ok
-                  ? `شراء بـ ${ok.package.price.toLocaleString()} د.ع`
+                : summary
+                  ? `شراء بـ ${summary.price.toLocaleString()} د.ع`
                   : "شراء"}
             </Button>
           )}
