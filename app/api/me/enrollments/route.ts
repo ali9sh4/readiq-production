@@ -44,6 +44,27 @@ export async function GET(req: NextRequest) {
     );
     const courseSnaps = await db.getAll(...courseRefs);
 
+    // Package-sourced enrollments carry `sourcePackageId` (set by
+    // package_wallet_actions). Batch-resolve the distinct package docs so
+    // mobile can label a course tile with the package it came from.
+    const packageIds = [
+      ...new Set(
+        enrollmentDocs
+          .map((d) => d.data().sourcePackageId)
+          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      ),
+    ];
+    const packageSnaps = packageIds.length
+      ? await db.getAll(
+          ...packageIds.map((id) => db.collection("packages").doc(id))
+        )
+      : [];
+    const packageTitleById = new Map(
+      packageSnaps
+        .filter((s) => s.exists)
+        .map((s) => [s.id, (s.data()?.title as string) ?? ""])
+    );
+
     const items = enrollmentDocs
       .map((eDoc, i) => {
         const courseSnap = courseSnaps[i];
@@ -68,6 +89,14 @@ export async function GET(req: NextRequest) {
             ? (e.ownedSectionIds as string[])
             : [],
           totalSpent: typeof e.totalSpent === "number" ? e.totalSpent : 0,
+          // `null` (not omitted) for non-package enrollments so mobile can
+          // rely on the key always being present.
+          sourcePackage: e.sourcePackageId
+            ? {
+                id: e.sourcePackageId as string,
+                title: packageTitleById.get(e.sourcePackageId as string) ?? "",
+              }
+            : null,
           course: {
             id: courseSnap.id,
             title: c.title ?? "",

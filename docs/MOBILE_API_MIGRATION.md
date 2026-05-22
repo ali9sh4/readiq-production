@@ -56,6 +56,7 @@ Sectional purchasing is a server-authoritative feature with read-side parity exp
 | `accessScope` | `"full" \| "sectional"` | Always present. Default `"full"`. |
 | `ownedSectionIds` | string[] | Always present, possibly empty. Only meaningful when `accessScope === "sectional"`. |
 | `totalSpent` | number | Cumulative IQD spent on this enrollment. Drives bundle break-even math on web; informational on mobile. Default `0`. |
+| `sourcePackage` | `{ id: string, title: string } \| null` | The course package this enrollment came from, or `null` for standalone/sectional enrollments. Always present (never omitted). Resolved from `enrollment.sourcePackageId`. |
 
 ### Mobile lock-state recipe
 
@@ -84,7 +85,7 @@ All routes below are new files under `app/api/`. They must conform to the ground
 | GET | `/api/courses` | Paginated public catalog | Filter: `status === "published"`, `isApproved === true`, `isDeleted !== true`. Query params: `pageSize` (default 20, max 50), `cursor` (last doc id), optional `category`, `level`, `language`, `search` (later). **Phase 7a:** each tile includes `purchaseMode` + `fullCoursePrice` (no structured `sections[]` — that's on detail). |
 | GET | `/api/courses/:courseId` | Single course detail | Same visibility filter as above. Strip instructor-only fields (`deletionStatus`, `rejectionReason`, internal flags). Return `videos` with `videoId`, `title`, `description`, `section`, `sectionId`, `order`, `duration`, `isFreePreview` — but **never** the raw `playbackId` for paid courses (use `/api/mux/playback-token` to gate access). For free courses or `isFreePreview === true` videos the `playbackId` may be returned. **Phase 7a:** course includes `purchaseMode`, `fullCoursePrice`, `sections[]` (see Sectional Field Reference above). |
 | GET | `/api/me` | Current user profile | Reads `users/{uid}` doc. Returns `displayName`, `email`, `photoURL`, `language`, `notifications`. |
-| GET | `/api/me/enrollments` | Courses the user is enrolled in | Query `enrollments where userId == uid and status == "completed"`, batch-fetch course docs (filter out `isDeleted`). Paginate. **Phase 7a:** each item includes `status`, `accessScope`, `ownedSectionIds`, `totalSpent`; embedded `course` includes `purchaseMode` + `fullCoursePrice`. |
+| GET | `/api/me/enrollments` | Courses the user is enrolled in | Query `enrollments where userId == uid and status == "completed"`, batch-fetch course docs (filter out `isDeleted`). Paginate. **Phase 7a:** each item includes `status`, `accessScope`, `ownedSectionIds`, `totalSpent`, `sourcePackage`; embedded `course` includes `purchaseMode` + `fullCoursePrice`. |
 | GET | `/api/me/favorites` | Favorited course IDs (and optionally hydrated courses) | Query param `hydrate=1` returns full `Course` docs (mirrors `getUserFavorites`). Default returns `{ courseIds: string[] }`. **Phase 7a:** hydrated entries include `purchaseMode` + `fullCoursePrice`. |
 | GET | `/api/wallet` | Current wallet balance | Reads `wallets/{uid}`. Auto-create empty wallet doc if missing (mirrors `createTopupRequest` first-time logic) so this endpoint never 404s for a logged-in user. |
 | GET | `/api/wallet/transactions` | Paginated wallet transactions | Cursor pagination via `lastDocId`. Mirrors `getWalletTransactions`. Default `limit=20`, max `50`. |
