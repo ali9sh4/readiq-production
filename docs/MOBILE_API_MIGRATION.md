@@ -2,18 +2,9 @@
 
 ## Status
 
-At-a-glance progress against the steps in section E. Update this list as steps land. The detailed living status board is `docs/MOBILE_PROJECT_STATE.md`.
-
-- **Step 1 — API foundation: SHIPPED** (`9a43fc3`). `verifyBearerToken`, `lib/api/response.ts`, validation skeleton, `lib/R2/presignedUpload.ts`, `lib/mux/playbackToken.ts`, middleware matcher comment, `/api/health/me` smoke route.
-- **Step 2 — 8 read-only endpoints: SHIPPED** (`386d15d`). `GET` for `/api/me`, `/api/wallet`, `/api/wallet/transactions`, `/api/wallet/topup/history`, `/api/me/enrollments`, `/api/me/favorites`, `/api/courses`, `/api/courses/[courseId]`. DRM gate enforced — non-preview videos return `playbackId: null`.
-- **Step 3B — Mux playback-token endpoint: SHIPPED** (`f8acbb5`). `POST /api/mux/playback-token` issues short-lived signed Mux JWTs (RS256) with auth, course-visibility, free-preview bypass, and enrollment gate. End-to-end playback test deferred until 3.5 flips uploads to signed.
-- **Step 3.5-prep — owner + admin branches on `/api/mux/playback-token`: SHIPPED** (Path D from the audit). The route now has owner (`course.createdBy === auth.userId`) and admin (`auth.isAdmin === true`) branches; both bypass the visibility gate and the enrollment check. The route is now structurally complete — Step 3.5 itself no longer touches the route. Reduces the surface area of the eventual 3.5 PR.
-- **Step 3A — flip uploads to signed: DEFERRED to Step 3.5.** Cannot land standalone; would silently break the three existing web Mux player surfaces.
-- **Step 3.5 — `SignedMuxPlayer` + 3-surface migration: IN PROGRESS on `feat/step-3.5-signed-playback`.** Substeps A–D shipped to the branch (hook, wrapper, thumbnail signing, instructor-preview surface). Substeps E (CoursePreview), F (CoursePlayer), G (image.mux.com sweep) remain. Substep H (upload-policy flip) is a separate one-line commit on `main` after the wrapper PR merges. Detailed substep status in the **Step 3.5 scope** section below. See `docs/MOBILE_PROJECT_STATE.md` "Implementation findings during 3.5.A–D" for non-obvious gotchas the audit didn't predict.
-- **Step 4 — profile + favorites writes: IN PROGRESS.** `PATCH /api/me`, `POST /api/me/favorites`, `DELETE /api/me/favorites/[courseId]`. Wraps existing server actions; testing recipes already drafted in `docs/MOBILE_API_TESTING.md`.
-- **Step 5 — top-up flow: NOT STARTED.** `POST /api/wallet/topup/upload-receipt`, `POST /api/wallet/topup/request`. First step that introduces the new `paymentMethod` + `receiptUrl` fields on `topup_requests`.
-- **Step 6 — enrollment purchase: NOT STARTED.** `POST /api/enrollments`, free + paid paths, idempotent against retries. Sectional courses are rejected at the API boundary with `COURSE_NOT_SECTIONAL` (400) — mobile must surface this as "purchase this course on the web" with a help link.
-- **Phase 7a — sectional read parity: SHIPPED.** Additive fields on `/api/courses`, `/api/courses/:id`, `/api/me/enrollments`, `/api/me/favorites` so the reader-app mobile client can render sectional structure, prices, and lock state correctly. See "Sectional Purchasing — Field Reference" below.
+Every step in this plan has shipped to `main`. Status, shipped commits, and
+decisions live in `docs/MOBILE_PROJECT_STATE.md` — the single status board.
+This file is the standing REST contract; it does not track progress.
 
 ---
 
@@ -132,7 +123,7 @@ These are mobile-app responsibilities that the API surface assumes. Listed here 
 
 - **Instructor course-upload actions** — all of `upload_File_actions.ts`, `upload_video_actions.ts`, `course_deletion_action.ts`, `basic_info_actions.ts`. Web-only.
 - **Admin actions** — `approveTopupRequest`, `rejectTopupRequest`, `getPendingTopupRequests` in `wallet_actions.ts`; `restoreDeletedCourse`, `permanentlyDeleteCourse` in `course_deletion_action.ts`; `lib/admin/admin-utils.ts`. Web-only.
-- **Existing ZainCash routes** — `app/api/payments/zainCash/init`, `app/api/payments/zainCash/webhook`, `lib/payments/zaincash.ts`. **Frozen.** Will be removed in a separate task.
+- **Existing ZainCash routes** — `app/api/payments/zaincash/init`, `app/api/payments/zaincash/webhook`, `lib/payments/zaincash.ts`. **Frozen.** Will be removed in a separate task.
 - **Existing favorites/enrollment server actions** — `addToFavorites`, `removeFromFavorites`, `checkUserFavorites`, `getUserFavorites`, `enrollInFreeCourse`, `purchaseCourseWithWallet`, `getWalletTransactions`, `getPendingTopupRequestsUSER`, `createTopupRequest`. Kept so web keeps working unchanged. The new `/api/*` routes are **parallel** endpoints, not replacements.
 - **`/api/refresh-token`** — kept. Cookie-based, web-only.
 - **`middleware.ts`** — see section C.
@@ -179,7 +170,7 @@ That comment block is the entire diff to `middleware.ts`.
 ```ts
 // Pseudocode shape — do not implement yet.
 export class AuthError extends Error {
-  code: "MISSING_TOKEN" | "INVALID_TOKEN" | "EXPIRED_TOKEN";
+  code: "NO_TOKEN" | "INVALID_TOKEN" | "EXPIRED_TOKEN" | "REVOKED_TOKEN";
   status: 401;
 }
 
@@ -188,9 +179,10 @@ export async function verifyBearerToken(req: Request): Promise<{
   email: string | null;
   isAdmin: boolean;
 }> {
-  // 1. Read Authorization header. If missing or not "Bearer X" → throw MISSING_TOKEN.
-  // 2. await adminAuth.verifyIdToken(token).
-  //    Map auth/id-token-expired to EXPIRED_TOKEN, everything else to INVALID_TOKEN.
+  // 1. Read Authorization header. If missing or not "Bearer X" → throw NO_TOKEN.
+  // 2. await adminAuth.verifyIdToken(token, true).
+  //    Map auth/id-token-expired to EXPIRED_TOKEN, auth/id-token-revoked to
+  //    REVOKED_TOKEN, everything else to INVALID_TOKEN.
   // 3. Return { userId: decoded.uid, email: decoded.email ?? null, isAdmin: decoded.admin === true }.
 }
 ```
@@ -213,7 +205,7 @@ export function fail(
 //             fail → { success: false, error: { code, message } }
 ```
 
-Plus a small `withAuth(handler)` wrapper that runs `verifyBearerToken`, catches `AuthError`, and returns `fail("UNAUTHENTICATED", ..., 401)`. Handlers receive `(req, ctx, auth)` and can stay focused on their own logic.
+Plus a small `withAuth(handler)` wrapper that runs `verifyBearerToken`, catches `AuthError`, and returns `fail(err.code, ..., 401)` (the `AuthError.code` — `NO_TOKEN` / `INVALID_TOKEN` / `EXPIRED_TOKEN` / `REVOKED_TOKEN`). Handlers receive `(req, ctx, auth)` and can stay focused on their own logic.
 
 ### `lib/validation/`
 
@@ -451,7 +443,7 @@ no search bar.
 These are explicitly out of scope for the API migration. Each is a separate PR after the mobile app is live.
 
 1. **Delete `/Course/[courseId]` web viewer route** and any web-only Mux player code. Single cleanup PR.
-2. **Remove all ZainCash code** — `app/api/payments/zainCash/*`, `lib/payments/zaincash.ts`, related env vars, error page. Single cleanup PR.
+2. **Remove all ZainCash code** — `app/api/payments/zaincash/*`, `lib/payments/zaincash.ts`, related env vars, error page. Single cleanup PR.
 3. **Update `/admin-dashboard/topup-approvals` UI** to show `paymentMethod` and a thumbnail/preview of `receiptUrl` (presigned R2 GET).
 4. **iOS screen-capture detection** in the mobile app (v1.1).
 5. **Mux signing key rotation policy** — short doc covering when to rotate `MUX_SIGNING_PRIVATE_KEY`, how to do it without downtime (Mux supports overlapping signing keys), and where the new key/cert lives.

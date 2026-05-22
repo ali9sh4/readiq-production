@@ -4,6 +4,12 @@ Production codebase. Read this before making changes.
 
 The public brand is **Rubik (روبيك)**; "Readiq" is the internal codename — both appear in code.
 
+## Doc maintenance
+
+When the user says "update", "update the docs", or when a session ends after
+code shipped, you MUST read and follow docs/maintenance/update.md in full
+before finishing. Do not summarise it — execute it step by step.
+
 ## Sibling repo — the mobile app
 
 The React Native app lives in a **separate repo: `readiq-production-mobile`** (Expo, view-only reader-app).
@@ -38,8 +44,8 @@ npm run lint     # next lint
 npm start        # next start (after build)
 ```
 
-No test or typecheck script — there is no CI test suite. Verify changes manually.
-Run `npx tsc --noEmit` and `npm run lint` before declaring work done.
+No test suite and no CI. Verify changes manually.
+Run `npx tsc --noEmit` (or `npm run typecheck`) and `npm run lint` before declaring work done.
 
 ## Layout
 

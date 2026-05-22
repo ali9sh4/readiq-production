@@ -1,3 +1,7 @@
+> **SUPERSEDED — archived 2026-05-22.** This is a pre-implementation scratch
+> audit for `POST /api/me`, which has since shipped (`app/api/me/route.ts`).
+> Kept for historical reference only — do not treat it as a current spec.
+
 # AUDIT — `POST /api/me` (mobile profile bootstrap)
 
 Scratch audit for the new `POST /api/me` endpoint. Read-only; no production code touched.

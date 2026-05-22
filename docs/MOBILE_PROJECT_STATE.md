@@ -1,5 +1,5 @@
 # Readiq Mobile Project State
-Last updated: 2026-05-21
+Last updated: 2026-05-22
 
 ## Where we are
 
@@ -87,18 +87,10 @@ a11y items shipped with the Step 3.5 merge.
 
 ## Sectional purchasing — invariants
 
-Any future sectional work (web or mobile) must respect these seven invariants:
-
-1. Only `course.purchaseMode === 'sectional'` activates sectional logic — the
-   presence of `sections[]` is **not** a signal.
-2. `enrollment.accessScope` is the single source of truth for access.
-3. An unset `accessScope` means grandfathered full access — **never overwrite it.**
-4. A bundle buyer writes `accessScope: 'full'`.
-5. A per-section buyer writes `accessScope: 'sectional'` and merges into
-   `ownedSectionIds[]`.
-6. The server rejects a per-section buy when `accessScope !== 'sectional'`.
-7. Once a `sectionId` is sold it is immutable; `purchaseMode` locks at the
-   first sale or first enrollment.
+The seven non-negotiable invariants for sectional purchasing — and their
+consequences — live in the `sectional-invariants` skill
+(`.claude/skills/sectional-invariants/SKILL.md`), the single source of truth.
+Read it before any sectional work, web or mobile.
 
 ## Key decisions log
 
@@ -125,7 +117,7 @@ As of the latest commit on main, the entire web-side instructor experience is un
 ### What works today on the web
 
 - Instructor login + course creation + course editing — all untouched.
-- Video upload via /course-upload → Mux ingest → asset reaches "ready" state. New uploads are still playback_policy: ["public"] (the Step 3A flip was deferred; see TODO(step-3.5) comment above the playback_policy line in app/actions/upload_video_actions.ts).
+- Video upload via /course-upload → Mux ingest → asset reaches "ready" state. New uploads are playback_policy: ["signed"] (flipped in Step 3.5.H; app/actions/upload_video_actions.ts).
 - Per-video card after upload: thumbnail renders, click-to-play works, inline <MuxPlayer playbackId={video.playbackId} /> plays the video.
 - Public course preview page /Course/[courseId]: free-preview videos play for unenrolled visitors via raw playback ID.
 - Enrolled student viewer (still web-based until mobile launches): plays full courses via raw playback ID through components/ui/CoursePlayer.tsx.
@@ -159,7 +151,7 @@ Test uploads, content experiments, and instructor self-familiarization are fine 
 
 ### Risk surface
 
-There is exactly one place in app/actions/upload_video_actions.ts where the upload policy is configured (the TODO(step-3.5) comment above playback_policy). When Step 3.5 lands, that single line flips to ["signed"]. There are no other places in the codebase that hardcode "public" or pass playback_policy to Mux.
+There is exactly one place in app/actions/upload_video_actions.ts where the upload policy is configured (the playback_policy line). Step 3.5.H flipped it to ["signed"]. There are no other places in the codebase that hardcode a playback policy or pass playback_policy to Mux.
 
 ## Step 3.5 — audit & decision rationale
 

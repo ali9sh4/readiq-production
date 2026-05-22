@@ -20,15 +20,9 @@ Already in the codebase from previous phases:
 - One course has populated `sections[]` from backfill: `anVKnYHlsyx8nTvwsZdt`. No course has `purchaseMode` set in production.
 - Existing `purchaseCourseWithWallet` in `app/actions/wallet_actions.ts` handles the legacy full-course purchase. Phase 3 does not modify it.
 
-The seven locked rules from earlier phases:
-
-1. **Discriminator**: only `course.purchaseMode === 'sectional'` activates sectional logic. Presence of `sections[]` is irrelevant.
-2. **Access field**: `enrollment.accessScope` is the single source of truth. `'full'` or unset = full access. `'sectional'` = check `ownedSectionIds`.
-3. **Legacy enrollees**: unset `accessScope` = grandfathered full access. Never overwrite.
-4. **Bundle buyer**: bundle purchase writes `accessScope: 'full'` explicitly.
-5. **Per-section buyer**: per-section purchase writes `accessScope: 'sectional'` and merges sectionIds into `ownedSectionIds[]`. Never reverts to `'full'` except via successful bundle purchase.
-6. **No double-charge**: server-side reject per-section purchase if existing enrollment has `accessScope !== 'sectional'` (or has bundle-equivalent state).
-7. **Sold-section lock**: once any user owns a `sectionId`, the section's ID, existence, and minimum price are immutable. The course's `purchaseMode` also locks at first sale.
+The seven locked rules from earlier phases live in the `sectional-invariants`
+skill (`.claude/skills/sectional-invariants/SKILL.md`) — the single source of
+truth.
 
 ---
 

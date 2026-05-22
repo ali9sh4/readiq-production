@@ -1,3 +1,7 @@
+> **SUPERSEDED — archived 2026-05-22.** Point-in-time test log. Phase 3
+> shipped and the debug-route harness (`app/api/debug/`) has been removed from
+> the repo. Kept for historical reference only.
+
 # Phase 3 — Manual Test Results
 
 **Date:** 2026-05-14

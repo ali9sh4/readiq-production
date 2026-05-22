@@ -1,3 +1,8 @@
+> **SUPERSEDED — archived 2026-05-22.** The debug-route test harness described
+> here (`app/api/debug/`, `scripts/test-purchase.mjs`) has been deleted from
+> the repo. Phase 3 shipped. Kept for historical reference only. Current
+> status: `docs/MOBILE_PROJECT_STATE.md`.
+
 # Phase 3 — Sectional Purchase Test Harness
 
 **Method:** *Debug-route test harness* — invoking server actions out-of-band

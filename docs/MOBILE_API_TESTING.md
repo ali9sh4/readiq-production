@@ -6,42 +6,25 @@
 
 ### Test env vars
 
-Test credentials live in `~/readiq-test-env.sh` on the dev machine (not in
-the repo — it contains a real password). Source it once per shell. Example
-shape (substitute your own values):
+Set the base URL once per shell:
 
 ```bash
-# ~/readiq-test-env.sh
-export FIREBASE_API_KEY="<firebase-web-api-key>"   # same key as firebase/client.ts
-export TEST_EMAIL="<your-test-account@example.com>"
-export TEST_PASSWORD="<your-test-password>"
-export API_BASE="http://localhost:3000"
+export BASE_URL="http://localhost:3000"
 ```
-
-```bash
-source ~/readiq-test-env.sh
-```
-
-The recipes below use `BASE_URL` and `FIREBASE_WEB_API_KEY`; if your env file
-uses different names (`API_BASE`, `FIREBASE_API_KEY`), either rename in the
-file or alias them in your shell — both styles work.
 
 ### Get a fresh Firebase ID token
 
-ID tokens expire after **1 hour**. Standard recipe:
+Login is **Google-only** — there is no email/password sign-in to script
+against. Grab a token from a real signed-in browser session instead:
 
-```bash
-ID_TOKEN=$(curl -s -X POST \
-  "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$FIREBASE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"$TEST_EMAIL\",\"password\":\"$TEST_PASSWORD\",\"returnSecureToken\":true}" \
-  | jq -r .idToken)
+1. Run `npm run dev` and sign in to the web app with a Google account.
+2. Open DevTools → Network, pick any `/api/*` request, and copy the value of
+   its `Authorization: Bearer <token>` header. (Equivalently: DevTools →
+   Application → Cookies → the `firebaseAuthToken` value.)
+3. `export ID_TOKEN="<that token>"`
 
-echo "$ID_TOKEN" | head -c 40; echo "..."
-```
-
-If the test account doesn't exist yet, register it through the web app's
-`/register` page first.
+ID tokens expire after **1 hour** — re-grab one when requests start returning
+`401 EXPIRED_TOKEN`.
 
 ### Recommended testing pattern
 
@@ -73,37 +56,9 @@ is exercised by the web manual test plans and `scripts/test-purchase.mjs`.
 
 ### 1. Get a Firebase ID token for a test user
 
-The app uses Firebase Auth (email/password). To get an ID token outside the
-app, hit the Identity Toolkit REST API directly with the project's **web API
-key**.
-
-The web API key is not secret — it's already in `firebase/client.ts`
-(`AIzaSyCmjn2Enchkf-BH3-dBuBfCJPKPDnqfeT8`) and is restricted server-side via
-Firebase Auth itself. Set it once in your shell:
-
-```bash
-export FIREBASE_WEB_API_KEY="AIzaSyCmjn2Enchkf-BH3-dBuBfCJPKPDnqfeT8"
-export TEST_EMAIL="you@example.com"
-export TEST_PASSWORD="your-test-password"
-export BASE_URL="http://localhost:3000"
-```
-
-Sign in and capture the token:
-
-```bash
-ID_TOKEN=$(curl -s -X POST \
-  "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=$FIREBASE_WEB_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d "{\"email\":\"$TEST_EMAIL\",\"password\":\"$TEST_PASSWORD\",\"returnSecureToken\":true}" \
-  | jq -r .idToken)
-
-echo "$ID_TOKEN"
-```
-
-ID tokens expire after **1 hour**. Re-run to refresh.
-
-If the test account doesn't exist yet, register it through the web app's
-`/register` page first.
+See "Get a fresh Firebase ID token" under "How to use this doc" above. Login
+is Google-only — copy a `Bearer` token from a signed-in browser session;
+there is no password recipe to script.
 
 ### 2. Conventions for every recipe
 
