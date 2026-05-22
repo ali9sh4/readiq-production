@@ -41,11 +41,14 @@ export default function PackageUpsellBanner({
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      if (isLoading || !user) return;
+      if (isLoading) return;
+      // Course-page mode needs a signed-in viewer; catalog mode is the
+      // storefront and loads for signed-out visitors too.
+      if (!catalog && !user) return;
       try {
-        const token = await user.getIdToken();
+        const token = user ? await user.getIdToken() : undefined;
         const res = courseId
-          ? await getPackagesForCourse(token, courseId)
+          ? await getPackagesForCourse(token!, courseId)
           : await getActivePackages(token);
         if (!cancelled && res.success) setPackages(res.packages);
       } catch (e) {
@@ -56,7 +59,7 @@ export default function PackageUpsellBanner({
     return () => {
       cancelled = true;
     };
-  }, [user, isLoading, courseId]);
+  }, [user, isLoading, courseId, catalog]);
 
   if (packages.length === 0) return null;
 
@@ -149,6 +152,11 @@ export default function PackageUpsellBanner({
 
       <PackageCheckoutDialog
         packageId={checkoutId}
+        summary={
+          checkoutId
+            ? packages.find((p) => p.id === checkoutId) ?? null
+            : null
+        }
         open={checkoutId !== null}
         onOpenChange={(o) => !o && setCheckoutId(null)}
       />

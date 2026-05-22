@@ -799,28 +799,35 @@ export async function getPackagesForCourse(
 
 // ===== getActivePackages =====
 //
-// Powers the main catalog page's packages strip: every active package the
-// viewer could actually purchase. Uses the SAME per-viewer eligibility
-// filter as getPackagesForCourse — a package where the viewer owns or
-// authored a member course (or a member course is unavailable) is dropped,
-// not shown as a dead-end CTA. Returns the same enriched summary shape the
-// banner already consumes.
+// Powers the main catalog page's packages strip. The catalog is the
+// storefront, so this works WITH OR WITHOUT a token:
+//   - Signed-in (valid token): applies the per-viewer eligibility filter,
+//     same as getPackagesForCourse — drops packages where the viewer owns
+//     or authored a member course.
+//   - Signed-out (no/invalid token): skips that filter — a signed-out
+//     visitor owns nothing — and returns every active package.
+// Either way, a package with an unavailable member course is dropped: a
+// broken package is hidden from everyone.
 //
 // Pure read. Same scaling note as getPackagesForCourse: `packages` is
 // queried by `status` only, no composite index — see docs/COURSE_PACKAGES.md.
 
 export async function getActivePackages(
-  token: string
+  token?: string
 ): Promise<
   | { success: true; packages: CoursePackageSummary[] }
   | { success: false }
 > {
-  let buyerId: string;
-  try {
-    const verified = await adminAuth.verifyIdToken(token);
-    buyerId = verified.uid;
-  } catch {
-    return { success: false };
+  // A missing OR bad/expired token is treated as signed-out, not an error —
+  // the storefront strip must still render for anonymous visitors.
+  let buyerId: string | null = null;
+  if (token) {
+    try {
+      const verified = await adminAuth.verifyIdToken(token);
+      buyerId = verified.uid;
+    } catch {
+      buyerId = null;
+    }
   }
 
   try {
@@ -835,41 +842,49 @@ export async function getActivePackages(
       return { success: true, packages: [] };
     }
 
-    // Batch-load every course + enrollment referenced across all candidates.
     const allCourseIds = [...new Set(candidates.flatMap((p) => p.courseIds))];
-    const [courseSnaps, enrollmentSnaps] = await Promise.all([
-      Promise.all(
-        allCourseIds.map((id) => db.collection("courses").doc(id).get())
-      ),
-      Promise.all(
-        allCourseIds.map((id) =>
-          db.collection("enrollments").doc(`${buyerId}_${id}`).get()
+    const courseSnaps = await Promise.all(
+      allCourseIds.map((id) => db.collection("courses").doc(id).get())
+    );
+    // Enrollments are only needed to filter for a signed-in viewer.
+    const enrollmentSnaps = buyerId
+      ? await Promise.all(
+          allCourseIds.map((id) =>
+            db.collection("enrollments").doc(`${buyerId}_${id}`).get()
+          )
         )
-      ),
-    ]);
+      : [];
+
     const courseMap = new Map<string, Course>();
     const enrollmentMap = new Map<string, Enrollment | undefined>();
     allCourseIds.forEach((id, i) => {
       if (courseSnaps[i].exists) {
         courseMap.set(id, { id, ...courseSnaps[i].data() } as Course);
       }
-      enrollmentMap.set(
-        id,
-        enrollmentSnaps[i].exists
-          ? (enrollmentSnaps[i].data() as Enrollment)
-          : undefined
-      );
+      if (buyerId) {
+        enrollmentMap.set(
+          id,
+          enrollmentSnaps[i].exists
+            ? (enrollmentSnaps[i].data() as Enrollment)
+            : undefined
+        );
+      }
     });
 
     const packages: CoursePackageSummary[] = [];
     for (const p of candidates) {
-      const eligible = p.courseIds.every((cid) => {
+      const sellable = p.courseIds.every((cid) => {
         const c = courseMap.get(cid);
+        // Broken-package check — applies signed in or out.
         if (!isCourseAvailable(c)) return false;
-        if (c!.createdBy === buyerId) return false;
-        return !hasFullAccess(c!, enrollmentMap.get(cid));
+        // Per-viewer eligibility — only when there is a viewer.
+        if (buyerId) {
+          if (c!.createdBy === buyerId) return false;
+          if (hasFullAccess(c!, enrollmentMap.get(cid))) return false;
+        }
+        return true;
       });
-      if (eligible) {
+      if (sellable) {
         const memberCourses = p.courseIds.map((cid) => courseMap.get(cid));
         packages.push({
           id: p.id,
