@@ -32,6 +32,24 @@ This deliberately mirrors the course-packages owed/paid tally
 (`docs/COURSE_PACKAGES.md`) in spirit, but is a **separate system** — package
 payouts are unchanged and out of scope here.
 
+## ⚠️ ZainCash earning path — UNVERIFIED
+
+> **The ZainCash earning write has NOT been tested end-to-end.** Standalone and
+> sectional wallet purchases were both verified on the Vercel preview build;
+> the ZainCash flow was not.
+>
+> The webhook at `app/api/payments/zaincash/webhook/route.ts` now records an
+> earning entry inside its success transaction. It has **not** been confirmed
+> whether the ZainCash flow also routes through `purchaseCourseWithWallet`
+> (e.g. by topping up the buyer's wallet and then calling the wallet purchase
+> action). **If it does, every ZainCash sale will double-count the earning** —
+> once from the webhook, once from `purchaseCourseWithWallet`.
+>
+> **When the existing ZainCash bug is next worked on, the FIRST step must be**
+> to trace whether the ZainCash path invokes `purchaseCourseWithWallet`, and
+> remove the duplicate earning write if so. Do not assume the current code is
+> correct until that trace is done.
+
 ## Data model
 
 ### `users/{uid}` — denormalized fields
