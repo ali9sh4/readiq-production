@@ -11,6 +11,7 @@ import {
   BookOpen,
   LogOut,
   Heart,
+  Wallet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -43,6 +44,12 @@ const navItems = [
     label: "دوراتي المنشأة",
     icon: BookOpen,
     value: "createdCourses",
+  },
+  {
+    href: "/user_dashboard/earnings",
+    label: "أرباحي",
+    icon: Wallet,
+    value: "earnings",
   },
   {
     href: "/user_dashboard/certificates",

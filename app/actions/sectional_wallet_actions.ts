@@ -25,6 +25,7 @@ import { adminAuth, db } from "@/firebase/service";
 import { FieldValue } from "firebase-admin/firestore";
 import type { Course, CourseSection } from "@/types/types";
 import type { Wallet } from "@/types/wallets";
+import { recordEarningInTransaction } from "@/lib/earnings/recordEarning";
 
 // ===== Result shape =====
 
@@ -251,14 +252,15 @@ export async function purchaseSectionsWithWallet(
   try {
     const result = await db.runTransaction(async (transaction) => {
       const walletRef = db.collection("wallets").doc(userId);
-      const instructorWalletRef = db.collection("wallets").doc(instructorId);
+      const instructorUserRef = db.collection("users").doc(instructorId);
       const courseRef = db.collection("courses").doc(courseId);
 
-      // Reads.
-      const [walletDoc, instructorWalletDoc, courseDocTxn] = await Promise.all(
+      // Reads. The instructor's user doc is read here so the revenue split
+      // is snapshotted atomically with the sale.
+      const [walletDoc, instructorUserDoc, courseDocTxn] = await Promise.all(
         [
           transaction.get(walletRef),
-          transaction.get(instructorWalletRef),
+          transaction.get(instructorUserRef),
           transaction.get(courseRef),
         ]
       );
@@ -291,33 +293,6 @@ export async function purchaseSectionsWithWallet(
         updatedAt: nowIso,
       });
 
-      // Writes — instructor wallet credit (create on the fly if needed,
-      // matching purchaseCourseWithWallet's pattern: no platform fee).
-      const instructorBalanceBefore = instructorWalletDoc.exists
-        ? (instructorWalletDoc.data() as Wallet).balance ?? 0
-        : 0;
-      if (instructorWalletDoc.exists) {
-        transaction.update(instructorWalletRef, {
-          balance: instructorBalanceBefore + totalPrice,
-          totalEarnings:
-            ((instructorWalletDoc.data() as Wallet).totalEarnings ?? 0) +
-            totalPrice,
-          updatedAt: nowIso,
-        });
-      } else {
-        transaction.set(instructorWalletRef, {
-          userId: instructorId,
-          userName: courseDataTxn?.instructorName ?? "مدرب",
-          balance: totalPrice,
-          totalEarnings: totalPrice,
-          totalTopups: 0,
-          totalSpent: 0,
-          dailyLimit: 5000000,
-          createdAt: nowIso,
-          updatedAt: nowIso,
-        });
-      }
-
       const ownedAfter = Array.from(new Set([...ownedBefore, ...toBuy]));
       const txTitle =
         typeof courseDataTxn?.title === "string" && courseDataTxn.title.length
@@ -346,25 +321,22 @@ export async function purchaseSectionsWithWallet(
         createdAt: nowIso,
       });
 
-      // Writes — instructor earning ledger row.
-      const instructorTxnRef = db.collection("wallet_transactions").doc();
-      transaction.set(instructorTxnRef, {
-        userId: instructorId,
-        type: "earning",
-        amount: totalPrice,
-        balanceBefore: instructorBalanceBefore,
-        balanceAfter: instructorBalanceBefore + totalPrice,
-        description: `إيراد من بيع أقسام دورة: ${txTitle}`,
-        metadata: {
-          courseId,
-          courseTitle: courseDataTxn?.title ?? null,
-          enrollmentId,
-          studentId: userId,
-          sectionIds: toBuy,
-          isSectionalPurchase: true,
-        },
-        protectionKey,
-        createdAt: nowIso,
+      // Writes — instructor earning. A section sale is a cash payable the
+      // platform owes the instructor, not spendable platform credit: append
+      // an immutable earnings-ledger entry + bump `earningsTotal` instead of
+      // crediting the instructor's spend wallet. (The old code credited
+      // `wallets/{instructorId}` and wrote a `type:"earning"`
+      // wallet_transactions row; both were removed here.)
+      recordEarningInTransaction({
+        transaction,
+        instructorId,
+        instructorDocSnap: instructorUserDoc,
+        grossAmount: totalPrice,
+        courseId,
+        enrollmentId,
+        buyerId: userId,
+        sectionIds: toBuy,
+        source: "wallet",
       });
 
       // Writes — enrollment upsert.
@@ -546,13 +518,15 @@ export async function purchaseBundleWithWallet(
   try {
     const result = await db.runTransaction(async (transaction) => {
       const walletRef = db.collection("wallets").doc(userId);
-      const instructorWalletRef = db.collection("wallets").doc(instructorId);
+      const instructorUserRef = db.collection("users").doc(instructorId);
       const courseRef = db.collection("courses").doc(courseId);
 
-      const [walletDoc, instructorWalletDoc, courseDocTxn] = await Promise.all(
+      // The instructor's user doc is read here so the revenue split is
+      // snapshotted atomically with the sale.
+      const [walletDoc, instructorUserDoc, courseDocTxn] = await Promise.all(
         [
           transaction.get(walletRef),
-          transaction.get(instructorWalletRef),
+          transaction.get(instructorUserRef),
           transaction.get(courseRef),
         ]
       );
@@ -585,33 +559,23 @@ export async function purchaseBundleWithWallet(
         });
       }
 
-      // Instructor wallet credit (skip if charge === 0).
-      const instructorBalanceBefore = instructorWalletDoc.exists
-        ? (instructorWalletDoc.data() as Wallet).balance ?? 0
-        : 0;
-      if (charge > 0) {
-        if (instructorWalletDoc.exists) {
-          transaction.update(instructorWalletRef, {
-            balance: instructorBalanceBefore + charge,
-            totalEarnings:
-              ((instructorWalletDoc.data() as Wallet).totalEarnings ?? 0) +
-              charge,
-            updatedAt: nowIso,
-          });
-        } else {
-          transaction.set(instructorWalletRef, {
-            userId: instructorId,
-            userName: courseDataTxn?.instructorName ?? "مدرب",
-            balance: charge,
-            totalEarnings: charge,
-            totalTopups: 0,
-            totalSpent: 0,
-            dailyLimit: 5000000,
-            createdAt: nowIso,
-            updatedAt: nowIso,
-          });
-        }
-      }
+      // Instructor earning. A bundle sale is a cash payable the platform
+      // owes the instructor, not spendable platform credit: append an
+      // immutable earnings-ledger entry + bump `earningsTotal` instead of
+      // crediting their spend wallet. Skipped automatically when charge is 0
+      // (a free upgrade — the instructor was already paid for the sections).
+      // (The old code credited `wallets/{instructorId}` and wrote a
+      // `type:"earning"` wallet_transactions row; both were removed here.)
+      recordEarningInTransaction({
+        transaction,
+        instructorId,
+        instructorDocSnap: instructorUserDoc,
+        grossAmount: charge,
+        courseId,
+        enrollmentId,
+        buyerId: userId,
+        source: "wallet",
+      });
 
       const txTitle =
         typeof courseDataTxn?.title === "string" && courseDataTxn.title.length
@@ -643,28 +607,6 @@ export async function purchaseBundleWithWallet(
         protectionKey,
         createdAt: nowIso,
       });
-
-      // Instructor ledger row only when there was actual money movement.
-      if (charge > 0) {
-        const instructorTxnRef = db.collection("wallet_transactions").doc();
-        transaction.set(instructorTxnRef, {
-          userId: instructorId,
-          type: "earning",
-          amount: charge,
-          balanceBefore: instructorBalanceBefore,
-          balanceAfter: instructorBalanceBefore + charge,
-          description: `إيراد من بيع حزمة كاملة من دورة: ${txTitle}`,
-          metadata: {
-            courseId,
-            courseTitle: courseDataTxn?.title ?? null,
-            enrollmentId,
-            studentId: userId,
-            isBundlePurchase: true,
-          },
-          protectionKey,
-          createdAt: nowIso,
-        });
-      }
 
       // Enrollment upsert — accessScope flips to 'full', ownedSectionIds
       // is deleted (full access supersedes the per-section list).
