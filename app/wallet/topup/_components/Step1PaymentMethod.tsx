@@ -33,14 +33,9 @@ export function Step1PaymentMethod({ selectedMethod, onSelect }: Step1Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-base sm:text-lg font-bold text-gray-900">
-          اختر طريقة الدفع
-        </h2>
-        <p className="text-xs sm:text-sm text-gray-600 mt-1">
-          سنعرض لك تفاصيل الحساب في الخطوة التالية
-        </p>
-      </div>
+      <h2 className="text-base sm:text-lg font-bold text-gray-900">
+        اختر طريقة الدفع
+      </h2>
 
       <div className="grid gap-3">
         {methods.map((m) => {

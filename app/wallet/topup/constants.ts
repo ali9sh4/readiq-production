@@ -17,7 +17,7 @@ export type TopupPaymentMethodId = keyof typeof TOPUP_PAYMENT_METHODS;
 export type TopupPaymentMethod =
   (typeof TOPUP_PAYMENT_METHODS)[TopupPaymentMethodId];
 
-export const TOPUP_WHATSAPP_NUMBER = "07702706976";
+export const TOPUP_WHATSAPP_NUMBER = "07886552919";
 
 export function topupWhatsappIntl(local: string = TOPUP_WHATSAPP_NUMBER): string {
   const digits = local.replace(/\D/g, "");

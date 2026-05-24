@@ -174,7 +174,6 @@ export function TopupWizard({ onSuccess }: TopupWizardProps) {
 
             {state.currentStep === 4 && state.selectedMethod && (
               <Step4Details
-                methodId={state.selectedMethod}
                 amount={state.amount}
                 senderName={state.senderName}
                 loading={loading}

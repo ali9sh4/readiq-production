@@ -5,7 +5,7 @@ import { getUserFavorites } from "@/app/actions/favorites_actions";
 import FavoritesClient from "@/components/FavoriteClient";
 
 export const metadata = {
-  title: "المفضلة | ReadIQ",
+  title: "المفضلة | Rubik",
   description: "الدورات المفضلة",
 };
 

@@ -121,7 +121,7 @@ export default function CoursePlayer({
   });
   const auth = useAuth();
   const watermarkText =
-    auth?.user?.email || auth?.user?.displayName || "ReadIQ - اقْرَأْ";
+    auth?.user?.email || auth?.user?.displayName || "Rubik - اقْرَأْ";
 
   useEffect(() => {
     const paymentStatus = searchParams.get("payment");

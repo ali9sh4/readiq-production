@@ -1,15 +1,8 @@
 "use client";
 
 import { toast } from "sonner";
-import {
-  AlertCircle,
-  Copy,
-  MessageCircle,
-  ArrowLeft,
-  ArrowRight,
-} from "lucide-react";
+import { Copy, MessageCircle, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   TOPUP_PAYMENT_METHODS,
   TOPUP_WHATSAPP_NUMBER,
@@ -27,8 +20,8 @@ export function Step3WhatsApp({ methodId, onBack, onNext }: Step3Props) {
   const method = TOPUP_PAYMENT_METHODS[methodId];
 
   const prefilledMessage =
-    `السلام عليكم، أرسلت إيصال تحويل لشحن محفظتي في تطبيق ReadIQ عبر ${method.label}.\n` +
-    `Hello, I sent a transfer receipt to top up my ReadIQ wallet via ${method.label}.`;
+    `السلام عليكم، أرسلت إيصال تحويل لشحن محفظتي في تطبيق Rubik عبر ${method.label}.\n` +
+    `Hello, I sent a transfer receipt to top up my Rubik wallet via ${method.label}.`;
 
   const waLink = `https://wa.me/${topupWhatsappIntl()}?text=${encodeURIComponent(prefilledMessage)}`;
 
@@ -43,14 +36,9 @@ export function Step3WhatsApp({ methodId, onBack, onNext }: Step3Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-base sm:text-lg font-bold text-gray-900">
-          أرسل الإيصال عبر واتساب
-        </h2>
-        <p className="text-xs sm:text-sm text-gray-600 mt-1">
-          أرسل صورة الإيصال إلى الرقم أدناه ليتم تأكيد التحويل
-        </p>
-      </div>
+      <h2 className="text-base sm:text-lg font-bold text-gray-900">
+        أرسل صورة الإيصال إلى هذا الرقم
+      </h2>
 
       <div className="bg-green-50 border-2 border-green-300 rounded-xl p-3 sm:p-4 space-y-3">
         <div className="bg-white rounded-lg p-3 sm:p-4 border-2 border-green-400">
@@ -83,14 +71,6 @@ export function Step3WhatsApp({ methodId, onBack, onNext }: Step3Props) {
           </a>
         </div>
       </div>
-
-      <Alert className="bg-blue-50 border-blue-300">
-        <AlertCircle className="h-4 w-4 text-blue-600" />
-        <AlertDescription className="text-xs sm:text-sm text-blue-800">
-          <strong>مهم:</strong> يرجى إرسال صورة واضحة للإيصال مع ذكر اسمك في
-          الرسالة
-        </AlertDescription>
-      </Alert>
 
       <div className="flex gap-2 pt-1">
         <Button

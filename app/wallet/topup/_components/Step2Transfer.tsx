@@ -1,9 +1,8 @@
 "use client";
 
 import { toast } from "sonner";
-import { AlertCircle, Camera, Copy, ArrowLeft, ArrowRight } from "lucide-react";
+import { Camera, Copy, ArrowLeft, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   TOPUP_PAYMENT_METHODS,
   type TopupPaymentMethodId,
@@ -29,14 +28,9 @@ export function Step2Transfer({ methodId, onBack, onNext }: Step2Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-base sm:text-lg font-bold text-gray-900">
-          حوّل المبلغ
-        </h2>
-        <p className="text-xs sm:text-sm text-gray-600 mt-1">
-          استخدم الرقم أدناه لإجراء التحويل من تطبيقك
-        </p>
-      </div>
+      <h2 className="text-base sm:text-lg font-bold text-gray-900">
+        حوّل المبلغ إلى هذا الحساب
+      </h2>
 
       <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-3 sm:p-4 space-y-3">
         <p className="text-xs sm:text-sm font-semibold text-gray-700">
@@ -69,17 +63,9 @@ export function Step2Transfer({ methodId, onBack, onNext }: Step2Props) {
         </p>
       </div>
 
-      <Alert className="bg-amber-50 border-amber-300">
-        <AlertCircle className="h-4 w-4 text-amber-600" />
-        <AlertDescription className="text-amber-800 text-xs sm:text-sm">
-          <strong>تنبيه:</strong> تأكد من إرسال المبلغ للحساب الصحيح قبل رفع
-          الإيصال
-        </AlertDescription>
-      </Alert>
-
       <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-lg p-2.5">
         <Camera className="w-4 h-4 text-gray-500 flex-shrink-0" />
-        <span>لا تنسَ التقاط صورة لإيصال التحويل قبل المتابعة</span>
+        <span>التقط صورة للإيصال قبل المتابعة</span>
       </div>
 
       <div className="flex gap-2 pt-1">

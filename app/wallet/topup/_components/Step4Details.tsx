@@ -10,13 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  TOPUP_PAYMENT_METHODS,
-  type TopupPaymentMethodId,
-} from "../constants";
 
 interface Step4Props {
-  methodId: TopupPaymentMethodId;
   amount: string;
   senderName: string;
   loading: boolean;
@@ -33,7 +28,6 @@ function formatNumber(value: string): string {
 }
 
 export function Step4Details({
-  methodId,
   amount,
   senderName,
   loading,
@@ -43,38 +37,19 @@ export function Step4Details({
   onBack,
   onSubmit,
 }: Step4Props) {
-  const method = TOPUP_PAYMENT_METHODS[methodId];
   const numAmount = Number(amount.replace(/,/g, ""));
   const amountValid = numAmount >= 1000 && numAmount <= 5000000;
   const canSubmit = amountValid && senderName.trim().length > 0 && !loading;
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div>
-        <h2 className="text-base sm:text-lg font-bold text-gray-900">
-          أكمل البيانات
-        </h2>
-        <p className="text-xs sm:text-sm text-gray-600 mt-1">
-          سنراجع طلبك خلال 15-60 دقيقة بعد الإرسال
-        </p>
-      </div>
-
-      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs sm:text-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-gray-600">طريقة الدفع المختارة</span>
-          <span className="font-semibold text-gray-900">{method.label}</span>
-        </div>
-        <div className="flex items-center justify-between mt-1.5">
-          <span className="text-gray-600">رقم الحساب</span>
-          <span className="font-mono text-gray-900" dir="ltr">
-            {method.number}
-          </span>
-        </div>
-      </div>
+      <h2 className="text-base sm:text-lg font-bold text-gray-900">
+        أكمل البيانات
+      </h2>
 
       <div className="space-y-2">
         <Label htmlFor="amount" className="text-sm sm:text-base font-semibold">
-          المبلغ الذي تم تحويله (دينار عراقي)
+          المبلغ المحوّل (د.ع)
         </Label>
         <div className="relative">
           <Input
