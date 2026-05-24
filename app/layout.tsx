@@ -5,6 +5,7 @@ import { AuthProvider } from "@/context/authContext";
 import { Toaster } from "sonner";
 import localFont from "next/font/local";
 import Navbar from "@/components/navbar";
+import Footer from "@/components/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -138,6 +139,7 @@ export default function RootLayout({
             {children}
             <Toaster richColors closeButton />
           </main>
+          <Footer />
         </AuthProvider>
       </body>
     </html>
