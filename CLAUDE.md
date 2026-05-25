@@ -49,72 +49,34 @@ Run `npx tsc --noEmit` (or `npm run typecheck`) and `npm run lint` before declar
 
 ## Layout
 
-- `app/` — App Router. Routes, server actions in `app/actions/*`, REST API in `app/api/*`.
-- `components/` — UI. `ui/` is shadcn primitives. Mux player wrappers: `SignedMuxPlayer.tsx`, `SignedMuxThumbnail.tsx`.
-  Sectional UI under `components/sectional/`.
-- `lib/` — server-side + shared helpers:
-  - `lib/mux/` — `mux.ts` (client), `playbackToken.ts`, `thumbnailToken.ts` (signing)
-  - `lib/auth/verifyBearerToken.ts` — bearer auth for `/api/*` (mobile)
-  - `lib/api/response.ts` — standard JSON response shape
-  - `lib/sectional/` — sectional purchasing helpers (pricing, grouping, access, displayPrice, localizeError)
-  - `lib/courses/` — incl. `assertCourseMutationAllowed.ts` (the sectional lock helper)
-  - `lib/packages/` — course-packages helpers (access predicate, validation, constants)
-  - `lib/payments/zaincash.ts`, `lib/R2/`, `lib/services/`, `lib/purchaseProtection/`
-- `firebase/client.ts`, `firebase/service.ts` — client + admin SDK init
-- `context/authContext.tsx` — client auth state
-- `hooks/` — `useMuxPlaybackToken`, `useVideoProtection`, `useVideoUpload`
-- `validation/` — top-level zod schemas (also some under `lib/validation/`)
-- `middleware.ts` — page-route auth gate (see below)
-- `docs/` — mobile API plan + state, manual cleanup notes
-- `types/types.ts` — shared types
+- `app/` — App Router. Server actions in `app/actions/*`, REST API in `app/api/*`.
+- `components/` — UI. `ui/` is shadcn primitives. Mux wrappers `SignedMuxPlayer.tsx` / `SignedMuxThumbnail.tsx`. Sectional UI under `components/sectional/`.
+- `lib/` — server-side + shared helpers. Notable: `mux/` (signing), `auth/verifyBearerToken.ts`, `api/response.ts`, `sectional/`, `courses/assertCourseMutationAllowed.ts`, `packages/`, `earnings/`, `legal/`, `R2/`, `services/`, `purchaseProtection/`, `payments/zaincash.ts`.
+- `firebase/client.ts` + `firebase/service.ts` — client + admin SDK init.
+- `context/authContext.tsx`, `hooks/` (`useMuxPlaybackToken`, `useVideoProtection`, `useVideoUpload`), `validation/`, `middleware.ts`, `types/types.ts`.
 
 ## Auth model
 
 - Firebase ID token stored in cookie `firebaseAuthToken` (HTTP-only, set by `/api/refresh-token` flow).
-- `middleware.ts` verifies the cookie via Google JWKS for **page** routes only. Matcher: `/admin-dashboard/*`, `/login`, `/register`, `/forget-password`, `/course-upload/*`, `/user_dashboard/*`.
+- `middleware.ts` verifies the cookie via Google JWKS for **page** routes only. Matcher: `/admin-dashboard/*`, `/login`, `/register`, `/forget-password`, `/course-upload/*`, `/user_dashboard/*`, `/delete-account`.
 - It sets request headers `x-user-id`, `x-user-email`, `x-user-admin` for downstream handlers.
 - **`/api/*` is intentionally NOT in the middleware matcher.** Mobile clients send `Authorization: Bearer <id token>` and each API handler verifies with `lib/auth/verifyBearerToken.ts`. Adding `/api/:path*` to the matcher will break mobile + ZainCash callbacks. Don't.
 
-## Mux / signed playback (shipped, stable)
+## Sectional, packages, signed playback, earnings
 
-- All playback URLs and thumbnails are signed. Use `lib/mux/playbackToken.ts` and `lib/mux/thumbnailToken.ts`; client uses `SignedMuxPlayer` / `SignedMuxThumbnail` and `useMuxPlaybackToken`.
-- Never expose `MUX_SIGNING_PRIVATE_KEY` or `MUX_TOKEN_SECRET` to the client. Token minting is server-side only.
-- The Mux playback-token route enforces sectional access — see below.
+Each of these is a load-bearing subsystem with a canonical doc. Read it before
+touching the area.
 
-## Sectional course purchasing (shipped, web)
-
-A course can be sold as a full bundle OR section-by-section. The system holds
-together only because of seven non-negotiable invariants — getting one wrong is
-a money or access bug.
-
-**The invariants and their consequences live in the `sectional-invariants`
-skill** (`.claude/skills/sectional-invariants/`) — the single source of truth.
-Read it before touching `app/actions/sectional_*`, `lib/sectional/*`,
-`lib/courses/assertCourseMutationAllowed.ts`, the Mux playback-token route,
-enrollment logic, or any access/lock predicate.
-
-Wallet-only — ZainCash sectional is deferred (`docs/PHASE_4_ZAINCASH_DEFERRED.md`).
-Purchase actions: `app/actions/sectional_wallet_actions.ts`. Lock helper: `lib/courses/assertCourseMutationAllowed.ts`.
-
-## Course packages (shipped, web)
-
-A package bundles multiple courses (any instructor) at one discounted price; a
-buyer gets full access to every included course. Admin-created only. Unlike
-standalone/sectional sales, a package sale credits the **platform wallet only**
-(`wallets/platform-wallet`) — instructors are settled out of band against a
-per-instructor payout tally.
-
-Canonical doc: `docs/COURSE_PACKAGES.md`. Purchase: `app/actions/package_wallet_actions.ts`.
-Admin CRUD + payout ledger: `app/actions/package_admin_actions.ts`. Helpers: `lib/packages/`.
+- **Sectional course purchasing.** Seven non-negotiable invariants live in the `sectional-invariants` skill (`.claude/skills/sectional-invariants/`). Wallet-only — ZainCash sectional deferred (`docs/PHASE_4_ZAINCASH_DEFERRED.md`). Purchase actions: `app/actions/sectional_wallet_actions.ts`. Lock helper: `lib/courses/assertCourseMutationAllowed.ts`.
+- **Course packages.** Admin-created multi-course bundles. Sale credits `wallets/platform-wallet` only; instructors are settled out of band via a per-instructor owed/paid tally. Canonical doc: `docs/COURSE_PACKAGES.md`. Purchase: `app/actions/package_wallet_actions.ts`.
+- **Mux signed playback.** All playback URLs and thumbnails are signed via `lib/mux/playbackToken.ts` and `lib/mux/thumbnailToken.ts`; clients use `SignedMuxPlayer` / `SignedMuxThumbnail` / `useMuxPlaybackToken`. Never expose `MUX_SIGNING_PRIVATE_KEY` or `MUX_TOKEN_SECRET` to the client. The playback-token route is the sectional access gate.
+- **Instructor earnings ledger.** A sale appends an immutable earning entry to `users/{uid}/earningsLedger` with a snapshotted split and bumps `earningsTotal` — it does NOT credit the instructor spend wallet. Admin records out-of-band payouts. Canonical doc: `docs/INSTRUCTOR_PAYOUTS.md`. Helper: `lib/earnings/recordEarning.ts`.
 
 ## Mobile API surface
 
-- `app/api/*` is a parallel REST surface for the separate React Native app.
-  See `docs/MOBILE_API_MIGRATION.md`, `docs/MOBILE_API_TESTING.md`, `docs/MOBILE_PROJECT_STATE.md`.
-- Use `lib/api/response.ts` for response shape and `lib/auth/verifyBearerToken.ts` for auth.
-  Don't read cookies in `/api/*` handlers.
-- The mobile app is **view-only** — it never purchases in-app. `POST /api/enrollments` rejects
-  sectional courses with `COURSE_NOT_SECTIONAL`. Do not add mobile-side purchase endpoints.
+- `app/api/*` is a parallel REST surface for the separate React Native app. See `docs/MOBILE_API_MIGRATION.md`, `docs/MOBILE_API_TESTING.md`, `docs/MOBILE_PROJECT_STATE.md`.
+- Use `lib/api/response.ts` for response shape and `lib/auth/verifyBearerToken.ts` for auth. Don't read cookies in `/api/*` handlers.
+- The mobile app is **view-only** — it never purchases in-app. `POST /api/enrollments` rejects sectional courses with `COURSE_NOT_SECTIONAL`. Do not add mobile-side purchase endpoints.
 
 ## Env vars (names only — values live in `.env.local`, gitignored)
 
@@ -136,7 +98,7 @@ Admin CRUD + payout ledger: `app/actions/package_admin_actions.ts`. Helpers: `li
 
 ## Gotchas / don'ts
 
-- **`next.config.ts` has `eslint.ignoreDuringBuilds: true` and `typescript.ignoreBuildErrors: true`** ("lenient mode"). The build will not catch type/lint errors — run `npm run lint` and `npx tsc --noEmit` manually before declaring work done. A few pre-existing `.next/types/*` errors (sync-enrollments missing default export, Next 15 async-params) are known and unrelated to new work.
+- **`next.config.ts` has `eslint.ignoreDuringBuilds: true` and `typescript.ignoreBuildErrors: true`** ("lenient mode"). The build will not catch type/lint errors — run `npm run lint` and `npx tsc --noEmit` manually before declaring work done.
 - Server Action body limit is bumped to 100mb (for video uploads). Don't lower it without checking upload flows.
 - Don't add `/api/:path*` to the middleware matcher (see Auth model above).
 - Don't bypass `SignedMuxPlayer` / `SignedMuxThumbnail` with raw Mux URLs.
@@ -149,6 +111,7 @@ Admin CRUD + payout ledger: `app/actions/package_admin_actions.ts`. Helpers: `li
 
 - `docs/MOBILE_API_MIGRATION.md` — mobile REST contract (keep current with any `/api/*` change)
 - `docs/MOBILE_PROJECT_STATE.md` — project status board
+- `docs/INSTRUCTOR_PAYOUTS.md` — earnings ledger + admin payouts
+- `docs/COURSE_PACKAGES.md` — course-packages model, invariants, scaling limits
 - `docs/MANUAL_CLEANUP_DO_NOT_AUTOMATE.md` — items that must stay manual
 - `docs/PHASE_4_ZAINCASH_DEFERRED.md` — why ZainCash sectional is deferred
-- `docs/COURSE_PACKAGES.md` — course-packages model, invariants, scaling limits
