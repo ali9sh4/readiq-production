@@ -5,6 +5,10 @@ import { verifyBearerToken } from "@/lib/auth/verifyBearerToken";
 import { fail, handleApiError, ok } from "@/lib/api/response";
 import { patchMeBody } from "@/lib/validation/api/me";
 import { buildNewUserDocFields } from "@/lib/services/userDoc";
+import {
+  checkDeletionEligibility,
+  performAccountDeletion,
+} from "@/lib/services/accountDeletion";
 
 export async function GET(req: NextRequest) {
   try {
@@ -71,6 +75,34 @@ export async function POST(req: NextRequest) {
       createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? null,
       updatedAt: data.updatedAt?.toDate?.()?.toISOString?.() ?? null,
     });
+  } catch (err) {
+    return handleApiError(err);
+  }
+}
+
+// DELETE — self-service account deletion for the mobile client.
+//
+// Eligibility is re-checked server-side; the route never trusts a client
+// pre-check. Blocked users (admins, instructors with courses / earnings /
+// outstanding package payouts) receive 403 with a `reason` field so the
+// mobile UI can route them to support. Successful deletion revokes all
+// refresh tokens and removes the Auth user, so the requesting device's
+// next ID-token refresh will fail and the client signs out locally.
+export async function DELETE(req: NextRequest) {
+  try {
+    const auth = await verifyBearerToken(req);
+
+    const eligibility = await checkDeletionEligibility(auth.userId);
+    if (!eligibility.allowed) {
+      return fail(
+        "DELETION_NOT_ALLOWED",
+        eligibility.reason ?? "Account cannot be deleted automatically",
+        403
+      );
+    }
+
+    await performAccountDeletion(auth.userId);
+    return ok({ deleted: true });
   } catch (err) {
     return handleApiError(err);
   }

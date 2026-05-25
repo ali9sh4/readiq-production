@@ -96,6 +96,7 @@ All routes below are new files under `app/api/`. They must conform to the ground
 | Method | Path | Purpose | Notes |
 |---|---|---|---|
 | PATCH | `/api/me` | Update basic profile fields | Body: `{ displayName?, language? }`. Zod-validated. Updates `users/{uid}` and `adminAuth.updateUser(uid, { displayName })` if `displayName` changed (mirrors web profile flow). |
+| DELETE | `/api/me` | Permanently delete the caller's account | No body. Re-checks eligibility server-side and refuses with `403 DELETION_NOT_ALLOWED` for admins, instructors with any course, instructors with `users/{uid}.earningsTotal > 0`, or instructors with unsettled `package_sales` payouts (`reason` ∈ `{ACCOUNT_IS_ADMIN, INSTRUCTOR_HAS_COURSES, INSTRUCTOR_HAS_EARNINGS, INSTRUCTOR_HAS_PACKAGE_PAYOUTS}` — surface as "contact support" in the mobile UI). On success: deletes R2 `topup-receipts/{uid}/*`, all favorites for the user, `wallets/{uid}`, `users/{uid}`, then revokes refresh tokens and deletes the Firebase Auth user. **Retained** (financial records, disclosed in the privacy policy): `enrollments`, `wallet_transactions`, `topup_requests`, `payment_transactions`, `package_sales` — the bare `userId/buyerId` becomes pseudonymous once Auth is gone. Idempotent. Shared service: `lib/services/accountDeletion.ts`. Returns `{ deleted: true }`. The mobile client signs out locally on success; any in-flight token on another device 401s on its next refresh (revoked). **Note (out of scope for this PR):** retained pending `topup_requests` can belong to deleted users — the admin approval flow should eventually short-circuit when `wallets/{uid}` no longer exists, to avoid crediting a non-existent wallet. |
 | POST | `/api/me/favorites` | Add a favorite | Body: `{ courseId }`. Creates `favorites/{uid}_{courseId}`. Idempotent (set with merge). |
 | DELETE | `/api/me/favorites/:courseId` | Remove a favorite | Deletes `favorites/{uid}_{courseId}`. Idempotent. |
 | POST | `/api/wallet/topup/upload-receipt` | Get a presigned R2 PUT URL for a receipt image | Body: `{ contentType, sizeBytes }`. Validate `contentType` ∈ `{image/jpeg, image/png, image/webp}` and `sizeBytes <= 10 MB`. Returns `{ uploadUrl, key, expiresIn }`. The mobile app `PUT`s the bytes directly to `uploadUrl`. **Server never sees the bytes.** Key format: `topup-receipts/{uid}/{ts}_{rand}.{ext}` so it never collides with `courses/`. URL TTL: 5 minutes. |
@@ -156,9 +157,12 @@ export const config = {
     "/forget-password",
     "/course-upload/:path*",
     "/user_dashboard/:path*",
+    "/delete-account",
   ],
 };
 ```
+
+`/delete-account` is the web-reachable account-deletion page (required for the Play Console Data Safety form). Adding it to the matcher populates `x-user-id` for the server-action eligibility re-check. It still must NOT pull `/api/*` in.
 
 That comment block is the entire diff to `middleware.ts`.
 

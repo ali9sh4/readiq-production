@@ -96,5 +96,6 @@ export const config = {
     "/forget-password",
     "/course-upload/:path*",
     "/user_dashboard/:path*",
+    "/delete-account",
   ],
 };
