@@ -17,7 +17,7 @@ export default function Footer() {
           <div className="text-center md:text-right space-y-3">
             <div className="flex items-center justify-center md:justify-start gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/rubik-logo.svg" alt="Rubik" className="h-10 w-10" />
+              <img src="/rubik-logo.png" alt="Rubik" className="h-10 w-10" />
               <h3 className="text-xl font-bold">Rubik</h3>
             </div>
             <p className="text-sm text-gray-400 leading-relaxed">

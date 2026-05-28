@@ -99,13 +99,13 @@ export async function generateMetadata({
               alt: course.title,
             },
           ]
-        : [],
+        : undefined,
     },
     twitter: {
       card: "summary_large_image",
       title: course.title,
       description: course.description || course.subtitle || "",
-      images: course.thumbnailUrl ? [course.thumbnailUrl] : [],
+      images: course.thumbnailUrl ? [course.thumbnailUrl] : undefined,
     },
     alternates: {
       canonical: `https://www.rubiktech.org/course/${courseId}`,
