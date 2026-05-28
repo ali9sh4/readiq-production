@@ -1,5 +1,5 @@
 # Readiq Mobile Project State
-Last updated: 2026-05-25
+Last updated: 2026-05-28
 
 ## Where we are
 
@@ -44,6 +44,12 @@ shipped.** Everything below is merged to `main`:
   wallet_transactions, topup_requests, payment_transactions, package_sales)
   per the updated privacy policy. Profile page links to it
   (`4e781e4`).
+- **Brand logo + icons refresh (2026-05-28).** New toy-block Rubik mark across
+  `app/icon.png`, `app/apple-icon.png`, `app/favicon.ico`; added
+  `app/opengraph-image.png` (social cards had none before); footer swapped to
+  `public/rubik-logo.png` (old `rubik-logo.svg` removed). Course pages now fall
+  back to the brand OG image when a course has no thumbnail. Navbar wordmark
+  unchanged. Mobile icons (`android-icon-*`, splash) pending in the mobile repo.
 
 **Next milestone: Phase 7b — the React Native reader-app client.** Pure
 client-side work in the separate `readiq-production-mobile` repo. See
