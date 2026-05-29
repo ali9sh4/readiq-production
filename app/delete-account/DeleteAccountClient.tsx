@@ -114,10 +114,86 @@ export default function DeleteAccountClient({
         سيؤدي حذف حسابك إلى فقدان الوصول إلى جميع الدورات التي اشتركت بها، ولا
         يمكن التراجع عن هذا الإجراء.
       </p>
-      <p className="mt-2 text-sm text-zinc-500">
-        ملاحظة: يتم الاحتفاظ بسجلات المعاملات المالية للأغراض المحاسبية كما هو
-        موضّح في سياسة الخصوصية.
-      </p>
+      <section className="mt-6 border-t border-zinc-200 pt-6">
+        {/* ما الذي يُحذف — عربي */}
+        <h2 className="text-base font-bold text-zinc-800">
+          ما الذي يُحذف نهائيًا
+        </h2>
+        <p className="mt-1 text-sm text-zinc-500">
+          تُحذف البيانات التالية نهائيًا عند حذف حسابك:
+        </p>
+        <ul className="mt-2 list-disc space-y-1 pr-5 text-zinc-700">
+          <li>الملف الشخصي: الاسم والبريد الإلكتروني والصورة الشخصية</li>
+          <li>المحفظة والرصيد</li>
+          <li>المفضّلة وسجلّ المشاهدة (تقدّم مشاهدة الفيديو)</li>
+          <li>إيصالات الدفع المرفوعة (المخزّنة في Cloudflare R2)</li>
+          <li>
+            حساب المصادقة في Firebase (بيانات تسجيل الدخول، مع إبطال رموز
+            التحديث)
+          </li>
+        </ul>
+
+        {/* ما الذي يُحتفظ به — عربي */}
+        <h2 className="mt-5 text-base font-bold text-zinc-800">
+          ما الذي يُحتفظ به
+        </h2>
+        <p className="mt-1 text-sm text-zinc-500">
+          سجلات مجهولة الهوية يُحتفظ بها لأغراض المحاسبة والامتثال القانوني
+          والضريبي — ولا تبقى مرتبطة بهويتك بعد حذف الحساب:
+        </p>
+        <ul className="mt-2 list-disc space-y-1 pr-5 text-zinc-700">
+          <li>سجلات الاشتراك في الدورات</li>
+          <li>معاملات المحفظة</li>
+          <li>طلبات شحن الرصيد</li>
+          <li>سجلات معاملات الدفع</li>
+          <li>مبيعات حزم الدورات</li>
+        </ul>
+        <p className="mt-3 text-sm text-zinc-700">
+          بعد حذف حسابك، لا يمكن ربط هذه السجلات المحتفظ بها باسمك أو بريدك
+          الإلكتروني أو أي معلومات تعرّف بك.
+        </p>
+
+        {/* English mirror */}
+        <div dir="ltr" className="mt-6 border-t border-zinc-200 pt-6 text-left">
+          <h2 className="text-base font-bold text-zinc-800">
+            What gets deleted
+          </h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            The following data is permanently removed when you delete your
+            account:
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-zinc-700">
+            <li>User profile: name, email, profile photo</li>
+            <li>Wallet and balance</li>
+            <li>Favorites and watch history (video viewing progress)</li>
+            <li>Uploaded payment receipts (stored in Cloudflare R2)</li>
+            <li>
+              Firebase Authentication account (login credentials; refresh
+              tokens revoked)
+            </li>
+          </ul>
+
+          <h2 className="mt-5 text-base font-bold text-zinc-800">
+            What is retained
+          </h2>
+          <p className="mt-1 text-sm text-zinc-500">
+            Pseudonymous records kept for accounting, legal, and tax compliance
+            — no longer linked to your identity after account deletion:
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-zinc-700">
+            <li>Course enrollment records</li>
+            <li>Wallet transactions</li>
+            <li>Top-up requests</li>
+            <li>Payment transaction records</li>
+            <li>Course package sales</li>
+          </ul>
+          <p className="mt-3 text-sm text-zinc-700">
+            Once your account is deleted, these retained records can no longer
+            be linked to your name, email, or any personal identifying
+            information.
+          </p>
+        </div>
+      </section>
 
       {walletBalance > 0 && (
         <p className="mt-4 rounded border border-red-300 bg-red-50 p-3 text-red-700">

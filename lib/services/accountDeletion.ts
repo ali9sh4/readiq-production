@@ -3,6 +3,7 @@
 //
 // Scope (decision B — retain financial records):
 //   DELETED : R2 topup-receipts/{uid}/*, all favorites where userId == uid,
+//             all progress (video viewing history) where userId == uid,
 //             wallets/{uid}, users/{uid}, and the Firebase Auth user (refresh
 //             tokens revoked first).
 //   RETAINED: enrollments, wallet_transactions, topup_requests,
@@ -187,6 +188,26 @@ async function deleteFavorites(uid: string): Promise<void> {
   }
 }
 
+// Deletes every progress doc for the user (top-level `progress` collection,
+// keyed {userId}_{courseId}, filtered by the userId field — same shape as
+// favorites). These rows hold video viewing history (watchedSeconds,
+// completionPercentage) and are read only by their owner (progress_actions.ts
+// queries by the caller's own uid), so removing them on account deletion
+// breaks no instructor analytics, completion, or certificate feature.
+async function deleteProgress(uid: string): Promise<void> {
+  const snap = await db
+    .collection("progress")
+    .where("userId", "==", uid)
+    .get();
+  const docs = snap.docs;
+  // Stay under the 500-write batch limit with margin.
+  for (let i = 0; i < docs.length; i += 400) {
+    const batch = db.batch();
+    docs.slice(i, i + 400).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+}
+
 // Performs the deletion. The caller MUST have called checkDeletionEligibility
 // and confirmed `allowed: true` first — this function does not re-check.
 //
@@ -201,22 +222,25 @@ export async function performAccountDeletion(
   // 2. favorites.
   await deleteFavorites(uid);
 
-  // 3. wallets/{uid}. Never wallets/platform-wallet — that's a separate doc
+  // 3. progress (video viewing history).
+  await deleteProgress(uid);
+
+  // 4. wallets/{uid}. Never wallets/platform-wallet — that's a separate doc
   //    id (see lib/packages/constants.ts:PLATFORM_WALLET_ID) and a uid would
   //    never collide with it (Firebase uids are 28 alphanumeric chars; the
   //    platform-wallet id contains a hyphen).
   await db.collection("wallets").doc(uid).delete();
 
-  // 4. users/{uid}.
+  // 5. users/{uid}.
   await db.collection("users").doc(uid).delete();
 
   // NOTE (decision B): enrollments, wallet_transactions, topup_requests,
   // payment_transactions, and package_sales are intentionally RETAINED as
-  // financial records. After step 5, the uid on those rows is no longer
+  // financial records. After step 6, the uid on those rows is no longer
   // linked to identifying information — they are effectively pseudonymous.
   // This retention is disclosed in content/legal/privacy-policy.md §6.
 
-  // 5. Firebase Auth — LAST. Revoke first so any in-flight ID tokens on
+  // 6. Firebase Auth — LAST. Revoke first so any in-flight ID tokens on
   //    other devices 401 immediately (verifyBearerToken passes
   //    checkRevoked:true). auth/user-not-found on either call means the user
   //    is already gone — treat as success for idempotency.
