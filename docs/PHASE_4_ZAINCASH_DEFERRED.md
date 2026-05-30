@@ -2,7 +2,9 @@
 
 **Status:** Deferred indefinitely. **Decided:** 2026-05-15.
 
-Sectional courses launch as **wallet-only** purchases. Users top up their wallet via the existing top-up flow (ZainCash → wallet, already shipped and tested) and then buy sections from their wallet balance. There is no ZainCash → section flow.
+Sectional courses launch as **wallet-only** purchases. Users top up their wallet, then buy sections from their wallet balance. There is no ZainCash → *section* flow (one would carry section state across the init → redirect → callback hops).
+
+> **Correction (2026-05-30).** An earlier version of this line claimed "ZainCash → wallet, already shipped and tested." That was inaccurate — at the time, the only ZainCash code was the **frozen pay-per-course** path (`/api/payments/zaincash/{init,webhook}`), which credits an *enrollment* directly and never touches the wallet. A true **ZainCash → wallet auto top-up** was first built on branch `feat/zaincash-wallet-topup` under `/api/payments/zaincash/topup/{init,callback}` (see that feature's commit). It tops up the wallet; the wallet still pays for every enrollment, including sections. The "no ZainCash → section" decision below still stands — the top-up funds the wallet, and the wallet buys the section in a second, already-tested step (the checkout bridge does this automatically).
 
 This document captures enough context that a future engineer — including future-me — can pick the work up cold if and when one of the triggers below fires.
 

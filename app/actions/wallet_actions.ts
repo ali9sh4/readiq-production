@@ -83,6 +83,7 @@ export async function createTopupRequest(
       userName: userRecord.displayName || "مستخدم",
       amount: data.amount,
       status: "pending",
+      source: "manual" as const,
       senderName: data.senderName,
       createdAt: new Date().toISOString(),
       expiresAt: expiresAt.toISOString(),

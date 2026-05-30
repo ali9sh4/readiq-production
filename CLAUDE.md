@@ -83,7 +83,7 @@ touching the area.
 - Firebase admin service-account vars (`FIREBASE_ADMIN_EMAIL`, etc.)
 - Mux: `MUX_TOKEN_ID`, `MUX_TOKEN_SECRET`, `MUX_SIGNING_KEY_ID`, `MUX_SIGNING_PRIVATE_KEY`
 - R2: `R2_*` (account id, bucket, keys)
-- ZainCash: `ZAINCASH_BASE_URL`, `ZAINCASH_MERCHANT_ID`, `ZAINCASH_MSISDN`, `ZAINCASH_SECRET_KEY`
+- ZainCash: `ZAINCASH_BASE_URL`, `ZAINCASH_MERCHANT_ID`, `ZAINCASH_MSISDN`, `ZAINCASH_SECRET_KEY`, and `ZAINCASH_CALLBACK_BASE_URL` (pin to the prod host for the wallet top-up callback; preview deploy URLs aren't whitelisted by ZainCash — falls back to `NEXT_PUBLIC_APP_URL` if unset)
 - App: `NEXT_PUBLIC_APP_URL`, `NODE_ENV`
 
 ## Conventions

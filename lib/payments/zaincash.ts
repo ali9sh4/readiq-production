@@ -13,17 +13,11 @@ export class ZainCash {
     this.msisdn = process.env.ZAINCASH_MSISDN || "";
     this.baseUrl = process.env.ZAINCASH_BASE_URL || "https://test.zaincash.iq";
 
-    console.log("🔍 Loaded credentials:", {
-      merchantId: this.merchantId ? "✅ Set" : "❌ Missing",
-      secretKey: this.secretKey ? "✅ Set" : "❌ Missing",
-      msisdn: this.msisdn ? "✅ Set" : "❌ Missing",
-      baseUrl: this.baseUrl,
-    });
-
-    // ✅ REMOVED: Don't throw error in constructor
-    // if (!this.merchantId || !this.secretKey || !this.msisdn) {
-    //   throw new Error("ZainCash credentials missing");
-    // }
+    // Credentials are validated lazily in validateCredentials() at call time,
+    // not in the constructor — so an unconfigured deploy fails only when a
+    // payment is actually attempted, and importing this module never throws.
+    // (Deliberately no console.log of credential presence here: it ran on
+    // every cold start and leaked which secrets are set into the logs.)
   }
 
   // ✅ ADD: Validate credentials when actually used
@@ -83,9 +77,17 @@ export class ZainCash {
         .update(`${header}.${payload}`)
         .digest("base64url");
 
-      if (signature !== expectedSig) {
+      // Constant-time comparison. `crypto.timingSafeEqual` throws if the
+      // buffers differ in length, so guard that first — a length mismatch is
+      // itself an invalid signature.
+      const sigBuf = Buffer.from(signature);
+      const expBuf = Buffer.from(expectedSig);
+      if (
+        sigBuf.length !== expBuf.length ||
+        !crypto.timingSafeEqual(sigBuf, expBuf)
+      ) {
         throw new Error("Invalid signature");
-      }   
+      }
 
       const decoded = JSON.parse(Buffer.from(payload, "base64url").toString());
 
@@ -125,8 +127,6 @@ export class ZainCash {
       redirectUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/zaincash/webhook`,
     };
 
-    console.log("📦 Token data:", tokenData);
-
     const token = this.generateToken(tokenData);
 
     const formData = new URLSearchParams();
@@ -146,11 +146,6 @@ export class ZainCash {
             "Content-Type": "application/x-www-form-urlencoded",
           },
         }
-      );
-
-      console.log(
-        "📥 Raw response data:",
-        JSON.stringify(response.data, null, 2)
       );
 
       if (response.data.err) {
@@ -198,6 +193,85 @@ export class ZainCash {
         console.error("❌ Error:", error.message);
       }
 
+      throw new Error(error.message || "فشل في إنشاء معاملة زين كاش");
+    }
+  }
+
+  /**
+   * Create a transaction for a WALLET TOP-UP - POST /transaction/init.
+   *
+   * Separate from `createTransaction` (the frozen pay-per-course path) for one
+   * reason: that method hard-codes `redirectUrl` to the legacy
+   * `/api/payments/zaincash/webhook` handler. A top-up must redirect to its own
+   * callback on a PINNED production host (preview deploy URLs aren't stable and
+   * ZainCash won't have them whitelisted). So the caller passes `redirectUrl`
+   * in explicitly. Everything else — JWT signing via `generateToken`, the
+   * form-encoded POST, the response/error parsing — is identical.
+   */
+  public async createTopupTransaction(
+    amount: number,
+    orderId: string,
+    redirectUrl: string,
+    serviceType: string = "Wallet Topup"
+  ): Promise<{ id: string; url: string }> {
+    this.validateCredentials();
+
+    if (amount < 250) {
+      // ZainCash's own hard floor. The app's higher floor (1,000 IQD) is
+      // enforced upstream in the init route.
+      throw new Error("Minimum transaction amount is 250 IQD");
+    }
+
+    const roundedAmount = Math.round(amount);
+
+    const tokenData = {
+      amount: roundedAmount,
+      serviceType: serviceType.substring(0, 50),
+      msisdn: this.msisdn,
+      orderId,
+      redirectUrl,
+    };
+
+    const token = this.generateToken(tokenData);
+
+    const formData = new URLSearchParams();
+    formData.append("token", token);
+    formData.append("merchantId", this.merchantId);
+    formData.append("lang", "ar");
+
+    try {
+      const response = await axios.post(
+        `${this.baseUrl}/transaction/init`,
+        formData.toString(),
+        {
+          timeout: 10000,
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        }
+      );
+
+      if (response.data?.err) {
+        const errorMsg =
+          response.data.err.msg ||
+          response.data.err.message ||
+          "خطأ من زين كاش";
+        throw new Error(errorMsg);
+      }
+
+      if (!response.data || !response.data.id) {
+        throw new Error("Transaction ID missing in response");
+      }
+
+      const transactionId = response.data.id as string;
+      return {
+        id: transactionId,
+        url: `${this.baseUrl}/transaction/pay?id=${transactionId}`,
+      };
+    } catch (error: any) {
+      if (error.response?.data?.err) {
+        const zaincashError =
+          error.response.data.err.msg || error.response.data.err.message;
+        throw new Error(zaincashError);
+      }
       throw new Error(error.message || "فشل في إنشاء معاملة زين كاش");
     }
   }

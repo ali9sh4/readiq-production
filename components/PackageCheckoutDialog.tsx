@@ -41,6 +41,10 @@ import {
 } from "@/app/actions/package_wallet_actions";
 import { generateProtectionKey } from "@/lib/purchaseProtection/protectionKey";
 import { PACKAGE_PURCHASE_ACTION } from "@/lib/packages/constants";
+import {
+  startZainCashTopup,
+  ZAINCASH_TOPUP_MIN_IQD,
+} from "@/lib/payments/startZainCashTopup";
 import { StackedThumbs, thumbSrc } from "@/components/PackageThumbs";
 
 type Props = {
@@ -113,6 +117,7 @@ export default function PackageCheckoutDialog({
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<PackagePreviewResult | null>(null);
   const [purchasing, setPurchasing] = useState(false);
+  const [topupLoading, setTopupLoading] = useState(false);
 
   const loadPreview = useCallback(async () => {
     if (!user || !packageId) return;
@@ -157,6 +162,30 @@ export default function PackageCheckoutDialog({
       alert("تعذّر إتمام عملية الشراء. حاول مرة أخرى.");
     } finally {
       setPurchasing(false);
+    }
+  };
+
+  // Pay the shortfall via ZainCash → wallet, carrying the package intent so the
+  // bridge page completes this exact package purchase on return.
+  const handleZainCashTopup = async () => {
+    if (!user || !packageId || !preview?.success) return;
+    setTopupLoading(true);
+    try {
+      const token = await user.getIdToken();
+      const shortfall = Math.max(
+        0,
+        preview.package.price - preview.walletBalance
+      );
+      const amount = Math.max(shortfall, ZAINCASH_TOPUP_MIN_IQD);
+      await startZainCashTopup(token, {
+        amount,
+        intent: { kind: "package", packageId },
+      });
+      // Navigates away on success; if it returns, it threw.
+    } catch (e) {
+      console.error("package zaincash topup error", e);
+      alert(e instanceof Error ? e.message : "تعذّر بدء الدفع عبر زين كاش");
+      setTopupLoading(false);
     }
   };
 
@@ -374,6 +403,14 @@ export default function PackageCheckoutDialog({
           {signedOut ? (
             <Button asChild className="bg-amber-600 hover:bg-amber-700">
               <Link href="/login">سجّل الدخول للشراء</Link>
+            </Button>
+          ) : insufficient ? (
+            <Button
+              onClick={handleZainCashTopup}
+              disabled={topupLoading}
+              className="bg-purple-700 hover:bg-purple-800"
+            >
+              {topupLoading ? "جارٍ التحويل..." : "ادفع الفرق عبر زين كاش"}
             </Button>
           ) : (
             <Button
