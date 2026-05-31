@@ -11,9 +11,10 @@
 // `update()` call.
 //
 // Lock-on-sale invariants live in `lib/courses/assertCourseMutationAllowed.ts`
-// (section deletion, price-cut, reorder of sold sections; purchaseMode
-// flip after a sale). This action does not re-implement them — it just
-// makes sure the proposed shape is what the helper expects.
+// (section deletion, sectionId rename, reorder of sold sections; purchaseMode
+// flip after a sale — section prices stay freely editable). This action does
+// not re-implement them — it just makes sure the proposed shape is what the
+// helper expects.
 //
 // Does NOT touch `course.videos[]`. Videos already carry `sectionId` from
 // the Phase 1 backfill. Renaming a section's `title` does not require
@@ -176,8 +177,8 @@ export async function updateCourseSectionalConfig(
       const current = currentById.get(sectionId);
       // Preserve isLocked from the current doc — instructor cannot clear it
       // by sending isLocked:false. The lock helper enforces the substantive
-      // restrictions (price-cut, reorder, delete); this stops accidental
-      // clobbering of the flag itself.
+      // restrictions (delete, sectionId rename, reorder); this stops
+      // accidental clobbering of the flag itself.
       const next: CourseSection = {
         sectionId,
         title: s.title,

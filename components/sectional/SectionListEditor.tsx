@@ -8,9 +8,9 @@
 //
 // Lock-aware: sold sections (isLocked: true) show a lock icon and restrict
 // client-side edits to what the server-side `assertCourseMutationAllowed`
-// helper would accept (raise price ok, lower price blocked, reorder blocked,
-// delete blocked — title rename ok). New sections (no `sectionId` yet) are
-// created locally and the server mints the id on save.
+// helper would accept (price editable up or down, reorder blocked, delete
+// blocked — title rename ok). New sections (no `sectionId` yet) are created
+// locally and the server mints the id on save.
 //
 // Talks to `updateCourseSectionalConfig` server action. Re-renders from the
 // course doc returned on success so the displayed state always matches what
@@ -65,10 +65,6 @@ type EditableSection = {
   salePrice: number | undefined;
   isLocked: boolean;
   isNew: boolean;
-  // Captured at load so we can client-side reject "lower than current"
-  // before round-tripping to the server.
-  originalPrice: number | undefined;
-  originalSalePrice: number | undefined;
 };
 
 function makeClientKey(): string {
@@ -94,8 +90,6 @@ function toEditable(sections: CourseSection[] | undefined): EditableSection[] {
       salePrice: s.salePrice,
       isLocked: s.isLocked === true,
       isNew: false,
-      originalPrice: s.price,
-      originalSalePrice: s.salePrice,
     }));
 }
 
@@ -185,8 +179,6 @@ export default function SectionListEditor({
           salePrice: undefined,
           isLocked: false,
           isNew: true,
-          originalPrice: undefined,
-          originalSalePrice: undefined,
         },
       ];
     });
@@ -221,35 +213,6 @@ export default function SectionListEditor({
       setServerError({ message: "عنوان القسم مطلوب لكل قسم." });
       toast.error("عنوان القسم مطلوب لكل قسم.");
       return;
-    }
-
-    // Client-side guard for the most common lock rejection. Server still
-    // re-validates — this just saves a round-trip and gives a clearer
-    // error location.
-    for (const s of sections) {
-      if (!s.isLocked) continue;
-      if (
-        s.price !== undefined &&
-        s.originalPrice !== undefined &&
-        s.price < s.originalPrice
-      ) {
-        setServerError({
-          message: `لا يمكن خفض سعر "${s.title}" عن ${s.originalPrice} (تم بيع هذا القسم).`,
-          sectionId: s.sectionId,
-        });
-        return;
-      }
-      if (
-        s.salePrice !== undefined &&
-        s.originalSalePrice !== undefined &&
-        s.salePrice < s.originalSalePrice
-      ) {
-        setServerError({
-          message: `لا يمكن خفض سعر تخفيض "${s.title}" عن ${s.originalSalePrice} (تم بيع هذا القسم).`,
-          sectionId: s.sectionId,
-        });
-        return;
-      }
     }
 
     setServerError(null);
@@ -380,8 +343,7 @@ export default function SectionListEditor({
             <CardTitle className="text-right">أقسام الدورة وأسعارها</CardTitle>
             <CardDescription className="text-right">
               عدّل عنوان وسعر كل قسم. الأقسام المباعة مُقفلة جزئيًا — يمكن
-              رفع السعر وتعديل العنوان، لا يمكن خفض السعر أو حذف القسم أو إعادة
-              ترتيبه.
+              تعديل السعر والعنوان، لا يمكن حذف القسم أو إعادة ترتيبه.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -442,7 +404,7 @@ export default function SectionListEditor({
                           {section.isLocked && (
                             <span
                               className="flex items-center gap-1 text-xs text-amber-700"
-                              title="تم بيع هذا القسم — يمكن رفع السعر فقط، لا يمكن خفضه أو حذف القسم."
+                              title="تم بيع هذا القسم — يمكن تعديل السعر والعنوان، لا يمكن حذفه أو إعادة ترتيبه."
                             >
                               <Lock className="w-3.5 h-3.5" />
                               مُقفل
@@ -517,12 +479,6 @@ export default function SectionListEditor({
                             placeholder="اتركه فارغًا للقسم المجاني"
                             className="text-right h-10"
                           />
-                          {section.isLocked &&
-                            section.originalPrice !== undefined && (
-                              <p className="mt-1 text-xs text-gray-500">
-                                لا يقل عن {section.originalPrice.toLocaleString()}
-                              </p>
-                            )}
                         </div>
                         <div>
                           <Label className="text-right block text-sm mb-1">

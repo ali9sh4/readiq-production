@@ -3,9 +3,10 @@
 // Two distinct locks:
 //   1. SECTION_LOCKED — a section flagged `isLocked: true` (set by the
 //      purchase actions when someone buys it) becomes partially immutable:
-//      it cannot be deleted, renamed (sectionId), price-cut, or reordered
-//      relative to other locked sections. Title / new videos / price-raises
-//      are fine.
+//      it cannot be deleted, renamed (sectionId), or reordered relative to
+//      other locked sections. Title / new videos / price changes (raise OR
+//      lower) are fine — past sales snapshot the price paid into the
+//      enrollment + earnings ledger, so re-pricing only affects future buyers.
 //   2. COURSE_PURCHASE_MODE_LOCKED — once a course has any sold state, its
 //      `purchaseMode` is frozen. Sectional courses with any locked section
 //      or any bundle-buyer enrollment cannot revert. Full courses with any
@@ -104,25 +105,10 @@ function assertSectionMutationsAllowed(
       );
     }
 
-    const currentPrice = locked.price ?? 0;
-    const nextPrice = next.price ?? 0;
-    if (next.price !== undefined && nextPrice < currentPrice) {
-      throw new CourseMutationLockedError(
-        "SECTION_LOCKED",
-        `cannot lower price below ${currentPrice} on a locked section`,
-        locked.sectionId
-      );
-    }
-
-    const currentSale = locked.salePrice ?? 0;
-    const nextSale = next.salePrice ?? 0;
-    if (next.salePrice !== undefined && nextSale < currentSale) {
-      throw new CourseMutationLockedError(
-        "SECTION_LOCKED",
-        `cannot lower salePrice below ${currentSale} on a locked section`,
-        locked.sectionId
-      );
-    }
+    // Price (and salePrice) of a sold section may be raised OR lowered
+    // freely. Past sales snapshot the price paid into the enrollment and the
+    // instructor earnings ledger, so re-pricing never touches historical
+    // accounting — it only changes what future buyers pay.
   }
 
   // Ordering rule: locked sections must preserve their relative order.
