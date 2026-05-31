@@ -264,7 +264,11 @@ export class ZainCash {
         `${this.baseUrl}/transaction/init`,
         formData.toString(),
         {
-          timeout: 10000,
+          // 8s, deliberately UNDER the Vercel Hobby ~10s function ceiling.
+          // At 10s the platform was killing the function mid-request before
+          // axios could throw — so the catch never ran and nothing logged.
+          // Aborting at 8s lets the catch fire and surface the real cause.
+          timeout: 8000,
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
         }
       );
@@ -300,10 +304,14 @@ export class ZainCash {
       // TEMP DIAGNOSTIC: when ZainCash replies with a non-2xx, the body lands
       // on error.response.data instead — log it before re-throwing.
       console.error(
-        "ZC_INIT_RAW(catch) status",
+        "ZC_INIT_RAW(catch) code",
+        error.code, // ECONNABORTED (timeout) / ETIMEDOUT / ECONNREFUSED / etc.
+        "hasResponse",
+        !!error.response, // false = no reply came back → connectivity, not creds
+        "status",
         error.response?.status,
         "body",
-        JSON.stringify(error.response?.data),
+        JSON.stringify(error.response?.data ?? null),
         "msg",
         error.message
       );
