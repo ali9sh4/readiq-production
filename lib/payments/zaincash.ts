@@ -245,49 +245,27 @@ export class ZainCash {
     formData.append("merchantId", this.merchantId);
     formData.append("lang", "ar");
 
-    // TEMP DIAGNOSTIC (remove once the prod top-up init is confirmed working):
-    // credential LENGTHS only — never the values. A wrong/short/zero length
-    // against the known-good local lengths pinpoints a misconfigured env var.
-    console.info(
-      "ZC_DIAG mid",
-      this.merchantId.length,
-      "sec",
-      this.secretKey.length,
-      "msi",
-      this.msisdn.length,
-      "host",
-      this.baseUrl
-    );
-
     try {
       const response = await axios.post(
         `${this.baseUrl}/transaction/init`,
         formData.toString(),
         {
-          // 8s, deliberately UNDER the Vercel Hobby ~10s function ceiling.
-          // At 10s the platform was killing the function mid-request before
-          // axios could throw — so the catch never ran and nothing logged.
-          // Aborting at 8s lets the catch fire and surface the real cause.
-          timeout: 8000,
+          timeout: 10000,
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
         }
       );
 
-      // TEMP DIAGNOSTIC: the raw ZainCash reply. On a 200-with-error ZainCash
-      // returns { err: { msg } } here — that msg is the real cause the generic
-      // throw below was masking.
-      console.info(
-        "ZC_INIT_RAW status",
-        response.status,
-        "body",
-        JSON.stringify(response.data)
-      );
-
       if (response.data?.err) {
+        // ZainCash's error shape is inconsistent: sometimes an object
+        // ({ err: { msg } }), sometimes a bare string ({ err: "token_not_valid_expired" }).
+        // Surface whichever it is verbatim — never collapse it to the generic
+        // Arabic fallback, which once masked the real cause for an hour. See
+        // docs/ZAINCASH_DEBUG_LEARNINGS.md.
+        const e = response.data.err;
         const errorMsg =
-          response.data.err.msg ||
-          response.data.err.message ||
-          "خطأ من زين كاش";
+          typeof e === "string"
+            ? e
+            : e?.msg || e?.message || "خطأ من زين كاش";
         throw new Error(errorMsg);
       }
 
@@ -301,25 +279,11 @@ export class ZainCash {
         url: `${this.baseUrl}/transaction/pay?id=${transactionId}`,
       };
     } catch (error: any) {
-      // TEMP DIAGNOSTIC: when ZainCash replies with a non-2xx, the body lands
-      // on error.response.data instead — log it before re-throwing.
-      console.error(
-        "ZC_INIT_RAW(catch) code",
-        error.code, // ECONNABORTED (timeout) / ETIMEDOUT / ECONNREFUSED / etc.
-        "hasResponse",
-        !!error.response, // false = no reply came back → connectivity, not creds
-        "status",
-        error.response?.status,
-        "body",
-        JSON.stringify(error.response?.data ?? null),
-        "msg",
-        error.message
-      );
-
       if (error.response?.data?.err) {
+        const e = error.response.data.err;
         const zaincashError =
-          error.response.data.err.msg || error.response.data.err.message;
-        throw new Error(zaincashError);
+          typeof e === "string" ? e : e?.msg || e?.message;
+        throw new Error(zaincashError || "فشل في إنشاء معاملة زين كاش");
       }
       throw new Error(error.message || "فشل في إنشاء معاملة زين كاش");
     }
