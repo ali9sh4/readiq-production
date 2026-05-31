@@ -8,10 +8,16 @@ export class ZainCash {
   private baseUrl: string;
 
   constructor() {
-    this.merchantId = process.env.ZAINCASH_MERCHANT_ID || "";
-    this.secretKey = process.env.ZAINCASH_SECRET_KEY || "";
-    this.msisdn = process.env.ZAINCASH_MSISDN || "";
-    this.baseUrl = process.env.ZAINCASH_BASE_URL || "https://test.zaincash.iq";
+    // .trim() every credential: a trailing newline/space on a Vercel env var
+    // (easy to paste in by accident) silently corrupts the HMAC key → every
+    // JWT signature is rejected by ZainCash → the generic "خطأ من زين كاش".
+    // Trim once at read time so no downstream path can hit a whitespaced value.
+    this.merchantId = (process.env.ZAINCASH_MERCHANT_ID || "").trim();
+    this.secretKey = (process.env.ZAINCASH_SECRET_KEY || "").trim();
+    this.msisdn = (process.env.ZAINCASH_MSISDN || "").trim();
+    this.baseUrl = (
+      process.env.ZAINCASH_BASE_URL || "https://test.zaincash.iq"
+    ).trim();
 
     // Credentials are validated lazily in validateCredentials() at call time,
     // not in the constructor — so an unconfigured deploy fails only when a
@@ -239,6 +245,20 @@ export class ZainCash {
     formData.append("merchantId", this.merchantId);
     formData.append("lang", "ar");
 
+    // TEMP DIAGNOSTIC (remove once the prod top-up init is confirmed working):
+    // credential LENGTHS only — never the values. A wrong/short/zero length
+    // against the known-good local lengths pinpoints a misconfigured env var.
+    console.info(
+      "ZC_DIAG mid",
+      this.merchantId.length,
+      "sec",
+      this.secretKey.length,
+      "msi",
+      this.msisdn.length,
+      "host",
+      this.baseUrl
+    );
+
     try {
       const response = await axios.post(
         `${this.baseUrl}/transaction/init`,
@@ -247,6 +267,16 @@ export class ZainCash {
           timeout: 10000,
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
         }
+      );
+
+      // TEMP DIAGNOSTIC: the raw ZainCash reply. On a 200-with-error ZainCash
+      // returns { err: { msg } } here — that msg is the real cause the generic
+      // throw below was masking.
+      console.info(
+        "ZC_INIT_RAW status",
+        response.status,
+        "body",
+        JSON.stringify(response.data)
       );
 
       if (response.data?.err) {
@@ -267,6 +297,17 @@ export class ZainCash {
         url: `${this.baseUrl}/transaction/pay?id=${transactionId}`,
       };
     } catch (error: any) {
+      // TEMP DIAGNOSTIC: when ZainCash replies with a non-2xx, the body lands
+      // on error.response.data instead — log it before re-throwing.
+      console.error(
+        "ZC_INIT_RAW(catch) status",
+        error.response?.status,
+        "body",
+        JSON.stringify(error.response?.data),
+        "msg",
+        error.message
+      );
+
       if (error.response?.data?.err) {
         const zaincashError =
           error.response.data.err.msg || error.response.data.err.message;
