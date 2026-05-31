@@ -17,9 +17,11 @@
 // the bundle for the delta. Clicking it switches the dialog to 'bundle'
 // mode in place — no remount.
 //
-// Wallet-only. ZainCash for sectional is deferred (Phase 4). Insufficient
-// balance replaces the confirm button with a top-up link rather than
-// failing silently.
+// Wallet is the payment spine. On insufficient balance the confirm button is
+// replaced with a "pay the difference via ZainCash" action (tops up the wallet
+// for the shortfall, carrying a sections/bundle intent so the wallet finishes
+// the purchase on return) plus a manual top-up link — rather than failing
+// silently. The wallet purchase actions themselves are unchanged.
 
 "use client";
 
@@ -59,7 +61,12 @@ import {
   purchaseBundleWithWallet,
 } from "@/app/actions/sectional_wallet_actions";
 import { localizeSectionalError } from "@/lib/sectional/localizeError";
+import {
+  startZainCashTopup,
+  ZAINCASH_TOPUP_MIN_IQD,
+} from "@/lib/payments/startZainCashTopup";
 import type { Course, CourseSection, Enrollment } from "@/types/types";
+import type { TopupIntent } from "@/types/wallets";
 
 export type SectionalBuyMode = "single" | "cumulative" | "bundle";
 
@@ -241,10 +248,42 @@ export default function SectionalBuyDialog({
     walletBalance < plan.totalPrice;
 
   const [submitting, setSubmitting] = useState(false);
+  const [topupLoading, setTopupLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   useEffect(() => {
     if (open) setServerError(null);
   }, [open]);
+
+  // Pay the shortfall via ZainCash → wallet, carrying the sectional/bundle
+  // intent so the bridge page completes this exact purchase on return.
+  const handleZainCashTopup = async () => {
+    if (plan.kind !== "ok") return;
+    if (!auth?.user) {
+      router.push(`/login?redirect=/course/${course.id}`);
+      onOpenChange(false);
+      return;
+    }
+    setTopupLoading(true);
+    setServerError(null);
+    try {
+      const token = await auth.user.getIdToken();
+      const shortfall = Math.max(0, plan.totalPrice - (walletBalance ?? 0));
+      const amount = Math.max(shortfall, ZAINCASH_TOPUP_MIN_IQD);
+      const intent: TopupIntent =
+        mode === "bundle"
+          ? { kind: "bundle", courseId: course.id }
+          : { kind: "sections", courseId: course.id, sectionIds: plan.sectionIds };
+      await startZainCashTopup(token, { amount, intent });
+      // Navigates away on success; if it returns, it threw.
+    } catch (err) {
+      console.error("zaincash topup error", err);
+      const msg =
+        err instanceof Error ? err.message : "تعذّر بدء الدفع عبر زين كاش";
+      setServerError(msg);
+      toast.error(msg);
+      setTopupLoading(false);
+    }
+  };
 
   const handleConfirm = async () => {
     if (plan.kind !== "ok") return;
@@ -425,12 +464,24 @@ export default function SectionalBuyDialog({
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-2 pt-2">
               {insufficientBalance ? (
-                <Button asChild className="flex-1 gap-2">
-                  <Link href="/wallet/topup">
-                    <WalletIcon className="w-4 h-4" />
-                    اشحن المحفظة
-                  </Link>
-                </Button>
+                <div className="flex-1 flex flex-col gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleZainCashTopup}
+                    disabled={topupLoading}
+                    className="gap-2 bg-purple-700 hover:bg-purple-800"
+                  >
+                    {topupLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <WalletIcon className="w-4 h-4" />
+                    )}
+                    ادفع الفرق عبر زين كاش
+                  </Button>
+                  <Button asChild variant="outline" className="gap-2">
+                    <Link href="/wallet/topup">اشحن المحفظة يدويًا</Link>
+                  </Button>
+                </div>
               ) : (
                 <Button
                   type="button"

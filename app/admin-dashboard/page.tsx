@@ -225,6 +225,9 @@ export default function AdminDashboard() {
         </h1>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
+            <Link href="/admin-dashboard/manual-topup">شحن محفظة يدوياً</Link>
+          </Button>
+          <Button variant="outline" asChild>
             <Link href="/admin-dashboard/instructor-payouts">
               مستحقات المدربين
             </Link>

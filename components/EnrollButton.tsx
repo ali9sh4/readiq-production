@@ -11,6 +11,10 @@ import { useAuth } from "@/context/authContext";
 import PaymentSelector from "@/components/paymentSelector";
 import { generateProtectionKey } from "@/lib/purchaseProtection/protectionKey";
 import { purchaseCourseWithWallet } from "@/app/actions/wallet_actions";
+import {
+  startZainCashTopup,
+  ZAINCASH_TOPUP_MIN_IQD,
+} from "@/lib/payments/startZainCashTopup";
 
 interface EnrollButtonProps {
   courseId: string;
@@ -121,56 +125,62 @@ export default function EnrollButton({
         return;
       }
 
-      const response = await fetch(`/api/payments/${method}/init`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          courseId,
-          courseTitle,
-          amount: price,
-          token,
-        }),
-      });
+      // ZainCash now funds the WALLET, not the frozen direct pay-per-course
+      // route. Top up the shortfall (carrying a course intent), then the wallet
+      // completes the enrollment automatically when the user returns.
+      if (method === "zaincash") {
+        const coursePrice = price ?? 0;
 
-      const data = await response.json();
+        const walletRes = await fetch("/api/wallet", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const walletJson = await walletRes.json().catch(() => null);
+        const balance = Number(walletJson?.data?.balance ?? 0);
+        const shortfall = Math.max(0, coursePrice - balance);
 
-      if (data.success && data.redirectUrl) {
-        window.location.href = data.redirectUrl;
-      } else {
-        const errorMessage = data.error || "";
-
-        if (errorMessage.includes("قيد المعالجة")) {
-          toast.error("عملية دفع نشطة", {
-            description:
-              "لديك عملية دفع قيد المعالجة. يمكنك المحاولة مرة أخرى بعد 15 دقيقة أو إكمال الدفع السابق.",
-            duration: 6000,
-          });
-        } else if (errorMessage.includes("مسجل بالفعل")) {
-          toast.success("مسجل بالفعل!", {
-            description: "أنت مسجل بالفعل في هذه الدورة",
-            duration: 4000,
-          });
-          setTimeout(() => router.refresh(), 2000);
-        } else if (errorMessage.includes("سعر غير صحيح")) {
-          toast.error("خطأ في السعر", {
-            description: "يرجى تحديث الصفحة والمحاولة مرة أخرى",
-            duration: 5000,
-          });
-        } else if (errorMessage.includes("مجانية")) {
-          toast.info("دورة مجانية", {
-            description: "هذه دورة مجانية، يمكنك الاشتراك بدون دفع",
-            duration: 4000,
-          });
-        } else {
-          toast.error("فشل في إنشاء جلسة الدفع", {
-            description: errorMessage || "حدث خطأ غير متوقع",
-            duration: 5000,
-          });
+        if (shortfall <= 0) {
+          // Wallet already covers it — buy straight from the wallet.
+          if (!protectionKeyRef.current) {
+            throw new Error("Protection key not generated");
+          }
+          const result = await purchaseCourseWithWallet(
+            token,
+            courseId,
+            protectionKeyRef.current
+          );
+          if (result.success) {
+            toast.success(
+              result.isDuplicate
+                ? "لقد قمت بشراء هذه الدورة مسبقاً"
+                : "تم شراء الدورة بنجاح!"
+            );
+            setShowPaymentDialog(false);
+            setLoading(false);
+            setTimeout(() => {
+              router.push(`/course/${courseId}`);
+              router.refresh();
+            }, 1500);
+          } else {
+            throw new Error(result.error || "فشل في شراء الدورة");
+          }
+          return;
         }
 
-        setLoading(false);
-        setShowPaymentDialog(false);
+        // Top up the shortfall (clamped to the minimum), then redirect to
+        // ZainCash. The intent is stored server-side; on return the bridge
+        // page finishes the purchase via the wallet.
+        const topupAmount = Math.max(shortfall, ZAINCASH_TOPUP_MIN_IQD);
+        await startZainCashTopup(token, {
+          amount: topupAmount,
+          intent: { kind: "course", courseId },
+        });
+        return;
       }
+
+      // No other gateway is enabled.
+      toast.error("طريقة الدفع غير متاحة حالياً");
+      setLoading(false);
+      setShowPaymentDialog(false);
     } catch (error) {
       console.error("Payment error:", error);
 

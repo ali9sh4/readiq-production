@@ -1,7 +1,6 @@
 "use client";
 
-import { useReducer, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useReducer } from "react";
 import {
   Card,
   CardHeader,
@@ -11,30 +10,23 @@ import {
 } from "@/components/ui/card";
 import { History, Wallet } from "lucide-react";
 import NavigationButton from "@/components/NavigationButton";
-import { useAuth } from "@/context/authContext";
-import { createTopupRequest } from "@/app/actions/wallet_actions";
 
 import { WalletTopupStepper } from "./WalletTopupStepper";
 import { Step1PaymentMethod } from "./Step1PaymentMethod";
 import { Step2Transfer } from "./Step2Transfer";
 import { Step3WhatsApp } from "./Step3WhatsApp";
-import { Step4Details } from "./Step4Details";
 import type { TopupPaymentMethodId } from "../constants";
 
-type StepNum = 1 | 2 | 3 | 4;
+type StepNum = 1 | 2 | 3;
 
 interface WizardState {
   selectedMethod: TopupPaymentMethodId | null;
   currentStep: StepNum;
-  amount: string;
-  senderName: string;
 }
 
 type WizardAction =
   | { type: "selectMethod"; method: TopupPaymentMethodId }
-  | { type: "goToStep"; step: StepNum }
-  | { type: "setAmount"; value: string }
-  | { type: "setSenderName"; value: string };
+  | { type: "goToStep"; step: StepNum };
 
 function wizardReducer(state: WizardState, action: WizardAction): WizardState {
   switch (action.type) {
@@ -42,10 +34,6 @@ function wizardReducer(state: WizardState, action: WizardAction): WizardState {
       return { ...state, selectedMethod: action.method, currentStep: 2 };
     case "goToStep":
       return { ...state, currentStep: action.step };
-    case "setAmount":
-      return { ...state, amount: action.value };
-    case "setSenderName":
-      return { ...state, senderName: action.value };
     default:
       return state;
   }
@@ -56,67 +44,10 @@ interface TopupWizardProps {
 }
 
 export function TopupWizard({ onSuccess }: TopupWizardProps) {
-  const auth = useAuth();
-  const router = useRouter();
-
   const [state, dispatch] = useReducer(wizardReducer, {
     selectedMethod: null,
     currentStep: 1,
-    amount: "",
-    senderName: "",
   });
-
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-    e.preventDefault();
-    setError(null);
-
-    const numAmount = Number(state.amount.replace(/,/g, ""));
-
-    if (!state.amount || numAmount < 1000) {
-      setError("الحد الأدنى للإيداع 1,000 دينار عراقي");
-      return;
-    }
-    if (numAmount > 5000000) {
-      setError("الحد الأقصى للإيداع 5,000,000 دينار عراقي");
-      return;
-    }
-    if (!state.senderName.trim()) {
-      setError("يرجى إدخال اسم المرسل");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const token = await auth.user?.getIdToken();
-      if (!token) {
-        throw new Error("يرجى تسجيل الدخول أولاً");
-      }
-
-      const result = await createTopupRequest(token, {
-        amount: numAmount,
-        senderName: state.senderName.trim(),
-      });
-
-      if (!result.success) {
-        throw new Error(result.error || "فشل في إرسال الطلب");
-      }
-
-      onSuccess();
-      setTimeout(() => {
-        router.push("/wallet/transactions");
-      }, 2000);
-    } catch (err: unknown) {
-      const message =
-        err instanceof Error ? err.message : "حدث خطأ أثناء معالجة الطلب";
-      console.error("Topup error:", err);
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-100 py-4 sm:py-6 md:py-8 px-3 sm:px-4">
@@ -168,24 +99,7 @@ export function TopupWizard({ onSuccess }: TopupWizardProps) {
               <Step3WhatsApp
                 methodId={state.selectedMethod}
                 onBack={() => dispatch({ type: "goToStep", step: 2 })}
-                onNext={() => dispatch({ type: "goToStep", step: 4 })}
-              />
-            )}
-
-            {state.currentStep === 4 && state.selectedMethod && (
-              <Step4Details
-                amount={state.amount}
-                senderName={state.senderName}
-                loading={loading}
-                error={error}
-                onAmountChange={(value) =>
-                  dispatch({ type: "setAmount", value })
-                }
-                onSenderNameChange={(value) =>
-                  dispatch({ type: "setSenderName", value })
-                }
-                onBack={() => dispatch({ type: "goToStep", step: 3 })}
-                onSubmit={handleSubmit}
+                onNext={onSuccess}
               />
             )}
           </CardContent>

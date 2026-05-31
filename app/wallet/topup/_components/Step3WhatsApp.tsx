@@ -1,8 +1,8 @@
 "use client";
 
-import { toast } from "sonner";
-import { Copy, MessageCircle, ArrowLeft, ArrowRight } from "lucide-react";
+import { MessageCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/context/authContext";
 import {
   TOPUP_PAYMENT_METHODS,
   TOPUP_WHATSAPP_NUMBER,
@@ -13,26 +13,22 @@ import {
 interface Step3Props {
   methodId: TopupPaymentMethodId;
   onBack: () => void;
+  // الإيصال is now the final step — opening WhatsApp + the instruction line is
+  // the finish. `onNext` (which fired the done screen) is intentionally left in
+  // the contract but unused, so re-adding a terminal button is a one-line revert.
   onNext: () => void;
 }
 
-export function Step3WhatsApp({ methodId, onBack, onNext }: Step3Props) {
+export function Step3WhatsApp({ methodId, onBack }: Step3Props) {
   const method = TOPUP_PAYMENT_METHODS[methodId];
+  const { user } = useAuth();
+  const userEmail = user?.email ?? "";
 
   const prefilledMessage =
-    `السلام عليكم، أرسلت إيصال تحويل لشحن محفظتي في تطبيق Rubik عبر ${method.label}.\n` +
-    `Hello, I sent a transfer receipt to top up my Rubik wallet via ${method.label}.`;
+    `السلام عليكم، أرسلت إيصال تحويل لشحن محفظتي في تطبيق روبيك عبر ${method.label}. ` +
+    `البريد الإلكتروني: ${userEmail}`;
 
   const waLink = `https://wa.me/${topupWhatsappIntl()}?text=${encodeURIComponent(prefilledMessage)}`;
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(TOPUP_WHATSAPP_NUMBER);
-      toast.success("تم نسخ الرقم!");
-    } catch {
-      toast.error("تعذّر النسخ، انسخ الرقم يدوياً");
-    }
-  };
 
   return (
     <div className="space-y-4">
@@ -50,26 +46,20 @@ export function Step3WhatsApp({ methodId, onBack, onNext }: Step3Props) {
           </p>
         </div>
 
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            onClick={handleCopy}
-            variant="outline"
-            className="flex-1 h-11 text-sm"
-          >
-            <Copy className="w-4 h-4 ml-2" />
-            نسخ الرقم
-          </Button>
-          <a
-            href={waLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 inline-flex items-center justify-center gap-2 h-11 px-4 rounded-md bg-green-600 hover:bg-green-700 text-white text-sm font-semibold transition-colors"
-          >
-            <MessageCircle className="w-4 h-4" />
-            فتح واتساب
-          </a>
-        </div>
+        <a
+          href={waLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full inline-flex items-center justify-center gap-2 h-11 px-4 rounded-md bg-green-600 hover:bg-green-700 text-white text-sm font-semibold transition-colors"
+        >
+          <MessageCircle className="w-4 h-4" />
+          فتح واتساب
+        </a>
+
+        <p className="text-xs sm:text-sm text-green-800 text-center leading-relaxed">
+          افتح واتساب وأرسل صورة الإيصال. سيتم إضافة الرصيد إلى محفظتك بعد
+          المراجعة خلال ١٥–٦٠ دقيقة.
+        </p>
       </div>
 
       <div className="flex gap-2 pt-1">
@@ -81,14 +71,6 @@ export function Step3WhatsApp({ methodId, onBack, onNext }: Step3Props) {
         >
           <ArrowRight className="w-4 h-4 ml-1" />
           رجوع
-        </Button>
-        <Button
-          type="button"
-          onClick={onNext}
-          className="flex-1 h-11 text-sm sm:text-base font-semibold"
-        >
-          أرسلت الإيصال، التالي
-          <ArrowLeft className="w-4 h-4 mr-1" />
         </Button>
       </div>
     </div>

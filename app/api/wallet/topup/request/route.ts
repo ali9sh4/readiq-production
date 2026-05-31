@@ -170,6 +170,7 @@ export async function POST(req: NextRequest) {
       userName: userRecord.displayName || "مستخدم",
       amount: body.amount,
       status: "pending",
+      source: "manual" as const,
       senderName: body.senderName,
       createdAt: nowIso,
       expiresAt: expiresAt.toISOString(),
