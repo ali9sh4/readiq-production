@@ -364,6 +364,127 @@ export async function approveTopupRequest(
   }
 }
 
+// ===== MANUAL DIRECT TOP-UP (ADMIN ONLY) =====
+// Credits a user's wallet immediately by email — no receipt, no review queue.
+// Separate from the receipt-approval flow (approveTopupRequest), which stays
+// as-is. Mirrors approveTopupRequest's atomic credit block; the difference is
+// it resolves the user by email and has no topup_requests doc to gate on.
+export async function adminManualTopup(
+  token: string,
+  data: { email: string; amount: number; reason?: string }
+): Promise<
+  | { success: true; userId: string; newBalance: number; message: string }
+  | { success: false; error: string }
+> {
+  try {
+    const verifiedToken = await adminAuth.verifyIdToken(token);
+    const adminUser = await adminAuth.getUser(verifiedToken.uid);
+
+    const isAdmin =
+      adminUser.customClaims?.admin ||
+      process.env.FIREBASE_ADMIN_EMAIL === adminUser.email;
+
+    if (!isAdmin) {
+      return { success: false, error: "غير مصرح" };
+    }
+
+    // Validate amount: positive whole-dinar number. Rejects 0, negatives,
+    // NaN, Infinity, and non-numeric input.
+    const amount = Number(data.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return { success: false, error: "المبلغ غير صالح" };
+    }
+    if (!Number.isInteger(amount)) {
+      return { success: false, error: "المبلغ يجب أن يكون رقماً صحيحاً" };
+    }
+    if (amount > 5000000) {
+      return { success: false, error: "الحد الأقصى للإيداع 5,000,000 د.ع" };
+    }
+
+    const normalizedEmail = (data.email || "").trim().toLowerCase();
+    if (!normalizedEmail) {
+      return { success: false, error: "يرجى إدخال البريد الإلكتروني" };
+    }
+
+    // Resolve email -> uid via Firebase Auth (source of truth; Google-only).
+    let targetUser;
+    try {
+      targetUser = await adminAuth.getUserByEmail(normalizedEmail);
+    } catch (err: any) {
+      if (err?.code === "auth/user-not-found") {
+        return { success: false, error: "لا يوجد حساب بهذا البريد الإلكتروني" };
+      }
+      if (err?.code === "auth/invalid-email") {
+        return { success: false, error: "البريد الإلكتروني غير صالح" };
+      }
+      throw err;
+    }
+
+    const targetUserId = targetUser.uid;
+    const reason = (data.reason || "").trim();
+
+    // ATOMIC: credit wallet + log transaction. Same shape as approveTopupRequest;
+    // provisions the wallet if it doesn't exist yet (mirrors the ZainCash callback).
+    const newBalance = await db.runTransaction(async (transaction) => {
+      const walletRef = db.collection("wallets").doc(targetUserId);
+      const walletDoc = await transaction.get(walletRef);
+      const nowIso = new Date().toISOString();
+
+      const balanceBefore = walletDoc.exists
+        ? (walletDoc.data() as Wallet).balance ?? 0
+        : 0;
+      const updatedBalance = balanceBefore + amount;
+
+      if (walletDoc.exists) {
+        transaction.update(walletRef, {
+          balance: updatedBalance,
+          totalTopups: FieldValue.increment(amount),
+          updatedAt: nowIso,
+        });
+      } else {
+        const newWallet: Wallet = {
+          userId: targetUserId,
+          userName: targetUser.displayName || "مستخدم",
+          balance: updatedBalance,
+          totalTopups: amount,
+          totalSpent: 0,
+          dailyLimit: 5000000,
+          createdAt: nowIso,
+          updatedAt: nowIso,
+        };
+        transaction.set(walletRef, newWallet);
+      }
+
+      const txnRef = db.collection("wallet_transactions").doc();
+      transaction.set(txnRef, {
+        userId: targetUserId,
+        type: "topup",
+        amount,
+        balanceBefore,
+        balanceAfter: updatedBalance,
+        description: "إيداع يدوي من الإدارة",
+        metadata: {
+          source: "manual_admin",
+          adminId: adminUser.uid,
+          ...(reason ? { reason } : {}),
+        },
+        createdAt: nowIso,
+      });
+
+      return updatedBalance;
+    });
+
+    return {
+      success: true,
+      userId: targetUserId,
+      newBalance,
+      message: "تم شحن المحفظة",
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
 // ===== REJECT TOPUP (ADMIN ONLY) =====
 export async function rejectTopupRequest(
   token: string,

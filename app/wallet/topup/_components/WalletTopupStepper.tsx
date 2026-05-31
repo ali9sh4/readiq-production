@@ -7,7 +7,6 @@ const STEPS = [
   { num: 1, label: "طريقة الدفع" },
   { num: 2, label: "التحويل" },
   { num: 3, label: "الإيصال" },
-  { num: 4, label: "البيانات" },
 ] as const;
 
 export function WalletTopupStepper({ currentStep }: { currentStep: number }) {
@@ -39,6 +38,11 @@ export function WalletTopupStepper({ currentStep }: { currentStep: number }) {
               >
                 {isCompleted ? (
                   <Check className="w-4 h-4 sm:w-5 sm:h-5" />
+                ) : isActive ? (
+                  <span
+                    className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-blue-600"
+                    aria-hidden="true"
+                  />
                 ) : (
                   step.num
                 )}

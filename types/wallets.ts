@@ -69,6 +69,14 @@ export interface WalletTransaction {
     topupRequestId?: string;
     packageId?: string;
     packageTitle?: string;
+    // Provenance of a "topup" credit. Absent on legacy receipt-approval rows
+    // (treat missing as "manual" receipt). "zaincash" = ZainCash callback;
+    // "manual_admin" = an admin direct credit via adminManualTopup.
+    source?: "zaincash" | "manual_admin";
+    // Set on manual_admin credits: the admin uid who performed it + optional note.
+    adminId?: string;
+    reason?: string;
+    zaincashTxnId?: string;
   };
   createdAt: string;
   protectionKey?: string;

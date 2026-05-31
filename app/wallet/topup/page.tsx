@@ -47,12 +47,13 @@ export default function TopUpPage() {
               </div>
               <div className="space-y-2">
                 <h3 className="text-xl sm:text-2xl font-bold text-gray-900">
-                  تم إرسال الطلب بنجاح! ✅
+                  تم! ✅
                 </h3>
                 <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
-                  سيتم مراجعة طلبك خلال <strong>15-60 دقيقة</strong>
+                  تأكد أنك أرسلت صورة الإيصال عبر واتساب.
                   <br />
-                  وإضافة الرصيد بعد التحقق من التحويل
+                  سيتم إضافة الرصيد إلى محفظتك بعد المراجعة خلال{" "}
+                  <strong>15-60 دقيقة</strong>
                 </p>
               </div>
               <Button
