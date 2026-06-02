@@ -41,7 +41,7 @@ export default function Navbar() {
           {/* Logo */}
           <Link
             href="/"
-            className="flex items-center gap-2 lg:gap-3 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 lg:gap-3 hover:opacity-80 active:opacity-60 active:scale-95 transition-all duration-150"
           >
             <div className="flex items-center" dir="ltr">
               <span
