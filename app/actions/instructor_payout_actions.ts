@@ -82,6 +82,7 @@ export type InstructorEarningsRow = {
   instructorId: string;
   instructorName: string;
   email: string | null;
+  phone: string | null;
   revenueSharePercent: number;
   earningsTotal: number;
   payoutsTotal: number;
@@ -237,6 +238,7 @@ export async function getInstructorEarningsOverview(
           (typeof data.email === "string" && data.email) ||
           id,
         email: typeof data.email === "string" ? data.email : null,
+        phone: typeof data.phone === "string" && data.phone ? data.phone : null,
         revenueSharePercent: normalizeRevenueSharePercent(
           data.revenueSharePercent
         ),

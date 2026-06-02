@@ -1,6 +1,6 @@
 // /components/DashboardHome.tsx
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/authContext";
 import {
@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookOpen, Award, Plus, AlertCircle } from "lucide-react";
+import { BookOpen, Award, Plus, AlertCircle, Phone, X } from "lucide-react";
 import CoursesCardList from "@/components/CoursesCardList";
 import { Course } from "@/types/types";
 
@@ -26,15 +26,20 @@ interface DashboardHomeProps {
   initialEnrolledCourses: Course[];
   initialFavorites: any[];
   initialStats: DashboardStats | null;
+  // True when the logged-in user is a course creator with no phone on file.
+  needsPhone?: boolean;
 }
-  
+
+const PHONE_NUDGE_DISMISS_KEY = "instructorPhoneNudgeDismissed";
+
 export default function DashboardHome({
   initialEnrolledCourses,
   initialFavorites,
   initialStats,
+  needsPhone = false,
 }: DashboardHomeProps) {
   const auth = useAuth();
-  
+
   // ✅ Use initial data - no loading state needed!
   const [enrolledCourses] = useState<Course[]>(initialEnrolledCourses);
   const [favorites] = useState<any[]>(initialFavorites);
@@ -42,8 +47,67 @@ export default function DashboardHome({
 
   // ✅ No useEffect, no loading, instant render!
 
+  // Phone nudge: a one-time, dismissible prompt for instructors with no phone.
+  // Start hidden to avoid an SSR flash, then reveal only if the user hasn't
+  // dismissed it before. It's a nudge, never a gate — and it disappears for
+  // good once a phone is saved (the server stops setting needsPhone).
+  const [showPhoneNudge, setShowPhoneNudge] = useState(false);
+  useEffect(() => {
+    if (!needsPhone) return;
+    let dismissed = false;
+    try {
+      dismissed =
+        window.localStorage.getItem(PHONE_NUDGE_DISMISS_KEY) === "1";
+    } catch {
+      // localStorage unavailable (private mode etc.) — just show the nudge.
+    }
+    setShowPhoneNudge(!dismissed);
+  }, [needsPhone]);
+
+  const dismissPhoneNudge = () => {
+    setShowPhoneNudge(false);
+    try {
+      window.localStorage.setItem(PHONE_NUDGE_DISMISS_KEY, "1");
+    } catch {
+      // Best-effort; dismissal still holds for this session via state.
+    }
+  };
+
   return (
     <div className="space-y-6 sm:space-y-8 lg:space-y-10">
+      {/* Instructor contact-phone nudge */}
+      {showPhoneNudge && (
+        <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:p-5">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-100">
+            <Phone className="h-5 w-5 text-amber-700" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-amber-900 text-sm sm:text-base">
+              أضِف رقم هاتفك للتواصل
+            </p>
+            <p className="text-amber-800 text-xs sm:text-sm mt-0.5">
+              بصفتك مدرّباً، يساعدنا رقم هاتفك على التواصل معك بشأن دوراتك
+              ومستحقاتك. تُضاف مرة واحدة فقط.
+            </p>
+            <Button
+              asChild
+              size="sm"
+              className="mt-3 bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              <Link href="/user_dashboard/profile">إضافة رقم الهاتف</Link>
+            </Button>
+          </div>
+          <button
+            type="button"
+            onClick={dismissPhoneNudge}
+            aria-label="إغلاق"
+            className="flex-shrink-0 rounded-lg p-1 text-amber-700 hover:bg-amber-100 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
       {/* Welcome Header */}
       <div className="bg-blue-600 rounded-3xl p-6 sm:p-8 lg:p-10 text-white shadow-lg">
         <div className="flex items-start justify-between flex-wrap gap-4">

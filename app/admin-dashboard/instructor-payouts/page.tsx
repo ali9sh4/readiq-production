@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, PhoneOff } from "lucide-react";
 import {
   getInstructorEarningsOverview,
   type EarningsOverview,
@@ -150,7 +150,18 @@ export default function AdminInstructorPayoutsPage() {
               {overview.rows.map((row) => (
                 <TableRow key={row.instructorId}>
                   <TableCell>
-                    <div className="font-medium">{row.instructorName}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{row.instructorName}</span>
+                      {!row.phone && (
+                        <span
+                          title="لا يوجد رقم هاتف"
+                          className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[11px] font-medium text-amber-700"
+                        >
+                          <PhoneOff className="h-3 w-3" />
+                          لا يوجد هاتف
+                        </span>
+                      )}
+                    </div>
                     {row.email && (
                       <div className="text-xs text-gray-400">{row.email}</div>
                     )}

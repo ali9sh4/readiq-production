@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import DashboardHome from "./main/DashboardHome";
 import { Course } from "@/types/types";
 import { redirect } from "next/navigation";
-import { adminAuth } from "@/firebase/service";
+import { adminAuth, db } from "@/firebase/service";
 import {
   getEnrolledCoursesAndStatsByUid,
   getUserFavoritesByUid,
@@ -26,15 +26,20 @@ export default async function DashboardPage() {
   let enrolledCourses: Course[] = [];
   let favorites: Course[] = [];
   let stats: DashboardStats | null = null;
+  // Instructor phone nudge: an instructor (course creator) with no phone on
+  // file should be prompted to add one. Both signals come from this same
+  // verified read so the client banner needs no extra round-trip.
+  let needsPhone = false;
 
   try {
     // Verify once, then fan out — the prior code re-verified the token inside
     // getCurrentUser + each data loader (3 round-trips to Firebase Auth).
     const verified = await adminAuth.verifyIdToken(token);
 
-    const [enrolledData, favoritesResult] = await Promise.all([
+    const [enrolledData, favoritesResult, userSnap] = await Promise.all([
       getEnrolledCoursesAndStatsByUid(verified.uid, 20),
       getUserFavoritesByUid(verified.uid, 6),
+      db.collection("users").doc(verified.uid).get(),
     ]);
 
     if (enrolledData.success && enrolledData.courses) {
@@ -45,6 +50,10 @@ export default async function DashboardPage() {
     if (favoritesResult.success && favoritesResult.favorites) {
       favorites = favoritesResult.favorites;
     }
+
+    const isInstructor = (stats?.createdCoursesCount ?? 0) > 0;
+    const phone = userSnap?.exists ? userSnap.data()?.phone : undefined;
+    needsPhone = isInstructor && !(typeof phone === "string" && phone.trim());
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
   }
@@ -54,6 +63,7 @@ export default async function DashboardPage() {
       initialEnrolledCourses={enrolledCourses}
       initialFavorites={favorites}
       initialStats={stats}
+      needsPhone={needsPhone}
     />
   );
 }
