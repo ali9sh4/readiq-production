@@ -1,5 +1,25 @@
+import { cookies } from "next/headers";
 import { fetchCourseDetails } from "@/data/courses";
+import { adminAuth, db } from "@/firebase/service";
 import CourseDashboard from "@/components/CourseDashboard";
+import PhoneNudgeBanner from "@/components/PhoneNudgeBanner";
+
+// Anyone on the course edit page is a course creator, so the phone nudge here
+// is gated on phone alone (no separate instructor check). Read server-side the
+// same way app/user_dashboard/page.tsx does; a read failure is non-fatal and
+// simply hides the nudge.
+async function getNeedsPhone(): Promise<boolean> {
+  try {
+    const token = (await cookies()).get("firebaseAuthToken")?.value;
+    if (!token) return false;
+    const verified = await adminAuth.verifyIdToken(token);
+    const userSnap = await db.collection("users").doc(verified.uid).get();
+    const phone = userSnap.exists ? userSnap.data()?.phone : undefined;
+    return !(typeof phone === "string" && phone.trim());
+  } catch {
+    return false;
+  }
+}
 
 export default async function EditCoursePage({
   params,
@@ -9,7 +29,10 @@ export default async function EditCoursePage({
   try {
     const { courseId } = await params;
     // ✅ Use the actual courseId from params
-    const Course = await fetchCourseDetails(courseId);
+    const [Course, needsPhone] = await Promise.all([
+      fetchCourseDetails(courseId),
+      getNeedsPhone(),
+    ]);
     if (!Course) {
       throw new Error("Course not found");
     }
@@ -35,6 +58,8 @@ export default async function EditCoursePage({
 
     return (
       <div className="container mx-auto px-4 py-8">
+        <PhoneNudgeBanner needsPhone={needsPhone} className="mb-6" />
+
         <h1 className="text-3xl font-bold mt-6 mb-4">تعديل الدورة</h1>
 
         <div className="bg-white rounded-lg shadow-md p-6">
