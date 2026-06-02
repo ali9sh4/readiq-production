@@ -19,6 +19,11 @@ export interface NewUserDocFields {
   email: string;
   displayName: string;
   photoURL: string | null;
+  // Optional, user-entered contact phone (canonical local "07XXXXXXXXX" form;
+  // see lib/validation/phone.ts). Google sign-in never provides a phone, so it
+  // is OMITTED from new docs — set later via the web profile or admin editor.
+  // Never written at signup, so account creation is unaffected.
+  phone?: string;
   createdCourses: string[];
   enrolledCourses: string[];
   walletBalance: number;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/authContext";
 import {
   Card,
@@ -29,7 +29,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { updateProfile } from "firebase/auth";
-import { updateUserProfile } from "@/lib/services/userService";
+import { updateUserProfile, getUserProfile } from "@/lib/services/userService";
+import { normalizeIraqiPhone } from "@/lib/validation/phone";
 import { useRouter } from "next/navigation";
 import ThumbNailUploader, {
   ImageUpload,
@@ -47,16 +48,48 @@ export default function DashboardProfile() {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(auth.user?.displayName || "");
+  // Phone lives only on the Firestore user doc (Firebase Auth has no phone for
+  // Google sign-in), so load it separately and keep an unedited copy for cancel.
+  const [phone, setPhone] = useState("");
+  const [savedPhone, setSavedPhone] = useState("");
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    const uid = auth.user?.uid;
+    if (!uid) return;
+    let cancelled = false;
+    getUserProfile(uid)
+      .then((profile) => {
+        if (cancelled) return;
+        const value = profile?.phone ?? "";
+        setPhone(value);
+        setSavedPhone(value);
+      })
+      .catch((e) => console.error("Failed to load profile phone:", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [auth.user?.uid]);
+
   const handleSave = async () => {
     if (!auth.user) return;
+    // Validate + canonicalize the optional phone before writing. Empty is fine.
+    const phoneCheck = normalizeIraqiPhone(phone);
+    if (!phoneCheck.ok) {
+      alert(`⚠️ ${phoneCheck.error}`);
+      return;
+    }
     try {
       await updateProfile(auth.user, { displayName });
-      await updateUserProfile(auth.user?.uid, { displayName });
+      await updateUserProfile(auth.user?.uid, {
+        displayName,
+        phone: phoneCheck.value,
+      });
+      setPhone(phoneCheck.value);
+      setSavedPhone(phoneCheck.value);
       setIsEditing(false);
-      alert("✅ تم تحديث الاسم المعروض بنجاح");
+      alert("✅ تم تحديث الملف الشخصي بنجاح");
     } catch (error) {
       console.error("Error updating profile:", error);
       alert("Failed to update profile. Please try again.");
@@ -84,6 +117,7 @@ export default function DashboardProfile() {
 
   const handleCancel = () => {
     setDisplayName(auth.user?.displayName || "");
+    setPhone(savedPhone);
     setIsEditing(false);
   };
 
@@ -277,6 +311,32 @@ export default function DashboardProfile() {
                   ) : (
                     <p className="text-sm sm:text-base text-gray-900 bg-gray-50 px-3 py-2 rounded-lg break-words">
                       {auth.user?.displayName || "غير محدد"}
+                    </p>
+                  )}
+                </div>
+
+                {/* Phone (optional, user-entered) */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <User className="w-3 h-3 sm:w-4 sm:h-4" />
+                    <span className="text-xs sm:text-sm">رقم الهاتف</span>
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="tel"
+                      inputMode="tel"
+                      dir="ltr"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      className="w-full px-3 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-right"
+                      placeholder="07XXXXXXXXX"
+                    />
+                  ) : (
+                    <p
+                      dir="ltr"
+                      className="text-sm sm:text-base text-gray-900 bg-gray-50 px-3 py-2 rounded-lg break-words text-right font-mono"
+                    >
+                      {phone || "غير محدد"}
                     </p>
                   )}
                 </div>

@@ -28,10 +28,12 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import LedgerTable from "@/components/earnings/LedgerTable";
+import { normalizeIraqiPhone } from "@/lib/validation/phone";
 import {
   getInstructorLedgerDetail,
   recordInstructorPayout,
   updateInstructorRevenueShare,
+  updateInstructorPhone,
   type InstructorLedgerDetail,
 } from "@/app/actions/instructor_payout_actions";
 
@@ -66,6 +68,11 @@ export default function InstructorDetailDialog({
   const [savingRate, setSavingRate] = useState(false);
   const [rateMsg, setRateMsg] = useState<string | null>(null);
 
+  // Contact-phone state.
+  const [phone, setPhone] = useState("");
+  const [savingPhone, setSavingPhone] = useState(false);
+  const [phoneMsg, setPhoneMsg] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     if (!instructorId) return;
     setLoading(true);
@@ -74,6 +81,7 @@ export default function InstructorDetailDialog({
       if (res.success) {
         setDetail(res.detail);
         setRate(String(res.detail.revenueSharePercent));
+        setPhone(res.detail.phone ?? "");
         // Prefill the payout amount with the current outstanding when there
         // is something owed; admin can still edit it for a partial payout.
         setAmount(
@@ -96,6 +104,7 @@ export default function InstructorDetailDialog({
       setSaving(false);
       setResultMsg(null);
       setRateMsg(null);
+      setPhoneMsg(null);
       setMethod("bank_transfer");
       setNote("");
       load();
@@ -163,6 +172,39 @@ export default function InstructorDetailDialog({
       setRateMsg("حدث خطأ أثناء الحفظ");
     } finally {
       setSavingRate(false);
+    }
+  };
+
+  const handleSavePhone = async () => {
+    if (!detail) return;
+    // Validate client-side for instant feedback; the action re-validates and
+    // stores the canonical form regardless.
+    const check = normalizeIraqiPhone(phone);
+    if (!check.ok) {
+      setPhoneMsg(check.error);
+      return;
+    }
+    setSavingPhone(true);
+    setPhoneMsg(null);
+    try {
+      const res = await updateInstructorPhone(token, {
+        instructorId: detail.instructorId,
+        phone,
+      });
+      if (!res.success) {
+        setPhoneMsg(res.message);
+        return;
+      }
+      // Reflect the canonical stored value back into the field.
+      setPhone(res.phone);
+      setPhoneMsg(res.phone ? "تم حفظ رقم الهاتف." : "تم مسح رقم الهاتف.");
+      await load();
+      onChanged();
+    } catch (e) {
+      console.error("save phone error", e);
+      setPhoneMsg("حدث خطأ أثناء الحفظ");
+    } finally {
+      setSavingPhone(false);
     }
   };
 
@@ -236,6 +278,39 @@ export default function InstructorDetailDialog({
                 </AlertDescription>
               </Alert>
             )}
+
+            {/* Contact phone editor */}
+            <div className="border rounded-lg p-4 space-y-2">
+              <Label htmlFor="phone" className="font-semibold">
+                رقم الهاتف (اختياري)
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="phone"
+                  type="tel"
+                  inputMode="tel"
+                  dir="ltr"
+                  className="w-48 font-mono"
+                  placeholder="07XXXXXXXXX"
+                  value={phone}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    setPhoneMsg(null);
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  onClick={handleSavePhone}
+                  disabled={savingPhone}
+                >
+                  {savingPhone ? "جارٍ الحفظ..." : "حفظ الرقم"}
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500">
+                رقم هاتف عراقي بصيغة 07XXXXXXXXX. اتركه فارغاً لمسح الرقم.
+              </p>
+              {phoneMsg && <p className="text-xs text-blue-600">{phoneMsg}</p>}
+            </div>
 
             {/* Revenue share editor */}
             <div className="border rounded-lg p-4 space-y-2">

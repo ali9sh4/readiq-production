@@ -21,6 +21,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import type { Course } from "@/types/types";
 import { normalizeRevenueSharePercent } from "@/lib/earnings/split";
 import { recordPayoutSchema, revenueShareSchema } from "@/lib/earnings/validation";
+import { normalizeIraqiPhone } from "@/lib/validation/phone";
 
 // ===== Result shapes =====
 
@@ -120,6 +121,7 @@ export type InstructorLedgerDetail = {
   instructorId: string;
   instructorName: string;
   email: string | null;
+  phone: string | null;
   revenueSharePercent: number;
   earningsTotal: number;
   payoutsTotal: number;
@@ -293,6 +295,7 @@ export async function getInstructorLedgerDetail(
           (typeof data.email === "string" && data.email) ||
           instructorId,
         email: typeof data.email === "string" ? data.email : null,
+        phone: typeof data.phone === "string" && data.phone ? data.phone : null,
         revenueSharePercent: normalizeRevenueSharePercent(
           data.revenueSharePercent
         ),
@@ -420,6 +423,45 @@ export async function updateInstructorRevenueShare(
   } catch (e) {
     console.error("updateInstructorRevenueShare error", e);
     return err("INTERNAL_ERROR", "فشل تحديث النسبة");
+  }
+}
+
+// ===== Admin: set / correct an instructor's contact phone =====
+
+// Backfills or corrects the optional contact phone on a user doc. This is how
+// an existing phone-less instructor gets a number on file. Same admin gate and
+// merge-write pattern as updateInstructorRevenueShare; validation goes through
+// the shared normalizer so the stored value is always the canonical "07…" form
+// (or "" when the admin clears it — phone is optional).
+export async function updateInstructorPhone(
+  token: string,
+  input: { instructorId: string; phone: string }
+): Promise<Result<{ instructorId: string; phone: string }>> {
+  const admin = await verifyAdmin(token);
+  if (!admin.ok) return err("NOT_ADMIN", "Admin access required");
+
+  const instructorId =
+    typeof input?.instructorId === "string" ? input.instructorId : "";
+  if (!instructorId) return err("INVALID_INPUT", "instructorId is required");
+
+  const normalized = normalizeIraqiPhone(input?.phone);
+  if (!normalized.ok) return err("INVALID_INPUT", normalized.error);
+
+  try {
+    await db.collection("users").doc(instructorId).set(
+      {
+        phone: normalized.value,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+    console.log(
+      `instructor-phone updated instructorId=${instructorId} by=${admin.uid}`
+    );
+    return { success: true, instructorId, phone: normalized.value };
+  } catch (e) {
+    console.error("updateInstructorPhone error", e);
+    return err("INTERNAL_ERROR", "فشل تحديث رقم الهاتف");
   }
 }
 

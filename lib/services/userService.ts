@@ -16,6 +16,9 @@ export interface UserProfile {
   email: string;
   displayName: string;
   photoURL: string | null;
+  // Optional, user-entered contact phone, canonical local "07XXXXXXXXX" form.
+  // See lib/validation/phone.ts. Editable by the user (web profile) or an admin.
+  phone?: string;
   bio?: string;
   website?: string;
   createdCourses: string[];
