@@ -30,6 +30,9 @@ export default async function DashboardPage() {
   // file should be prompted to add one. Both signals come from this same
   // verified read so the client banner needs no extra round-trip.
   let needsPhone = false;
+  // Post-login phone+consent capture card: shown to ANY user with no phone who
+  // hasn't chosen "don't ask again". Computed from the same verified read.
+  let showPhonePrompt = false;
 
   try {
     // Verify once, then fan out — the prior code re-verified the token inside
@@ -51,9 +54,17 @@ export default async function DashboardPage() {
       favorites = favoritesResult.favorites;
     }
 
+    const userData = userSnap?.exists ? userSnap.data() : undefined;
     const isInstructor = (stats?.createdCoursesCount ?? 0) > 0;
-    const phone = userSnap?.exists ? userSnap.data()?.phone : undefined;
-    needsPhone = isInstructor && !(typeof phone === "string" && phone.trim());
+    const phone = userData?.phone;
+    const hasPhone = typeof phone === "string" && phone.trim().length > 0;
+    const dismissed = userData?.phonePromptDismissed === true;
+
+    needsPhone = isInstructor && !hasPhone;
+    showPhonePrompt = !hasPhone && !dismissed;
+    // Avoid double-prompting on this page: when the richer capture card is
+    // showing, suppress the lighter instructor nudge banner.
+    if (showPhonePrompt) needsPhone = false;
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
   }
@@ -64,6 +75,7 @@ export default async function DashboardPage() {
       initialFavorites={favorites}
       initialStats={stats}
       needsPhone={needsPhone}
+      showPhonePrompt={showPhonePrompt}
     />
   );
 }

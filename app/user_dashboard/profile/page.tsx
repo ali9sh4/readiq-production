@@ -26,9 +26,11 @@ import {
   Camera,
   CheckCircle,
   Trash2,
+  MessageCircle,
 } from "lucide-react";
 import Image from "next/image";
 import { updateProfile } from "firebase/auth";
+import { serverTimestamp } from "firebase/firestore";
 import { updateUserProfile, getUserProfile } from "@/lib/services/userService";
 import { normalizeIraqiPhone } from "@/lib/validation/phone";
 import { useRouter } from "next/navigation";
@@ -52,6 +54,11 @@ export default function DashboardProfile() {
   // Google sign-in), so load it separately and keep an unedited copy for cancel.
   const [phone, setPhone] = useState("");
   const [savedPhone, setSavedPhone] = useState("");
+  // WhatsApp marketing opt-in, loaded from the user doc. `savedConsent` is the
+  // last persisted value, used both for cancel and to detect a false→true
+  // transition (which is when we stamp the consent audit timestamp).
+  const [consent, setConsent] = useState(false);
+  const [savedConsent, setSavedConsent] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
@@ -65,6 +72,9 @@ export default function DashboardProfile() {
         const value = profile?.phone ?? "";
         setPhone(value);
         setSavedPhone(value);
+        const consentValue = profile?.marketingConsent === true;
+        setConsent(consentValue);
+        setSavedConsent(consentValue);
       })
       .catch((e) => console.error("Failed to load profile phone:", e));
     return () => {
@@ -85,9 +95,16 @@ export default function DashboardProfile() {
       await updateUserProfile(auth.user?.uid, {
         displayName,
         phone: phoneCheck.value,
+        marketingConsent: consent,
+        // Stamp the consent audit time only on a false→true transition; leave it
+        // untouched when withdrawing or when consent is unchanged.
+        ...(consent && !savedConsent
+          ? { marketingConsentAt: serverTimestamp() }
+          : {}),
       });
       setPhone(phoneCheck.value);
       setSavedPhone(phoneCheck.value);
+      setSavedConsent(consent);
       setIsEditing(false);
       alert("✅ تم تحديث الملف الشخصي بنجاح");
     } catch (error) {
@@ -118,6 +135,7 @@ export default function DashboardProfile() {
   const handleCancel = () => {
     setDisplayName(auth.user?.displayName || "");
     setPhone(savedPhone);
+    setConsent(savedConsent);
     setIsEditing(false);
   };
 
@@ -380,6 +398,41 @@ export default function DashboardProfile() {
                     {formatDate(auth.user?.metadata?.lastSignInTime)}
                   </p>
                 </div>
+              </div>
+
+              {/* WhatsApp marketing opt-in (separate from notifications). The
+                  checkbox is an affirmative action and names the business, the
+                  WhatsApp channel, the message type, and the opt-out right. */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <MessageCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+                  <span className="text-xs sm:text-sm">
+                    رسائل واتساب التسويقية
+                  </span>
+                </label>
+                {isEditing ? (
+                  <label className="flex items-start gap-3 cursor-pointer select-none bg-gray-50 px-3 py-3 rounded-lg">
+                    <input
+                      type="checkbox"
+                      checked={consent}
+                      onChange={(e) => setConsent(e.target.checked)}
+                      className="mt-1 h-4 w-4 flex-shrink-0 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                    />
+                    <span className="text-xs sm:text-sm leading-relaxed text-gray-700">
+                      أوافق على أن تُرسل لي منصة{" "}
+                      <span className="font-semibold">روبيك (Rubik)</span> رسائل
+                      عبر <span className="font-semibold">واتساب (WhatsApp)</span>{" "}
+                      لإعلامي بالدورات الجديدة والعروض التسويقية. يمكنني إلغاء
+                      الاشتراك في أي وقت.
+                    </span>
+                  </label>
+                ) : (
+                  <p className="text-sm sm:text-base text-gray-900 bg-gray-50 px-3 py-2 rounded-lg">
+                    {savedConsent
+                      ? "مُفعّل — ستصلك تحديثات الدورات عبر واتساب"
+                      : "غير مُفعّل"}
+                  </p>
+                )}
               </div>
 
               {/* Account Status */}

@@ -1,6 +1,6 @@
 # PRIVACY POLICY
 
-**Last updated: May 25, 2026**
+**Last updated: June 3, 2026**
 
 This Privacy Notice for Ali Suhail Shihab (doing business as Rubik (روبيك)) ("we," "us," or "our") describes how and why we might access, collect, store, use, and/or share ("process") your personal information when you use our services ("Services"), including when you:
 
@@ -54,7 +54,7 @@ We collect personal information that you voluntarily provide to us when you regi
 
 - Names
 - Email addresses
-- Phone numbers
+- Phone numbers (optional; provided by you to help us contact you and, where you give your separate, affirmative consent, to send you new-course updates and marketing messages via WhatsApp — see "HOW DO WE PROCESS YOUR INFORMATION?" below)
 - Usernames
 - Passwords (used to authenticate your account; account passwords are managed by Google Sign-In and Firebase Authentication and are not stored by us)
 - Contact or authentication data
@@ -104,6 +104,7 @@ We process your personal information for a variety of reasons, including:
 - **To deliver and facilitate delivery of services to you**, including granting access to course content you have purchased.
 - **To respond to user inquiries and offer support**, to resolve any potential issues you have with the Services.
 - **To send administrative information to you**, such as details about changes to our terms and policies.
+- **To send you marketing communications via WhatsApp, with your consent.** If you provide your phone number and give your separate, affirmative consent, we may contact you through WhatsApp to tell you about new courses, offers, and promotions from Rubik (روبيك). This consent is optional, is never bundled with acceptance of our Terms, and you can withdraw it at any time from your account profile or by contacting us at privacy@rubiktech.org. We record the date you give consent. Withdrawing consent will not affect the lawfulness of any messages sent before withdrawal.
 - **To verify wallet top-up payments and credit user accounts.** We process bank transfer receipts and ZainCash transaction confirmations to verify payments and credit corresponding balances to user wallets, which are then used to purchase course enrollments.
 - **To protect our Services**, including fraud monitoring and prevention.
 - **To enforce content protection and prevent piracy.** We process viewing data and device information to enforce DRM measures, prevent unauthorized content sharing, and protect copyrighted course materials owned by Rubik and our instructors.

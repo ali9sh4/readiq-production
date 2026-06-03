@@ -6,7 +6,8 @@ import {
   getDoc,
   updateDoc,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  FieldValue
 } from "firebase/firestore";
 import { User } from "firebase/auth";
 import { buildNewUserDocFields } from "@/lib/services/userDoc";
@@ -19,6 +20,14 @@ export interface UserProfile {
   // Optional, user-entered contact phone, canonical local "07XXXXXXXXX" form.
   // See lib/validation/phone.ts. Editable by the user (web profile) or an admin.
   phone?: string;
+  // WhatsApp marketing opt-in (optional, web capture only — see PhoneConsentCard
+  // and the profile page). `marketingConsentAt` is an audit record stamped with a
+  // Firestore server timestamp ONLY when consent flips false→true; it is typed
+  // `Timestamp | FieldValue` because the write passes serverTimestamp(), while
+  // reads return a Timestamp. `phonePromptDismissed` is the "don't ask again" flag.
+  marketingConsent?: boolean;
+  marketingConsentAt?: Timestamp | FieldValue;
+  phonePromptDismissed?: boolean;
   bio?: string;
   website?: string;
   createdCourses: string[];

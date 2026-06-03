@@ -24,6 +24,16 @@ export interface NewUserDocFields {
   // is OMITTED from new docs — set later via the web profile or admin editor.
   // Never written at signup, so account creation is unaffected.
   phone?: string;
+  // Optional WhatsApp marketing opt-in, captured web-only (post-login card +
+  // profile page). Like `phone`, both are OMITTED at signup. `marketingConsent`
+  // is an affirmative, separate opt-in (never bundled with Terms). The matching
+  // consent timestamp (`marketingConsentAt`) is a Firestore server timestamp and
+  // therefore lives only on UserProfile — this SDK-agnostic shape excludes
+  // timestamps by convention (see createdAt/updatedAt added at call sites).
+  // `phonePromptDismissed` records that the user chose "don't ask again" on the
+  // post-login card, so it never reappears.
+  marketingConsent?: boolean;
+  phonePromptDismissed?: boolean;
   createdCourses: string[];
   enrolledCourses: string[];
   walletBalance: number;

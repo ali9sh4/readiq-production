@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { BookOpen, Award, Plus, AlertCircle } from "lucide-react";
 import CoursesCardList from "@/components/CoursesCardList";
 import PhoneNudgeBanner from "@/components/PhoneNudgeBanner";
+import PhoneConsentCard from "@/components/PhoneConsentCard";
 import { Course } from "@/types/types";
 
 interface DashboardStats {
@@ -29,6 +30,9 @@ interface DashboardHomeProps {
   initialStats: DashboardStats | null;
   // True when the logged-in user is a course creator with no phone on file.
   needsPhone?: boolean;
+  // True when the post-login phone+consent capture card should be shown (user
+  // has no phone and hasn't chosen "don't ask again").
+  showPhonePrompt?: boolean;
 }
 
 export default function DashboardHome({
@@ -36,6 +40,7 @@ export default function DashboardHome({
   initialFavorites,
   initialStats,
   needsPhone = false,
+  showPhonePrompt = false,
 }: DashboardHomeProps) {
   const auth = useAuth();
 
@@ -48,7 +53,11 @@ export default function DashboardHome({
 
   return (
     <div className="space-y-6 sm:space-y-8 lg:space-y-10">
-      {/* Instructor contact-phone nudge (shared with the course edit page) */}
+      {/* Post-login phone + WhatsApp marketing-consent capture (web-only). */}
+      <PhoneConsentCard initialShow={showPhonePrompt} />
+
+      {/* Instructor contact-phone nudge (shared with the course edit page). The
+          page suppresses this when the capture card above is showing. */}
       <PhoneNudgeBanner needsPhone={needsPhone} />
 
       {/* Welcome Header */}
