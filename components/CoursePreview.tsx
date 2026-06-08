@@ -8,7 +8,6 @@ import {
   Clock,
   Users,
   Award,
-  Star,
   CheckCircle,
   Lock,
   ChevronDown,
@@ -262,28 +261,6 @@ export default function CoursePreview({
 
               {/* Stats Row */}
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 lg:gap-6 text-xs sm:text-sm">
-                {/* Rating */}
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="font-bold text-base sm:text-lg">
-                    {course.rating?.toFixed(1) || "4.7"}
-                  </span>
-                  <div className="flex items-center gap-0.5">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={`w-3 h-3 sm:w-4 sm:h-4 ${
-                          i < Math.floor(course.rating || 4.7)
-                            ? "fill-amber-400 text-amber-400"
-                            : "text-gray-500"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span className="text-gray-400 hidden sm:inline">
-                    ({(course.studentsCount || 0).toLocaleString()} تقييم)
-                  </span>
-                </div>
-
                 {/* Students */}
                 <div className="flex items-center gap-1.5 sm:gap-2 text-gray-300">
                   <Users className="w-4 h-4 sm:w-5 sm:h-5" />

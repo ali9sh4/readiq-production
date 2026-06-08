@@ -6,7 +6,7 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Star, Edit, Trash2, BookOpen, AlertCircle, Users } from "lucide-react";
+import { Edit, Trash2, BookOpen, AlertCircle, Users } from "lucide-react";
 import { Course, CourseResponse } from "@/types/types";
 import { checkUserEnrollments } from "@/app/actions/enrollment_action";
 import { useAuth } from "@/context/authContext";
@@ -102,7 +102,6 @@ const CourseCard = memo(
       [course.thumbnailUrl]
     );
 
-    const rating = course.rating || 4.7;
     const studentsCount = course.studentsCount || 0;
     const instructor = course.instructorName || "مدرب غير معروف";
     const displayPrice = getCourseDisplayPrice(course);
@@ -323,17 +322,6 @@ const CourseCard = memo(
                 <span>{course.enrollmentCount} طالب مسجل</span>
               </div>
             )}
-
-          {/* Rating */}
-          <div className="flex justify-end items-center gap-1 md:gap-1.5 lg:gap-1 text-xs md:text-sm lg:text-xs">
-            <span className="font-semibold text-gray-900">
-              {rating.toFixed(1)}
-            </span>
-            <Star className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-3.5 lg:h-3.5 fill-amber-400 text-amber-400" />
-            <span className="text-gray-500">
-              ({studentsCount.toLocaleString()})
-            </span>
-          </div>
 
           {/* Price */}
           <div className="flex flex-col items-end gap-0.5">

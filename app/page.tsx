@@ -153,7 +153,7 @@ export default async function Home() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3 text-center text-sky-100">
+                    <div className="grid grid-cols-2 gap-3 text-center text-sky-100">
                       <div className="rounded-2xl bg-sky-900/60 border border-sky-700/70 px-3 py-3">
                         <p className="text-xs text-sky-300 mb-1">عدد الدورات</p>
                         <p className="text-xl font-bold">{totalCourses}+</p>
@@ -161,13 +161,6 @@ export default async function Home() {
                       <div className="rounded-2xl bg-sky-900/60 border border-sky-700/70 px-3 py-3">
                         <p className="text-xs text-sky-300 mb-1">طلاب نشطون</p>
                         <p className="text-xl font-bold">1,000+</p>
-                      </div>
-                      <div className="rounded-2xl bg-sky-900/60 border border-sky-700/70 px-3 py-3">
-                        <p className="text-xs text-sky-300 mb-1">تقييم عام</p>
-                        <p className="text-xl font-bold flex items-center justify-center gap-1">
-                          4.9{" "}
-                          <Star className="h-4 w-4 fill-amber-300 text-amber-300" />
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -181,7 +174,7 @@ export default async function Home() {
       {/* ================= STATS ================= */}
       <section className="hidden lg:block bg-white py-12">
         <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6 max-w-5xl mx-auto">
             <div className="rounded-2xl border border-sky-100 bg-sky-50/60 px-5 py-5 sm:px-6 sm:py-6 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-600 text-white">
@@ -213,23 +206,6 @@ export default async function Home() {
               </div>
               <p className="text-xs sm:text-sm text-gray-600">
                 مجتمع متنامٍ من المتعلمين
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-amber-100 bg-amber-50/70 px-5 py-5 sm:px-6 sm:py-6 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500 text-white">
-                  <Star className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-xs text-amber-900/80">تقييم المنصة</p>
-                  <p className="text-2xl sm:text-3xl font-extrabold text-amber-900">
-                    4.9
-                  </p>
-                </div>
-              </div>
-              <p className="text-xs sm:text-sm text-gray-600">
-                رضا عالٍ من الطلاب عن جودة المحتوى والتجربة.
               </p>
             </div>
 
