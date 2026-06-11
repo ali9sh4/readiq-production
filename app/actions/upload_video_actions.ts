@@ -105,6 +105,9 @@ export async function createMuxUpload(formData: FormData) {
         normalize_audio: true,
       },
       cors_origin: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
+      // Instructors upload large files over slow links; Mux's default 3600s
+      // upload-URL timeout kills them. 86400 = 24h (valid range 60–604800).
+      timeout: 86400,
     });
 
     return {

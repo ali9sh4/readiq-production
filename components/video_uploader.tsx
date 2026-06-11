@@ -698,6 +698,14 @@ export default function VideoUploader({
                   </span>
                   <span className="text-sm text-gray-600">
                     {state.progress}%
+                    {state.status === "uploading" &&
+                      state.totalBytes !== undefined && (
+                        <span className="mr-2">
+                          {Math.round((state.bytesUploaded || 0) / 1024 / 1024)}{" "}
+                          / {Math.round(state.totalBytes / 1024 / 1024)}{" "}
+                          ميجابايت
+                        </span>
+                      )}
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
@@ -706,6 +714,25 @@ export default function VideoUploader({
                     style={{ width: `${state.progress}%` }}
                   />
                 </div>
+                {state.isOffline ? (
+                  <p className="text-sm text-amber-600 flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    انقطع الاتصال — سيستأنف الرفع تلقائياً
+                  </p>
+                ) : (
+                  state.isRetrying && (
+                    <p className="text-sm text-amber-600 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      جاري إعادة المحاولة...
+                    </p>
+                  )
+                )}
+                {state.status === "uploading" && (
+                  <p className="text-xs text-gray-500">
+                    الرفع قد يستغرق وقتاً حسب سرعة النت — لا تغلق الصفحة حتى
+                    يكتمل الرفع.
+                  </p>
+                )}
               </div>
             )}
 

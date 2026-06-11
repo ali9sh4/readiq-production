@@ -2,6 +2,7 @@ import {
   createMuxUpload,
   getMuxAssetStatus,
 } from "@/app/actions/upload_video_actions";
+import { createUpload } from "@mux/upchunk";
 import { useState, useCallback } from "react";
 
 export interface VideoUploadState {
@@ -11,6 +12,10 @@ export interface VideoUploadState {
   assetId?: string;
   playbackId?: string;
   error?: string;
+  bytesUploaded?: number;
+  totalBytes?: number;
+  isRetrying?: boolean;
+  isOffline?: boolean;
 }
 interface VideoUploadResult {
   assetId: string;
@@ -100,47 +105,74 @@ export const useVideoUpload = () => {
             }
 
             const { uploadUrl, uploadId } = uploadResult.data!;
-            setState({ status: "uploading", progress: 0, uploadId });
+            setState({
+              status: "uploading",
+              progress: 0,
+              uploadId,
+              bytesUploaded: 0,
+              totalBytes: file.size,
+            });
 
-            const xhr = new XMLHttpRequest();
+            // Chunked + resumable upload. UpChunk uploads chunks
+            // sequentially by design — no concurrency option exists.
+            const upload = createUpload({
+              endpoint: uploadUrl,
+              file,
+              chunkSize: 30720, // KB (30 MB), must be divisible by 256
+              attempts: 12,
+              // Browsers fire 'online' before the link is actually usable, so
+              // instant retries burn all attempts in seconds. 12 × 10s ≈ 2 min
+              // of tolerance per chunk (router reboots, ISP blips).
+              delayBeforeAttempt: 10,
+              dynamicChunkSize: true,
+            });
 
-            xhr.upload.onprogress = (e) => {
-              if (e.lengthComputable) {
-                const progress = Math.round((e.loaded / e.total) * 100);
-                setState((prev) => ({ ...prev, progress }));
-              }
-            };
+            upload.on("progress", (e) => {
+              const progress = Math.round(e.detail);
+              setState((prev) => ({
+                ...prev,
+                progress,
+                bytesUploaded: Math.round((e.detail / 100) * file.size),
+                isRetrying: false,
+              }));
+            });
 
-            xhr.onload = () => {
-              console.log("Upload status:", xhr.status);
-              if (xhr.status === 200 || xhr.status === 201) {
-                setState((prev) => ({
-                  ...prev,
-                  status: "processing",
-                  progress: 100,
-                }));
-                pollMuxStatus(uploadId);
-              } else {
-                setState({
-                  status: "error",
-                  progress: 0,
-                  error: "Upload failed",
-                });
-                rejectUpload(new Error("Upload failed"));
-              }
-            };
+            upload.on("attemptFailure", () => {
+              setState((prev) => ({ ...prev, isRetrying: true }));
+            });
 
-            xhr.onerror = () => {
+            upload.on("chunkSuccess", () => {
+              setState((prev) => ({ ...prev, isRetrying: false }));
+            });
+
+            upload.on("offline", () => {
+              setState((prev) => ({ ...prev, isOffline: true }));
+            });
+
+            upload.on("online", () => {
+              setState((prev) => ({ ...prev, isOffline: false }));
+            });
+
+            upload.on("success", () => {
+              setState((prev) => ({
+                ...prev,
+                status: "processing",
+                progress: 100,
+                bytesUploaded: file.size,
+                isRetrying: false,
+                isOffline: false,
+              }));
+              pollMuxStatus(uploadId);
+            });
+
+            upload.on("error", (e) => {
               setState({
                 status: "error",
                 progress: 0,
-                error: "Network error",
+                error: e.detail?.message || "Upload failed",
               });
-              rejectUpload(new Error("Network error"));
-            };
-
-            xhr.open("PUT", uploadUrl);
-            xhr.send(file);
+              rejectUpload(new Error(e.detail?.message || "Upload failed"));
+            });
           } catch (error) {
             setState({ status: "error", progress: 0, error: "Upload failed" });
             console.error("Upload error:", error);
