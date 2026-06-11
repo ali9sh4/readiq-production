@@ -1,5 +1,12 @@
 # Audit — ZainCash Merchant-API Auto Wallet Top-Up (pre-implementation)
 
+> **SUPERSEDED (2026-06-10).** The feature this audit preceded shipped in
+> `a048a31` (merged `491de84`): `app/api/payments/zaincash/topup/{init,intent,callback}`
+> + checkout bridge. The §7 idempotency risk was addressed in the shipped
+> callback. Live docs: `docs/ZAINCASH_TOPUP_TESTING.md` (batch C on prod still
+> open) and `docs/ZAINCASH_DEBUG_LEARNINGS.md`. Historical record only —
+> line numbers and "current state" claims below are pre-implementation.
+
 **Type:** Read-only audit. No code was changed.
 **Date:** 2026-05-30.
 **Author:** agent (Claude), reviewed by Ali.

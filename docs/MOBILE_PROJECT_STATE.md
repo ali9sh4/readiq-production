@@ -1,5 +1,5 @@
 # Readiq Mobile Project State
-Last updated: 2026-05-28
+Last updated: 2026-06-10
 
 ## Where we are
 
@@ -50,6 +50,47 @@ shipped.** Everything below is merged to `main`:
   `public/rubik-logo.png` (old `rubik-logo.svg` removed). Course pages now fall
   back to the brand OG image when a course has no thumbnail. Navbar wordmark
   unchanged. Mobile icons (`android-icon-*`, splash) pending in the mobile repo.
+- **Viewing-progress purge on account deletion (2026-05-29, `65629e6`).**
+  `lib/services/accountDeletion.ts` now also deletes the user's `progress`
+  docs; `/delete-account` lists deleted vs retained data sections. The
+  `DELETE /api/me` contract row was updated in the same commit.
+- **ZainCash → wallet auto top-up + checkout bridge (2026-05-30, `a048a31`,
+  merged `491de84`).** Web-only routes
+  `app/api/payments/zaincash/topup/{init,intent,callback}` — idempotent wallet
+  credit keyed on the ZainCash txn id; `topup_requests` discriminated by
+  `source: "zaincash"` so the manual one-pending guard is unaffected. Checkout
+  bridge at `/wallet/topup/complete` resumes the interrupted purchase.
+  Explicitly NOT part of the mobile contract (see `MOBILE_API_MIGRATION.md`).
+  The old pay-per-course ZainCash routes stay frozen. **Init half verified on
+  prod; the callback (credit) half is NOT — batch C in
+  `docs/ZAINCASH_TOPUP_TESTING.md` is the open money-safety gate.** Debug
+  playbook: `docs/ZAINCASH_DEBUG_LEARNINGS.md`. New env:
+  `ZAINCASH_CALLBACK_BASE_URL`. Pre-implementation audit archived to
+  `docs/archive/AUDIT_ZAINCASH.md`.
+- **Admin manual top-up (2026-05-31, `24c0a24`).**
+  `/admin-dashboard/manual-topup` credits a user's wallet directly
+  (email + amount, no receipt/queue); the user top-up wizard was simplified in
+  the same commit. Audit archived to
+  `docs/archive/AUDIT_ADMIN_MANUAL_TOPUP.md`.
+- **Sectional section re-pricing (2026-05-31, `9fdd4e0`).** Instructors can
+  re-price an already-sold section (raise or lower); see
+  `lib/courses/assertCourseMutationAllowed.ts` and
+  `app/actions/sectional_config_actions.ts`.
+- **Optional user phone + WhatsApp consent (2026-06-02/03,
+  `1bebfb6`–`1cbb156`).** Web-only: profile + admin-editor phone field
+  (canonical `07XXXXXXXXX`, `lib/validation/phone.ts`), missing-phone nudges
+  for instructors (dashboard + course edit page), post-login student capture
+  card with a separate marketing opt-in (`phone`, `marketingConsent`,
+  `marketingConsentAt`, `phonePromptDismissed` on `users/{uid}`; all omitted at
+  signup). None of it enters `app/api/*` — mobile contract unaffected.
+- **Fabricated star rating removed (2026-06-08, `d87dea0`).** Cards, course
+  detail, and homepage no longer render the hardcoded 4.7/4.9 stars. Audit
+  archived to `docs/archive/AUDIT_RATINGS_SEARCH.md`; real rating collection
+  and catalog search remain unbuilt backlog.
+- **Rubik AI chat — docs only (2026-05-30, `9f4a91f`).** Pre-implementation
+  audit (`docs/AUDIT_RUBIK_AI_CHAT.md`) + design (`docs/RUBIK_AI_CHAT.md`).
+  Hard blocker: no text representation of course content exists. No code
+  shipped.
 
 **Next milestone: Phase 7b — the React Native reader-app client.** Pure
 client-side work in the separate `readiq-production-mobile` repo. See
@@ -70,9 +111,13 @@ client-side work in the separate `readiq-production-mobile` repo. See
 
 ## In progress
 
-Nothing in flight in the web repo. The mobile API surface is complete. Active
-work moves to Phase 7b in the `readiq-production-mobile` repo (see "Decisions"
-below).
+**One open gate: ZainCash top-up batch-C prod verification.** The callback
+(wallet-credit) half of the auto top-up has not been proven on live under a
+double-fired callback — recipe in `docs/ZAINCASH_TOPUP_TESTING.md` (batches
+C–E). Do not treat auto top-up as fully shipped until it passes.
+
+Otherwise the mobile API surface is complete; active work moves to Phase 7b in
+the `readiq-production-mobile` repo (see "Decisions" below).
 
 ## Decisions (newly documented — not previously in any doc or commit)
 
@@ -106,8 +151,9 @@ Wallet-only launch. Documented in `docs/PHASE_4_ZAINCASH_DEFERRED.md`.
 1. **Web-side Qi Card payment integration.** Qi Card is Iraq's largest card
    issuer — broader reach than ZainCash. Widens the web payment funnel; does
    not touch the App Store billing problem.
-2. **ZainCash merchant API for automatic wallet top-up.** Eliminates the manual
-   receipt-approval bottleneck. Merchant account already held.
+2. ~~ZainCash merchant API for automatic wallet top-up.~~ **Shipped 2026-05-30
+   (`a048a31`)** — see "Where we are". Only the batch-C prod verification of
+   the callback remains open.
 3. **Six generic-toast catches** in `CourseDashboard.tsx` + `EnrollButton` /
    `favoritesButton` / wallet / topup — same Arabic-localization pattern as the
    recent error-message fix. Lower priority.
@@ -130,9 +176,9 @@ Read it before any sectional work, web or mobile.
 
 ## Key decisions log
 
-- **Wallet-only payment.** ZainCash is deprecated and frozen for the migration; it gets removed in a post-mobile cleanup PR.
+- **Wallet-only enrollment funding.** Every enrollment is paid from the internal wallet. The old ZainCash *pay-per-course* path (`/api/payments/zaincash/{init,webhook}`) is frozen and slated for removal in a post-mobile cleanup PR; the new ZainCash → *wallet top-up* path (2026-05-30) is live and is not part of that cleanup.
 - **Mobile-only video viewing.** The web Mux player is throwaway. The `/Course/[courseId]` web viewer route is scheduled for deletion after mobile launches.
-- **Manual top-up via receipt upload.** No automated payment provider. Students upload a receipt image to R2 via a presigned URL; admins approve in the existing dashboard.
+- **Top-up: ZainCash auto top-up + manual receipt fallback.** (Updated 2026-05-31 — originally "no automated payment provider".) Students top up automatically via ZainCash redirect, or upload a receipt image to R2 for admin approval; admins can also credit a wallet directly at `/admin-dashboard/manual-topup`.
 - **Search deferred to Algolia post-v1.** Firestore can't do free-text efficiently and prefix-match would mislead users. Mobile v1 ships with category/level filters only.
 - **Step 3 split into 3B (endpoint) + 3.5 (web migration).** The original Step 3 bundled the playback-token endpoint with flipping uploads to signed playback. Flipping uploads standalone would silently break the three existing web Mux player surfaces, so the endpoint shipped first (3B) and the surface migration + upload flip is its own scoped step (3.5).
 - **Step 3.5 deferred (Path C), then reversed 2026-05-02 — shipped.** Considered shipping immediately (A), skipping forever (B), deferring (C), or doing route-only prep work (D). Picked deferral, then reversed to ship-now ahead of mobile scaffolding. All substeps merged. Full threat model, decision rationale, and migration gotchas in `docs/archive/STEP_3_5_AUDIT.md`.

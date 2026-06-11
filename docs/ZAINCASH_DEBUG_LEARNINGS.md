@@ -1,7 +1,7 @@
 # ZainCash — Production Debug Learnings
 
 **Date:** 2026-05-31. **Scope:** the wallet top-up `init` call failing on live
-while working on localhost. Sibling to `docs/AUDIT_ZAINCASH.md`. Purpose: diagnose
+while working on localhost. Sibling to `docs/archive/AUDIT_ZAINCASH.md`. Purpose: diagnose
 this class of bug in minutes next time, not an hour.
 
 > **Status caveat:** This documents the **init (send) half** only — proven green on

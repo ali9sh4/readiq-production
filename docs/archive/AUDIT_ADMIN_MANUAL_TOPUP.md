@@ -1,5 +1,9 @@
 # Audit — Admin "Add Balance Manually" (direct wallet credit)
 
+> **SUPERSEDED (2026-06-10).** Shipped in `24c0a24` as
+> `app/admin-dashboard/manual-topup/` (+ `app/actions/wallet_actions.ts`).
+> Historical record only — line numbers below are pre-implementation.
+
 **Date:** 2026-05-31
 **Goal:** Let an admin credit a user's wallet directly (email + amount → balance credited immediately, no receipt, no review queue). Separate from, and leaving untouched, the existing receipt-approval flow.
 **Status:** READ-ONLY AUDIT. No feature code written yet. Implementation plan at the end is for review.
