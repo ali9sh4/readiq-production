@@ -1,6 +1,5 @@
 "use client";
 import SignedMuxPlayer from "@/components/SignedMuxPlayer";
-import SignedMuxThumbnail from "@/components/SignedMuxThumbnail";
 
 import { useState, useRef, useEffect } from "react";
 import {
@@ -390,11 +389,6 @@ export default function VideoUploader({
     } finally {
       setDeletingVideoId(null);
     }
-  };
-
-  // ===== PLAY VIDEO =====
-  const togglePlayVideo = (videoId: string) => {
-    setPlayingVideoId(playingVideoId === videoId ? null : videoId);
   };
 
   // ===== STATUS HELPERS =====
@@ -834,37 +828,18 @@ export default function VideoUploader({
                         <div className="flex-shrink-0 w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
                           {index + 1}
                         </div>
-                        {/* Thumbnail */}
-                        <div
-                          className="relative w-32 h-20 bg-red-500 rounded overflow-hidden flex-shrink-0 group cursor-pointer"
-                          onClick={() => {
-                            togglePlayVideo(video.videoId);
-                          }}
-                        >
-                          <SignedMuxThumbnail
-                            courseId={courseId}
-                            videoId={video.videoId}
-                            playbackId={video.playbackId}
-                            alt={video.title}
-                            fill
-                            sizes="128px"
-                            className="object-cover"
-                          />
-                          <div className="absolute inset-0 bg-opacity-20 group-hover:bg-opacity-40 transition-all flex items-center justify-center z-10">
-                            <Play className="w-8 h-8 text-white" />
-                          </div>
-                          {video.duration && (
-                            <div className="absolute bottom-1 right-1 bg-black bg-opacity-75 text-white text-xs px-1.5 py-0.5 rounded">
-                              {formatDuration(video.duration)}
-                            </div>
-                          )}
-                        </div>
 
-                        {/* Info */}
+                        {/* Info (text-only — thumbnail removed to cut Mux
+                            token minting + Vercel image transforms) */}
                         <div className="flex-1 min-w-0">
                           <h4 className="font-medium text-gray-900 truncate mb-1">
                             {video.title}
                           </h4>
+                          {video.description && (
+                            <p className="text-xs text-gray-600 line-clamp-2 mb-1">
+                              {video.description}
+                            </p>
+                          )}
                           <div className="flex items-center gap-4 text-xs text-gray-500">
                             <div className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
