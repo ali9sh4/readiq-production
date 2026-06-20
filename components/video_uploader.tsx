@@ -832,7 +832,7 @@ export default function VideoUploader({
                         {/* Info (text-only — thumbnail removed to cut Mux
                             token minting + Vercel image transforms) */}
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-gray-900 truncate mb-1">
+                          <h4 className="text-xl font-medium text-gray-900 truncate mb-1">
                             {video.title}
                           </h4>
                           {video.description && (
