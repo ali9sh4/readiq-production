@@ -127,6 +127,21 @@ export async function createMuxUpload(formData: FormData) {
   }
 }
 
+// Best-effort cancellation of an abandoned direct upload (e.g. after a
+// connection drop, when the user retries with a fresh session). Only succeeds
+// while the upload is still `waiting`; an interrupted upload auto-expires
+// server-side via the create-time timeout anyway, so failures are non-fatal
+// and intentionally swallowed — callers fire-and-forget this.
+export async function cancelMuxUpload(uploadId: string) {
+  try {
+    await mux.video.uploads.cancel(uploadId);
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to cancel Mux upload:", error);
+    return { success: false };
+  }
+}
+
 export async function getMuxAssetStatus(uploadId: string) {
   try {
     const upload = await mux.video.uploads.retrieve(uploadId);

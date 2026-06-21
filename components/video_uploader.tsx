@@ -790,14 +790,16 @@ export default function VideoUploader({
               </button>
             )}
 
-            {/* Retry */}
+            {/* Retry — runs the full upload path again, which mints a brand-new
+                Mux session (new url + id). Never reuses the dead one. */}
             {state.status === "error" && (
               <button
                 onClick={() => {
-                  reset();
                   setError("");
+                  handleUpload();
                 }}
-                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center justify-center gap-2"
+                disabled={uploading || disabled}
+                className="w-full h-12 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium flex items-center justify-center gap-2"
               >
                 <Upload className="w-5 h-5" />
                 محاولة مرة أخرى

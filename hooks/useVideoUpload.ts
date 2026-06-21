@@ -1,6 +1,7 @@
 import {
   createMuxUpload,
   getMuxAssetStatus,
+  cancelMuxUpload,
 } from "@/app/actions/upload_video_actions";
 import { createUpload } from "@mux/upchunk";
 import { useState, useCallback, useRef } from "react";
@@ -42,10 +43,36 @@ export const useVideoUpload = () => {
   // cancel() can drive it from outside startUpload's closure.
   const uploadRef = useRef<ReturnType<typeof createUpload> | null>(null);
   const rejectRef = useRef<((error: Error) => void) | null>(null);
+  // Mux upload id of the current/most-recent session, so a retry can cancel
+  // the abandoned one server-side.
+  const currentUploadIdRef = useRef<string | null>(null);
   // Bytes actually committed (only ever increases) — drives the bar. And the
   // consecutive-failure counter that triggers the stall pause.
   const committedBytesRef = useRef(0);
   const failuresSinceCommitRef = useRef(0);
+
+  // Tear down any in-flight/abandoned upload before starting a new one (or on
+  // explicit cancel). Aborts the old UpChunk instance so it can't auto-resume
+  // against a dead URL (the 400 loop + phantom bar creep), best-effort cancels
+  // the stale Mux session, and clears the per-upload counters.
+  const disposeActiveUpload = useCallback(() => {
+    if (uploadRef.current) {
+      try {
+        uploadRef.current.abort();
+      } catch {
+        // already aborted/finished — ignore
+      }
+      uploadRef.current = null;
+    }
+    const oldId = currentUploadIdRef.current;
+    if (oldId) {
+      // fire-and-forget; never blocks the new upload, never surfaced to user
+      void cancelMuxUpload(oldId).catch(() => {});
+      currentUploadIdRef.current = null;
+    }
+    committedBytesRef.current = 0;
+    failuresSinceCommitRef.current = 0;
+  }, []);
 
   const startUpload = useCallback(
     async (
@@ -104,6 +131,11 @@ export const useVideoUpload = () => {
 
         (async () => {
           try {
+            // Kill any previous (possibly dead) attempt first, so a retry can
+            // never overlap it or reuse its session. Mints a brand-new Mux
+            // upload URL below — a fresh empty session where byte 0 is valid.
+            disposeActiveUpload();
+
             const formData = new FormData();
             formData.append("courseId", courseId);
             formData.append("title", file.name);
@@ -125,6 +157,7 @@ export const useVideoUpload = () => {
             // Fresh bookkeeping for this upload.
             committedBytesRef.current = 0;
             failuresSinceCommitRef.current = 0;
+            currentUploadIdRef.current = uploadId;
             setState({
               status: "uploading",
               progress: 0,
@@ -216,6 +249,17 @@ export const useVideoUpload = () => {
             });
 
             upload.on("error", (e) => {
+              // Dispose the instance so it can't auto-resume against this dead
+              // URL on reconnect (the 400 loop + background bar creep). Keep
+              // currentUploadIdRef so the next retry can cancel this session.
+              try {
+                upload.abort();
+              } catch {
+                // already aborted/finished — ignore
+              }
+              if (uploadRef.current === upload) {
+                uploadRef.current = null;
+              }
               setState({
                 status: "error",
                 progress: 0,
@@ -266,10 +310,10 @@ export const useVideoUpload = () => {
   }, []);
 
   // Abort a stalled upload and surface the existing failed/error state.
-  // Committed progress is preserved (we don't reset the bar to 0).
+  // Committed progress is preserved (we don't reset the bar to 0). Also
+  // best-effort cancels the abandoned Mux session.
   const cancel = useCallback(() => {
-    uploadRef.current?.abort();
-    uploadRef.current = null;
+    disposeActiveUpload();
     setState((prev) => ({
       ...prev,
       status: "error",
@@ -280,7 +324,7 @@ export const useVideoUpload = () => {
     }));
     rejectRef.current?.(new Error("Upload cancelled"));
     rejectRef.current = null;
-  }, []);
+  }, [disposeActiveUpload]);
 
   const reset = useCallback(() => {
     setState({ status: "idle", progress: 0 });
