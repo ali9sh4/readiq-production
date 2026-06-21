@@ -86,7 +86,7 @@ export default function VideoUploader({
 }: Props) {
   const auth = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { state, startUpload, reset } = useVideoUpload();
+  const { state, startUpload, resume, cancel, reset } = useVideoUpload();
 
   // ===== STATE =====
   const [selectedVideo, setSelectedVideo] = useState<SelectedVideo | null>(
@@ -704,11 +704,43 @@ export default function VideoUploader({
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    className={`bg-blue-600 h-2 rounded-full transition-all duration-300 ${
+                      state.status === "uploading" && !state.isStalled
+                        ? "animate-pulse"
+                        : ""
+                    }`}
                     style={{ width: `${state.progress}%` }}
                   />
                 </div>
-                {state.isOffline ? (
+                {/* Stall: degraded connection, upload paused. Bar holds at the
+                    committed % above; user resumes or cancels. */}
+                {state.isStalled ? (
+                  <div className="space-y-3">
+                    <p className="text-sm text-amber-700 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>
+                        الاتصال غير مستقر — تم إيقاف الرفع مؤقتاً عند ‎
+                        {state.progress}%‎. استأنف عندما يستقر الاتصال.
+                      </span>
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={resume}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
+                      >
+                        <Upload className="w-4 h-4" />
+                        استئناف
+                      </button>
+                      <button
+                        onClick={cancel}
+                        className="flex items-center gap-2 px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                        إلغاء
+                      </button>
+                    </div>
+                  </div>
+                ) : state.isOffline ? (
                   <p className="text-sm text-amber-600 flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     انقطع الاتصال — سيستأنف الرفع تلقائياً
@@ -721,7 +753,7 @@ export default function VideoUploader({
                     </p>
                   )
                 )}
-                {state.status === "uploading" && (
+                {state.status === "uploading" && !state.isStalled && (
                   <p className="text-xs text-gray-500">
                     الرفع قد يستغرق وقتاً حسب سرعة النت — لا تغلق الصفحة حتى
                     يكتمل الرفع.
