@@ -86,7 +86,7 @@ export default function VideoUploader({
 }: Props) {
   const auth = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { state, startUpload, resume, cancel, reset } = useVideoUpload();
+  const { state, startUpload, cancel, reset } = useVideoUpload();
 
   // ===== STATE =====
   const [selectedVideo, setSelectedVideo] = useState<SelectedVideo | null>(
@@ -712,24 +712,29 @@ export default function VideoUploader({
                     style={{ width: `${state.progress}%` }}
                   />
                 </div>
-                {/* Stall: degraded connection, upload paused. Bar holds at the
-                    committed % above; user resumes or cancels. */}
+                {/* Connection lost / degraded: the session can't be safely
+                    completed (a resumed upload corrupts the chunk seam and Mux
+                    rejects the assembled file), so the only recovery is a fresh
+                    restart from zero on a new Mux session — not a resume. */}
                 {state.isStalled ? (
                   <div className="space-y-3">
                     <p className="text-sm text-amber-700 flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 flex-shrink-0" />
                       <span>
-                        الاتصال غير مستقر — تم إيقاف الرفع مؤقتاً عند ‎
-                        {state.progress}%‎. استأنف عندما يستقر الاتصال.
+                        انقطع الاتصال — لا يمكن استكمال هذا الرفع. أعد الرفع من
+                        البداية عند استقرار الاتصال.
                       </span>
                     </p>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={resume}
+                        onClick={() => {
+                          setError("");
+                          handleUpload();
+                        }}
                         className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
                       >
-                        <Upload className="w-4 h-4" />
-                        استئناف
+                        <RefreshCw className="w-4 h-4" />
+                        رفع من جديد
                       </button>
                       <button
                         onClick={cancel}
@@ -740,11 +745,6 @@ export default function VideoUploader({
                       </button>
                     </div>
                   </div>
-                ) : state.isOffline ? (
-                  <p className="text-sm text-amber-600 flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    انقطع الاتصال — سيستأنف الرفع تلقائياً
-                  </p>
                 ) : (
                   state.isRetrying && (
                     <p className="text-sm text-amber-600 flex items-center gap-2">

@@ -17,9 +17,13 @@ export interface VideoUploadState {
   totalBytes?: number;
   isRetrying?: boolean;
   isOffline?: boolean;
-  // Set when chunks keep failing with nothing committing (degraded link,
-  // navigator.onLine still true). The upload is paused; the user resumes
-  // or cancels. Committed % is preserved for display while stalled.
+  // Set when the upload can no longer be safely continued — either a degraded
+  // link (>= MAX_FAILURES_BEFORE_STALL chunk failures with nothing committing)
+  // or a dropped connection (offline). A session that lost its connection
+  // can't be completed: resuming re-sends across the partial-chunk seam and
+  // Mux rejects the assembled file at finalization. The instance is
+  // paused/aborted and the UI shows a restart-fresh prompt; recovery restarts
+  // the upload from zero on a new Mux session (resume is intentionally gone).
   isStalled?: boolean;
 }
 
@@ -227,12 +231,22 @@ export const useVideoUpload = () => {
               }
             });
 
+            // FIX: a dropped connection cannot be safely resumed — UpChunk
+            // auto-resumes on the next 'online' event and re-sends across the
+            // partial-chunk seam, so the assembled bytes no longer match the
+            // declared size and Mux rejects the file at finalization (instant
+            // fail, no processing). Abort immediately: a dead instance has
+            // nothing to auto-resume, and recovery becomes a fresh restart.
             upload.on("offline", () => {
-              setState((prev) => ({ ...prev, isOffline: true }));
-            });
-
-            upload.on("online", () => {
-              setState((prev) => ({ ...prev, isOffline: false }));
+              try {
+                upload.abort();
+              } catch {
+                // already aborted/finished — ignore
+              }
+              if (uploadRef.current === upload) {
+                uploadRef.current = null;
+              }
+              setState((prev) => ({ ...prev, isStalled: true }));
             });
 
             upload.on("success", () => {
@@ -297,17 +311,10 @@ export const useVideoUpload = () => {
     }
   }, []);
 
-  // Resume a stalled upload from the committed point.
-  const resume = useCallback(() => {
-    failuresSinceCommitRef.current = 0;
-    setState((prev) => ({
-      ...prev,
-      isStalled: false,
-      isRetrying: false,
-      status: "uploading",
-    }));
-    uploadRef.current?.resume();
-  }, []);
+  // There is deliberately no resume(): a session that lost its connection
+  // can't be safely completed. Recovery is a fresh restart via startUpload
+  // (new Mux url + id, from byte 0) — driven from the component, which holds
+  // the selected File.
 
   // Abort a stalled upload and surface the existing failed/error state.
   // Committed progress is preserved (we don't reset the bar to 0). Also
@@ -334,7 +341,6 @@ export const useVideoUpload = () => {
     state,
     startUpload,
     checkProcessingStatus,
-    resume,
     cancel,
     reset,
   };
