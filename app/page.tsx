@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   BookOpen,
-  Users,
   Star,
   CheckCircle,
   ArrowLeft,
@@ -55,8 +54,6 @@ export default async function Home() {
   });
 
   const courses = data.courses ?? [];
-
-  const totalCourses = 20; // Hardcoded total courses for display
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -154,13 +151,19 @@ export default async function Home() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 text-center text-sky-100">
-                      <div className="rounded-2xl bg-sky-900/60 border border-sky-700/70 px-3 py-3">
-                        <p className="text-xs text-sky-300 mb-1">عدد الدورات</p>
-                        <p className="text-xl font-bold">{totalCourses}+</p>
+                      <div className="rounded-2xl bg-sky-900/60 border border-sky-700/70 px-3 py-4 flex flex-col items-center gap-1.5">
+                        <GraduationCap className="h-6 w-6 text-emerald-300" />
+                        <p className="text-sm font-bold text-white">شهادة إنهاء</p>
+                        <p className="text-[11px] text-sky-300">
+                          مع كل دورة تُكملها
+                        </p>
                       </div>
-                      <div className="rounded-2xl bg-sky-900/60 border border-sky-700/70 px-3 py-3">
-                        <p className="text-xs text-sky-300 mb-1">طلاب نشطون</p>
-                        <p className="text-xl font-bold">1,000+</p>
+                      <div className="rounded-2xl bg-sky-900/60 border border-sky-700/70 px-3 py-4 flex flex-col items-center gap-1.5">
+                        <Clock className="h-6 w-6 text-emerald-300" />
+                        <p className="text-sm font-bold text-white">وصول دائم</p>
+                        <p className="text-[11px] text-sky-300">
+                          تعلّم في أي وقت يناسبك
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -180,32 +183,26 @@ export default async function Home() {
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-600 text-white">
                   <BookOpen className="h-6 w-6" />
                 </div>
-                <div>
-                  <p className="text-xs text-sky-700/80">دورات متاحة</p>
-                  <p className="text-2xl sm:text-3xl font-extrabold text-sky-900">
-                    {totalCourses}+
-                  </p>
-                </div>
+                <p className="text-base sm:text-lg font-bold text-sky-900">
+                  دورات بمجالات متعددة
+                </p>
               </div>
               <p className="text-xs sm:text-sm text-gray-600">
-                محتوى في مجالات متعددة مصمم للسوق العراقي والعربي.
+                محتوى مصمم للسوق العراقي والعربي تختار منه ما يناسب هدفك.
               </p>
             </div>
 
             <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 px-5 py-5 sm:px-6 sm:py-6 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-600 text-white">
-                  <Users className="h-6 w-6" />
+                  <GraduationCap className="h-6 w-6" />
                 </div>
-                <div>
-                  <p className="text-xs text-emerald-800/80">طلاب نشطون</p>
-                  <p className="text-2xl sm:text-3xl font-extrabold text-emerald-900">
-                    1,000+
-                  </p>
-                </div>
+                <p className="text-base sm:text-lg font-bold text-emerald-900">
+                  شهادة إنهاء لكل دورة
+                </p>
               </div>
               <p className="text-xs sm:text-sm text-gray-600">
-                مجتمع متنامٍ من المتعلمين
+                أثبت مهارتك بشهادة عند إكمالك للدورة.
               </p>
             </div>
 
@@ -214,15 +211,12 @@ export default async function Home() {
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gray-900 text-white">
                   <CheckCircle className="h-6 w-6" />
                 </div>
-                <div>
-                  <p className="text-xs text-gray-700/80">جودة المحتوى</p>
-                  <p className="text-2xl sm:text-3xl font-extrabold text-gray-900">
-                    100%
-                  </p>
-                </div>
+                <p className="text-base sm:text-lg font-bold text-gray-900">
+                  مراجعة يدوية للجودة
+                </p>
               </div>
               <p className="text-xs sm:text-sm text-gray-600">
-                مراجعة يدوية للدورات قبل نشرها لضمان الجودة.
+                كل دورة تُراجع يدويًا قبل نشرها لضمان الجودة.
               </p>
             </div>
           </div>
