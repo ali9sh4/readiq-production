@@ -1,4 +1,6 @@
+import { Suspense } from "react";
 import InstructorCourse from "@/components/instructorCourse";
+import CoursesGridSkeleton from "@/components/CoursesGridSkeleton";
 import NavigationButton from "@/components/NavigationButton";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, BookOpen } from "lucide-react";
@@ -40,28 +42,29 @@ export default async function Courses({
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden mb-6">
           <div className="h-1 bg-blue-600" />
           <div className="p-4 sm:p-6">
-            <InstructorCourse searchParams={searchParams} />
+            {/* Stream the Firestore-backed course list so this page shell
+                paints immediately instead of the whole route blocking. */}
+            <Suspense fallback={<CoursesGridSkeleton />}>
+              <InstructorCourse searchParams={searchParams} />
+            </Suspense>
           </div>
         </div>
 
         {/* Add New Course Button - At Bottom */}
         <div className="flex justify-center pb-6">
-          <Button
-            asChild
+          {/* Single prefetching link-button (was a Button asChild wrapping a
+              NavigationButton, i.e. nested buttons). NavigationButton now is a
+              styled <Link>, so the outer wrapper is gone. */}
+          <NavigationButton
+            href={`/course-upload/new`}
             size="lg"
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200 rounded-xl"
+            className="bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all duration-200 rounded-xl flex items-center gap-2 px-8 py-6"
           >
-            <NavigationButton
-              href={`/course-upload/new`}
-              variant="outline"
-              className="flex items-center gap-2 px-8 py-6"
-            >
-              <PlusCircle className="h-5 w-5" />
-              <span className="font-semibold text-base sm:text-lg">
-                إضافة دورة جديدة
-              </span>{" "}
-            </NavigationButton>
-          </Button>
+            <PlusCircle className="h-5 w-5" />
+            <span className="font-semibold text-base sm:text-lg">
+              إضافة دورة جديدة
+            </span>
+          </NavigationButton>
         </div>
       </div>
     </div>

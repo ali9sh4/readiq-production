@@ -17,9 +17,11 @@ export default async function InstructorCourse({
     isAdminView?: boolean;
   }>;
 }) {
-  const params = await searchParams;
+  // searchParams and cookies() are independent, so resolve them concurrently.
+  // (getCurrentUser → getCourses below is a true dependency chain — the course
+  // query needs the resolved user id — so those stay sequential.)
+  const [params, cookieStore] = await Promise.all([searchParams, cookies()]);
 
-  const cookieStore = await cookies();
   const token = cookieStore.get("firebaseAuthToken")?.value;
 
   let currentUserId: string | undefined = undefined;
