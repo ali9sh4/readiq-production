@@ -5,6 +5,57 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-06-30 — Course-editor delete/publish bounce fix (Symptom 2)
+
+Branch: `fix/course-editor-refresh-bounce`. Implements **only** Symptom 2 from
+`docs/NAV_AND_COURSE_EDITOR_AUDIT.md` (deleting a cover photo — and publishing /
+unpublishing / uploading a cover — bounced the user to `/`). Symptoms 1 and 3
+untouched.
+
+### Root cause (not fixed here, by design)
+The bounce's true root cause is middleware + `firebaseAuthToken` cookie staleness
+mid-session: a client `router.refresh()` re-issues the editor route's RSC request,
+which passes through `middleware.ts` and gets redirected to `/` when the cookie
+has expired. Per instructions we did **not** touch middleware or the
+refresh-token route — instead we removed the client-side `router.refresh()` calls
+that re-ran the protected route, so the bounce is impossible regardless of cookie
+state.
+
+### Changes — all in `components/CourseDashboard.tsx`
+Replaced `router.refresh()` with a local-state update in four handlers. Each old
+line is left commented for reversibility.
+- **`handleDeleteThumbnail`** (primary reported bug): now
+  `setCourse({ ...prev, thumbnailUrl: undefined })`. The server delete already
+  persisted `thumbnailUrl=null`; the `ThumbNailUploader` clears the form image
+  field itself after `onDelete()` resolves, so the cover disappears immediately.
+- **`onImageSubmit`** (cover upload): `setCourse` already set the new URL; added
+  `form.setValue("image", { id, url, isExisting: true })` so the form image
+  matches a post-refresh state. Dropped the refresh.
+- **`handlePublish` / `handleUnPublish`**: local `setCourse({ status })` already
+  drove the editor badge; dropped the refresh. The public course page is still
+  revalidated server-side via `revalidatePath()` inside `publishCourse` /
+  `unpublishCourse`, so no server revalidation is lost.
+
+### Left as `router.refresh()` (flagged, out of scope)
+- `SectionListEditor`'s `onSaved={() => router.refresh()}` (~line 1086). It is
+  not one of the three audit-named latent spots, and a section save returns
+  server-derived data the client does not already hold, so a local-state mirror
+  isn't a safe drop-in. Left unchanged; will bounce too on a stale cookie until
+  the middleware/cookie root cause is addressed separately.
+
+### Verification
+- `npx tsc --noEmit`: no new errors (only the pre-existing `admin/sync-enrollments`
+  and `[courseId]` `params` errors). Note `Course.thumbnailUrl` is
+  `string | undefined`, so the delete mirror uses `undefined` (the typed
+  equivalent of the server's `null`; both falsy to every consumer).
+- `npm run build`: compiled successfully, 54/54 pages.
+- Behavioral expectation (can't reproduce the original bounce — it only fired on
+  a stale cookie; removing the refresh makes it deterministically impossible):
+  delete/upload/publish/unpublish update the editor UI immediately and persist on
+  a manual reload.
+
+---
+
 ## 2026-06-29 — Navigation slowness + jarring skeleton fix (Symptom 1)
 
 Branch: `perf/nav-and-route-loading`. Implements **only** Symptom 1 from

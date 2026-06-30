@@ -311,9 +311,20 @@ export default function CourseDashboard({ defaultValues }: Props) {
         }));
 
         toast.success("تم حفظ صورة الغلاف بنجاح!");
-        await new Promise((resolve) => setTimeout(resolve, 100));
 
-        router.refresh();
+        // Reflect the saved cover locally instead of router.refresh(). The
+        // refresh re-runs this protected route through middleware, which bounces
+        // the user to "/" when the auth cookie has gone stale mid-session — the
+        // Symptom 2 bug (docs/NAV_AND_COURSE_EDITOR_AUDIT.md). setCourse above
+        // already updated thumbnailUrl; mark the form image as the persisted,
+        // existing cover so local state matches what a server re-fetch produces.
+        form.setValue("image", {
+          id: "existing-thumbnail",
+          url: downloadURL,
+          isExisting: true,
+        });
+        // await new Promise((resolve) => setTimeout(resolve, 100));
+        // router.refresh();
       } else {
         toast.error("فشل في حفظ الصورة");
       }
@@ -346,8 +357,19 @@ export default function CourseDashboard({ defaultValues }: Props) {
 
       if (result.success) {
         toast.success("تم حذف صورة الغلاف بنجاح!");
-        await new Promise((resolve) => setTimeout(resolve, 100));
-        router.refresh();
+
+        // Reflect the deletion locally instead of router.refresh(). The refresh
+        // re-runs this protected route through middleware, which bounces the
+        // user to "/" when the auth cookie has gone stale mid-session — the
+        // reported Symptom 2 bug (docs/NAV_AND_COURSE_EDITOR_AUDIT.md). The
+        // server delete already persisted thumbnailUrl=null, and the
+        // ThumbNailUploader clears the form image field itself once onDelete
+        // resolves, so we only mirror the cleared field in local course state.
+        // (Course.thumbnailUrl is `string | undefined`; undefined is the typed
+        // equivalent of the server's null — both are falsy to every consumer.)
+        setCourse((prev) => ({ ...prev, thumbnailUrl: undefined }));
+        // await new Promise((resolve) => setTimeout(resolve, 100));
+        // router.refresh();
       } else {
         toast.error(result.message || "فشل في حذف صورة الغلاف");
       }
@@ -376,7 +398,12 @@ export default function CourseDashboard({ defaultValues }: Props) {
       if (result.success) {
         setCourse((prev) => ({ ...prev, status: "published" }));
         toast.success("تم نشر الدوره بنجاح");
-        router.refresh();
+        // Local status update above already drives the editor UI. Dropped
+        // router.refresh() — it re-ran this protected route through middleware
+        // and bounced to "/" on a stale cookie (Symptom 2). The public course
+        // page is still refreshed server-side via revalidatePath() inside
+        // publishCourse, so no server revalidation is lost.
+        // router.refresh();
       } else {
         setError(result.error || "فشل في نشر الدورة");
       }
@@ -409,7 +436,12 @@ export default function CourseDashboard({ defaultValues }: Props) {
       if (result.success) {
         setCourse((prev) => ({ ...prev, status: "draft" }));
         toast.success("تم الغاء نشر الدوره بنجاح");
-        router.refresh();
+        // Local status update above already drives the editor UI. Dropped
+        // router.refresh() — it re-ran this protected route through middleware
+        // and bounced to "/" on a stale cookie (Symptom 2). The public course
+        // page is still refreshed server-side via revalidatePath() inside
+        // unpublishCourse, so no server revalidation is lost.
+        // router.refresh();
       } else {
         setError(result.error || "فشل في إلغاء النشر");
       }
