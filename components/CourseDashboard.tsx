@@ -368,6 +368,13 @@ export default function CourseDashboard({ defaultValues }: Props) {
         // (Course.thumbnailUrl is `string | undefined`; undefined is the typed
         // equivalent of the server's null — both are falsy to every consumer.)
         setCourse((prev) => ({ ...prev, thumbnailUrl: undefined }));
+        // The visible editor cover is bound to the react-hook-form `image` field
+        // (ThumbNailUploader image={field.value}), NOT to course.thumbnailUrl, so
+        // the setCourse above alone does not clear it without a hard refresh.
+        // Clear the form field too — this is the source the uploader renders.
+        // (Mirrors the form.reset({ image: undefined }) that the removed
+        // router.refresh() used to trigger.) See docs/COVER_PHOTO_PROPAGATION_AUDIT.md.
+        form.setValue("image", undefined);
         // await new Promise((resolve) => setTimeout(resolve, 100));
         // router.refresh();
       } else {

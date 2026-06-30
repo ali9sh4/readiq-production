@@ -219,12 +219,24 @@ export default function ThumbNailUploader({
                         </div>
                         {/* 🔥 UPDATED: Smaller image preview on iPad */}
                         <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 lg:w-40 lg:h-40 relative rounded-lg md:rounded-xl overflow-hidden border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all duration-300 flex-shrink-0">
-                          <Image
+                          {/* Plain <img> (not next/image) so course covers bypass
+                              the Next image optimizer. On the Hobby tier /_next/image
+                              returns 402 (quota); the raw Firebase Storage download
+                              URL returns 200. See docs/COVER_PHOTO_PROPAGATION_AUDIT.md.
+                              The previous <Image fill> is kept below for reversibility. */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={urlFormatter ? urlFormatter(image) : image.url}
+                            alt=""
+                            loading="lazy"
+                            className="absolute inset-0 h-full w-full object-cover hover:scale-105 transition-transform duration-300"
+                          />
+                          {/* <Image
                             src={urlFormatter ? urlFormatter(image) : image.url}
                             fill
                             alt=""
                             className="object-cover hover:scale-105 transition-transform duration-300"
-                          />
+                          /> */}
                         </div>
 
                         <div className="flex-grow min-w-0">

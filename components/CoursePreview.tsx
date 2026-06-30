@@ -399,7 +399,22 @@ export default function CoursePreview({
                     </div>
                   ) : (
                     <div className="relative aspect-video">
-                      <Image
+                      {/* Plain <img> (not next/image) so the cover hero bypasses
+                          the Next image optimizer — /_next/image returns 402 on the
+                          Hobby tier; the raw Firebase URL returns 200. See
+                          docs/COVER_PHOTO_PROPAGATION_AUDIT.md. Previous <Image fill>
+                          kept below for reversibility. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={
+                          course.thumbnailUrl ||
+                          "/images/course-placeholder.jpg"
+                        }
+                        alt={course.title}
+                        loading="lazy"
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                      {/* <Image
                         src={
                           course.thumbnailUrl ||
                           "/images/course-placeholder.jpg"
@@ -407,7 +422,7 @@ export default function CoursePreview({
                         alt={course.title}
                         fill
                         className="object-cover"
-                      />
+                      /> */}
                       <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/60 to-transparent pointer-events-none" />
                       {hasFreePreview && !isSignedIn && !authLoading ? (
                         /* Free preview exists but the visitor is signed out.

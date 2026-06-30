@@ -131,14 +131,27 @@ const CourseCard = memo(
           <Link href={`/course/${course.id}`} className="relative block">
             <div className="relative h-40 sm:h-48 md:h-52 lg:h-44 bg-gray-100 overflow-hidden rounded-t-[8px] md:rounded-t-[7px] lg:rounded-t-[13px] group/image">
               {!imageError ? (
-                <Image
+                // Plain <img> (not next/image) so course covers bypass the Next
+                // image optimizer — /_next/image returns 402 on the Hobby tier;
+                // the raw Firebase URL returns 200. onError → book placeholder is
+                // preserved. See docs/COVER_PHOTO_PROPAGATION_AUDIT.md.
+                // Previous <Image fill> kept below for reversibility.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
                   src={imageUrl}
                   alt={course.title}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-500"
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
                   onError={() => setImageError(true)}
                 />
               ) : (
+                // <Image
+                //   src={imageUrl}
+                //   alt={course.title}
+                //   fill
+                //   className="object-cover group-hover:scale-110 transition-transform duration-500"
+                //   onError={() => setImageError(true)}
+                // />
                 <div className="w-full h-full flex items-center justify-center bg-gray-200">
                   <BookOpen className="w-12 h-12 md:w-14 md:h-14 lg:w-10 lg:h-10 text-gray-400" />
                 </div>
@@ -251,15 +264,28 @@ const CourseCard = memo(
         {/* Image with Badges */}
         <div className="relative h-40 sm:h-48 md:h-52 lg:h-44 bg-gray-100 overflow-hidden rounded-t-[8px] md:rounded-t-[7px] lg:rounded-t-[13px]">
           {!imageError ? (
-            <Image
+            // Plain <img> (not next/image) so course covers bypass the Next image
+            // optimizer — /_next/image returns 402 on the Hobby tier; the raw
+            // Firebase URL returns 200. onError → book placeholder preserved.
+            // See docs/COVER_PHOTO_PROPAGATION_AUDIT.md. Previous <Image fill>
+            // kept below for reversibility.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
               src={imageUrl}
               alt={course.title}
-              fill
-              className="object-cover group-hover:scale-110 transition-transform duration-500"
-              sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover group-hover:scale-110 transition-transform duration-500"
               onError={() => setImageError(true)}
             />
           ) : (
+            // <Image
+            //   src={imageUrl}
+            //   alt={course.title}
+            //   fill
+            //   className="object-cover group-hover:scale-110 transition-transform duration-500"
+            //   sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw"
+            //   onError={() => setImageError(true)}
+            // />
             <div className="w-full h-full flex items-center justify-center bg-gray-200">
               <BookOpen className="w-12 h-12 md:w-14 md:h-14 lg:w-10 lg:h-10 text-gray-400" />
             </div>

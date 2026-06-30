@@ -5,6 +5,62 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-06-30 — Course covers bypass the Next image optimizer + delete-clear fix
+
+Branch: `fix/course-editor-refresh-bounce` (same branch as Symptom 2; this folds
+the cover-editor follow-up). Root cause confirmed in
+`docs/COVER_PHOTO_PROPAGATION_AUDIT.md`: on the **Vercel Hobby tier the Next image
+optimizer (`/_next/image`) returns HTTP 402** (transformation quota), so every
+course cover rendered through `next/image` broke — raw broken icon in the editor
+(no `onError`), book placeholder on catalog cards (`onError` fired). The **raw
+Firebase Storage download URLs return 200** with real bytes; the bytes and the
+persisted URL were never the problem — only the optimizer indirection.
+
+### Step 1 — render course covers with a plain `<img>` (bypass the optimizer)
+Course covers/thumbnails ONLY. Each `<Image>` (next/image) replaced with a plain
+`<img>` pointing at the raw Firebase URL — zero `/_next/image`, zero
+`remotePatterns` dependency, works regardless of deployed config. Visuals
+preserved (`fill` → `className="absolute inset-0 h-full w-full object-cover …"`),
+`onError` fallbacks kept, `loading="lazy"` added. Old `<Image>` kept commented for
+reversibility. Surfaces changed:
+- `components/thumb_nail_uploder.tsx` — instructor editor cover preview.
+- `components/CoursesCardList.tsx` — **both** card variants (admin + user). This
+  one component backs the public catalog (`publicCoursesCardList`), the home grid
+  (`HomeCoursesSection`), and the instructor/admin "my courses" lists.
+- `components/CoursePreview.tsx` — course detail hero.
+
+Left on `next/image` (out of scope — not course covers): Google avatar
+(`user_dashboard/layout.tsx`), ZainCash logo (`paymentSelector.tsx`), Mux video
+thumbnails (`SignedMuxThumbnail.tsx`), and the legacy/unused `muti_image_uploader`
+(only imported by the unreferenced `ui/property-form.tsx`; the live create flow
+uses `quick_course_form`, which renders no remote cover).
+
+### Step 2 — delete cover now clears without a hard refresh
+`components/CourseDashboard.tsx` delete handler: the visible editor cover is bound
+to the react-hook-form **`image`** field (`ThumbNailUploader image={field.value}`),
+not to `course.thumbnailUrl`. 08531b8 cleared `course.thumbnailUrl` (an unrendered
+source), so the cover lingered until a hard refresh. Added
+`form.setValue("image", undefined)` alongside the existing `setCourse` (kept,
+harmless). No `router.refresh()` reintroduced (that is the Symptom 2 bounce).
+
+### Verification
+- `npx tsc --noEmit`: no new errors (only the known pre-existing
+  `admin/sync-enrollments` + `[courseId]` `params` errors). `noUnusedLocals` is
+  off, so the now-unused `Image` imports (left for reversibility) don't error.
+- `npm run build`: 54/54 pages.
+- **Structural proof** (local `next start`, fresh build): served HTML of `/`
+  (catalog cards) and `/course/<id>` (hero) contains raw
+  `<img src="https://firebasestorage.googleapis.com/...">` with `0` `data-nimg`
+  and no `/_next/image?url=` for covers. (Local optimizer returns 200, so local
+  can't reproduce the 402; this check only proves the bypass is in effect.)
+
+### New skill
+Extracted `.claude/skills/cover-image-rendering/` capturing the 402 constraint,
+the plain-`<img>` rule for covers, the Firebase-Storage cover plumbing, and the
+RHF form-field binding gotcha.
+
+---
+
 ## 2026-06-30 — Course-editor delete/publish bounce fix (Symptom 2)
 
 Branch: `fix/course-editor-refresh-bounce`. Implements **only** Symptom 2 from
