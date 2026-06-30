@@ -5,6 +5,45 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-06-30 — Create Course enterable on all screen sizes (Symptom 3)
+
+Branch: `fix/create-course-small-screen-access`. Implements **only** Symptom 3
+from `docs/NAV_AND_COURSE_EDITOR_AUDIT.md`. Closes out the nav/course-editor audit
+batch (Symptoms 1, 2, 3 now all fixed).
+
+### Root cause
+`components/navbar.tsx` `handleCreateCourseClick` was a **small-screen-only**
+interstitial: on viewports `< 768px` it ran `e.preventDefault()` + a
+`window.confirm()` recommending an iPad/laptop, and **cancelling silently
+dead-ended** navigation into the "إنشاء دورة" (Create Course) flow.
+
+### Change (guard-only handler — removed)
+Discovery: the handler did nothing but the confirm guard, and the `isMobile`
+state + its resize-listener `useEffect` existed solely to feed it. All three
+removed (kept commented for reversibility). The "إنشاء دورة" links now navigate
+natively via `ProtectedLink`, exactly like every other nav item:
+- Desktop link: dropped `onClick={handleCreateCourseClick}` entirely.
+- Mobile-menu link: reduced `onClick={(e) => { setOpen(false);
+  handleCreateCourseClick(e); }}` to `onClick={() => setOpen(false)}` —
+  **preserving** the hamburger-menu close (shared by every other mobile link),
+  removing only the guard call.
+
+No screen-size block remains on the Create Course route/form (verified: no
+`innerWidth`/`matchMedia` guard in `app/course-upload/*` or the create form;
+`/course-upload` was already reachable by direct URL on any viewport). The
+unrelated `window.innerWidth < 1024` in `components/ui/CoursePlayer.tsx` is the
+video-watching UI, not the create flow.
+
+### Verification
+- `npx tsc --noEmit`: no new errors (only the known pre-existing
+  `admin/sync-enrollments` + `[courseId]` `params` errors). `noUnusedLocals` off,
+  so the now-unused `useEffect`/`Monitor` imports left in `navbar.tsx` don't error.
+- `npm run build`: 54/54 pages.
+- Manual (owner, narrow viewport): clicking **إنشاء دورة** navigates straight into
+  `/course-upload` — **no confirm dialog, no dead-end** — on phone-width screens.
+
+---
+
 ## 2026-06-30 — Course covers bypass the Next image optimizer + delete-clear fix
 
 Branch: `fix/course-editor-refresh-bounce` (same branch as Symptom 2; this folds

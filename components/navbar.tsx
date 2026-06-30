@@ -11,28 +11,37 @@ import ProtectedLink from "./ProtectedLink";
 export default function Navbar() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
 
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
-  const handleCreateCourseClick = (e: React.MouseEvent) => {
-    if (isMobile) {
-      e.preventDefault();
-      const confirmed = window.confirm(
-        "💡 للحصول على أفضل تجربة في إنشاء الدورات، يُنصح باستخدام جهاز iPad أو كمبيوتر محمول.\n\nهل تريد المتابعة على الهاتف؟"
-      );
-      if (confirmed) {
-        window.location.href = "/course-upload";
-      }
-    }
-  };
+  // Symptom 3 fix (docs/NAV_AND_COURSE_EDITOR_AUDIT.md): Create Course must be
+  // enterable on ALL screen sizes. The block below was a small-screen-only
+  // interstitial — on viewports < 768px it called e.preventDefault() and a
+  // window.confirm(); cancelling silently dead-ended navigation. It only
+  // supported that guard, so the isMobile state, its resize listener, and the
+  // handler are removed. The "إنشاء دورة" links now navigate natively via
+  // ProtectedLink like every other nav item. Kept commented for reversibility.
+  //
+  // const [isMobile, setIsMobile] = useState(false);
+  //
+  // useEffect(() => {
+  //   const checkMobile = () => {
+  //     setIsMobile(window.innerWidth < 768);
+  //   };
+  //   checkMobile();
+  //   window.addEventListener("resize", checkMobile);
+  //   return () => window.removeEventListener("resize", checkMobile);
+  // }, []);
+  //
+  // const handleCreateCourseClick = (e: React.MouseEvent) => {
+  //   if (isMobile) {
+  //     e.preventDefault();
+  //     const confirmed = window.confirm(
+  //       "💡 للحصول على أفضل تجربة في إنشاء الدورات، يُنصح باستخدام جهاز iPad أو كمبيوتر محمول.\n\nهل تريد المتابعة على الهاتف؟"
+  //     );
+  //     if (confirmed) {
+  //       window.location.href = "/course-upload";
+  //     }
+  //   }
+  // };
 
   return (
     <nav className="bg-sky-900 text-white shadow-xl border-b border-sky-800/50 sticky top-0 z-50">
@@ -102,7 +111,6 @@ export default function Navbar() {
 
             <ProtectedLink
               href="/course-upload"
-              onClick={handleCreateCourseClick}
               className="flex items-center gap-2 px-3 py-2 bg-white text-sky-900
   rounded-lg shadow-md hover:bg-gray-100"
             >
@@ -158,10 +166,7 @@ export default function Navbar() {
             <ProtectedLink
               href="/course-upload"
               className="flex items-center gap-2 px-3 py-3 bg-white text-sky-900 rounded-lg shadow-md"
-              onClick={(e) => {
-                setOpen(false);
-                handleCreateCourseClick(e);
-              }}
+              onClick={() => setOpen(false)}
             >
               <PlusCircle size={18} />
               إنشاء دورة
