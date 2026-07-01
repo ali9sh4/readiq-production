@@ -152,8 +152,8 @@ export default function AdminManualTopupPage() {
               <Alert className="border-green-300 bg-green-50 text-green-800">
                 <CheckCircle2 className="h-4 w-4" />
                 <AlertDescription className="font-medium">
-                  تم شحن {success.amount.toLocaleString()} د.ع بنجاح. الرصيد
-                  الجديد: {success.newBalance.toLocaleString()} د.ع
+                  تم شحن {success.amount.toLocaleString("en-US")} د.ع بنجاح. الرصيد
+                  الجديد: {success.newBalance.toLocaleString("en-US")} د.ع
                 </AlertDescription>
               </Alert>
             )}

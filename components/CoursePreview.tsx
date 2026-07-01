@@ -265,7 +265,7 @@ export default function CoursePreview({
                 <div className="flex items-center gap-1.5 sm:gap-2 text-gray-300">
                   <Users className="w-4 h-4 sm:w-5 sm:h-5" />
                   <span>
-                    {(course.studentsCount || 0).toLocaleString()} طالب
+                    {(course.studentsCount || 0).toLocaleString("en-US")} طالب
                   </span>
                 </div>
               </div>
@@ -331,10 +331,10 @@ export default function CoursePreview({
                         course.salePrice! < (course.price ?? 0) ? (
                           <div className="flex items-baseline gap-2">
                             <span className="text-2xl font-bold text-green-600">
-                              {course.salePrice!.toLocaleString()} د.ع
+                              {course.salePrice!.toLocaleString("en-US")} د.ع
                             </span>
                             <span className="text-sm text-gray-400 line-through">
-                              {course.price!.toLocaleString()} د.ع
+                              {course.price!.toLocaleString("en-US")} د.ع
                             </span>
                           </div>
                         ) : course.price === 0 ? (
@@ -343,7 +343,7 @@ export default function CoursePreview({
                           </span>
                         ) : (
                           <span className="text-2xl font-bold text-gray-900">
-                            {course.price!.toLocaleString()} د.ع
+                            {course.price!.toLocaleString("en-US")} د.ع
                           </span>
                         )}
                       </div>
@@ -470,10 +470,10 @@ export default function CoursePreview({
                           course.salePrice! < (course.price ?? 0) ? (
                             <div className="flex items-baseline justify-center gap-3">
                               <span className="text-3xl font-bold text-green-600">
-                                {course.salePrice!.toLocaleString()} د.ع
+                                {course.salePrice!.toLocaleString("en-US")} د.ع
                               </span>
                               <span className="text-lg text-gray-400 line-through">
-                                {course.price!.toLocaleString()} د.ع
+                                {course.price!.toLocaleString("en-US")} د.ع
                               </span>
                             </div>
                           ) : course.price === 0 ? (
@@ -482,7 +482,7 @@ export default function CoursePreview({
                             </span>
                           ) : (
                             <span className="text-3xl font-bold text-gray-900">
-                              {course.price!.toLocaleString()} د.ع
+                              {course.price!.toLocaleString("en-US")} د.ع
                             </span>
                           )}
                         </div>
@@ -799,7 +799,7 @@ export default function CoursePreview({
                       الطلاب
                     </span>
                     <span className="font-semibold text-gray-900 text-sm">
-                      {(course.studentsCount || 0).toLocaleString()}
+                      {(course.studentsCount || 0).toLocaleString("en-US")}
                     </span>
                   </div>
                 </div>

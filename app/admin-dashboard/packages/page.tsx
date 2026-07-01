@@ -165,7 +165,7 @@ export default function AdminPackagesPage() {
                         <span>
                           السعر:{" "}
                           <span className="font-medium text-gray-900">
-                            {pkg.price.toLocaleString()} د.ع
+                            {pkg.price.toLocaleString("en-US")} د.ع
                           </span>
                         </span>
                         <span>{pkg.courseIds.length} دورة</span>

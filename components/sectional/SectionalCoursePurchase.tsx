@@ -65,7 +65,7 @@ export default function SectionalCoursePurchase({
           <>
             <p className="text-xs text-gray-500 mb-1">سعر الحزمة الكاملة</p>
             <p className="text-2xl md:text-3xl font-bold text-gray-900">
-              {fullPrice!.toLocaleString()} د.ع
+              {fullPrice!.toLocaleString("en-US")} د.ع
             </p>
           </>
         ) : (

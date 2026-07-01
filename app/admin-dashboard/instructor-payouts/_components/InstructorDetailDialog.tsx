@@ -130,9 +130,9 @@ export default function InstructorDetailDialog({
         return;
       }
       setResultMsg(
-        `تم التسجيل. كان المتبقي ${res.outstandingBefore.toLocaleString()} د.ع، ` +
-          `سُجّلت دفعة ${res.amountRecorded.toLocaleString()} د.ع، ` +
-          `والمتبقي الآن ${res.outstandingAfter.toLocaleString()} د.ع.`
+        `تم التسجيل. كان المتبقي ${res.outstandingBefore.toLocaleString("en-US")} د.ع، ` +
+          `سُجّلت دفعة ${res.amountRecorded.toLocaleString("en-US")} د.ع، ` +
+          `والمتبقي الآن ${res.outstandingAfter.toLocaleString("en-US")} د.ع.`
       );
       setConfirming(false);
       setNote("");
@@ -232,13 +232,13 @@ export default function InstructorDetailDialog({
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <p className="text-lg font-bold text-green-900">
-                  {detail.earningsTotal.toLocaleString()} د.ع
+                  {detail.earningsTotal.toLocaleString("en-US")} د.ع
                 </p>
                 <p className="text-green-700 text-xs">إجمالي الأرباح</p>
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-lg font-bold text-blue-900">
-                  {detail.payoutsTotal.toLocaleString()} د.ع
+                  {detail.payoutsTotal.toLocaleString("en-US")} د.ع
                 </p>
                 <p className="text-blue-700 text-xs">إجمالي المدفوع</p>
               </div>
@@ -256,7 +256,7 @@ export default function InstructorDetailDialog({
                       : "text-lg font-bold text-gray-900"
                   }
                 >
-                  {detail.outstanding.toLocaleString()} د.ع
+                  {detail.outstanding.toLocaleString("en-US")} د.ع
                 </p>
                 <p
                   className={
@@ -418,15 +418,15 @@ export default function InstructorDetailDialog({
                 <div className="bg-gray-50 border rounded-lg p-3 space-y-3">
                   <p className="text-sm text-gray-700">
                     المتبقي حالياً{" "}
-                    <strong>{outstanding.toLocaleString()} د.ع</strong>، تسجيل
-                    دفعة <strong>{amountNum.toLocaleString()} د.ع</strong> —
+                    <strong>{outstanding.toLocaleString("en-US")} د.ع</strong>، تسجيل
+                    دفعة <strong>{amountNum.toLocaleString("en-US")} د.ع</strong> —
                     سيتبقى{" "}
                     <strong
                       className={
                         remainingAfter < 0 ? "text-amber-700" : undefined
                       }
                     >
-                      {remainingAfter.toLocaleString()} د.ع
+                      {remainingAfter.toLocaleString("en-US")} د.ع
                     </strong>
                     {remainingAfter < 0 && " (رصيد مقدّم)"}.
                   </p>

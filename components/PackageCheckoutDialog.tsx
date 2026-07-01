@@ -237,15 +237,15 @@ export default function PackageCheckoutDialog({
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-center">
               {hasSaving && (
                 <p className="text-sm text-gray-400 line-through">
-                  {summary.total.toLocaleString()} د.ع
+                  {summary.total.toLocaleString("en-US")} د.ع
                 </p>
               )}
               <p className="text-3xl font-extrabold text-gray-900">
-                {summary.price.toLocaleString()} د.ع
+                {summary.price.toLocaleString("en-US")} د.ع
               </p>
               {hasSaving && (
                 <p className="mt-0.5 text-sm font-semibold text-green-600">
-                  توفّر {saving.toLocaleString()} د.ع
+                  توفّر {saving.toLocaleString("en-US")} د.ع
                 </p>
               )}
             </div>
@@ -354,14 +354,14 @@ export default function PackageCheckoutDialog({
                   <div className="flex justify-between">
                     <span className="text-gray-600">رصيد محفظتك</span>
                     <span className="text-gray-900">
-                      {ok.walletBalance.toLocaleString()} د.ع
+                      {ok.walletBalance.toLocaleString("en-US")} د.ع
                     </span>
                   </div>
                   {canBuy && (
                     <div className="flex justify-between border-t pt-1.5">
                       <span className="text-gray-600">الرصيد بعد الشراء</span>
                       <span className="text-gray-900">
-                        {(ok.walletBalance - ok.package.price).toLocaleString()}{" "}
+                        {(ok.walletBalance - ok.package.price).toLocaleString("en-US")}{" "}
                         د.ع
                       </span>
                     </div>
@@ -374,7 +374,7 @@ export default function PackageCheckoutDialog({
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
                       رصيد محفظتك لا يغطي سعر الحزمة — تحتاج إلى شحن{" "}
-                      {(ok.package.price - ok.walletBalance).toLocaleString()}{" "}
+                      {(ok.package.price - ok.walletBalance).toLocaleString("en-US")}{" "}
                       د.ع.
                     </AlertDescription>
                   </Alert>
@@ -421,7 +421,7 @@ export default function PackageCheckoutDialog({
               {purchasing
                 ? "جارٍ الشراء..."
                 : summary
-                  ? `شراء بـ ${summary.price.toLocaleString()} د.ع`
+                  ? `شراء بـ ${summary.price.toLocaleString("en-US")} د.ع`
                   : "شراء"}
             </Button>
           )}

@@ -86,7 +86,7 @@ export default function PayoutLedger({ ledger, token, onRecorded }: Props) {
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-2xl font-bold text-blue-900">
-            {ledger.totalRevenue.toLocaleString()} د.ع
+            {ledger.totalRevenue.toLocaleString("en-US")} د.ع
           </p>
           <p className="text-blue-700 text-sm">إجمالي إيراد الحزم (المنصة)</p>
         </div>
@@ -121,8 +121,8 @@ export default function PayoutLedger({ ledger, token, onRecorded }: Props) {
                 <TableCell className="font-medium">
                   {row.instructorName}
                 </TableCell>
-                <TableCell>{row.owed.toLocaleString()} د.ع</TableCell>
-                <TableCell>{row.paid.toLocaleString()} د.ع</TableCell>
+                <TableCell>{row.owed.toLocaleString("en-US")} د.ع</TableCell>
+                <TableCell>{row.paid.toLocaleString("en-US")} د.ع</TableCell>
                 <TableCell
                   className={
                     row.outstanding > 0
@@ -130,7 +130,7 @@ export default function PayoutLedger({ ledger, token, onRecorded }: Props) {
                       : "text-green-600"
                   }
                 >
-                  {row.outstanding.toLocaleString()} د.ع
+                  {row.outstanding.toLocaleString("en-US")} د.ع
                 </TableCell>
                 <TableCell>
                   <Button
@@ -155,7 +155,7 @@ export default function PayoutLedger({ ledger, token, onRecorded }: Props) {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-sm text-gray-600">
-              المتبقي حالياً: {(target?.outstanding ?? 0).toLocaleString()} د.ع.
+              المتبقي حالياً: {(target?.outstanding ?? 0).toLocaleString("en-US")} د.ع.
               سجّل هنا المبلغ الذي دفعته يدوياً للمدرب.
             </p>
             <div className="space-y-1.5">

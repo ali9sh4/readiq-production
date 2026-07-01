@@ -38,7 +38,7 @@ export type CourseDisplayPrice = {
 };
 
 function format(amount: number): string {
-  return `${amount.toLocaleString()} د.ع`;
+  return `${amount.toLocaleString("en-US")} د.ع`;
 }
 
 const UNPRICED: Pick<CourseDisplayPrice, "primary" | "numeric" | "isFree" | "isPriced"> = {

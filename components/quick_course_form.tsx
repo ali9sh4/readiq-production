@@ -282,7 +282,7 @@ export default function QuickCourseForm({
                           </span>
                         ) : (
                           <span className="text-sm text-blue-700 bg-blue-50 px-3 py-1 rounded-full font-medium">
-                            {Number(field.value).toLocaleString()} د.ع
+                            {Number(field.value).toLocaleString("en-US")} د.ع
                           </span>
                         )}
                       </div>

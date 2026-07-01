@@ -44,7 +44,7 @@ export default function WalletBalance() {
         <span>...</span>
       ) : (
         <span className="font-semibold">
-          {balance?.toLocaleString() || 0} د.ع
+          {balance?.toLocaleString("en-US") || 0} د.ع
         </span>
       )}
     </div>

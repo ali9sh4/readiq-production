@@ -331,7 +331,7 @@ export default function SectionListEditor({
             <p className="mt-2 text-sm text-gray-500">
               {fullCoursePrice === undefined
                 ? "لم يُحدَّد سعر للحزمة"
-                : `سعر الحزمة: ${fullCoursePrice.toLocaleString()} د.ع`}
+                : `سعر الحزمة: ${fullCoursePrice.toLocaleString("en-US")} د.ع`}
             </p>
           </CardContent>
         </Card>

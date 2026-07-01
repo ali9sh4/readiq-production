@@ -197,7 +197,7 @@ export default function DeleteAccountClient({
 
       {walletBalance > 0 && (
         <p className="mt-4 rounded border border-red-300 bg-red-50 p-3 text-red-700">
-          تنبيه: يوجد رصيد قدره {walletBalance.toLocaleString()} د.ع في محفظتك
+          تنبيه: يوجد رصيد قدره {walletBalance.toLocaleString("en-US")} د.ع في محفظتك
           سيتم فقدانه. لاسترداده تواصل مع الدعم قبل الحذف.
         </p>
       )}
