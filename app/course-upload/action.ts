@@ -1,6 +1,7 @@
 // app/course-upload/action.ts
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { adminAuth, db, storage } from "@/firebase/service";
 import { Course, CourseFile } from "@/types/types";
 import { CourseDataSchema, QuickCourseSchema } from "@/validation/courseSchema";
@@ -222,6 +223,15 @@ export const SaveThumbnail = async (
 
     // Update course with thumbnail using v8 Admin SDK syntax
     await db.collection("courses").doc(courseId).update(thumbUpdate);
+
+    // Refresh the server-rendered surfaces that show the cover so the new
+    // thumbnailUrl propagates without a manual reload: the course detail page
+    // and the home/catalog grid. (Mirrors publishCourse/unpublishCourse, which
+    // revalidate `/course/${courseId}`.) NOT a client router.refresh() — that
+    // re-runs the protected editor route through middleware and bounces on a
+    // stale cookie. See docs/COVER_PHOTO_PROPAGATION_AUDIT.md.
+    revalidatePath(`/course/${courseId}`);
+    revalidatePath("/");
 
     return {
       success: true,
@@ -460,6 +470,13 @@ export const DeleteThumbnail = async (courseId: string, token: string) => {
 
     // ✅ Update Firestore
     await db.collection("courses").doc(courseId).update(deleteThumbUpdate);
+
+    // Refresh the server-rendered cover surfaces (course detail + home/catalog
+    // grid) so the cleared thumbnailUrl propagates without a manual reload.
+    // NOT a client router.refresh() — see the note in SaveThumbnail and
+    // docs/COVER_PHOTO_PROPAGATION_AUDIT.md.
+    revalidatePath(`/course/${courseId}`);
+    revalidatePath("/");
 
     return { success: true, message: "تم حذف الصورة المصغرة بنجاح" };
   } catch (error) {

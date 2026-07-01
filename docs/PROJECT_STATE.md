@@ -5,6 +5,51 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-07-01 — Post-batch cleanup (revalidatePath on cover actions + navbar imports)
+
+Branch: `chore/post-batch-cleanup`. Two low-risk fixes from the post-batch
+leftovers. (Two accompanying read-only diagnoses — image transformation-leak and
+React #418 — were delivered as findings for owner decision, not implemented.)
+
+### 3a — `revalidatePath` on cover save/delete (`app/course-upload/action.ts`)
+`SaveThumbnail` and `DeleteThumbnail` persisted `thumbnailUrl` but never
+revalidated, so server-rendered cover surfaces (course detail + home/catalog
+grid) kept showing the stale cover string until their cache expired. Added
+`revalidatePath(\`/course/${courseId}\`)` + `revalidatePath("/")` before each
+success return (mirrors `publishCourse`/`unpublishCourse`). These are the two
+public server-rendered cover surfaces (`app/course/[courseId]/page.tsx`,
+`app/page.tsx`); the instructor/admin list routes are dynamic (`cookies()`), so
+they re-fetch per request and need no revalidation. Deliberately **not**
+`router.refresh()` (that is the Symptom 2 bounce).
+
+### 3b — remove now-unused navbar imports (`components/navbar.tsx`)
+The Symptom 3 fix removed the resize listener, leaving `useEffect` and the
+pre-existing `Monitor` (lucide) imports unused. Both removed. (`useEffect` was
+only referenced by the S3 fix's commented-out block; that dead comment is left
+as-is per scope.)
+
+### Verification
+- `npx tsc --noEmit`: no new errors (only the known pre-existing
+  `admin/sync-enrollments` + `[courseId]` `params` errors).
+- `npm run build`: 54/54 pages.
+
+### Related read-only findings (NOT implemented — owner decides)
+- **Image transformation-leak:** next.config has **no** leak mitigation
+  (`minimumCacheTTL`/`deviceSizes`/`imageSizes` unset). But the rotating-token
+  leak source is **already neutralized in code** — the Mux thumbnail was removed
+  from `video_uploader.tsx` and `SignedMuxThumbnail` is imported nowhere (dead);
+  covers now use plain `<img>`. Remaining optimizer users (Google avatar, ZainCash
+  logo) have stable, cacheable URLs. Proposed (unapplied) defensive config +
+  `unoptimized` on the dormant Mux/legacy components.
+- **React #418:** root cause is `Number.toLocaleString()` with **no explicit
+  locale** (shared `lib/sectional/displayPrice.ts` `format()` + inline calls in
+  `CoursePreview.tsx`), SSR'd on public pages → Latin digits on the server vs
+  Arabic-Indic on Arabic-locale browsers → text hydration mismatch. The
+  `user_dashboard/layout.tsx` `isClient` gate is **not** the cause (it renders an
+  identical spinner server/client). Proposed fix: pin the locale/numberingSystem.
+
+---
+
 ## 2026-06-30 — Create Course enterable on all screen sizes (Symptom 3)
 
 Branch: `fix/create-course-small-screen-access`. Implements **only** Symptom 3

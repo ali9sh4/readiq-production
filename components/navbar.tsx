@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, PlusCircle, User, Menu, X, Monitor } from "lucide-react";
+import { BookOpen, PlusCircle, User, Menu, X } from "lucide-react";
 import { AuthButton } from "@/components/Authbutton";
 import WalletBalance from "@/components/WalletBalance";
 import { useAuth } from "@/context/authContext";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import ProtectedLink from "./ProtectedLink";
 
 export default function Navbar() {
