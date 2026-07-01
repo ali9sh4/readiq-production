@@ -223,7 +223,7 @@ export default function EnrollButton({
             <>
               <ShoppingCart className="w-5 h-5 ml-2" />
               {price
-                ? `شراء الدورة - ${price.toLocaleString()} IQD`
+                ? `شراء الدورة - ${price.toLocaleString("en-US")} IQD`
                 : "شراء الدورة"}
             </>
           )

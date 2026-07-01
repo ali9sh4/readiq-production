@@ -89,7 +89,7 @@ export default function LedgerTable({
                     <div>
                       مبيعات{" "}
                       {typeof e.grossAmount === "number"
-                        ? `${e.grossAmount.toLocaleString()} د.ع`
+                        ? `${e.grossAmount.toLocaleString("en-US")} د.ع`
                         : ""}
                       {typeof e.revenueSharePercent === "number"
                         ? ` · حصتك ${e.revenueSharePercent}%`
@@ -119,7 +119,7 @@ export default function LedgerTable({
                 }
               >
                 {isEarning ? "+" : "−"}
-                {e.amount.toLocaleString()} د.ع
+                {e.amount.toLocaleString("en-US")} د.ع
               </TableCell>
             </TableRow>
           );

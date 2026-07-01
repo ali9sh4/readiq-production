@@ -198,7 +198,7 @@ export async function purchaseCourseWithWallet(
 
       if (wallet.balance < coursePrice) {
         throw new Error(
-          `رصيد غير كافٍ. رصيدك: ${wallet.balance.toLocaleString()} د.ع`
+          `رصيد غير كافٍ. رصيدك: ${wallet.balance.toLocaleString("en-US")} د.ع`
         );
       }
 

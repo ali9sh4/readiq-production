@@ -1001,7 +1001,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                 ) : (
                                   <span className="text-blue-600 font-medium">
                                     السعر:{" "}
-                                    {Number(field.value).toLocaleString()} د.ع
+                                    {Number(field.value).toLocaleString("en-US")} د.ع
                                   </span>
                                 )}
                               </div>
@@ -1079,7 +1079,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
                                 ) : (
                                   <span className="text-orange-600 font-medium">
                                     السعر المخفض:{" "}
-                                    {Number(field.value).toLocaleString()} د.ع
+                                    {Number(field.value).toLocaleString("en-US")} د.ع
                                   </span>
                                 )}
                               </div>

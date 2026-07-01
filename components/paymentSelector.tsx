@@ -73,7 +73,7 @@ export default function PaymentSelector({
           اختر طريقة الدفع
         </h3>
         <p className="text-xl sm:text-2xl font-bold text-blue-700">
-          {price.toLocaleString()} IQD
+          {price.toLocaleString("en-US")} IQD
         </p>
       </div>
       {/* Payment Methods */}

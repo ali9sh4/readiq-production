@@ -5,6 +5,47 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-07-01 — Fix React #418 hydration mismatch (pin en-US on number formatting)
+
+Branch: `fix/hydration-locale-digits`. Root cause (diagnosed in the prior
+post-batch step): `Number.toLocaleString()` called with **no locale** renders
+during SSR of client components on public pages — the Vercel Node server emits
+Latin digits (`50,000`) while an Arabic-locale browser emits Arabic-Indic
+(`٥٠٬٠٠٠`) → text hydration mismatch → React #418 (production/Arabic-only; invisible
+in an en-US dev browser).
+
+### Fix
+Pinned `"en-US"` on **every** number `.toLocaleString()` call in the codebase so
+digits are always Latin and identical server/client. Purely deterministic — no
+value, currency symbol, or suffix (`د.ع` / `IQD`) changed; grouping stays
+`50,000`. **72 call sites across 26 files** (`app/`, `components/`, `lib/`);
+`grep` confirms 72/72 pinned, 0 unpinned. Primary site: `lib/sectional/displayPrice.ts`
+`format()` (the shared price formatter behind every card/detail/catalog price).
+
+Pinned everywhere (not just SSR-reachable sites) for consistency, per the rule
+"when unsure whether a call is SSR-reachable, pin it; pinning client-only ones is
+harmless." SSR-reachable public sites (the ones that actually caused #418):
+`lib/sectional/displayPrice.ts`, `components/CoursePreview.tsx` (course detail),
+`components/EnrollButton.tsx`, `components/PackageUpsellBanner.tsx` (home),
+`components/sectional/*`, `components/paymentSelector.tsx`. Client-only/auth-gated
+sites pinned for consistency: `CourseDashboard`, `WalletBalance` (renders `0` on
+SSR anyway), `earnings/*`, `admin-dashboard/*`, `wallet/transactions`,
+`DeleteAccountClient`, `quick_course_form`, `SectionListEditor`,
+`PackageCheckoutDialog`, plus the `wallet_actions.ts` server-action message string.
+
+Not touched (already deterministic — explicit locale): `toLocaleDateString(...)` /
+`Intl.DateTimeFormat(...)` calls, which all pass `"en-US"` / `"ar-SA"` / `"ar-IQ"`.
+
+### Verification
+- `npx tsc --noEmit`: no new errors (only the known pre-existing
+  `admin/sync-enrollments` + `[courseId]` `params` errors).
+- `npm run build`: 54/54 pages.
+- Grep proof: 72/72 code `.toLocaleString(` calls pinned to `"en-US"`; 0 unpinned.
+  (#418 is Arabic-locale/production-specific, so verification is "every
+  SSR-reachable call is pinned," not a local repro.)
+
+---
+
 ## 2026-06-30 — Create Course enterable on all screen sizes (Symptom 3)
 
 Branch: `fix/create-course-small-screen-access`. Implements **only** Symptom 3

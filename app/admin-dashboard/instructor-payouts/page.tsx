@@ -110,19 +110,19 @@ export default function AdminInstructorPayoutsPage() {
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-2xl font-bold text-green-900">
-            {overview.totalEarnings.toLocaleString()} د.ع
+            {overview.totalEarnings.toLocaleString("en-US")} د.ع
           </p>
           <p className="text-green-700 text-sm">إجمالي أرباح المدربين</p>
         </div>
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <p className="text-2xl font-bold text-blue-900">
-            {overview.totalPayouts.toLocaleString()} د.ع
+            {overview.totalPayouts.toLocaleString("en-US")} د.ع
           </p>
           <p className="text-blue-700 text-sm">إجمالي ما تم دفعه</p>
         </div>
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
           <p className="text-2xl font-bold text-gray-900">
-            {overview.totalOutstanding.toLocaleString()} د.ع
+            {overview.totalOutstanding.toLocaleString("en-US")} د.ع
           </p>
           <p className="text-gray-700 text-sm">إجمالي المتبقي المستحق</p>
         </div>
@@ -167,8 +167,8 @@ export default function AdminInstructorPayoutsPage() {
                     )}
                   </TableCell>
                   <TableCell>{row.revenueSharePercent}%</TableCell>
-                  <TableCell>{row.earningsTotal.toLocaleString()} د.ع</TableCell>
-                  <TableCell>{row.payoutsTotal.toLocaleString()} د.ع</TableCell>
+                  <TableCell>{row.earningsTotal.toLocaleString("en-US")} د.ع</TableCell>
+                  <TableCell>{row.payoutsTotal.toLocaleString("en-US")} د.ع</TableCell>
                   <TableCell
                     className={
                       row.outstanding > 0
@@ -178,7 +178,7 @@ export default function AdminInstructorPayoutsPage() {
                           : "text-green-600"
                     }
                   >
-                    {row.outstanding.toLocaleString()} د.ع
+                    {row.outstanding.toLocaleString("en-US")} د.ع
                   </TableCell>
                   <TableCell className="text-sm text-gray-500">
                     {formatLedgerDate(row.lastPayoutAt)}

@@ -87,13 +87,13 @@ export default function MyEarningsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
               <p className="text-2xl font-bold text-green-900">
-                {earnings.earningsTotal.toLocaleString()} د.ع
+                {earnings.earningsTotal.toLocaleString("en-US")} د.ع
               </p>
               <p className="text-green-700 text-sm">إجمالي ما ربحته</p>
             </div>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-2xl font-bold text-blue-900">
-                {earnings.payoutsTotal.toLocaleString()} د.ع
+                {earnings.payoutsTotal.toLocaleString("en-US")} د.ع
               </p>
               <p className="text-blue-700 text-sm">إجمالي ما استلمته</p>
             </div>
@@ -111,7 +111,7 @@ export default function MyEarningsPage() {
                     : "text-2xl font-bold text-gray-900"
                 }
               >
-                {earnings.outstanding.toLocaleString()} د.ع
+                {earnings.outstanding.toLocaleString("en-US")} د.ع
               </p>
               <p
                 className={

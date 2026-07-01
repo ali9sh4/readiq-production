@@ -89,7 +89,7 @@ export default function SectionalBuyButtons({
       <div className="flex flex-wrap items-center gap-2 justify-end">
         <span className="text-xs sm:text-sm font-bold text-blue-700 mr-2 inline-flex items-center gap-1">
           <Lock className="w-3.5 h-3.5" />
-          {effectivePrice.toLocaleString()} د.ع
+          {effectivePrice.toLocaleString("en-US")} د.ع
         </span>
         <Button
           type="button"

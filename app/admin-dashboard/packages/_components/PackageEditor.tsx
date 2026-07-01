@@ -299,7 +299,7 @@ export default function PackageEditor({
                 <div className="flex justify-between text-sm pt-1 border-t">
                   <span className="text-gray-600">مجموع المستحقات</span>
                   <span className="font-semibold">
-                    {payoutSum.toLocaleString()} د.ع
+                    {payoutSum.toLocaleString("en-US")} د.ع
                   </span>
                 </div>
               </div>
@@ -308,9 +308,9 @@ export default function PackageEditor({
               <Alert variant="destructive">
                 <AlertTitle>المستحقات تتجاوز سعر الحزمة</AlertTitle>
                 <AlertDescription>
-                  مجموع المستحقات ({payoutSum.toLocaleString()} د.ع) أكبر من سعر
-                  الحزمة ({priceNum.toLocaleString()} د.ع) — ستخسر{" "}
-                  {(payoutSum - priceNum).toLocaleString()} د.ع على كل عملية بيع.
+                  مجموع المستحقات ({payoutSum.toLocaleString("en-US")} د.ع) أكبر من سعر
+                  الحزمة ({priceNum.toLocaleString("en-US")} د.ع) — ستخسر{" "}
+                  {(payoutSum - priceNum).toLocaleString("en-US")} د.ع على كل عملية بيع.
                   يمكنك الحفظ على أي حال.
                 </AlertDescription>
               </Alert>

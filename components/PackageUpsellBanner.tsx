@@ -124,15 +124,15 @@ export default function PackageUpsellBanner({
                     <div>
                       {hasSaving && (
                         <p className="text-sm text-gray-400 line-through">
-                          {pkg.total.toLocaleString()} د.ع
+                          {pkg.total.toLocaleString("en-US")} د.ع
                         </p>
                       )}
                       <p className="text-xl font-extrabold text-gray-900">
-                        {pkg.price.toLocaleString()} د.ع
+                        {pkg.price.toLocaleString("en-US")} د.ع
                       </p>
                       {hasSaving && (
                         <p className="text-sm font-semibold text-green-600">
-                          توفّر {saving.toLocaleString()} د.ع
+                          توفّر {saving.toLocaleString("en-US")} د.ع
                         </p>
                       )}
                     </div>

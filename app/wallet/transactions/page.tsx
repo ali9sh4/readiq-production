@@ -154,7 +154,7 @@ export default function TransactionsPage() {
 
                       <div>
                         <p className="font-medium text-gray-900">
-                          {txn.amount.toLocaleString()} د.ع - قيد المعالجة
+                          {txn.amount.toLocaleString("en-US")} د.ع - قيد المعالجة
                         </p>
                         <p className="text-sm text-gray-500">
                           {formatDate(txn.createdAt)}
@@ -167,7 +167,7 @@ export default function TransactionsPage() {
 
                     <div className="text-right">
                       <p className="text-lg font-bold text-amber-600">
-                        +{txn.amount.toLocaleString()} د.ع
+                        +{txn.amount.toLocaleString("en-US")} د.ع
                       </p>
                     </div>
                   </div>
@@ -206,10 +206,10 @@ export default function TransactionsPage() {
                         }`}
                       >
                         {txn.amount > 0 ? "+" : ""}
-                        {txn.amount.toLocaleString()} د.ع
+                        {txn.amount.toLocaleString("en-US")} د.ع
                       </p>
                       <p className="text-xs text-gray-500">
-                        الرصيد: {txn.balanceAfter.toLocaleString()} د.ع
+                        الرصيد: {txn.balanceAfter.toLocaleString("en-US")} د.ع
                       </p>
                       <Badge variant="outline" className="mt-1">
                         {getTypeLabel(txn.type)}

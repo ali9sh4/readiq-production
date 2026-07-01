@@ -391,7 +391,7 @@ export default function AdminDashboard() {
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-4">
                       <p className="text-2xl font-bold text-blue-600">
-                        {topupRequest.amount.toLocaleString()} د.ع
+                        {topupRequest.amount.toLocaleString("en-US")} د.ع
                       </p>
                       <Badge className="bg-blue-100 text-blue-800">
                         طلب إيداع

@@ -413,7 +413,7 @@ export default function SectionalBuyDialog({
                 <span className="text-lg font-bold text-gray-900">
                   {plan.isFreeBundleUpgrade
                     ? "ترقية مجانية"
-                    : `${plan.totalPrice.toLocaleString()} د.ع`}
+                    : `${plan.totalPrice.toLocaleString("en-US")} د.ع`}
                 </span>
               </div>
             </div>
@@ -427,7 +427,7 @@ export default function SectionalBuyDialog({
               <span className="font-semibold text-gray-900">
                 {walletLoading
                   ? "..."
-                  : `${(walletBalance ?? 0).toLocaleString()} د.ع`}
+                  : `${(walletBalance ?? 0).toLocaleString("en-US")} د.ع`}
               </span>
             </div>
 
@@ -443,10 +443,10 @@ export default function SectionalBuyDialog({
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-amber-900">
                       اشترِ الحزمة الكاملة بـ{" "}
-                      {bundleOffer.bundleDelta.toLocaleString()} د.ع
+                      {bundleOffer.bundleDelta.toLocaleString("en-US")} د.ع
                     </p>
                     <p className="text-xs text-amber-800 mt-1">
-                      توفّر {bundleOffer.savingsVsSectional.toLocaleString()}{" "}
+                      توفّر {bundleOffer.savingsVsSectional.toLocaleString("en-US")}{" "}
                       د.ع وتفتح كل الأقسام
                     </p>
                   </div>

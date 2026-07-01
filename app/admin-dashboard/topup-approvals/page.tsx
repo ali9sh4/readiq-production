@@ -183,7 +183,7 @@ export default function AdminTopupApprovalPage() {
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-3">
                           <p className="font-bold text-lg text-blue-600">
-                            {request.amount.toLocaleString()} د.ع
+                            {request.amount.toLocaleString("en-US")} د.ع
                           </p>
                           <Badge>{"topup requests"}</Badge>
                         </div>
