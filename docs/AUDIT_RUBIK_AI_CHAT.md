@@ -251,6 +251,12 @@ types, Firestore writes, or the Mux integration.
 `requirements[]`, per-video `title` (+ usually-empty `description`), and `sections[].title`.
 The actual lesson content lives **only as video in Mux** and has **never been transcribed**.
 
+> **Update 2026-07-02:** a transcription pipeline now exists — `scripts/pipeline/`
+> (faster-whisper large-v3 GPU/CPU + `claude-sonnet-5` Q&A generation, usage in the
+> `run.mts` header). It writes transcripts + pending-review Q&A to the gitignored
+> `output/` dir ONLY; Firestore still holds no transcript/Q&A text, so the in-app
+> consequence below stands until a storage shape + instructor review ship.
+
 **Consequence for the feature:** A chatbot grounded on *what the lessons teach* is **not
 buildable on existing data**. A text layer must be created first. Two viable paths (detailed in
 the design doc):
@@ -388,6 +394,9 @@ if (!success) return fail("RATE_LIMITED", "...", 429);
 `@upstash/ratelimit ^2.0.6`, `@upstash/redis ^1.35.3`, `firebase-admin ^13.2.0`, `axios ^1.13.1`,
 `react-markdown ^10.1.0` + `remark-gfm ^4.0.1` (handy for rendering chat answers).
 
+> **Update 2026-07-02:** `@anthropic-ai/sdk` is now installed (a dependency of
+> `scripts/pipeline/run.mts`), so the "to add" step below is done.
+
 **To add (do NOT install during audit):** `@anthropic-ai/sdk` (latest stable). Installs cleanly
 alongside the current stack; supports prompt caching and Haiku 4.5. No other new runtime dep is
 strictly required for v1 (pre-authored Q&A path). Note: `next.config.ts` runs in lenient mode
@@ -431,6 +440,14 @@ strictly required for v1 (pre-authored Q&A path). Note: `next.config.ts` runs in
 2. **`ANTHROPIC_API_KEY` not provisioned.** Must be added to `.env.local` + Vercel (Production)
    before any live call (§6).
 3. **`@anthropic-ai/sdk` not installed** (§7).
+
+> **Update 2026-07-02:** blocker 3 is resolved (SDK installed). Blocker 1(b)'s
+> pipeline now exists (`scripts/pipeline/` — external STT via local faster-whisper,
+> not Mux captions) but outputs to disk, not Firestore, so 1's storage decision
+> remains open. Blocker 2 still stands for the chat feature; note the pipeline
+> deliberately uses its own `PIPELINE_ANTHROPIC_API_KEY` (named to dodge
+> ambient-env shadowing) — the chat route's `ANTHROPIC_API_KEY` is a separate,
+> still-unprovisioned key.
 
 **Open decisions (product/design):**
 

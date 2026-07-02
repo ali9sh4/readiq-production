@@ -41,9 +41,8 @@ npm run dev      # next dev --turbopack
 npm run build    # next build
 npm run lint     # next lint
 npm start        # next start (after build)
+npm run pipeline # transcription pipeline — usage/env in scripts/pipeline/run.mts header
 ```
-
-No test suite and no CI — verify manually. Run `npx tsc --noEmit` (or `npm run typecheck`) and `npm run lint` before declaring work done.
 
 ## Layout
 
@@ -51,6 +50,7 @@ No test suite and no CI — verify manually. Run `npx tsc --noEmit` (or `npm run
 - `components/` — UI. `ui/` is shadcn primitives. Mux wrappers `SignedMuxPlayer.tsx` / `SignedMuxThumbnail.tsx`. Sectional UI under `components/sectional/`.
 - `lib/` — server-side + shared helpers. Notable: `mux/` (signing), `auth/verifyBearerToken.ts`, `api/response.ts`, `sectional/`, `courses/assertCourseMutationAllowed.ts`, `packages/`, `earnings/`, `legal/`, `R2/`, `services/`, `purchaseProtection/`, `payments/zaincash.ts`.
 - `firebase/client.ts` + `firebase/service.ts` — client + admin SDK init.
+- `scripts/pipeline/` — standalone transcription pipeline (course video → transcript + Q&A files under gitignored `output/`; reads Firestore/Mux, writes disk only). Usage, env, resume semantics: `run.mts` header.
 - `context/authContext.tsx`, `hooks/` (`useMuxPlaybackToken`, `useVideoProtection`, `useVideoUpload`), `validation/`, `middleware.ts`, `types/types.ts`.
 
 ## Auth model
@@ -84,7 +84,7 @@ touching the area.
 - Mux: `MUX_TOKEN_ID`, `MUX_TOKEN_SECRET`, `MUX_SIGNING_KEY_ID`, `MUX_SIGNING_PRIVATE_KEY`
 - R2: `R2_*` (account id, bucket, keys)
 - ZainCash: `ZAINCASH_BASE_URL`, `ZAINCASH_MERCHANT_ID`, `ZAINCASH_MSISDN`, `ZAINCASH_SECRET_KEY`, and `ZAINCASH_CALLBACK_BASE_URL` (pin to the prod host for the wallet top-up callback; preview deploy URLs aren't whitelisted by ZainCash — falls back to `NEXT_PUBLIC_APP_URL` if unset)
-- App: `NEXT_PUBLIC_APP_URL`, `NODE_ENV`
+- App: `NEXT_PUBLIC_APP_URL`, `NODE_ENV`. Pipeline scripts: `PIPELINE_ANTHROPIC_API_KEY` (deliberately NOT `ANTHROPIC_API_KEY` — an ambient one from other tooling must never shadow it), optional `PIPELINE_PYTHON` / `PIPELINE_DEVICE`
 
 ## Conventions
 
@@ -98,7 +98,7 @@ touching the area.
 
 ## Gotchas / don'ts
 
-- **`next.config.ts` has `eslint.ignoreDuringBuilds: true` and `typescript.ignoreBuildErrors: true`** ("lenient mode"). The build will not catch type/lint errors — run `npm run lint` and `npx tsc --noEmit` manually before declaring work done.
+- **No test suite, no CI, and `next.config.ts` runs "lenient mode"** (`eslint.ignoreDuringBuilds: true`, `typescript.ignoreBuildErrors: true`) — the build will not catch type/lint errors. Run `npm run lint` and `npx tsc --noEmit` (or `npm run typecheck`) manually before declaring work done.
 - Server Action body limit is bumped to 100mb (for video uploads). Don't lower it without checking upload flows.
 - Don't add `/api/:path*` to the middleware matcher (see Auth model above).
 - Don't bypass `SignedMuxPlayer` / `SignedMuxThumbnail` with raw Mux URLs.

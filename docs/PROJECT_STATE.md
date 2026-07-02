@@ -5,6 +5,36 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-07-02 — Transcription pipeline (`scripts/pipeline/`)
+
+Commits `e47ae96` + `dceea96`. New standalone pipeline that turns course videos
+into instructor-reviewable Q&A: Firestore lookup (read-only) → signed-HLS audio
+pull (reuses `lib/mux/playbackToken` + local ffmpeg) → faster-whisper large-v3
+transcription with per-segment confidence → grounded Arabic Q&A via
+`claude-sonnet-5` structured output. Writes files under
+`output/{courseId}/{videoId}/` ONLY — zero Firestore/Mux writes, no routes, no
+UI. Usage: `npm run pipeline -- --video <courseId> <videoId> | --course <courseId>`;
+full env/resume semantics in the `run.mts` header. Per-video error isolation
+(`_errors.log`, batch continues), qa.json-based resume, transcript-level reuse
+for cheap prompt iteration. GPU CUDA float16 (~11x realtime on the RTX 4070,
+quality at parity with CPU int8) with automatic CPU fallback
+(`PIPELINE_DEVICE=auto|cuda|cpu`); the `auto` path probes with 1 s of silent
+inference because CUDA model construction succeeds even when cuBLAS is missing.
+Anthropic key is `PIPELINE_ANTHROPIC_API_KEY` (explicit `apiKey` +
+`authToken: null`) so an ambient `ANTHROPIC_API_KEY` from other tooling can
+never shadow it. Side effects: `.gitignore` repaired (mixed-encoding tail had
+silently broken the `app/*/debug` rules) and narrowed so `scripts/pipeline/` is
+tracked while `scripts/spike/` + `output/` stay ignored; tsconfig now
+typechecks `**/*.mts`; new deps `@anthropic-ai/sdk` + `tsx` (dev).
+
+First real run: course `ViNmx1xEiVma4BlxDNcl` (10 videos, 2h08m audio) in
+~35 min → 210 Q&A pairs, 19 flagged `needsReview` (any source segment breaching
+faster-whisper's reject thresholds). Undecided next steps: Firestore storage
+shape for transcripts/Q&A and the instructor review UI (all pairs ship as
+`status: "pending"`).
+
+---
+
 ## 2026-07-02 — Docs maintenance
 
 Ran the `docs/maintenance/update.md` procedure. Committed two canonical docs +

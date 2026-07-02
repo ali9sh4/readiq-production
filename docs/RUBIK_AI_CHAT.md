@@ -70,6 +70,12 @@ Two tiers, matching the ~80 / 20 split:
 > **Hard dependency:** the long-tail "ask anything about the lesson" experience only becomes real
 > once course videos are transcribed (audit §3, blocker 1). Until then, long-tail answers are limited
 > to authored text and will be honest about not knowing specifics.
+>
+> **Update 2026-07-02:** the transcription sub-project shipped — `scripts/pipeline/`
+> (faster-whisper large-v3 GPU/CPU + `claude-sonnet-5`) generates per-video transcripts
+> and pending-review Q&A to the gitignored `output/` dir. Firestore storage and the
+> instructor review step are still undecided (§9.5), so this blocker stands in-app
+> until those land.
 
 ---
 
@@ -186,6 +192,7 @@ not invent citations.
 ## 8. Out of scope for v1 / deferred
 
 - **Transcript-grounded long-tail Q&A** — needs a transcription pipeline first (audit §3). Deferred.
+  *(Update 2026-07-02: pipeline shipped — `scripts/pipeline/`; still deferred in-app pending Firestore storage + instructor review of the generated pairs.)*
 - **Embeddings + vector search** — v2; not built in v1 (full-text-into-context instead).
 - **Streaming (SSE) responses** — v1 returns complete JSON; streaming deferred.
 - **DeepSeek or any non-Haiku model** — only after measuring real cost/user on Haiku.
@@ -206,6 +213,9 @@ not invent citations.
 4. **Streaming** — confirm non-streaming JSON for v1 (§6/§8).
 5. **Content path to true long-tail** — commit (or not) to a transcription sub-project, and if so,
    Mux auto-captions vs external STT, and where transcript text is stored on `videos[]`.
+   *(Update 2026-07-02: committed and shipped — external STT via local faster-whisper in
+   `scripts/pipeline/`, not Mux captions. Remaining: where transcripts/Q&A live in Firestore,
+   and instructor review of the generated `status: "pending"` pairs.)*
 6. **Cost guardrails** — set the per-user daily cap and monthly ceiling targets before launch;
    instrument token usage (`data.meta`) from day one.
 
@@ -216,6 +226,9 @@ not invent citations.
 1. Provision `ANTHROPIC_API_KEY` in `.env.local` + Vercel (Production); document in `CLAUDE.md`.
    Remove + rotate the stray unused `OPENAI_API_KEY` (audit §6).
 2. `npm install @anthropic-ai/sdk` (audit §7). Then `npx tsc --noEmit` + `npm run lint` (lenient build mode).
+   *(Update 2026-07-02: SDK already installed as a pipeline dependency. Step 1's server key is
+   still required — the pipeline's local `PIPELINE_ANTHROPIC_API_KEY` is deliberately separate,
+   and the stray `OPENAI_API_KEY` still needs the rotate + remove.)*
 3. Add `app/api/chat/route.ts` following the canonical handler skeleton (audit §1) +
    `lib/validation/api/chat.ts`.
 4. Add a reusable access helper mirroring the playback-token gate (consider extracting the gate so
