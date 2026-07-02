@@ -12,8 +12,7 @@ before finishing. Do not summarise it — execute it step by step.
 
 ## Sibling repo — the mobile app
 
-The React Native app lives in a **separate repo: `readiq-production-mobile`** (Expo, view-only reader-app).
-It consumes this repo's `app/api/*` endpoints, read-only. It never writes enrollment or access data.
+The React Native app lives in a **separate repo: `readiq-production-mobile`** (Expo, view-only reader-app). It consumes this repo's `app/api/*` endpoints, read-only, and never writes enrollment or access data.
 
 **When you change anything under `app/api/`, you are changing the mobile app's contract.**
 The contract is documented in `docs/MOBILE_API_MIGRATION.md` — update that doc in the same commit
@@ -21,8 +20,8 @@ as any `/api/*` change, so the mobile repo always has a current spec to read.
 
 ## Source of truth for project state
 
-`docs/MOBILE_PROJECT_STATE.md` — current status, shipped phases, decisions, the sectional invariants.
-Read it at the start of any non-trivial task. Keep it current — a stale board causes wrong assumptions.
+`docs/MOBILE_PROJECT_STATE.md` (mobile board) + `docs/PROJECT_STATE.md` (web changelog) — status, shipped phases, decisions, the sectional invariants.
+Read the relevant board at the start of any non-trivial task. Keep it current — a stale board causes wrong assumptions.
 
 ## Stack
 
@@ -44,8 +43,7 @@ npm run lint     # next lint
 npm start        # next start (after build)
 ```
 
-No test suite and no CI. Verify changes manually.
-Run `npx tsc --noEmit` (or `npm run typecheck`) and `npm run lint` before declaring work done.
+No test suite and no CI — verify manually. Run `npx tsc --noEmit` (or `npm run typecheck`) and `npm run lint` before declaring work done.
 
 ## Layout
 
@@ -106,7 +104,7 @@ touching the area.
 - Don't bypass `SignedMuxPlayer` / `SignedMuxThumbnail` with raw Mux URLs.
 - Don't commit `.env.local`, service-account JSON, or anything that hardcodes secrets. Never paste secrets/JWTs into chat — describe shape only.
 - Don't add new routes under `pages/` — App Router only.
-- Image domains are pinned in `next.config.ts` — add new hosts there before using `<Image>` with them.
+- Image domains are pinned in `next.config.ts` — add new hosts there before using `<Image>`. Course covers deliberately use plain `<img>` (not `<Image>`) to dodge the Hobby-tier 402 image optimizer — see the `cover-image-rendering` skill.
 - Vercel Hobby plan: runtime logs are retained only 1 hour. For production debugging, reproduce live while watching logs.
 
 ## Docs to skim when relevant

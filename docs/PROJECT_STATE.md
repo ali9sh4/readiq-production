@@ -5,6 +5,20 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-07-02 — Docs maintenance
+
+Ran the `docs/maintenance/update.md` procedure. Committed two canonical docs +
+their skills that CLAUDE.md already referenced but that had never been committed
+(`docs/UPLOAD_ARCHITECTURE.md`, `docs/COURSE_APPROVAL_PUBLISHING.md`, and the
+`upload-architecture` + `course-approval` skills). Archived four completed audits
+to `docs/archive/` with SUPERSEDED headers: `NAV_AND_COURSE_EDITOR_AUDIT` and
+`COVER_PHOTO_PROPAGATION_AUDIT` (this batch's fixes shipped and merged), plus the
+discovery audits `AUDIT_IMAGE_OPTIMIZATION` and `AUDIT_IPAD_UPLOAD` (findings
+distilled into `docs/UPLOAD_ARCHITECTURE.md`). Trimmed CLAUDE.md back under its
+120-line budget and added a `cover-image-rendering` skill pointer.
+
+---
+
 ## 2026-07-01 — Fix React #418 hydration mismatch (pin en-US on number formatting)
 
 Branch: `fix/hydration-locale-digits`. Root cause (diagnosed in the prior

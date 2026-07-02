@@ -1,5 +1,11 @@
 # Cover-Photo Propagation Audit
 
+> **SUPERSEDED — archived 2026-07-02.** Audit-only (the "commit `08531b8`, not
+> merged" note below is now stale). The cover-render fix shipped and merged to
+> `main` as `ac72d72` — course covers render via plain `<img>`, bypassing the
+> Hobby-tier 402 image optimizer (see the `cover-image-rendering` skill). Kept
+> for historical context only.
+
 **Scope:** Audit only — no code/config changed. Supersedes all earlier versions.
 **Branch read:** `fix/course-editor-refresh-bounce` (commit `08531b8`, not merged).
 **Method:** code reading + a **read-only** live probe — queried the `courses`

@@ -1,5 +1,10 @@
 # Nav & Course-Editor UX/Perf Audit
 
+> **SUPERSEDED — archived 2026-07-02.** Audit-only; every fix it proposed has
+> shipped and merged to `main` — Symptom 1 `bf73c36`, Symptom 2 `08531b8`, the
+> cover-render fix `ac72d72`, Symptom 3 `6e44632`. Current state lives in the
+> 2026-07-01 entries of `docs/PROJECT_STATE.md`. Kept for historical context only.
+
 **Scope:** Audit only — no code was changed. Three instructor/admin web bugs, each investigated to its real root cause (actual lines, not guesses) with fix options proposed but **not** implemented.
 
 **Date:** 2026-06-29
