@@ -23,6 +23,12 @@
 // faster-whisper installed (default C:\Python313\python.exe; override with
 // PIPELINE_PYTHON). First whisper run downloads the ~3 GB large-v3 model.
 //
+// Transcription device: PIPELINE_DEVICE=auto|cuda|cpu (default auto). auto
+// uses CUDA float16 (~11x realtime, validated at quality parity) when the
+// GPU plus the nvidia-cublas-cu12/nvidia-cudnn-cu12 wheels are present, and
+// falls back to the proven CPU int8 path otherwise — a missing GPU can never
+// fail a run. cuda/cpu force one device.
+//
 // Resume: a video whose qa.json already exists is skipped, so re-running the
 // same --course command continues where a crash/lid-close stopped.
 
@@ -52,6 +58,7 @@ const ROOT = join(HERE, "..", "..");
 const FFMPEG = join(ROOT, "scripts", "spike", "ffmpeg.exe");
 const TRANSCRIBE_PY = join(HERE, "transcribe.py");
 const PYTHON = process.env.PIPELINE_PYTHON ?? "C:\\Python313\\python.exe";
+const DEVICE = process.env.PIPELINE_DEVICE ?? "auto";
 const OUTPUT_ROOT = join(ROOT, "output");
 
 // ---------------------------------------------------------------------------
@@ -153,7 +160,7 @@ async function pullAudio(playbackId: string, outPath: string): Promise<void> {
 function transcribe(audioPath: string, jsonOut: string, txtOut: string): TranscriptSegment[] {
   const r = spawnSync(
     PYTHON,
-    [TRANSCRIBE_PY, "--audio", audioPath, "--json-out", jsonOut, "--txt-out", txtOut],
+    [TRANSCRIBE_PY, "--audio", audioPath, "--json-out", jsonOut, "--txt-out", txtOut, "--device", DEVICE],
     {
       encoding: "utf8",
       env: { ...process.env, PYTHONIOENCODING: "utf-8" },
@@ -255,6 +262,10 @@ if (!existsSync(FFMPEG)) {
   console.error(`ffmpeg not found at ${FFMPEG} — supply it (the spike dir is gitignored).`);
   process.exit(1);
 }
+if (!["auto", "cuda", "cpu"].includes(DEVICE)) {
+  console.error(`Invalid PIPELINE_DEVICE "${DEVICE}" — use auto, cuda, or cpu.`);
+  process.exit(1);
+}
 
 const { courseId, videoId } = parseArgs(process.argv.slice(2));
 
@@ -332,7 +343,7 @@ for (let i = 0; i < videos.length; i++) {
     } else {
       console.log(`${tag} "${video.title}" — pulling audio...`);
       await pullAudio(video.playbackId, audioPath);
-      console.log(`${tag} — transcribing (CPU, roughly realtime for long videos)...`);
+      console.log(`${tag} — transcribing (device=${DEVICE})...`);
       segments = transcribe(audioPath, jsonOut, txtOut);
     }
 
