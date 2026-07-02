@@ -72,6 +72,7 @@ touching the area.
 - **Mux signed playback.** All playback URLs and thumbnails are signed via `lib/mux/playbackToken.ts` and `lib/mux/thumbnailToken.ts`; clients use `SignedMuxPlayer` / `SignedMuxThumbnail` / `useMuxPlaybackToken`. Never expose `MUX_SIGNING_PRIVATE_KEY` or `MUX_TOKEN_SECRET` to the client. The playback-token route is the sectional access gate.
 - **Instructor earnings ledger.** A sale appends an immutable earning entry to `users/{uid}/earningsLedger` with a snapshotted split and bumps `earningsTotal` — it does NOT credit the instructor spend wallet. Admin records out-of-band payouts. Canonical doc: `docs/INSTRUCTOR_PAYOUTS.md`. Helper: `lib/earnings/recordEarning.ts`.
 - **Instructor video upload (web only).** UpChunk → Mux direct-upload URL → poll until `ready` → only then persist the course-video record. Seven hard constraints (committed-bytes progress, fixed 8 MB chunks, abandon-and-restart on disconnect, new URL per retry, etc.) live in the `upload-resilience` skill (`.claude/skills/upload-resilience/`). Canonical doc: `docs/VIDEO_UPLOAD_PIPELINE.md`. Code: `hooks/useVideoUpload.ts`, `components/video_uploader.tsx`, `app/actions/upload_video_actions.ts`. Build-pass ≠ verified — exercise a real upload.
+- **Uploads in general (file / image / receipt).** Four upload paths over three backends (Mux / R2 / Firebase Storage). Backend choice, the golden rules (bytes bypass the server, persist-only-after-success, server-side validation, the iPad auth-redirect landmine, image-optimization cost), and the presigned-direct-to-R2 target for course files live in the `upload-architecture` skill (`.claude/skills/upload-architecture/`). Canonical doc: `docs/UPLOAD_ARCHITECTURE.md`. NB: `uploadCourseFileToR2` currently streams whole files through a server action — documented anti-pattern to migrate off.
 
 ## Mobile API surface
 
@@ -112,8 +113,10 @@ touching the area.
 
 - `docs/MOBILE_API_MIGRATION.md` — mobile REST contract (keep current with any `/api/*` change)
 - `docs/MOBILE_PROJECT_STATE.md` — project status board
+- `docs/COURSE_APPROVAL_PUBLISHING.md` — course approval/publish dual-gate, admin dashboard, deletion lifecycle (also the `course-approval` skill)
 - `docs/INSTRUCTOR_PAYOUTS.md` — earnings ledger + admin payouts
 - `docs/COURSE_PACKAGES.md` — course-packages model, invariants, scaling limits
 - `docs/MANUAL_CLEANUP_DO_NOT_AUTOMATE.md` — items that must stay manual
 - `docs/PHASE_4_ZAINCASH_DEFERRED.md` — why ZainCash sectional is deferred
 - `docs/VIDEO_UPLOAD_PIPELINE.md` — instructor upload path: architecture, hard constraints, real-upload verification (also the `upload-resilience` skill)
+- `docs/UPLOAD_ARCHITECTURE.md` — general upload guide across all backends (video/file/image/receipt): decision matrix, golden rules, iPad landmine, image-optimization cost (also the `upload-architecture` skill)
