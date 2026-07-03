@@ -102,8 +102,13 @@ interface QaRecord {
   status: "pending";
   sourceStartSec: number;
   sourceEndSec: number;
+  // Raw segment ids as cited by Claude — may include ids that failed to
+  // resolve against the transcript (that's what citedUnknownSegment flags).
+  // Kept verbatim as the evidence chain; resolve against transcript.json.
+  sourceSegmentIds: number[];
   avgLogprob: number | null;
   noSpeechProb: number | null;
+  compressionRatio: number | null;
   needsReview: boolean;
   createdAt: string;
 }
@@ -224,8 +229,10 @@ function buildQaRecords(
       status: "pending",
       sourceStartSec: src.length ? Math.min(...src.map((s) => s.start)) : 0,
       sourceEndSec: src.length ? Math.max(...src.map((s) => s.end)) : 0,
+      sourceSegmentIds: pair.sourceSegmentIds,
       avgLogprob: src.length ? Math.min(...src.map((s) => s.avg_logprob)) : null,
       noSpeechProb: src.length ? Math.max(...src.map((s) => s.no_speech_prob)) : null,
+      compressionRatio: src.length ? Math.max(...src.map((s) => s.compression_ratio)) : null,
       needsReview: breachesThreshold || citedUnknownSegment || src.length === 0,
       createdAt: new Date().toISOString(),
     };
