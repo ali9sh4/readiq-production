@@ -63,10 +63,14 @@ Sectional purchasing is a server-authoritative feature with read-side parity exp
 For a video V in a course C with enrollment E:
 
 1. If `V.isFreePreview === true` → unlocked.
-2. If `C.price === 0` → unlocked.
-3. If no enrollment → locked.
-4. If `C.purchaseMode !== "sectional"` → unlocked (legacy full-course buyer).
-5. If `E.accessScope !== "sectional"` → unlocked (bundle / grandfathered).
+2. If no enrollment with `E.status === "completed"` → locked. **There is no
+   free-course bypass**: `C.price === 0` does NOT unlock by itself — the server
+   requires a completed enrollment even for free courses (created by the
+   free-enrollment fast-path of `POST /api/enrollments`).
+3. If `C.purchaseMode !== "sectional"` → unlocked (legacy full-course buyer).
+4. If `E.accessScope !== "sectional"` → unlocked (bundle / grandfathered).
+5. If `V.sectionId` is missing/empty → unlocked (untagged video on a sectional
+   course — the server grants and logs `sectional_untagged_video`).
 6. If `V.sectionId ∈ E.ownedSectionIds` → unlocked.
 7. Otherwise → locked.
 
@@ -102,7 +106,7 @@ All routes below are new files under `app/api/`. They must conform to the ground
 | POST | `/api/wallet/topup/upload-receipt` | Get a presigned R2 PUT URL for a receipt image | Body: `{ contentType, sizeBytes }`. Validate `contentType` ∈ `{image/jpeg, image/png, image/webp}` and `sizeBytes <= 10 MB`. Returns `{ uploadUrl, key, expiresIn }`. The mobile app `PUT`s the bytes directly to `uploadUrl`. **Server never sees the bytes.** Key format: `topup-receipts/{uid}/{ts}_{rand}.{ext}` so it never collides with `courses/`. URL TTL: 5 minutes. |
 | POST | `/api/wallet/topup/request` | Create a pending topup request | Body: `{ amount, paymentMethod, receiptKey }`. Server constructs `receiptUrl` from `receiptKey` (presigned GET URL or stored as the R2 key — admin UI generates a signed GET when viewing). Validate `paymentMethod ∈ {bank_transfer, personal_wallet, fastpay, other}`. Reuse the existing rate limit (`Ratelimit.slidingWindow(10, "1 h")`, `prefix: "topup_request"`) and the existing 1,000–5,000,000 IQD limits. Reuse the existing "one pending request at a time" check. **Writes into the same `topup_requests` collection** so the existing admin approval UI keeps working — adding the new `paymentMethod` and `receiptUrl` fields is additive. |
 | POST | `/api/enrollments` | Buy a course with wallet | Body: `{ courseId }`. Server generates an idempotency key (`generateProtectionKey(uid, courseId)`) so duplicate retries from a flaky mobile network don't double-charge. Calls the same atomic Firestore transaction logic as `purchaseCourseWithWallet`: read wallet, check balance ≥ price (use `salePrice` if lower), block self-purchase, debit buyer, create `enrollments/{uid}_{courseId}`, log the buyer's `wallet_transactions` row, increment course `enrollmentCount`. **Instructor side (changed):** the sale no longer credits the instructor's spend wallet — it appends an immutable `earning` entry to `users/{instructorId}/earningsLedger` and increments `earningsTotal` (a real-world cash payable, see `docs/INSTRUCTOR_PAYOUTS.md`). This is a server-side change only; the request/response contract is unchanged. Free courses (`price === 0`) take a separate fast-path that mirrors `enrollInFreeCourse`. Returns `{ enrollmentId, newBalance }`. **Sectional courses (`course.purchaseMode === "sectional"`) are rejected with `COURSE_NOT_SECTIONAL` (400) before any wallet logic runs** — those must be purchased on the web via the sectional flow (Phase 7 plan is reader-app: no mobile sectional purchase). |
-| POST | `/api/mux/playback-token` | Issue a short-lived signed Mux playback token | Body: `{ courseId, videoId }`. **DRM gate.** Steps: (1) verify token; (2) load course doc, fail if missing/`isDeleted`; (3) find the matching video object, fail if `isVisible === false`; (4) determine access — instructor (`createdBy === uid`), admin, free course (`price === 0`), free preview (`video.isFreePreview === true`), or completed enrollment doc at `enrollments/{uid}_{courseId}`; (5) sign a Mux playback JWT scoped to that specific `playbackId` with `aud: "v"` and `exp` ≤ 5 minutes. Return `{ playbackId, token, expiresAt }`. |
+| POST | `/api/mux/playback-token` | Issue a signed Mux playback token | Body: `{ courseId, videoId }`. **DRM gate.** Steps as shipped: (1) verify Bearer token; (2) per-user rate limit, 30/min sliding window → `429 RATE_LIMITED` (fails open on Redis errors); (3) load course doc → `404 COURSE_NOT_FOUND` if missing, and also for non-privileged callers when `isCoursePubliclyVisible(course)` is false; (4) find the video by `videoId` → `404 VIDEO_NOT_FOUND`; `409 VIDEO_NOT_READY` if it has no `playbackId`; (5) determine access — owner (`createdBy === uid`), admin, free preview (`video.isFreePreview === true`), or completed enrollment at `enrollments/{uid}_{courseId}` → `403 NOT_ENROLLED` otherwise. **No free-course bypass — `price === 0` grants nothing without an enrollment.** On sectional courses (`purchaseMode === "sectional"`), a sectional-scope enrollment must own the video's section → `403 SECTION_NOT_OWNED` (unset/`"full"` `accessScope` and untagged videos grant); (6) sign a Mux playback JWT for that `playbackId` with `aud: "v"`, empty custom claims, and `exp = now + 2 hours` (`TTL_SECONDS = 7200`). Return `{ playbackId, token, thumbnailToken, expiresAt }`. |
 
 **Mux signed playback:** real signing from day one. There are zero live students; the web viewer is throwaway. So:
 
@@ -117,7 +121,7 @@ These are mobile-app responsibilities that the API surface assumes. Listed here 
 
 - **Android:** `FLAG_SECURE` on the player Activity — **mandatory for v1**. Blocks screenshots and screen recording at the OS level.
 - **iOS:** screen-capture detection (`UIScreen.isCaptured` / `capturedDidChangeNotification`) — **v1.1**, not v1. Pause/blank the player when capture is detected.
-- **No caching of playback URLs or tokens** in app state, AsyncStorage, or any persistence layer. Always re-fetch from `/api/mux/playback-token` on play. Tokens are intentionally short-TTL (≤ 5 min).
+- **No caching of playback URLs or tokens** in app state, AsyncStorage, or any persistence layer. Always re-fetch from `/api/mux/playback-token` on play. Tokens expire 2 hours after issue (`TTL_SECONDS = 7200` in the route); the no-caching rule exists so the server re-evaluates access on every play and no signed URL is ever persisted — it is not about token lifetime.
 
 ---
 
@@ -226,9 +230,9 @@ One Zod schema file per route group. Match the naming style of `validation/cours
 
 Reuse existing schemas (`PricingSchema`, etc.) where possible — do not duplicate.
 
-### `lib/mux/playbackToken.ts` (new file, used only by the Mux route)
+### `lib/mux/playbackToken.ts` (used by the Mux route and the transcription pipeline)
 
-Wraps the JWT signing logic so the route handler stays thin. Signs a Mux playback JWT against `MUX_SIGNING_KEY_ID` / `MUX_SIGNING_PRIVATE_KEY` (RS256), with `sub: playbackId`, `aud: "v"`, `exp ≤ now + 5min`. Returns `{ playbackId, token, expiresAt }`.
+Wraps the JWT signing logic so the route handler stays thin. Signs a Mux playback JWT against `MUX_SIGNING_KEY_ID` / `MUX_SIGNING_PRIVATE_KEY` (RS256), with `sub: playbackId`, `aud: "v"`, empty custom claims, and `exp = now + ttlSeconds` (caller-supplied — the route passes `7200`, i.e. 2 hours). Returns the signed JWT string; the route assembles the `{ playbackId, token, thumbnailToken, expiresAt }` response.
 
 ### `lib/R2/presignedUpload.ts` (new file)
 

@@ -111,6 +111,7 @@ touching the area.
 
 - `docs/MOBILE_API_MIGRATION.md` — mobile REST contract (keep current with any `/api/*` change)
 - `docs/MOBILE_PROJECT_STATE.md` — project status board
+- `docs/RUBIK_STUDY_FEATURES.md` — AI study features: vision & phase gates, the normative Firestore Q&A schema, review/publishing lifecycle, content-safety invariants (companion to `docs/RUBIK_AI_CHAT.md`)
 - `docs/COURSE_APPROVAL_PUBLISHING.md` — course approval/publish dual-gate, admin dashboard, deletion lifecycle (also the `course-approval` skill)
 - `docs/INSTRUCTOR_PAYOUTS.md` — earnings ledger + admin payouts
 - `docs/COURSE_PACKAGES.md` — course-packages model, invariants, scaling limits

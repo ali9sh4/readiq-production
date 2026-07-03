@@ -5,6 +5,46 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-07-03 — Q&A evidence fields persisted + study-features canonical doc
+
+- `scripts/pipeline/run.mts`: `QaRecord` now persists `sourceSegmentIds` (the
+  raw segment ids as cited by Claude — the evidence chain) and
+  `compressionRatio` (worst-case across resolved cited segments). Additive
+  only; resume semantics and the validated prompt untouched. Pairs generated
+  before this change lack the two fields — regenerate Q&A from the existing
+  transcripts (delete `qa.json` per video; `transcript.json` is reused) before
+  any Firestore import.
+- New canonical doc `docs/RUBIK_STUDY_FEATURES.md` — study-features vision &
+  phase gates: the normative Firestore Q&A/transcript schema (supersedes the
+  `RUBIK_AI_CHAT.md` §3 sketch; closes its §9.2), publishing model C
+  (per-video bulk-approve of non-quarantined pairs; flagged / citation-sentinel
+  / numeric-tripwire pairs require individual clip-attested review),
+  content-safety invariants, and the phase ladder (wedge = cited open-ended
+  study companion, not MCQ; exam/certification demoted behind explicit
+  prerequisites). Registered in CLAUDE.md; ownership back-links added in
+  `RUBIK_AI_CHAT.md` §3/§9. This resolves the 2026-07-02 entry's "undecided
+  next steps" at the spec level — implementation still pending.
+- `docs/MOBILE_API_MIGRATION.md` corrected to shipped reality: playback-token
+  TTL is 7200 s (doc claimed ≤ 5 min), there is no free-course
+  (`price === 0`) bypass in the gate or the mobile lock recipe (completed
+  enrollment always required), the untagged-video sectional grant was added to
+  the recipe, and the playback-token route row now matches `route.ts`
+  step-for-step (incl. `thumbnailToken` in the response).
+- Corpus snapshot (now maintained in `RUBIK_STUDY_FEATURES.md` §3): 2 courses /
+  21 videos / 366 pairs / 21 flagged — course `DDL9xpIvN9ejWJKhROIV` (11
+  videos, 156 pairs, 2 flagged) was batch-processed 2026-07-03, before the
+  evidence-fields change, so **all** existing qa.json files lack
+  `sourceSegmentIds`/`compressionRatio` and need the cheap transcript-reuse
+  regeneration (~21 Sonnet calls) before any Firestore import.
+- Standing operational note: `output/` (all transcripts + pairs) exists only on
+  the pipeline machine, gitignored — off-machine backup required after every
+  run.
+- Verification: `npx tsc --noEmit` (only the known pre-existing `.next/types`
+  errors), `npm run lint` (pre-existing warnings + the pre-existing
+  `CoursePlayer.tsx` duplicate-import error; nothing new from this change).
+
+---
+
 ## 2026-07-02 — Transcription pipeline (`scripts/pipeline/`)
 
 Commits `e47ae96` + `dceea96`. New standalone pipeline that turns course videos

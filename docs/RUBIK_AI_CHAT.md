@@ -58,7 +58,9 @@ Two tiers, matching the ~80 / 20 split:
   first) per course/section. On a query, match against these pairs and ground the model on the
   matched pair(s). Cheap, fast, no transcription. **This is the v1 backbone** and the only path that
   works given the content blocker (audit §3 — no transcripts exist yet).
-  - Proposed storage: `courses/{courseId}/qa/{qaId}` → `{ question, answer, sectionId?, tags[], updatedAt }`.
+  - ~~Proposed storage: `courses/{courseId}/qa/{qaId}` → `{ question, answer, sectionId?, tags[], updatedAt }`.~~
+    *(Superseded 2026-07-03: the normative Q&A schema — same subcollection location, richer shape with
+    grounding/provenance/review fields — now lives in `docs/RUBIK_STUDY_FEATURES.md` §7.)*
 - **Long tail — v1: dropdown narrows scope → full text into context.** The UI asks the user to pick
   one course (and optionally one section); the route loads that scope's available text (Q&A pairs +
   course `description`/`learningPoints`/`requirements` + section/video `title`s, and transcripts *if/when*
@@ -209,6 +211,9 @@ not invent citations.
 1. **Access model** — confirm per-enrolled-course gating (§4) vs paid add-on. *Recommended: per-course.*
 2. **Q&A authoring** — who writes dental Q&A pairs; final storage location
    (`courses/{courseId}/qa/{qaId}` vs top-level collection).
+   *(Update 2026-07-03: decided — storage location + schema are owned by
+   `docs/RUBIK_STUDY_FEATURES.md` §7 (subcollection); authoring is pipeline-generated +
+   instructor-reviewed per its §5 publishing model. Implementation pending.)*
 3. **Rate-limit posture** — confirm fail-closed + per-user/day cap + global monthly ceiling (§5).
 4. **Streaming** — confirm non-streaming JSON for v1 (§6/§8).
 5. **Content path to true long-tail** — commit (or not) to a transcription sub-project, and if so,
@@ -216,6 +221,8 @@ not invent citations.
    *(Update 2026-07-02: committed and shipped — external STT via local faster-whisper in
    `scripts/pipeline/`, not Mux captions. Remaining: where transcripts/Q&A live in Firestore,
    and instructor review of the generated `status: "pending"` pairs.)*
+   *(Update 2026-07-03: both remaining items are now specified in `docs/RUBIK_STUDY_FEATURES.md`
+   — Firestore schema §7, review/publishing lifecycle §5. Implementation still pending.)*
 6. **Cost guardrails** — set the per-user daily cap and monthly ceiling targets before launch;
    instrument token usage (`data.meta`) from day one.
 
