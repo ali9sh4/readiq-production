@@ -45,6 +45,21 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 - Verification: `npx tsc --noEmit` (only the known pre-existing `.next/types`
   errors), `npm run lint` (pre-existing warnings + the pre-existing
   `CoursePlayer.tsx` duplicate-import error; nothing new from this change).
+- **Phase 1 shipped (same day, later):** `lib/qa/contentHash.ts` (shared
+  norm/hash/tripwire/quarantine module — Phase 2 review actions must reuse
+  it) + `scripts/pipeline/import.mts` (dry-run by default, `--write` to
+  commit, `--migrate` reconcile; per-video atomic WriteBatch with the
+  transcript doc as the §5.3 firewall marker; pair↔transcript coherence
+  check; fresh doc IDs, dedupe by contentHash). Pre-write: console rules
+  fetched read-only via the Rules API — courses rule is single-segment,
+  catch-all is deny-all, so qa/transcripts are client-denied by default (no
+  fix needed). Import: 426 qa docs + 25 transcript docs across both courses,
+  0 refused, quarantine 54 (31 numeric / 0 sentinel / 23 flagged). Smoke
+  test (client SDK forced-long-polling + Firestore REST): qa/transcript
+  reads return permission-denied / HTTP 403 for unauthenticated AND
+  signed-in non-admin, control course read 200 — rules evaluation proven.
+  Canonical audit: `docs/AUDIT_QA_IMPORT.md`. Phase 1 gate ticked in
+  `docs/RUBIK_STUDY_FEATURES.md`; next: Phase 2 instructor review tab.
 
 ---
 

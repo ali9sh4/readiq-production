@@ -149,8 +149,13 @@ Supporting rules:
   banner suggesting the instructor re-record that lecture (flags cluster by
   audio quality — see Snapshot).
 - **5.2 Approval writes an immutable audit record:** `reviewerUid`,
-  `reviewedAt`, `contentHash(question + answer)`, and whether approval was
-  bulk or individual. Editing a pair re-hashes and re-attributes.
+  `reviewedAt`, the pair's `contentHash`, and whether approval was bulk or
+  individual. One hash preimage everywhere:
+  `sha256(videoId + '\0' + norm(question) + '\0' + norm(answer))` with
+  `norm` = NFC + whitespace-collapse + trim, computed by
+  `lib/qa/contentHash.ts` — the same module the importer uses, so approval
+  re-hashing can never drift from import hashing. Editing a pair re-hashes
+  (via the same module), re-runs the numeric tripwire, and re-attributes.
 - **5.3 Regeneration firewall:** once any pair of a video is imported, the
   importer refuses to process a regenerated `qa.json` for that video except
   in explicit migration mode (dedupe by content hash: identical pairs keep
@@ -208,10 +213,12 @@ location). One schema serves study features *and* chat grounding.
 ### 7.1 `courses/{courseId}/qa/{qaId}` — the pair
 
 Subcollection (every read is course-scoped; `collectionGroup` remains
-available). **The Firestore doc ID, minted at import, is the canonical stable
-ID.** Pipeline `qaId`s are ephemeral (random per run) and are kept only for
-provenance. All student progress, SRS state, telemetry, share links, and
-approvals key on the Firestore doc ID — never on pipeline `qaId`s.
+available). **The Firestore doc ID is a fresh auto-ID minted at import — the
+canonical stable ID; the pipeline `qaId` is never used as a doc ID.**
+Pipeline `qaId`s are ephemeral (random per run) and are kept only as
+`pipelineQaId` provenance; dedupe across re-imports keys on `contentHash`,
+never on IDs. All student progress, SRS state, telemetry, share links, and
+approvals key on the Firestore doc ID.
 
 | Field | From | Notes |
 |---|---|---|
@@ -223,9 +230,10 @@ approvals key on the Firestore doc ID — never on pipeline `qaId`s.
 | `sourceSegmentIds` | pipeline (persisted as of 2026-07-03) | Raw ids as cited by the model — the evidence chain; resolve against the transcript doc. |
 | `avgLogprob`, `noSpeechProb`, `compressionRatio` | pipeline | Worst-case over cited segments; `compressionRatio` persisted as of 2026-07-03. |
 | `needsReview` | pipeline | Acoustic flag (invariant 7). |
-| `quarantine` | import | Derived: `"flagged" \| "sentinel" \| "numeric" \| null` (invariant 2 + the tripwire regex, computed at import). |
-| `contentHash` | import | `hash(videoId + question + answer)` — dedupe key for re-imports (§5.3). |
-| `pipelineQaId`, `pipelineRunAt`, `promptVersion` | import | Provenance. |
+| `quarantine` | import | Single-valued: `"numeric" \| "sentinel" \| "flagged" \| null`, **precedence `numeric > sentinel > flagged`** (numeric is the only class whose trigger isn't otherwise stored on the doc and the only one adding an approval requirement). Computed by `lib/qa/contentHash.ts` `classifyQuarantine()`. |
+| `contentHash`, `contentHashVersion` | import | `sha256(videoId + '\0' + norm(q) + '\0' + norm(a))` hex (§5.2 — one preimage everywhere, `lib/qa/contentHash.ts`) — dedupe key for re-imports (§5.3). |
+| `transcriptHash` | import | sha256 of the source `transcript.json` bytes — content-addressed pair↔transcript binding (§7.2). |
+| `pipelineQaId`, `pipelineRunAt`, `promptVersion`, `importedAt` | import | Provenance. `promptVersion` is operator-supplied (`--prompt-version`, defaulted in `import.mts`) — the pipeline does not emit one yet (flagged follow-up). |
 | `isFreePreviewVideo` | import (denormalized) | Cheap catalog query for preview packs (Phase 4). |
 | `reviewerUid`, `reviewedAt`, `approvalMode`, `numericConfirmed` | review | The audit record (§5.2). |
 | `stale` | importer | Set (never deleted) when a regeneration no longer produces this pair. |
@@ -233,10 +241,18 @@ approvals key on the Firestore doc ID — never on pipeline `qaId`s.
 ### 7.2 `courses/{courseId}/transcripts/{videoId}` — the segments
 
 Segments array `{id, start, end, text, avg_logprob, no_speech_prob,
-compression_ratio}` + `pipelineRunAt`. Required for text-level citation
-("show the sentence"), flag re-audits, and future subtitles/search. A 2h video
-stays well under the 1 MiB doc limit. A pair's `sourceSegmentIds` are only
-rendered against the transcript version matching its `pipelineRunAt`.
+compression_ratio}` + metadata (`segmentCount`, `qaCount`, `pipelineRunAt`,
+`transcriptHash`, `promptVersion`, `importedAt`). Required for text-level
+citation ("show the sentence"), flag re-audits, and future subtitles/search.
+A 2h video stays well under the 1 MiB doc limit (largest today: 61 KiB).
+**Binding is content-addressed, not clock-based:** a pair's
+`sourceSegmentIds` are only rendered against the transcript whose
+`transcriptHash` matches the pair's — `transcript.json` carries no timestamp
+metadata, and the importer's coherence check (re-deriving each pair's
+evidence fields from the transcript before writing) is what makes the
+stamped hash truthful. This doc doubles as the §5.3 import marker: it is
+written in the same atomic batch as the pairs, so marker-exists ⟺
+video-fully-imported.
 
 ### 7.3 Per-student state
 
@@ -329,8 +345,16 @@ batches, computes `quarantine` + `contentHash`, denormalizes `sectionId` /
 regeneration firewall (§5.3). This one step simultaneously unblocks review,
 study, chat grounding (`RUBIK_AI_CHAT.md`'s content blocker), and gets the
 corpus off one laptop.
-- **Gate:** both processed courses imported; spot-check pairs render against
-  their transcript segments.
+- **Gate: ✅ MET 2026-07-03.** Both courses imported — 426 qa docs + 25
+  transcript docs, 0 refused (`ViNmx…` 216/10, `DDL…` 210/15); quarantine
+  54 (31 numeric / 0 sentinel / 23 flagged). Spot-check verified the §7
+  field shape and `pair.transcriptHash === transcript.transcriptHash`.
+  §6 smoke test confirmed **permission-denied** (SDK) / **HTTP 403
+  PERMISSION_DENIED** (REST) on qa and transcript docs for BOTH
+  unauthenticated and signed-in non-admin clients, with the control read of
+  the published course doc succeeding in all contexts — rules were
+  evaluated, not assumed. Console rules pre-checked read-only via the Rules
+  API: single-segment courses rule + deny-all catch-all; no fix was needed.
 - **Metric:** n/a (infrastructure).
 - **Must not:** touch `qa.json` write-last resume semantics; delete anything
   in `output/`.
@@ -527,6 +551,12 @@ Q&A" tier of its design becomes real the day Phase 2 approves a course.
 | STT = local faster-whisper pipeline, not Mux captions | DECIDED (shipped) | `RUBIK_AI_CHAT.md` §9.5 update |
 | Pipeline stays read-only vs Firestore | DECIDED | `scripts/pipeline/run.mts` header |
 | Import is a separate operator-run script (not a pipeline flag) | DECIDED | This doc §9 Phase 1 |
+| `qa` + `transcripts` are admin-SDK-only — no client Firestore rules, default-deny (console rules verified 2026-07-03: single-segment courses rule + deny-all catch-all; no fix needed) | DECIDED | `docs/AUDIT_QA_IMPORT.md` §6 |
+| Pair doc IDs = fresh auto-IDs minted at import; pipeline qaIds are provenance only; dedupe by `contentHash` | DECIDED | `docs/AUDIT_QA_IMPORT.md` decisions |
+| One `contentHash` preimage everywhere: `sha256(videoId \0 norm(q) \0 norm(a))`, conservative norm | DECIDED | This doc §5.2/§7.1; `lib/qa/contentHash.ts` |
+| Quarantine precedence `numeric > sentinel > flagged` | DECIDED | This doc §7.1 |
+| Tripwire = number+unit adjacency **+ decimals-anywhere** (validated 54/426 = 12.7% quarantine) | DECIDED | `docs/AUDIT_QA_IMPORT.md` §5 |
+| `promptVersion` = operator flag with default constant (pipeline emits none yet — follow-up) | DECIDED | `docs/AUDIT_QA_IMPORT.md` decisions |
 | First student surface = open-ended study companion, not MCQ quiz | DECIDED | This doc §1/§9 Phase 3 |
 | Publishing model C (bulk unflagged + quarantine classes individually clip-attested) | DECIDED | This doc §5 |
 | Numeric tripwire quarantine regardless of `needsReview` | DECIDED | This doc §4 inv. 3 |

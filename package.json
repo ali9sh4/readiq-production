@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "pipeline": "tsx --env-file=.env.local scripts/pipeline/run.mts"
+    "pipeline": "tsx --env-file=.env.local scripts/pipeline/run.mts",
+    "import": "tsx --env-file=.env.local scripts/pipeline/import.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.109.1",
