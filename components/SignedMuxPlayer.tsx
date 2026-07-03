@@ -22,14 +22,28 @@ const SignedMuxPlayer = forwardRef<MuxPlayerRef, SignedMuxPlayerProps>(
     { courseId, videoId, playbackId, ...muxProps },
     ref
   ) {
-    const { token, thumbnailToken, error, isLoading } = useMuxPlaybackToken({
-      courseId,
-      videoId,
-      enabled: Boolean(playbackId),
-    });
+    const { token, thumbnailToken, error, isLoading, refetch } =
+      useMuxPlaybackToken({
+        courseId,
+        videoId,
+        enabled: Boolean(playbackId),
+      });
 
     if (!playbackId || error?.code === "VIDEO_NOT_READY") {
       return <ProcessingPlaceholder className={muxProps.className} />;
+    }
+
+    // Any other token failure (RATE_LIMITED, NETWORK_ERROR, gate denials):
+    // rendering MuxPlayer without a `tokens` prop would 403 inside the player
+    // chrome as a cryptic broken player. Show a retriable placeholder instead.
+    if (error) {
+      return (
+        <ErrorPlaceholder
+          className={muxProps.className}
+          code={error.code}
+          onRetry={refetch}
+        />
+      );
     }
 
     // Initial-load gate. Until the hook reports a token or an error, the
@@ -62,6 +76,39 @@ const SignedMuxPlayer = forwardRef<MuxPlayerRef, SignedMuxPlayerProps>(
     );
   }
 );
+
+function ErrorPlaceholder({
+  className,
+  code,
+  onRetry,
+}: {
+  className?: string;
+  code: string;
+  onRetry: () => void;
+}) {
+  const message =
+    code === "RATE_LIMITED"
+      ? "طلبات كثيرة — انتظر لحظة ثم أعد المحاولة"
+      : "تعذّر تحميل الفيديو";
+  return (
+    <div
+      role="alert"
+      dir="rtl"
+      className={`flex aspect-video w-full flex-col items-center justify-center gap-3 bg-neutral-900 text-center text-sm text-neutral-300${
+        className ? ` ${className}` : ""
+      }`}
+    >
+      <span>{message}</span>
+      <button
+        type="button"
+        onClick={onRetry}
+        className="rounded-md bg-neutral-700 px-4 py-1.5 text-sm text-white transition-colors hover:bg-neutral-600"
+      >
+        إعادة المحاولة
+      </button>
+    </div>
+  );
+}
 
 function ProcessingPlaceholder({ className }: { className?: string }) {
   return (

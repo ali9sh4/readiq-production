@@ -156,6 +156,18 @@ Supporting rules:
   `lib/qa/contentHash.ts` — the same module the importer uses, so approval
   re-hashing can never drift from import hashing. Editing a pair re-hashes
   (via the same module), re-runs the numeric tripwire, and re-attributes.
+- **5.2a Edits invalidate attestation.** The attested claim ("this answer is
+  at this moment") is about the *text*; any question/answer edit voids prior
+  attestation. Edited pairs (`editedAt` set) always require fresh individual
+  clip-attested approval and are **permanently excluded from bulk approval**
+  (enforced server-side in `bulkApproveVideo`).
+- **5.2b Approved pairs are edit-locked.** Editing requires an explicit
+  `revokeApproval` first, which appends the superseded audit record
+  (`reviewerUid`, `reviewedAt`, `approvalMode`, `numericConfirmed`,
+  `contentHash`, `supersededAt/By`) to the pair's `reviewHistory` array and
+  returns the pair to `pending`. `approved → rejected` safety recall is
+  allowed and preserves the record the same way. Rejection remains
+  never-deletion (invariant 5).
 - **5.3 Regeneration firewall:** once any pair of a video is imported, the
   importer refuses to process a regenerated `qa.json` for that video except
   in explicit migration mode (dedupe by content hash: identical pairs keep
@@ -231,12 +243,16 @@ approvals key on the Firestore doc ID.
 | `avgLogprob`, `noSpeechProb`, `compressionRatio` | pipeline | Worst-case over cited segments; `compressionRatio` persisted as of 2026-07-03. |
 | `needsReview` | pipeline | Acoustic flag (invariant 7). |
 | `quarantine` | import | Single-valued: `"numeric" \| "sentinel" \| "flagged" \| null`, **precedence `numeric > sentinel > flagged`** (numeric is the only class whose trigger isn't otherwise stored on the doc and the only one adding an approval requirement). Computed by `lib/qa/contentHash.ts` `classifyQuarantine()`. |
-| `contentHash`, `contentHashVersion` | import | `sha256(videoId + '\0' + norm(q) + '\0' + norm(a))` hex (§5.2 — one preimage everywhere, `lib/qa/contentHash.ts`) — dedupe key for re-imports (§5.3). |
+| `contentHash`, `contentHashVersion` | import / re-hashed on edit | `sha256(videoId + '\0' + norm(q) + '\0' + norm(a))` hex (§5.2 — one preimage everywhere, `lib/qa/contentHash.ts`). Mutable: edits re-hash. |
+| `importContentHash` | import (immutable) | The import-time hash — identity with the disk corpus. **Never touched by edits**; `--migrate` matches on it, so instructor edits survive re-imports (backfilled across the corpus 2026-07-03). |
 | `transcriptHash` | import | sha256 of the source `transcript.json` bytes — content-addressed pair↔transcript binding (§7.2). |
 | `pipelineQaId`, `pipelineRunAt`, `promptVersion`, `importedAt` | import | Provenance. `promptVersion` is operator-supplied (`--prompt-version`, defaulted in `import.mts`) — the pipeline does not emit one yet (flagged follow-up). |
 | `isFreePreviewVideo` | import (denormalized) | Cheap catalog query for preview packs (Phase 4). |
 | `reviewerUid`, `reviewedAt`, `approvalMode`, `numericConfirmed` | review | The audit record (§5.2). |
-| `stale` | importer | Set (never deleted) when a regeneration no longer produces this pair. |
+| `editedAt`, `editedBy` | review (edit) | Set on inline edit; presence bars the pair from bulk approval forever (§5.2a). |
+| `reviewHistory` | review (revoke/recall/edit-of-rejected) | Append-only array of superseded audit records (§5.2b). |
+| `rejectReason` | review (reject) | Mandatory; rejected pairs are retained and admin-visible (invariant 5). |
+| `stale` | importer | Set (never deleted) when a regeneration no longer produces this pair. Stale pairs are unapprovable (`QA_STALE`) until a migrate resolves them. |
 
 ### 7.2 `courses/{courseId}/transcripts/{videoId}` — the segments
 
@@ -370,8 +386,16 @@ checkbox, per-video bulk-approve of non-quarantined pairs only, reject-with-
 reason, RTL inline editing. Server actions under
 `app/actions/qa_review_actions.ts` (web-only server actions — zero mobile
 contract impact), guarded by course ownership.
+- **Status: built 2026-07-03** — third tab wired, all six server actions
+  live (`listQaForReview` fully gated; bulk = server-side selection with
+  per-doc transactional re-checks; approve re-hashes + re-classifies;
+  reject-with-reason; edit-locked approved pairs via `revokeApproval` +
+  `reviewHistory`), firewall `importContentHash` landed and backfilled
+  (verified: `--migrate` dry-run reconciles 426 identical / 0 new / 0
+  stale). Build docs: `docs/AUDIT_QA_REVIEW_UI.md`.
 - **Gate:** ≥1 full course approved by its instructor (the founder's own
-  course is the pilot).
+  course is the pilot). **Not yet met** — awaiting the owner's real
+  walkthrough + pilot review.
 - **Metric:** % of imported pairs reviewed within 7 days of import. If this
   stalls, everything downstream is dead — fix review UX before building on.
 - **Must not:** offer any bulk action over quarantined pairs; delete rejected
@@ -557,6 +581,12 @@ Q&A" tier of its design becomes real the day Phase 2 approves a course.
 | Quarantine precedence `numeric > sentinel > flagged` | DECIDED | This doc §7.1 |
 | Tripwire = number+unit adjacency **+ decimals-anywhere** (validated 54/426 = 12.7% quarantine) | DECIDED | `docs/AUDIT_QA_IMPORT.md` §5 |
 | `promptVersion` = operator flag with default constant (pipeline emits none yet — follow-up) | DECIDED | `docs/AUDIT_QA_IMPORT.md` decisions |
+| Immutable `importContentHash` = migrate identity; edits re-hash `contentHash` only (backfilled 426/426, 2026-07-03) | DECIDED | `docs/AUDIT_QA_REVIEW_UI.md` §4.1 |
+| Approved pairs edit-locked: `revokeApproval` first, superseded record → `reviewHistory` | DECIDED | This doc §5.2b |
+| `approved → rejected` safety recall allowed (record preserved) | DECIDED | This doc §5.2b |
+| Edits invalidate attestation; edited pairs barred from bulk forever | DECIDED | This doc §5.2a |
+| Stale pairs unapprovable (`QA_STALE`) until migrate resolves | DECIDED | `docs/AUDIT_QA_REVIEW_UI.md` decisions |
+| `SignedMuxPlayer` renders a retriable error placeholder for all token failures (was: broken tokenless player) | DECIDED (shipped with Phase 2) | `components/SignedMuxPlayer.tsx` |
 | First student surface = open-ended study companion, not MCQ quiz | DECIDED | This doc §1/§9 Phase 3 |
 | Publishing model C (bulk unflagged + quarantine classes individually clip-attested) | DECIDED | This doc §5 |
 | Numeric tripwire quarantine regardless of `needsReview` | DECIDED | This doc §4 inv. 3 |

@@ -5,6 +5,38 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-07-03 — Phase 2 built: instructor Q&A review tab (gate pending pilot review)
+
+Pre-build audit: `docs/AUDIT_QA_REVIEW_UI.md` (mount point, action/auth
+conventions, clip-attestation mechanics, approval-write design; key finding:
+edits would have broken the §5.3 import firewall). Build (uncommitted at
+entry time; commit follows owner diff review):
+
+- `app/actions/qa_review_actions.ts` — six transactional server actions
+  (list/approve/bulkApprove/reject/edit/revokeApproval), modeled on
+  `sectional_config_actions.ts` (typed codes + zod + token-as-argument
+  ownership gate). Server is the wall: bulk takes NO pair ids (server-side
+  selection + per-doc re-checks), `classifyQuarantine` re-run authoritative
+  at every write, numeric pairs need explicit confirmation, sentinel pairs
+  unapprovable, stale pairs `QA_STALE`, rejection never deletes, approved
+  pairs edit-locked behind `revokeApproval` + `reviewHistory` append.
+- `components/qa_review/QaReviewTab.tsx` + third CourseDashboard tab
+  ("مراجعة الأسئلة", grid-cols-3): quarantined-first grouping, per-video
+  >20% flag-rate re-record banner, ONE player per expanded group,
+  clip attestation bound to the single active pair, numeric checkbox,
+  save-per-row RTL editing, per-video bulk-approve with skipped reporting.
+- `SignedMuxPlayer`: retriable error placeholder for all non-VIDEO_NOT_READY
+  token failures (was: broken tokenless player) — benefits all consumers.
+- Firewall fix: immutable `importContentHash` on pairs (import.mts writes it;
+  migrate matches on it; approved OR edited docs' evidence protected);
+  backfilled 426/426 (`scripts/pipeline/backfill_import_hash.mts`). Verified:
+  `--migrate` dry-run reconciles 426 identical / 0 new / 0 stale.
+- Follow-ups filed, NOT this phase: `getCourseVideos` is unauthenticated;
+  `permanentlyDeleteCourse` orphans qa/transcripts subcollections.
+- Phase 2 gate (pilot course fully reviewed by its instructor) NOT met yet.
+
+---
+
 ## 2026-07-03 — Q&A evidence fields persisted + study-features canonical doc
 
 - `scripts/pipeline/run.mts`: `QaRecord` now persists `sourceSegmentIds` (the

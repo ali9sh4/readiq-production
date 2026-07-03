@@ -324,8 +324,15 @@ for (const courseId of courseDirs) {
       if (markerSnap.exists && opts.migrate) {
         const existing = await qaCol.where("videoId", "==", video.videoId).get();
         for (const doc of existing.docs) {
-          const h = doc.data().contentHash;
-          // Docs without a string contentHash (pre-schema / hand-edited) or
+          // Identity with the disk corpus is the IMMUTABLE importContentHash;
+          // contentHash is mutable (Phase 2 edits re-hash). Fallback keeps
+          // pre-backfill docs behaving exactly as before.
+          const docData = doc.data();
+          const h =
+            typeof docData.importContentHash === "string" && docData.importContentHash
+              ? docData.importContentHash
+              : docData.contentHash;
+          // Docs without a string hash (pre-schema / hand-edited) or
           // colliding with an already-seen hash are skipped LOUDLY — mapping
           // them under undefined/last-wins would create duplicate imports and
           // wrong stale-marks.
@@ -354,7 +361,12 @@ for (const courseId of courseDirs) {
         if (existing) {
           report.identical++;
           existingByHash.delete(h);
-          const approved = existing.data().status === "approved";
+          const exData = existing.data();
+          // Approved pairs' evidence is clip-attested human verification, and
+          // EDITED pairs' text/quarantine reflect the instructor's version —
+          // neither may be overwritten by fresh (unverified) model output.
+          const protectedDoc =
+            exData.status === "approved" || typeof exData.editedAt === "string";
           // Denormalized JOIN fields always refresh — they mirror the course
           // doc (a video can move sections / flip free-preview) and are not
           // clip-attested evidence, so invariant 4 does not freeze them.
@@ -363,9 +375,7 @@ for (const courseId of courseDirs) {
             sectionId: video.sectionId ?? null,
             isFreePreviewVideo: video.isFreePreview === true,
           };
-          // Approved pairs' EVIDENCE is clip-attested human verification —
-          // never overwritten by fresh (unverified) model citations.
-          const refresh = approved
+          const refresh = protectedDoc
             ? joinRefresh
             : {
                 ...joinRefresh,
@@ -398,6 +408,9 @@ for (const courseId of courseDirs) {
               needsReview: p.needsReview,
               quarantine,
               contentHash: h,
+              // Immutable disk-corpus identity — Phase 2 edits re-hash
+              // contentHash but NEVER touch this; migrate matches on it.
+              importContentHash: h,
               contentHashVersion: CONTENT_HASH_VERSION,
               pipelineQaId: p.qaId,
               pipelineRunAt,

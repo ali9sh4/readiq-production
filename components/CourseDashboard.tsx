@@ -45,6 +45,7 @@ import {
 } from "@/app/actions/basic_info_actions";
 import VideoUploader from "./video_uploader";
 import SmartCourseUploader from "./fileUplaodtoR2";
+import QaReviewTab from "./qa_review/QaReviewTab";
 import {
   ThumbnailUpdateSchema,
   BasicInfoSchema,
@@ -635,7 +636,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
 
         {/* ===== RESPONSIVE TABS ===== */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-white border border-gray-200 rounded-xl h-14 md:h-16 p-1.5 shadow-sm">
+          <TabsList className="grid w-full grid-cols-3 bg-white border border-gray-200 rounded-xl h-14 md:h-16 p-1.5 shadow-sm">
             <TabsTrigger
               value="overview"
               className="text-base md:text-lg font-semibold text-gray-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
@@ -647,6 +648,12 @@ export default function CourseDashboard({ defaultValues }: Props) {
               className="text-base md:text-lg font-semibold text-gray-600 data-[state=active]:bg-green-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
             >
               المحتوى
+            </TabsTrigger>
+            <TabsTrigger
+              value="qa-review"
+              className="text-base md:text-lg font-semibold text-gray-600 data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-lg transition-all duration-200"
+            >
+              مراجعة الأسئلة
             </TabsTrigger>
           </TabsList>
 
@@ -1205,6 +1212,15 @@ export default function CourseDashboard({ defaultValues }: Props) {
               purchaseMode={course.purchaseMode}
             />
             <SmartCourseUploader id={course.id} disabled={isAnyActionRunning} />
+          </TabsContent>
+
+          {/* ===== Q&A REVIEW TAB (Phase 2 — approval gate) ===== */}
+          <TabsContent value="qa-review" className="space-y-6">
+            <QaReviewTab
+              courseId={course.id}
+              videos={course.videos ?? []}
+              disabled={isAnyActionRunning}
+            />
           </TabsContent>
         </Tabs>
       </div>
