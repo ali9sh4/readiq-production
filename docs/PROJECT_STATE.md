@@ -33,6 +33,13 @@ entry time; commit follows owner diff review):
   `--migrate` dry-run reconciles 426 identical / 0 new / 0 stale.
 - Follow-ups filed, NOT this phase: `getCourseVideos` is unauthenticated;
   `permanentlyDeleteCourse` orphans qa/transcripts subcollections.
+- Post-ship polish (same day): review-UI numerals switched to Arabic-Indic
+  via a display-only `toArabicNumerals` helper (data stays ASCII); bulk
+  button relabeled "اعتماد الأسئلة النظيفة (N)"; attestation gate scoped —
+  HARD for numeric pairs (+ sentinel still blocked), recommended-but-
+  skippable with a visible note otherwise (invariant 4 + model C + ledger
+  updated). Third follow-up filed: additive `approvalAttested` boolean +
+  §13 q5 ship-gate re-scope, targeted before Phase 3 launch.
 - Phase 2 gate (pilot course fully reviewed by its instructor) NOT met yet.
 
 ---

@@ -63,10 +63,20 @@ interface Props {
 
 const WIDE_SPAN_SEC = 300; // §8.2 — one tick in a >5min window is weak attestation
 
+// Display-only formatting: Arabic-Indic numerals for every count/timestamp
+// shown in the review UI. Never applied to state, payloads, or comparisons —
+// the underlying data stays ASCII. Deterministic character mapping (not
+// locale-dependent), so it cannot cause SSR/client digit mismatches (the
+// React #418 class this repo pins en-US against).
+const ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+function toArabicNumerals(value: number | string): string {
+  return String(value).replace(/[0-9]/g, (d) => ARABIC_DIGITS[Number(d)]);
+}
+
 function fmtTime(sec: number): string {
   const m = Math.floor(sec / 60);
   const s = Math.floor(sec % 60);
-  return `${m}:${String(s).padStart(2, "0")}`;
+  return toArabicNumerals(`${m}:${String(s).padStart(2, "0")}`);
 }
 
 function isSentinel(p: QaReviewPair): boolean {
@@ -322,8 +332,8 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
             return prev.map((p) => byId.get(p.id) ?? p);
           });
           toast.success(
-            `تم اعتماد ${res.approved.length} سؤال${
-              res.skipped.length ? ` — تخطّي ${res.skipped.length} (تحتاج مراجعة فردية)` : ""
+            `تم اعتماد ${toArabicNumerals(res.approved.length)} سؤال${
+              res.skipped.length ? ` — تخطّي ${toArabicNumerals(res.skipped.length)} (تحتاج مراجعة فردية)` : ""
             }`
           );
         }
@@ -433,13 +443,13 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
       <Card>
         <CardContent dir="rtl" className="flex flex-wrap items-center justify-between gap-3 p-4">
           <div className="flex flex-wrap gap-4 text-sm">
-            <span className="font-semibold text-blue-700">بانتظار المراجعة: {totals.pending}</span>
-            <span className="font-semibold text-amber-700">منها معزولة (مراجعة فردية): {totals.quarantinedPending}</span>
-            <span className="font-semibold text-green-700">معتمدة: {totals.approved}</span>
-            <span className="font-semibold text-red-700">مرفوضة: {totals.rejected}</span>
+            <span className="font-semibold text-blue-700">بانتظار المراجعة: {toArabicNumerals(totals.pending)}</span>
+            <span className="font-semibold text-amber-700">منها معزولة (مراجعة فردية): {toArabicNumerals(totals.quarantinedPending)}</span>
+            <span className="font-semibold text-green-700">معتمدة: {toArabicNumerals(totals.approved)}</span>
+            <span className="font-semibold text-red-700">مرفوضة: {toArabicNumerals(totals.rejected)}</span>
             {orphanCount > 0 && (
               <span className="text-gray-500">
-                {orphanCount} لفيديوهات لم تعد في الكورس (غير قابلة للمراجعة هنا)
+                {toArabicNumerals(orphanCount)} لفيديوهات لم تعد في الكورس (غير قابلة للمراجعة هنا)
               </span>
             )}
           </div>
@@ -466,7 +476,7 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
             >
               <span className="font-semibold text-gray-800">
                 {video.title}{" "}
-                <span className="text-sm font-normal text-gray-500">({vPairs.length} سؤال)</span>
+                <span className="text-sm font-normal text-gray-500">({toArabicNumerals(vPairs.length)} سؤال)</span>
               </span>
               <span className="flex items-center gap-2">
                 {pendingClean > 0 && (
@@ -483,7 +493,7 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
                     ) : (
                       <ShieldCheck className="ml-1 h-4 w-4" />
                     )}
-                    اعتماد النظيفة ({pendingClean})
+                    اعتماد الأسئلة النظيفة ({toArabicNumerals(pendingClean)})
                   </Button>
                 )}
               </span>
@@ -492,7 +502,7 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
             {flagRate > 0.2 && (
               <div className="flex items-center gap-2 border-y border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
-                جودة الصوت أثّرت على {flaggedCount} من {vPairs.length} سؤال في هذه المحاضرة — قد يستحق المقطع إعادة تسجيل.
+                جودة الصوت أثّرت على {toArabicNumerals(flaggedCount)} من {toArabicNumerals(vPairs.length)} سؤال في هذه المحاضرة — قد يستحق المقطع إعادة تسجيل.
               </div>
             )}
 
@@ -516,12 +526,21 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
                   const wideSpan = !sentinel && p.sourceEndSec - p.sourceStartSec > WIDE_SPAN_SEC;
                   const isAttested = attested.has(p.id);
                   const busy = busyIds.has(p.id);
+                  // Attestation scope (owner decision, 2026-07-03): the HARD
+                  // clip-attestation gate applies only to numeric pairs —
+                  // wrong timestamp + wrong number is the clinically
+                  // dangerous combo. Sentinel stays blocked entirely (no
+                  // valid window exists). For flagged/clean pairs attestation
+                  // is recommended-but-skippable; skipping shows the note.
+                  const attestationRequired = p.quarantine === "numeric";
                   const canApprove =
                     p.status === "pending" &&
                     !p.stale &&
                     !sentinel &&
-                    isAttested &&
+                    (!attestationRequired || isAttested) &&
                     (p.quarantine !== "numeric" || numericChecks[p.id] === true);
+                  const skippingAttestation =
+                    p.status === "pending" && !sentinel && !isAttested && !attestationRequired;
 
                   return (
                     <div
@@ -657,7 +676,7 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
                                     ? "بدون اقتباس زمني — عدّل أو ارفض"
                                     : p.stale
                                       ? "سؤال قديم — لا يمكن اعتماده"
-                                      : !isAttested
+                                      : attestationRequired && !isAttested
                                         ? "شاهد المقطع أولاً لتفعيل الاعتماد"
                                         : undefined
                                 }
@@ -666,6 +685,11 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
                                 {busy ? <Loader2 className="ml-1 h-4 w-4 animate-spin" /> : <Check className="ml-1 h-4 w-4" />}
                                 اعتماد
                               </Button>
+                              {skippingAttestation && (
+                                <span className="self-center text-xs text-gray-400">
+                                  لم تتم معاينة المقطع
+                                </span>
+                              )}
                               <Button
                                 size="sm"
                                 variant="outline"

@@ -286,7 +286,13 @@ matching** — instructor edits will now survive re-imports. `tsc` clean
 (`upload_video_actions.ts:172-210`) is unauthenticated — add token +
 ownership gate; (b) `permanentlyDeleteCourse`
 (`course_deletion_action.ts:191`) deletes the course doc but not the
-`qa`/`transcripts` subcollections — extend the deletion service.
+`qa`/`transcripts` subcollections — extend the deletion service;
+(c) *(filed 2026-07-03 after the attestation-scope softening)* persist an
+additive `approvalAttested` boolean at approve time so attestation becomes
+auditable (today it is session-only client state — attested and skipped
+approvals are indistinguishable afterward), and re-scope the
+`RUBIK_STUDY_FEATURES.md` §13 q5 "≥95% attested" ship gate accordingly.
+Target: before the Phase 3 student surface launches.
 
 **Adversarial review (2026-07-03, post-build):** PASS on all eight checks
 (server invariants, auth narrowing, transactions, serialization, import.mts

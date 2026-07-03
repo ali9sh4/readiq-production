@@ -108,12 +108,18 @@ audit trail that proves we didn't.
    instructed to "correct" using domain priors — a wrong dose/thickness is
    the failure class that reaches a patient, and `needsReview` is
    structurally blind to it (see invariant 7).
-4. **Clip-attested approval:** any individually-approved pair requires the
-   reviewer to have actually played the source clip — the Approve control
-   stays disabled until a player `timeupdate` lands inside
-   `[sourceStartSec, sourceEndSec]` in that review session. This makes
-   approval itself the timestamp-accuracy measurement: an approved pair *is*
-   a verified "the answer is at this moment" claim.
+4. **Clip-attested approval (scoped 2026-07-03):** the HARD attestation gate
+   — Approve disabled until a player `timeupdate` lands inside
+   `[sourceStartSec, sourceEndSec]` in that review session — applies to
+   **numeric-quarantined pairs** (wrong timestamp + wrong number is the
+   clinically dangerous combo; they additionally require the invariant-3
+   confirmation). Sentinel pairs remain unapprovable entirely (no valid
+   window exists — server-refused on the raw 0/0/null triple). For all
+   other pairs attestation is **recommended but skippable**: the reviewer
+   may approve without playing the clip, and the UI shows a visible
+   "لم تتم معاينة المقطع" note when they do. Consequence, stated honestly:
+   approval is no longer a timestamp-accuracy proof by construction for
+   non-numeric pairs — see the §13 q5 ship-gate note.
 5. **Rejection is never deletion.** Rejected pairs are retained with a reason
    and are admin-visible. (Protects future analytics from silent curation of
    embarrassing/hard questions, and preserves the audit trail.)
@@ -137,10 +143,11 @@ Candidate models considered:
   become fiction.
 - **C (decided)** — **bulk approval is allowed per video, but only over the
   non-quarantined pairs of that video.** Quarantined pairs (invariant 2's
-  three classes) always require individual review: clip attestation
-  (invariant 4), plus the numeric confirmation for tripwire pairs. Measured
-  flag rates (19/210 and 0/40) make the realistic review effort per course
-  ~20 minutes, not hours.
+  three classes) always require individual review: attestation per the
+  scoped invariant 4 (hard gate for numeric + the tripwire confirmation;
+  recommended-but-skippable for audio-flagged), sentinel edit-or-reject
+  only. Measured flag rates (19/210 and 0/40) make the realistic review
+  effort per course ~20 minutes, not hours.
 
 Supporting rules:
 
@@ -587,11 +594,14 @@ Q&A" tier of its design becomes real the day Phase 2 approves a course.
 | Edits invalidate attestation; edited pairs barred from bulk forever | DECIDED | This doc §5.2a |
 | Stale pairs unapprovable (`QA_STALE`) until migrate resolves | DECIDED | `docs/AUDIT_QA_REVIEW_UI.md` decisions |
 | `SignedMuxPlayer` renders a retriable error placeholder for all token failures (was: broken tokenless player) | DECIDED (shipped with Phase 2) | `components/SignedMuxPlayer.tsx` |
+| Attestation scope: HARD gate for numeric pairs only; sentinel blocked; recommended-but-skippable (with visible note) for flagged/clean | DECIDED 2026-07-03 | This doc §4 inv. 4; §13 q5 note |
+| Review-UI numerals are Arabic-Indic, display-only (`toArabicNumerals` in `QaReviewTab`) — underlying data stays ASCII | DECIDED 2026-07-03 | `components/qa_review/QaReviewTab.tsx` |
 | First student surface = open-ended study companion, not MCQ quiz | DECIDED | This doc §1/§9 Phase 3 |
 | Publishing model C (bulk unflagged + quarantine classes individually clip-attested) | DECIDED | This doc §5 |
 | Numeric tripwire quarantine regardless of `needsReview` | DECIDED | This doc §4 inv. 3 |
 | Exam/certification demoted behind prerequisites (§9 Phase 8) | DECIDED | This doc |
 | Firestore Q&A schema + location | DECIDED here (§7) — supersedes `RUBIK_AI_CHAT.md` §9.2 | This doc |
+| Persist additive `approvalAttested` boolean at approve time (auditable attestation) + re-scope the §13 q5 "≥95% attested" ship gate to match | **OPEN — filed 2026-07-03, before Phase 3 launch** | §13 q5 note; `docs/AUDIT_QA_REVIEW_UI.md` follow-ups |
 | Free-preview videos unlock *pre-generated* study content? | **OPEN** (§13 q1) | — |
 | Phase 3 surface: web practice route vs mobile-first | **OPEN** (§13 q2) | — |
 | Mobile SRS state: device-local vs `/api/study/*` writes | **OPEN** (§13 q3) | — |
@@ -622,6 +632,13 @@ Q&A" tier of its design becomes real the day Phase 2 approves a course.
 5. **Timestamp ship gate.** Proposed: ≥95% of approved pairs clip-attested
    answer-in-window (the Phase 2 UI *is* the measurement instrument — no
    separate eval project). Confirm the bar before Phase 3 launch.
+   *Note (2026-07-03, after the invariant-4 scoping):* attestation is now
+   skippable for non-numeric pairs and is session-only client state — the
+   platform cannot distinguish attested from skipped approvals afterward.
+   The ship gate therefore needs re-scoping before Phase 3: either trust
+   the numeric hard gate + jump-affordance hedges (§8.2) + spot checks, or
+   persist an `approvalAttested` boolean at approve time (small additive
+   schema change, deliberately NOT made now).
 
 ---
 
