@@ -22,6 +22,7 @@ import {
   Loader2,
   AlertCircle,
   List,
+  ShoppingCart,
 } from "lucide-react";
 import { Course, Enrollment } from "@/types/types";
 import { Button } from "@/components/ui/button";
@@ -42,7 +43,6 @@ import { groupVideosBySection } from "@/lib/sectional/grouping";
 import { isVideoLockedForUser, getLockReason } from "@/lib/sectional/access";
 import SectionalBuyDialog from "@/components/sectional/SectionalBuyDialog";
 import SectionalBuyButtons from "@/components/sectional/SectionalBuyButtons";
-import { ShoppingCart } from "lucide-react";
 
 // Sentinel React key used for the synthetic "unassigned" bucket, since
 // GroupedSection.sectionId is `null` there.
