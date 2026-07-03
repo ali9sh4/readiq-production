@@ -64,23 +64,23 @@ table whenever the pipeline runs (docs/maintenance/update.md loop).
 
 | Course | Videos processed | Pairs | Flagged `needsReview` | Notes |
 |---|---|---|---|---|
-| `ViNmx1xEiVma4BlxDNcl` | 10 (2h08m audio) | 210 | 19 | 11 of 19 flags from `video_9` alone — flags cluster by audio quality. Per-video spread 11–33 pairs. |
-| `DDL9xpIvN9ejWJKhROIV` | 11 | 156 | 2 (both `video_20`) | Batch ran 2026-07-03 (same day as this doc, before the evidence-fields fix). Per-video spread includes the corpus low of 7 pairs (`video_16`). |
-| **Total** | **21** | **366** | **21** | All `status: "pending"`, all on one machine's gitignored `output/` dir. |
+| `ViNmx1xEiVma4BlxDNcl` | 10 (2h08m audio) | 216 | 22 | 17 of 22 flags from `video_9` alone — flags cluster by audio quality. |
+| `DDL9xpIvN9ejWJKhROIV` | 15 | 210 | 2 (both `video_20`) | 4 videos (`video_25`, `video_14`, `video_28`, `video_29`) were newly pulled + transcribed in the 2026-07-03 regeneration run. |
+| **Total** | **25** | **426** | **24** | All `status: "pending"`, all on one machine's gitignored `output/` dir. |
 
+> **Evidence chain complete:** the whole corpus was regenerated on 2026-07-03
+> *after* the evidence-fields pipeline change — all 426 pairs carry
+> `sourceSegmentIds` + `compressionRatio` (verified: 0 pairs missing either
+> field). Pair counts differ from the pre-regeneration corpus (366) partly
+> because of the 4 newly processed videos and partly because Q&A generation
+> is not deterministic across runs — which is exactly why pipeline `qaId`s
+> are ephemeral and IDs freeze only at Firestore import (§7.1).
+>
 > **Operational risk, standing:** the entire corpus (pairs + transcripts)
 > exists only on one Windows machine in a gitignored folder. Off-machine
 > encrypted backup after every pipeline run is a runbook requirement, not a
-> nice-to-have.
->
-> **Evidence gap in all 366 existing pairs:** every qa.json on disk (both
-> courses) was generated before the 2026-07-03 pipeline change that persists
-> `sourceSegmentIds` + `compressionRatio`. Regenerate Q&A from the existing
-> transcripts (delete `qa.json` per video; `transcript.json` is reused, so
-> this costs ~21 Sonnet calls and no re-transcription) **before** first
-> import, so the imported corpus carries the full evidence chain. Safe today
-> because nothing is imported yet; after import this requires the
-> regeneration firewall (§5.3).
+> nice-to-have. NB: a drive backup made earlier on 2026-07-03 predates the
+> same-day regeneration — re-sync `output/` after every run.
 
 ---
 
@@ -310,12 +310,14 @@ real review, a real study session) before calling a phase done.
 ### Phase 0 — Evidence & backup *(pipeline-side; partially DONE)*
 
 - ✅ 2026-07-03: pipeline persists `sourceSegmentIds` + `compressionRatio` on
-  every pair (additive; resume semantics untouched). *In the working tree as
-  of this doc's date — verify it is committed before relying on it.*
-- ☐ Off-machine encrypted backup of `output/` after every run (runbook line).
-- ☐ Regenerate Q&A for the 21 processed videos from their existing
-  transcripts so the corpus carries the evidence fields (Snapshot note).
-- **Gate to Phase 1:** backup exists; regenerated corpus on disk.
+  every pair (additive; resume semantics untouched). Committed as `484373f`.
+- ✅ 2026-07-03: first off-machine drive backup of `output/` done (owner).
+  Standing runbook line: re-sync after every pipeline run — the corpus was
+  regenerated the same day, so the drive copy needs a refresh.
+- ✅ 2026-07-03: full-corpus regeneration — 21 videos re-generated from their
+  existing transcripts + 4 DDL videos newly transcribed; all 426 pairs carry
+  the evidence fields (verified, 0 missing). Both course batches: 0 failed.
+- **Gate to Phase 1:** met (backup exists; evidence-complete corpus on disk).
 
 ### Phase 1 — Firestore landing (the critical path)
 

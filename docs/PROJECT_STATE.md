@@ -30,12 +30,15 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
   enrollment always required), the untagged-video sectional grant was added to
   the recipe, and the playback-token route row now matches `route.ts`
   step-for-step (incl. `thumbnailToken` in the response).
-- Corpus snapshot (now maintained in `RUBIK_STUDY_FEATURES.md` §3): 2 courses /
-  21 videos / 366 pairs / 21 flagged — course `DDL9xpIvN9ejWJKhROIV` (11
-  videos, 156 pairs, 2 flagged) was batch-processed 2026-07-03, before the
-  evidence-fields change, so **all** existing qa.json files lack
-  `sourceSegmentIds`/`compressionRatio` and need the cheap transcript-reuse
-  regeneration (~21 Sonnet calls) before any Firestore import.
+- Full-corpus regeneration executed the same day, after the evidence-fields
+  change: deleted all qa.json (transcripts kept), re-ran `--course` on both
+  courses — 21 videos regenerated from existing transcripts, 4 more DDL
+  videos newly pulled + GPU-transcribed, 0 failures. Final snapshot
+  (maintained in `RUBIK_STUDY_FEATURES.md` §3): 2 courses / 25 videos /
+  426 pairs / 24 flagged, **all pairs carrying
+  `sourceSegmentIds` + `compressionRatio`** (verified: 0 missing). Owner
+  completed the first off-machine drive backup of `output/` the same day
+  (pre-regeneration — needs a re-sync; runbook: re-sync after every run).
 - Standing operational note: `output/` (all transcripts + pairs) exists only on
   the pipeline machine, gitignored — off-machine backup required after every
   run.
