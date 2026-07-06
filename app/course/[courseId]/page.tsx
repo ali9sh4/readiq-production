@@ -12,6 +12,7 @@ import { AlertCircle, BookOpen } from "lucide-react";
 import Link from "next/link";
 import { Metadata } from "next";
 import { getCourseProgress } from "@/app/actions/progress_actions";
+import { getApprovedQaCounts } from "@/lib/qa/approvedCounts";
 import PackageUpsellBanner from "@/components/PackageUpsellBanner";
 
 // ✅ Helper function to clean Firestore data
@@ -128,6 +129,13 @@ export default async function WatchCoursePage({
 
   const cleanedCourse = cleanCourseData(result.course);
 
+  // Phase 3 (study deck): visible lessons eligible for the practice tab.
+  // The counts themselves are only fetched on the CoursePlayer branches
+  // below — preview visitors never trigger the aggregate queries.
+  const practiceVideoIds: string[] = (cleanedCourse.videos ?? [])
+    .filter((v: any) => v.isVisible !== false)
+    .map((v: any) => v.videoId);
+
   // 2. Get authentication
   const cookieStore = await cookies();
   const token = cookieStore.get("firebaseAuthToken")?.value;
@@ -183,6 +191,7 @@ export default async function WatchCoursePage({
         course={cleanedCourse}
         isEnrolled={true}
         userProgress={userProgress}
+        approvedQaCounts={await getApprovedQaCounts(courseId, practiceVideoIds)}
       />
     );
   }
@@ -214,6 +223,7 @@ export default async function WatchCoursePage({
         course={cleanedCourse}
         isEnrolled={true}
         userProgress={userProgress}
+        approvedQaCounts={await getApprovedQaCounts(courseId, practiceVideoIds)}
       />
     );
   }
@@ -227,6 +237,7 @@ export default async function WatchCoursePage({
         accessScope={enrollment?.accessScope}
         ownedSectionIds={enrollment?.ownedSectionIds}
         enrollment={enrollment ?? null}
+        approvedQaCounts={await getApprovedQaCounts(courseId, practiceVideoIds)}
       />
     );
   }

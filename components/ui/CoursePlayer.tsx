@@ -19,6 +19,7 @@ import {
   Award,
   User,
   BarChart3,
+  Brain,
   Loader2,
   AlertCircle,
   List,
@@ -97,6 +98,7 @@ export default function CoursePlayer({
   accessScope,
   ownedSectionIds,
   enrollment = null,
+  approvedQaCounts = {},
 }: {
   course: Course;
   isEnrolled?: boolean;
@@ -108,6 +110,10 @@ export default function CoursePlayer({
   // math). Existing `accessScope` and `ownedSectionIds` props remain for
   // backward compat and continue to drive the lock predicate.
   enrollment?: Enrollment | null;
+  // Phase 3 (study deck): approved Q&A pairs per videoId, computed
+  // server-side in app/course/[courseId]/page.tsx. Drives the practice-tab
+  // affordance only — the deck's server action re-enforces the gate.
+  approvedQaCounts?: Record<string, number>;
 }) {
   const searchParams = useSearchParams();
   const { videoContainerProps } = useVideoProtection({
@@ -149,9 +155,9 @@ export default function CoursePlayer({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(),
   );
-  const [activeTab, setActiveTab] = useState<"sections" | "resources">(
-    "sections",
-  );
+  const [activeTab, setActiveTab] = useState<
+    "sections" | "resources" | "practice"
+  >("sections");
   const [completedVideos, setCompletedVideos] = useState<Set<string>>(
     new Set(),
   );
@@ -206,6 +212,39 @@ export default function CoursePlayer({
       ownedSectionIds,
     });
   }, [currentVideo, course, isEnrolled, accessScope, ownedSectionIds]);
+
+  // Phase 3 (study deck, slice 2): practice-tab visibility. Enrolled-only by
+  // owner decision (docs/AUDIT_STUDY_DECK.md §3) — deliberately NOT
+  // `canAccessVideo`: getLockReason grants free-preview / free-course before
+  // its enrollment checks, but those grants play the video without opening
+  // the deck. This mirrors the enrollment branch of the study gate (full
+  // purchase, full/legacy scope, owned section, or untagged video); the
+  // server re-enforces it when the deck loads.
+  const approvedQaCount = currentVideo
+    ? (approvedQaCounts[currentVideo.videoId] ?? 0)
+    : 0;
+  const canPractice = useMemo(() => {
+    if (!currentVideo || !isEnrolled || approvedQaCount === 0) return false;
+    if (course.purchaseMode !== "sectional") return true;
+    if (accessScope !== "sectional") return true; // full-bundle or legacy scope
+    if (!currentVideo.sectionId) return true; // untagged-video grant
+    return (ownedSectionIds ?? []).includes(currentVideo.sectionId);
+  }, [
+    currentVideo,
+    isEnrolled,
+    approvedQaCount,
+    course.purchaseMode,
+    accessScope,
+    ownedSectionIds,
+  ]);
+
+  // Leaving a practice-eligible lesson while its tab is active would strand
+  // the tab content — fall back to the default tab.
+  useEffect(() => {
+    if (activeTab === "practice" && !canPractice) {
+      setActiveTab("sections");
+    }
+  }, [activeTab, canPractice]);
 
   const currentVideoFiles = useMemo(() => {
     return (
@@ -999,6 +1038,27 @@ export default function CoursePlayer({
               <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
             )}
           </button>
+
+          {/* Practice tab — only for lessons with approved Q&A the student's
+              enrollment actually covers (see canPractice above). */}
+          {canPractice && (
+            <button
+              onClick={() => setActiveTab("practice")}
+              className={`flex-1 px-4 lg:px-8 py-3 lg:py-4 text-xs lg:text-sm font-medium border-b-2 transition-all relative ${
+                activeTab === "practice"
+                  ? "text-blue-600 border-blue-600"
+                  : "text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50"
+              }`}
+            >
+              <span className="flex items-center justify-center gap-1.5 lg:gap-2">
+                <Brain className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+                التدريب ({approvedQaCount})
+              </span>
+              {activeTab === "practice" && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Tab Content */}
@@ -1007,6 +1067,26 @@ export default function CoursePlayer({
           {activeTab === "sections" && (
             <div className="lg:hidden">
               <SectionsContent />
+            </div>
+          )}
+
+          {/* Practice Tab — slice-2 checkpoint placeholder; QaStudyDeck
+              mounts here in slice 4. */}
+          {activeTab === "practice" && canPractice && (
+            <div className="p-4 lg:p-8">
+              <div className="max-w-5xl mx-auto">
+                <div className="text-center py-12 lg:py-16 bg-white rounded-xl lg:rounded-2xl shadow-md border border-gray-100">
+                  <div className="bg-blue-50 rounded-full w-16 h-16 lg:w-24 lg:h-24 flex items-center justify-center mx-auto mb-3 lg:mb-4">
+                    <Brain className="w-8 h-8 lg:w-12 lg:h-12 text-blue-500" />
+                  </div>
+                  <p className="text-gray-900 text-base lg:text-lg font-medium">
+                    {approvedQaCount} سؤال معتمد لهذا الدرس
+                  </p>
+                  <p className="text-gray-400 text-xs lg:text-sm mt-2">
+                    بطاقات التدريب قيد الإنشاء — ستظهر هنا قريباً
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
