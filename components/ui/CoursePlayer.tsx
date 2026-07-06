@@ -1,7 +1,14 @@
 "use client";
 import "@mux/mux-player/themes/minimal";
 
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  useRef,
+  type ComponentRef,
+} from "react";
 import MuxPlayer from "@mux/mux-player-react";
 import {
   X,
@@ -44,6 +51,7 @@ import { groupVideosBySection } from "@/lib/sectional/grouping";
 import { isVideoLockedForUser, getLockReason } from "@/lib/sectional/access";
 import SectionalBuyDialog from "@/components/sectional/SectionalBuyDialog";
 import SectionalBuyButtons from "@/components/sectional/SectionalBuyButtons";
+import QaStudyDeck from "@/components/study/QaStudyDeck";
 
 // Sentinel React key used for the synthetic "unassigned" bucket, since
 // GroupedSection.sectionId is `null` there.
@@ -182,6 +190,13 @@ export default function CoursePlayer({
   const [tokenError, setTokenError] = useState<string | null>(null);
   const [tokenRetryCount, setTokenRetryCount] = useState(0);
 
+  // Phase 3 slice 4: lets the practice deck pause the main lesson player
+  // when a clip jump starts, so two audio streams never overlap. The
+  // counter signals the reverse direction: main player starts → deck
+  // closes its clip.
+  const mainPlayerRef = useRef<ComponentRef<typeof MuxPlayer>>(null);
+  const [mainPlaySignal, setMainPlaySignal] = useState(0);
+
   // --- Organize Videos ---
   // Filter to visible videos first, then group by section. `isVisible
   // !== false` treats undefined as visible — matches CoursePreview's
@@ -245,6 +260,29 @@ export default function CoursePlayer({
       setActiveTab("sections");
     }
   }, [activeTab, canPractice]);
+
+  // Phase 3 slice 4: the deck mounts on first practice-tab activation for
+  // the current lesson and then stays mounted (hidden) across tab switches,
+  // so session state + the deck's single signed player survive a peek at
+  // الملفات (§8.3 — remounting re-mints playback tokens).
+  const [practiceSessionVideoId, setPracticeSessionVideoId] = useState<
+    string | null
+  >(null);
+  useEffect(() => {
+    if (activeTab === "practice" && canPractice && currentVideo) {
+      setPracticeSessionVideoId(currentVideo.videoId);
+    } else if (
+      practiceSessionVideoId !== null &&
+      currentVideo?.videoId !== practiceSessionVideoId
+    ) {
+      // Lesson changed away: drop the keep-alive, otherwise re-selecting a
+      // previously-practiced lesson on ANY tab would auto-mount a hidden
+      // deck (server-action read + token mint) on every sidebar bounce
+      // (adversarial-review finding). Keep-alive is for tab switches
+      // within the SAME lesson only.
+      setPracticeSessionVideoId(null);
+    }
+  }, [activeTab, canPractice, currentVideo, practiceSessionVideoId]);
 
   const currentVideoFiles = useMemo(() => {
     return (
@@ -826,6 +864,7 @@ export default function CoursePlayer({
                   {!tokenLoading && !tokenError && playbackToken && (
                     <MuxPlayer
                       key={currentVideo.videoId}
+                      ref={mainPlayerRef}
                       playbackId={currentVideo.playbackId}
                       tokens={{
                         playback: playbackToken,
@@ -837,6 +876,7 @@ export default function CoursePlayer({
                         video_title: currentVideo.title,
                       }}
                       className="w-full h-full aspect-video bg-black"
+                      onPlay={() => setMainPlaySignal((n) => n + 1)}
                       onEnded={() => {
                         handleVideoComplete();
                         goToNextVideo();
@@ -1070,25 +1110,28 @@ export default function CoursePlayer({
             </div>
           )}
 
-          {/* Practice Tab — slice-2 checkpoint placeholder; QaStudyDeck
-              mounts here in slice 4. */}
-          {activeTab === "practice" && canPractice && (
-            <div className="p-4 lg:p-8">
-              <div className="max-w-5xl mx-auto">
-                <div className="text-center py-12 lg:py-16 bg-white rounded-xl lg:rounded-2xl shadow-md border border-gray-100">
-                  <div className="bg-blue-50 rounded-full w-16 h-16 lg:w-24 lg:h-24 flex items-center justify-center mx-auto mb-3 lg:mb-4">
-                    <Brain className="w-8 h-8 lg:w-12 lg:h-12 text-blue-500" />
-                  </div>
-                  <p className="text-gray-900 text-base lg:text-lg font-medium">
-                    {approvedQaCount} سؤال معتمد لهذا الدرس
-                  </p>
-                  <p className="text-gray-400 text-xs lg:text-sm mt-2">
-                    بطاقات التدريب قيد الإنشاء — ستظهر هنا قريباً
-                  </p>
+          {/* Practice Tab — QaStudyDeck (Phase 3 slice 4). Keyed by videoId
+              so switching lessons starts a fresh deck; hidden (not
+              unmounted) on tab switches within the same lesson. */}
+          {canPractice &&
+            currentVideo &&
+            practiceSessionVideoId === currentVideo.videoId && (
+              <div
+                className={activeTab === "practice" ? "p-4 lg:p-8" : "hidden"}
+              >
+                <div className="max-w-3xl mx-auto">
+                  <QaStudyDeck
+                    key={currentVideo.videoId}
+                    courseId={course.id}
+                    videoId={currentVideo.videoId}
+                    playbackId={currentVideo.playbackId ?? null}
+                    active={activeTab === "practice"}
+                    onClipPlay={() => mainPlayerRef.current?.pause()}
+                    closeClipSignal={mainPlaySignal}
+                  />
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Resources Tab */}
           {activeTab === "resources" && (

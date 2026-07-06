@@ -5,6 +5,36 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-07-04 — Phase 3 slices 4–5: flashcard recall deck + cited clip jump
+
+The first student-facing study surface (Format A). Web-only server action +
+standalone component; zero mobile-contract impact; zero LLM runtime.
+
+- `app/actions/qa_study_actions.ts` — `listApprovedQaForStudy`: student gate
+  via `evaluateVideoAccess({ allowFreePreview: false })` (enrolled-only,
+  §13 q1), query `status=="approved" AND stale==false`, lecture-ordered.
+  Ships ONLY `{qaId, question, answer, sourceStartSec, sourceEndSec,
+  videoId, hasValidClip}` — no confidences/reviewer metadata/quarantine.
+  `hasValidClip` computed server-side per §8.2 (needsReview / 0-0-null
+  sentinel / >5-min span ⇒ false).
+- `components/study/QaStudyDeck.tsx` — question → reveal → self-grade
+  نعم/لا; "لا" re-queues in-session and offers "شاهد الشرح [time]" (only
+  when `hasValidClip`); ONE SignedMuxPlayer per deck session, 15 s pre-roll
+  seek, one-shot fake-stop at sourceEndSec; session summary + restart.
+  Session-only state (Phase 5 owns persistence/SRS); NO event logging yet.
+- CoursePlayer mounts the deck in the التدريب tab; deck survives tab
+  switches within a lesson (hidden, clip auto-paused), resets per lesson;
+  main-player/clip audio pause each other in both directions.
+- Adversarial review (24-agent workflow: 3 lenses × 3 refuters/finding)
+  confirmed 3 real defects, all fixed + independently re-verified: hidden
+  retry dead-end after failed token mint; stale keep-alive re-mounting a
+  hidden deck (extra reads + token mints) on lesson re-selection; two-way
+  audio overlap. The gate/DTO lens verified all hard requirements sound.
+- Owner-verified on a real enrolled account: deck flow, clip jump,
+  dual-direction pause, per-lesson reset.
+
+---
+
 ## 2026-07-04 — Phase 3 slices 1–3: practice entry point + shared video-access gate
 
 Pre-build audit + build plan + owner decisions (deck enrolled-only; event

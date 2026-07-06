@@ -426,12 +426,17 @@ read endpoint (`GET /api/courses/{courseId}/qa?videoId=`, approved pairs
 only, shared gate) — decide at phase start (§13 q2), don't drift into both.
 Also in this phase: extract the shared access helper (§8.1) and settle the
 free-preview branch (§13 q1).
-- **Status (2026-07-04):** slices 1–3 built — per-lesson approved counts
-  (`lib/qa/approvedCounts.ts`) + conditional التدريب tab in CoursePlayer
-  (owner-verified live: appears only on approved lessons), and the §8.1
-  shared gate extracted with the playback route refactored onto it
-  (verified behavior-identical). Deck, clip jump, and event logging pending
-  (build plan: `docs/AUDIT_STUDY_DECK.md` §7).
+- **Status (2026-07-04):** slices 1–5 built. Slices 1–3: per-lesson approved
+  counts (`lib/qa/approvedCounts.ts`) + conditional التدريب tab in
+  CoursePlayer, and the §8.1 shared gate extracted with the playback route
+  refactored onto it (verified behavior-identical). Slices 4–5: the deck —
+  `listApprovedQaForStudy` in `app/actions/qa_study_actions.ts`
+  (enrolled-only gate, minimal 7-field DTO, server-computed `hasValidClip`)
+  + `components/study/QaStudyDeck.tsx` (reveal → نعم/لا → re-queue →
+  clip jump per §8.2/8.3). Owner-verified on a real enrolled account:
+  reveal/self-grade/clip-jump, dual-direction audio pause, per-lesson deck
+  reset. Event logging (slice 6) pending (build plan:
+  `docs/AUDIT_STUDY_DECK.md` §7).
 - **Gate:** Phase 2 pilot course approved.
 - **Metric:** enrollment conversion on courses **with** an approved bank vs
   without (it's positioned as a sales booster — measure the sale), plus

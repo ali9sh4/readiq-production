@@ -1,7 +1,8 @@
-// Arabic localization for Q&A review action failures — parallel to
+// Arabic localization for Q&A review + study action failures — parallel to
 // lib/sectional/localizeError.ts (that one is type-bound to the sectional
 // unions; widening it would couple unrelated features).
 import type { QaReviewFailure } from "@/app/actions/qa_review_actions";
+import type { QaStudyFailure } from "@/app/actions/qa_study_actions";
 
 function firstZodIssueMessage(details: unknown): string | null {
   if (
@@ -44,6 +45,32 @@ export function localizeQaReviewError(failure: QaReviewFailure): string {
       return "هذا الجواب يحتوي رقماً/قياساً — أكّد مطابقة الرقم لما قيل في المحاضرة أولاً.";
     case "QA_QUARANTINED":
       return "سؤال بدون اقتباس زمني صالح — عدّله أو ارفضه؛ لا يمكن اعتماده كما هو.";
+    case "INTERNAL_ERROR":
+    default:
+      return "حدث خطأ غير متوقع. حاول مرة أخرى.";
+  }
+}
+
+// Student-facing copy for the study deck (Phase 3 slice 4). The denial
+// cases should be rare in practice — the practice tab only renders for
+// lessons the client-side predicate already believes are covered — but the
+// server gate is authoritative and these keep its answers readable.
+export function localizeQaStudyError(failure: QaStudyFailure): string {
+  switch (failure.error) {
+    case "AUTH_FAILED":
+      return "انتهت الجلسة — يرجى تسجيل الدخول من جديد.";
+    case "INVALID_INPUT":
+      return firstZodIssueMessage(failure.details) ?? "المدخلات غير صالحة.";
+    case "COURSE_NOT_FOUND":
+      return "الكورس غير موجود.";
+    case "VIDEO_NOT_FOUND":
+      return "الدرس غير موجود.";
+    case "VIDEO_NOT_READY":
+      return "فيديو الدرس قيد المعالجة — حاول لاحقاً.";
+    case "NOT_ENROLLED":
+      return "التدريب متاح للمسجّلين في الدورة — سجّل للوصول إلى بطاقات الأسئلة.";
+    case "SECTION_NOT_OWNED":
+      return "هذا القسم غير مشترى بعد — اشترِ القسم للتدرّب على أسئلته.";
     case "INTERNAL_ERROR":
     default:
       return "حدث خطأ غير متوقع. حاول مرة أخرى.";
