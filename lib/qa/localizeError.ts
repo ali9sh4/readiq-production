@@ -71,6 +71,8 @@ export function localizeQaStudyError(failure: QaStudyFailure): string {
       return "التدريب متاح للمسجّلين في الدورة — سجّل للوصول إلى بطاقات الأسئلة.";
     case "SECTION_NOT_OWNED":
       return "هذا القسم غير مشترى بعد — اشترِ القسم للتدرّب على أسئلته.";
+    case "RATE_LIMITED":
+      return "طلبات كثيرة — انتظر لحظة ثم أعد المحاولة.";
     case "INTERNAL_ERROR":
     default:
       return "حدث خطأ غير متوقع. حاول مرة أخرى.";

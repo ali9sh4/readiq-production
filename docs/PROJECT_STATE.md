@@ -5,6 +5,29 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-07-06 — Phase 3 slice 6: study event log — Format A complete
+
+- `logStudyEvent` (`app/actions/qa_study_actions.ts`) — append-only writes
+  to a NEW top-level `study_events` collection (client rules deny-all; the
+  server action is the only write path — students still have zero access
+  to `qa` docs). Keyed on `qaDocId` (stable Firestore doc ID) with
+  `videoId` as a secondary field only (owner decision — positional ids
+  renumber on re-upload). `uid` from the verified token, `at`
+  server-stamped, 60/user/min Upstash limit (fail-open), zod at the
+  boundary (`grade` only with `selfGrade`), no per-event access reads by
+  design (rationale in the action header).
+- Deck wiring: `revealed` (+`elapsedMs` recall latency), `selfGrade`
+  yes/no, `jumpToSource` on every شاهد الشرح tap (demand signal even if
+  the player is still loading). Fire-and-forget — telemetry can never
+  disturb the study flow.
+- Verified with a real owner session: 11 events, all three kinds, correct
+  reveal→grade ordering, the لا card's jumpToSource on the same `qaDocId`,
+  sane elapsedMs values (read-only admin query, temp script deleted).
+- Phase 3 Format A is now fully built (slices 1–6). Remaining before broad
+  launch: Phase 2 full-course pilot approval + §13 q5 ship-gate re-scope.
+
+---
+
 ## 2026-07-04 — Phase 3 slices 4–5: flashcard recall deck + cited clip jump
 
 The first student-facing study surface (Format A). Web-only server action +

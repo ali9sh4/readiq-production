@@ -27,9 +27,14 @@
 //     client cannot render a jump affordance to a bad timestamp even if it
 //     wanted to.
 
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 import { adminAuth, db } from "@/firebase/service";
 import { evaluateVideoAccess } from "@/lib/courses/videoAccess";
-import { ListStudyDeckSchema } from "@/validation/qaStudy";
+import {
+  ListStudyDeckSchema,
+  LogStudyEventSchema,
+} from "@/validation/qaStudy";
 
 export type QaStudyErrorCode =
   | "AUTH_FAILED"
@@ -39,6 +44,7 @@ export type QaStudyErrorCode =
   | "VIDEO_NOT_READY"
   | "NOT_ENROLLED"
   | "SECTION_NOT_OWNED"
+  | "RATE_LIMITED"
   | "INTERNAL_ERROR";
 
 export type QaStudyFailure = {
@@ -149,5 +155,97 @@ export async function listApprovedQaForStudy(
   } catch (err) {
     console.error("listApprovedQaForStudy failed:", err);
     return fail("INTERNAL_ERROR", "Failed to load the study deck");
+  }
+}
+
+// ===== Study event log (slice 6) =====
+//
+// Append-only telemetry to the TOP-LEVEL `study_events` collection
+// (snake_case like wallet_transactions) — deliberately the only analytics
+// substrate (non-goal 7: Vercel logs retain 1 h). NEVER the qa
+// subcollection: students keep zero write access to pair docs.
+//
+// Keying (owner decision 2026-07-04): `qaDocId` — the Firestore doc ID,
+// the canonical stable pair identity that survives re-imports via
+// contentHash dedupe — is the primary key; `videoId` is a secondary field
+// only (positional ids renumber on re-upload and would corrupt the
+// permanent log).
+//
+// Trust model: `uid` comes from the verified token and `at` is
+// server-stamped — a client can forge neither identity nor time. There is
+// deliberately NO per-event access-gate read (2–3 Firestore reads per
+// reveal/grade would triple the cost of pure telemetry): a hostile
+// authenticated user can at worst write noise, which (a) is bounded by the
+// per-user rate limit below and (b) falls out of Phase 7 aggregation,
+// which joins qaDocId against the qa collection where fabricated ids
+// don't resolve.
+
+const eventRatelimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(60, "1 m"),
+  analytics: true,
+  prefix: "study_event",
+});
+
+export type QaStudyEventKind = "revealed" | "selfGrade" | "jumpToSource";
+
+export async function logStudyEvent(
+  token: string,
+  input: {
+    courseId: string;
+    videoId: string;
+    qaDocId: string;
+    kind: QaStudyEventKind;
+    grade?: "yes" | "no";
+    elapsedMs?: number;
+  }
+): Promise<{ success: true } | QaStudyFailure> {
+  try {
+    const parsed = LogStudyEventSchema.safeParse(input);
+    if (!parsed.success) {
+      return fail("INVALID_INPUT", "Invalid input", {
+        issues: parsed.error.issues,
+      });
+    }
+
+    let uid: string;
+    try {
+      uid = (await adminAuth.verifyIdToken(token)).uid;
+    } catch {
+      return fail("AUTH_FAILED", "Authentication failed");
+    }
+
+    // Abuse bound, not a gate. Fail OPEN on Redis errors (same posture as
+    // the playback-token route): dropping or admitting one telemetry write
+    // is equally harmless, and the established pattern is open.
+    try {
+      const { success: rateLimitOk } = await eventRatelimit.limit(uid);
+      if (!rateLimitOk) {
+        return fail("RATE_LIMITED", "Too many study events");
+      }
+    } catch (rlErr) {
+      console.error(
+        `study-event rate-limit check failed (failing open) userId=${uid}:`,
+        rlErr
+      );
+    }
+
+    const { courseId, videoId, qaDocId, kind, grade, elapsedMs } = parsed.data;
+    // firebase/service.ts does not set ignoreUndefinedProperties — spread
+    // optional fields only when present.
+    await db.collection("study_events").add({
+      uid,
+      courseId,
+      videoId,
+      qaDocId,
+      kind,
+      ...(grade !== undefined ? { grade } : {}),
+      ...(elapsedMs !== undefined ? { elapsedMs } : {}),
+      at: new Date().toISOString(),
+    });
+    return { success: true };
+  } catch (err) {
+    console.error("logStudyEvent failed:", err);
+    return fail("INTERNAL_ERROR", "Failed to log study event");
   }
 }

@@ -1,9 +1,11 @@
 # Audit — Phase 3 Format A: student flashcard recall deck
 
-**Status:** audit complete; slices 1–3 of §7 built & verified 2026-07-04
-(entry point owner-verified live; playback-route refactor verified
-byte-identical with real playback). Slices 4–6 (deck, clip jump, event
-logging) pending. **Date:** 2026-07-04.
+**Status:** COMPLETE — all six §7 slices built & verified (1–3 on
+2026-07-04: entry point owner-verified live, playback-route refactor
+byte-identical with real playback; 4–5 on 2026-07-04: deck + clip jump
+owner-verified on a real enrolled account after adversarial review; 6 on
+2026-07-06: `study_events` log verified with a real session).
+**Date:** 2026-07-04, closed 2026-07-06.
 **Scope:** per-lesson deck of APPROVED Q&A pairs inside the enrolled web
 viewer — question → reveal → self-grade (نعم/لا) → "شاهد الشرح" clip jump.
 Zero runtime LLM, students read approved pairs only.

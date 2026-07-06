@@ -41,7 +41,9 @@ import SignedMuxPlayer from "@/components/SignedMuxPlayer";
 import { Button } from "@/components/ui/button";
 import {
   listApprovedQaForStudy,
+  logStudyEvent,
   type QaStudyCard,
+  type QaStudyEventKind,
 } from "@/app/actions/qa_study_actions";
 import { localizeQaStudyError } from "@/lib/qa/localizeError";
 
@@ -115,6 +117,32 @@ export default function QaStudyDeck({
   const playerRef = useRef<MuxPlayerRef>(null);
   const activeClipRef = useRef<QaStudyCard | null>(null);
 
+  // When the current question was first shown — feeds elapsedMs (recall
+  // latency) on the "revealed" event.
+  const cardShownAtRef = useRef<number>(Date.now());
+
+  // Slice 6 telemetry (§7.3): append-only, fire-and-forget — a failed or
+  // rate-limited event write must never surface in the study flow.
+  const logEvent = useCallback(
+    (payload: {
+      qaDocId: string;
+      kind: QaStudyEventKind;
+      grade?: "yes" | "no";
+      elapsedMs?: number;
+    }) => {
+      void (async () => {
+        try {
+          const token = await auth?.user?.getIdToken();
+          if (!token) return;
+          await logStudyEvent(token, { courseId, videoId, ...payload });
+        } catch {
+          // Telemetry only — swallow.
+        }
+      })();
+    },
+    [auth?.user, courseId, videoId]
+  );
+
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
@@ -156,6 +184,14 @@ export default function QaStudyDeck({
   const mastered = masteredIds.size;
   const progressPct = total ? Math.round((mastered / total) * 100) : 0;
 
+  // Stamp when a new question lands in front of the student.
+  const currentQaId = current?.qaId ?? null;
+  useEffect(() => {
+    if (phase === "question" && currentQaId) {
+      cardShownAtRef.current = Date.now();
+    }
+  }, [phase, currentQaId]);
+
   // ----- clip jump -----------------------------------------------------------
   const closeClip = useCallback(() => {
     playerRef.current?.pause();
@@ -176,6 +212,9 @@ export default function QaStudyDeck({
   }, [closeClipSignal, closeClip]);
 
   const jumpToClip = (card: QaStudyCard) => {
+    // Every tap is a demand signal (Phase 7's rewatch heatmap), logged
+    // regardless of whether the player is ready yet.
+    logEvent({ qaDocId: card.qaId, kind: "jumpToSource" });
     // Reveal the player region FIRST. playerRef is null not only while the
     // token is in flight but also when SignedMuxPlayer is showing its
     // retriable ErrorPlaceholder (mint failed / rate-limited) — keeping the
@@ -210,8 +249,19 @@ export default function QaStudyDeck({
   };
 
   // ----- card flow ------------------------------------------------------------
+  const reveal = () => {
+    if (!current) return;
+    logEvent({
+      qaDocId: current.qaId,
+      kind: "revealed",
+      elapsedMs: Math.max(0, Date.now() - cardShownAtRef.current),
+    });
+    setPhase("revealed");
+  };
+
   const gradeYes = () => {
     if (!current) return;
+    logEvent({ qaDocId: current.qaId, kind: "selfGrade", grade: "yes" });
     setMasteredIds((prev) => {
       const next = new Set(prev);
       next.add(current.qaId);
@@ -224,6 +274,7 @@ export default function QaStudyDeck({
 
   const gradeNo = () => {
     if (!current) return;
+    logEvent({ qaDocId: current.qaId, kind: "selfGrade", grade: "no" });
     setMissCount((n) => n + 1);
     // Re-queue at the back for another attempt this session. NB: the card
     // moves NOW, so the "missed" phase renders the back of the queue and
@@ -345,7 +396,7 @@ export default function QaStudyDeck({
 
           {phase === "question" ? (
             <div className="mt-6 flex justify-center">
-              <Button onClick={() => setPhase("revealed")}>
+              <Button onClick={reveal}>
                 <Eye className="ml-2 h-4 w-4" /> اعرض الجواب
               </Button>
             </div>

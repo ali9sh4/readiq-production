@@ -287,7 +287,11 @@ video-fully-imported.
   at}` — this collection is deliberately the **only analytics substrate**
   (non-goal 7); instructor dashboards aggregate it lazily on load. No
   counters on the course doc (hot-document limit; it already carries
-  `videos[]`).
+  `videos[]`). **Shipped 2026-07-06** (Phase 3 slice 6): top-level
+  `study_events` collection, written only by `logStudyEvent`
+  (`app/actions/qa_study_actions.ts` — admin SDK; client rules deny-all;
+  keyed on qa doc IDs, `uid`/`at` server-derived, 60/user/min rate limit,
+  no per-event access reads by design — see the action's header).
 
 Cost at 1000 students × 200 pairs is single-digit dollars — the binding
 constraints are hot docs and doc size, not Firestore pricing.
@@ -426,17 +430,19 @@ read endpoint (`GET /api/courses/{courseId}/qa?videoId=`, approved pairs
 only, shared gate) — decide at phase start (§13 q2), don't drift into both.
 Also in this phase: extract the shared access helper (§8.1) and settle the
 free-preview branch (§13 q1).
-- **Status (2026-07-04):** slices 1–5 built. Slices 1–3: per-lesson approved
-  counts (`lib/qa/approvedCounts.ts`) + conditional التدريب tab in
-  CoursePlayer, and the §8.1 shared gate extracted with the playback route
-  refactored onto it (verified behavior-identical). Slices 4–5: the deck —
-  `listApprovedQaForStudy` in `app/actions/qa_study_actions.ts`
-  (enrolled-only gate, minimal 7-field DTO, server-computed `hasValidClip`)
-  + `components/study/QaStudyDeck.tsx` (reveal → نعم/لا → re-queue →
-  clip jump per §8.2/8.3). Owner-verified on a real enrolled account:
-  reveal/self-grade/clip-jump, dual-direction audio pause, per-lesson deck
-  reset. Event logging (slice 6) pending (build plan:
-  `docs/AUDIT_STUDY_DECK.md` §7).
+- **Status (2026-07-06): Format A COMPLETE — all six slices shipped.**
+  Slices 1–3 (2026-07-04): per-lesson approved counts
+  (`lib/qa/approvedCounts.ts`) + conditional التدريب tab in CoursePlayer,
+  and the §8.1 shared gate extracted with the playback route refactored
+  onto it (verified behavior-identical). Slices 4–5: the deck —
+  `listApprovedQaForStudy` (enrolled-only gate, minimal 7-field DTO,
+  server-computed `hasValidClip`) + `components/study/QaStudyDeck.tsx`
+  (reveal → نعم/لا → re-queue → clip jump per §8.2/8.3); owner-verified on
+  a real enrolled account. Slice 6 (2026-07-06): §7.3 event log live
+  (`study_events`, `logStudyEvent`) — verified with a real session (all
+  three kinds landed, correct shape/order/keys). Remaining before broad
+  launch: the Phase 2 full-course pilot approval (this phase's gate) and
+  the §13 q5 ship-gate re-scope.
 - **Gate:** Phase 2 pilot course approved.
 - **Metric:** enrollment conversion on courses **with** an approved bank vs
   without (it's positioned as a sales booster — measure the sale), plus
