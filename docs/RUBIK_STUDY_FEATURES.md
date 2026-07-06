@@ -66,7 +66,7 @@ table whenever the pipeline runs (docs/maintenance/update.md loop).
 |---|---|---|---|---|
 | `ViNmx1xEiVma4BlxDNcl` | 10 (2h08m audio) | 216 | 22 | 17 of 22 flags from `video_9` alone — flags cluster by audio quality. |
 | `DDL9xpIvN9ejWJKhROIV` | 15 | 210 | 2 (both `video_20`) | 4 videos (`video_25`, `video_14`, `video_28`, `video_29`) were newly pulled + transcribed in the 2026-07-03 regeneration run. |
-| **Total** | **25** | **426** | **24** | All `status: "pending"`, all on one machine's gitignored `output/` dir. |
+| **Total** | **25** | **426** | **24** | Imported to Firestore 2026-07-03 (Phase 1); pilot review underway — first 15 pairs approved 2026-07-04. |
 
 > **Evidence chain complete:** the whole corpus was regenerated on 2026-07-03
 > *after* the evidence-fields pipeline change — all 426 pairs carry
@@ -299,13 +299,18 @@ constraints are hot docs and doc size, not Firestore pricing.
 - **8.1 One gate.** Study surfaces reuse the playback-token route's access
   predicate — owner/admin bypass, free-preview grant, completed enrollment,
   sectional section-ownership with unset/`"full"` scope and untagged-video
-  grants (`app/api/mux/playback-token/route.ts`; the seven invariants in the
-  `sectional-invariants` skill). Before the first study endpoint ships,
-  extract the predicate into a shared helper so playback, study, and chat
-  cannot drift (this was already recommended by the chat audit). A pair is
-  servable iff `isCoursePubliclyVisible(course)` AND `status === "approved"`
-  AND the caller passes the gate for the pair's video — course approval and
-  pair approval are independent gates; don't entangle them.
+  grants (the seven invariants in the `sectional-invariants` skill).
+  **Extracted 2026-07-04 (Phase 3):** the single predicate is
+  `evaluateVideoAccess()` in `lib/courses/videoAccess.ts`, with a per-caller
+  `allowFreePreview` option — the playback route passes `true`, study
+  surfaces pass `false` (§13 q1). The route refactor was verified
+  behavior-identical: a 15-case before/after matrix (enrolled, sectional
+  owned/unowned/bundle/legacy, pending, free-preview, not-found variants)
+  returned byte-identical results, with real Mux manifest playback on the
+  grants. A pair is servable iff `isCoursePubliclyVisible(course)` AND
+  `status === "approved"` AND the caller passes the gate for the pair's
+  video — course approval and pair approval are independent gates; don't
+  entangle them.
 - **8.2 Sentinel rule.** Never render a jump-to-source affordance when
   `needsReview === true` or
   (`sourceStartSec === 0 && sourceEndSec === 0 && avgLogprob === null`) —
@@ -421,6 +426,12 @@ read endpoint (`GET /api/courses/{courseId}/qa?videoId=`, approved pairs
 only, shared gate) — decide at phase start (§13 q2), don't drift into both.
 Also in this phase: extract the shared access helper (§8.1) and settle the
 free-preview branch (§13 q1).
+- **Status (2026-07-04):** slices 1–3 built — per-lesson approved counts
+  (`lib/qa/approvedCounts.ts`) + conditional التدريب tab in CoursePlayer
+  (owner-verified live: appears only on approved lessons), and the §8.1
+  shared gate extracted with the playback route refactored onto it
+  (verified behavior-identical). Deck, clip jump, and event logging pending
+  (build plan: `docs/AUDIT_STUDY_DECK.md` §7).
 - **Gate:** Phase 2 pilot course approved.
 - **Metric:** enrollment conversion on courses **with** an approved bank vs
   without (it's positioned as a sales booster — measure the sale), plus
@@ -602,8 +613,10 @@ Q&A" tier of its design becomes real the day Phase 2 approves a course.
 | Exam/certification demoted behind prerequisites (§9 Phase 8) | DECIDED | This doc |
 | Firestore Q&A schema + location | DECIDED here (§7) — supersedes `RUBIK_AI_CHAT.md` §9.2 | This doc |
 | Persist additive `approvalAttested` boolean at approve time (auditable attestation) + re-scope the §13 q5 "≥95% attested" ship gate to match | **OPEN — filed 2026-07-03, before Phase 3 launch** | §13 q5 note; `docs/AUDIT_QA_REVIEW_UI.md` follow-ups |
-| Free-preview videos unlock *pre-generated* study content? | **OPEN** (§13 q1) | — |
-| Phase 3 surface: web practice route vs mobile-first | **OPEN** (§13 q2) | — |
+| Study deck (Format A) is enrolled-only; free-preview grant is per-caller via `allowFreePreview` | DECIDED 2026-07-04 | §13 q1; `lib/courses/videoAccess.ts` |
+| Phase 3 surface: web-first — standalone deck component in CoursePlayer's التدريب tab | DECIDED 2026-07-04 | §13 q2; `docs/AUDIT_STUDY_DECK.md` §1 |
+| One shared per-video access gate for playback + study (+ future chat): `evaluateVideoAccess()` | DECIDED, shipped 2026-07-04 (route refactor verified behavior-identical) | §8.1 |
+| Format A event logging ships day one: append-only server action, separate events collection, keyed on qa doc IDs | DECIDED 2026-07-04 | `docs/AUDIT_STUDY_DECK.md` §5 |
 | Mobile SRS state: device-local vs `/api/study/*` writes | **OPEN** (§13 q3) | — |
 | Instructor IP/consent instrument before third-party courses are processed | **OPEN** (§13 q4) | — |
 
@@ -611,14 +624,19 @@ Q&A" tier of its design becomes real the day Phase 2 approves a course.
 
 ## 13. Open questions
 
-1. **Free-preview branch.** The playback gate grants `isFreePreview` to any
-   authenticated caller; the chat design's gate pseudocode omits that branch.
-   Proposed: pre-generated content (pairs, packs) = YES for authenticated
-   users (zero marginal cost, primary conversion lever); anything invoking a
-   runtime LLM = enrolled only. Decide once, in the shared access helper.
-2. **Phase 3 surface.** The web viewer is scheduled for deletion post-mobile;
-   pick web practice route vs mobile-first (or fund a permanent
-   `/moment/...` micro-page for deep links) before building.
+1. **Free-preview branch — DECIDED 2026-07-04 for Format A:** the study deck
+   is enrolled-only. `evaluateVideoAccess({ allowFreePreview })` makes the
+   grant explicit per caller: playback passes `true`, study passes `false`
+   (free preview keeps playing the video; the deck requires a genuine
+   completed enrollment; owner/admin bypass stays). Phase 4 preview packs
+   revisit the branch for their own surface — the zero-marginal-cost
+   conversion argument stands, deliberately deferred.
+2. **Phase 3 surface — DECIDED 2026-07-04: web-first**, as a standalone
+   `components/study/QaStudyDeck.tsx` mounted from a conditional "التدريب"
+   tab in CoursePlayer — the deck survives the throwaway viewer's deletion
+   and can re-host on a future practice route. Mobile later gets the
+   additive read endpoint (`docs/MOBILE_API_MIGRATION.md` updated in the
+   same commit when it ships).
 3. **Mobile study writes.** Device-local SRS state (no sync, zero contract
    change) vs additive `POST /api/study/reviews` (cross-device, contract
    expansion). Needs an explicit product sign-off that "view-only" ≠ "no

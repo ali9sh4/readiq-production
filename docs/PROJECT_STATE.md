@@ -5,6 +5,37 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-07-04 — Phase 3 slices 1–3: practice entry point + shared video-access gate
+
+Pre-build audit + build plan + owner decisions (deck enrolled-only; event
+logging ships via append-only server action, keyed on qa doc IDs; web-first
+surface): `docs/AUDIT_STUDY_DECK.md`.
+
+- `lib/qa/approvedCounts.ts` — per-video `count()` aggregates
+  (`status == "approved" AND stale == false`; deliberately no maintained
+  counter, §7.3), fail-soft to "no tab"; wired into
+  `app/course/[courseId]/page.tsx`'s three CoursePlayer call sites.
+- CoursePlayer: conditional third tab "التدريب (N)" — renders only when the
+  lesson has ≥1 approved pair AND the student's enrollment covers the video
+  (mirrors the enrollment branch only, NOT the free-preview/free-course
+  grants). Slice-2 placeholder panel; the deck mounts there in slice 4.
+  Owner-verified live: tab present with correct counts (14/1) on the two
+  approved Exocad lessons, absent on pending-only lessons and other courses.
+- `lib/courses/videoAccess.ts` — §8.1 shared gate: `evaluateVideoAccess()`
+  extracted verbatim from the playback-token route, with per-caller
+  `allowFreePreview`; the route now calls it (deny/DIAG/issued log lines
+  preserved verbatim for production grep).
+- Route-refactor verification: 15-case before/after matrix (throwaway
+  `slice3test-` auth users + marker-tagged enrollment docs via custom-token
+  exchange — all deleted after, teardown re-verified) — byte-identical
+  results (`git diff --no-index` exit 0) incl. real Mux manifest 200s on
+  enrolled/sectional-owned/free-preview grants.
+- Pilot review progress: owner approved first 15 pairs (14 + 1 across two
+  Exocad lessons) — enough to verify the entry point; the Phase 2
+  full-course gate remains open.
+
+---
+
 ## 2026-07-03 — Phase 2 built: instructor Q&A review tab (gate pending pilot review)
 
 Pre-build audit: `docs/AUDIT_QA_REVIEW_UI.md` (mount point, action/auth
