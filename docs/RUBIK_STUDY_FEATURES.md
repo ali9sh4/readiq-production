@@ -623,7 +623,7 @@ Q&A" tier of its design becomes real the day Phase 2 approves a course.
 | Numeric tripwire quarantine regardless of `needsReview` | DECIDED | This doc §4 inv. 3 |
 | Exam/certification demoted behind prerequisites (§9 Phase 8) | DECIDED | This doc |
 | Firestore Q&A schema + location | DECIDED here (§7) — supersedes `RUBIK_AI_CHAT.md` §9.2 | This doc |
-| Persist additive `approvalAttested` boolean at approve time (auditable attestation) + re-scope the §13 q5 "≥95% attested" ship gate to match | **OPEN — filed 2026-07-03, before Phase 3 launch** | §13 q5 note; `docs/AUDIT_QA_REVIEW_UI.md` follow-ups |
+| §13 q5 ship gate: pilot launches on the numeric hard gate + §8.2 hedges + spot checks; `approvalAttested` boolean deferred until before a second instructor onboards | DECIDED 2026-07-07 | §13 q5; `docs/AUDIT_QA_REVIEW_UI.md` follow-ups |
 | Study deck (Format A) is enrolled-only; free-preview grant is per-caller via `allowFreePreview` | DECIDED 2026-07-04 | §13 q1; `lib/courses/videoAccess.ts` |
 | Phase 3 surface: web-first — standalone deck component in CoursePlayer's التدريب tab | DECIDED 2026-07-04 | §13 q2; `docs/AUDIT_STUDY_DECK.md` §1 |
 | One shared per-video access gate for playback + study (+ future chat): `evaluateVideoAccess()` | DECIDED, shipped 2026-07-04 (route refactor verified behavior-identical) | §8.1 |
@@ -668,6 +668,11 @@ Q&A" tier of its design becomes real the day Phase 2 approves a course.
    the numeric hard gate + jump-affordance hedges (§8.2) + spot checks, or
    persist an `approvalAttested` boolean at approve time (small additive
    schema change, deliberately NOT made now).
+   **DECIDED 2026-07-07 (owner):** the pilot launches on the current setup —
+   numeric hard gate + §8.2 jump hedges + spot checks. The additive
+   `approvalAttested` boolean is deferred until before onboarding a second
+   instructor (the founder reviews his own content for the pilot, so
+   attestation auditability adds nothing yet).
 
 ---
 
