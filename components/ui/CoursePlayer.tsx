@@ -284,17 +284,36 @@ export default function CoursePlayer({
     }
   }, [activeTab, canPractice, currentVideo, practiceSessionVideoId]);
 
+  // Fail-soft on malformed data: a non-array `files` field must hide the
+  // tab, never crash the player.
+  const courseFiles = useMemo(
+    () => (Array.isArray(course?.files) ? course.files : []),
+    [course?.files],
+  );
+
   const currentVideoFiles = useMemo(() => {
-    return (
-      course?.files?.filter(
-        (f) => f.relatedVideoId === currentVideo?.videoId,
-      ) || []
+    return courseFiles.filter(
+      (f) => f.relatedVideoId === currentVideo?.videoId,
     );
-  }, [course?.files, currentVideo]);
+  }, [courseFiles, currentVideo]);
 
   const generalFiles = useMemo(() => {
-    return course?.files?.filter((f) => !f.relatedVideoId) || [];
-  }, [course?.files]);
+    return courseFiles.filter((f) => !f.relatedVideoId);
+  }, [courseFiles]);
+
+  // Files-tab conditional (mirrors the التدريب pattern): render the tab
+  // only when this lesson's panel would show something — its own files or
+  // course-general files (the same sum the tab label displays). Where
+  // files load is unchanged; empty lessons keep التدريب as the focus.
+  const hasLessonFiles = currentVideoFiles.length + generalFiles.length > 0;
+
+  // Same fallback as the practice tab: landing on a lesson where the
+  // active tab no longer exists bounces to the default tab.
+  useEffect(() => {
+    if (activeTab === "resources" && !hasLessonFiles) {
+      setActiveTab("sections");
+    }
+  }, [activeTab, hasLessonFiles]);
 
   const progress = useMemo(() => {
     if (!allVideos.length) return 0;
@@ -1062,22 +1081,26 @@ export default function CoursePlayer({
             )}
           </button>
 
-          <button
-            onClick={() => setActiveTab("resources")}
-            className={`flex-1 px-4 lg:px-8 py-3 lg:py-4 text-xs lg:text-sm font-medium border-b-2 transition-all relative ${
-              activeTab === "resources"
-                ? "text-blue-600 border-blue-600"
-                : "text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50"
-            }`}
-          >
-            <span className="flex items-center justify-center gap-1.5 lg:gap-2">
-              <FileText className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
-              الملفات ({currentVideoFiles.length + generalFiles.length})
-            </span>
-            {activeTab === "resources" && (
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
-            )}
-          </button>
+          {/* Files tab — only for lessons with something to show (own or
+              course-general files); see hasLessonFiles above. */}
+          {hasLessonFiles && (
+            <button
+              onClick={() => setActiveTab("resources")}
+              className={`flex-1 px-4 lg:px-8 py-3 lg:py-4 text-xs lg:text-sm font-medium border-b-2 transition-all relative ${
+                activeTab === "resources"
+                  ? "text-blue-600 border-blue-600"
+                  : "text-gray-600 border-transparent hover:text-gray-900 hover:bg-gray-50"
+              }`}
+            >
+              <span className="flex items-center justify-center gap-1.5 lg:gap-2">
+                <FileText className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+                الملفات ({currentVideoFiles.length + generalFiles.length})
+              </span>
+              {activeTab === "resources" && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+              )}
+            </button>
+          )}
 
           {/* Practice tab — only for lessons with approved Q&A the student's
               enrollment actually covers (see canPractice above). */}
@@ -1133,8 +1156,9 @@ export default function CoursePlayer({
               </div>
             )}
 
-          {/* Resources Tab */}
-          {activeTab === "resources" && (
+          {/* Resources Tab — gated like the tab button so a lesson switch
+              can't flash the empty panel before the fallback effect runs. */}
+          {activeTab === "resources" && hasLessonFiles && (
             <div className="p-4 lg:p-8">
               <div className="max-w-5xl mx-auto">
                 {currentVideoFiles.length === 0 && generalFiles.length === 0 ? (

@@ -5,6 +5,17 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-07-07 — Files tab conditional (lesson player)
+
+- CoursePlayer's الملفات tab now renders only when the lesson's panel would
+  show something (its own files + course-general files — the same sum the
+  tab label displays), mirroring the التدريب conditional pattern. Fail-soft:
+  malformed `files` data hides the tab instead of crashing. Same
+  default-tab fallback as the practice tab; file loading/serving unchanged.
+  Empty lessons keep التدريب as the focus.
+
+---
+
 ## 2026-07-06 — Phase 3 slice 6: study event log — Format A complete
 
 - `logStudyEvent` (`app/actions/qa_study_actions.ts`) — append-only writes
