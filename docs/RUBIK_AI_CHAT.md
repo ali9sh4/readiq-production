@@ -90,7 +90,10 @@ Reasons: zero new billing surface; consistent with "chat is part of learning"; a
 would be unsellable on mobile (view-only / no in-app purchase, audit §8). **Confirm with product
 before building** — this is still an open decision.
 
-Gate logic (reuse `app/api/mux/playback-token/route.ts` as the reference):
+Gate logic — **the shared helper now exists** (Phase 3, 2026-07-04): call
+`evaluateVideoAccess()` in `lib/courses/videoAccess.ts` (chat would pass
+`allowFreePreview: false`, like the study deck) instead of re-implementing
+the pseudocode below, which is kept as the behavioral reference:
 
 ```
 owner (course.createdBy === userId) OR admin (auth.isAdmin)  → ALLOW (any scope)
@@ -238,7 +241,8 @@ not invent citations.
    and the stray `OPENAI_API_KEY` still needs the rotate + remove.)*
 3. Add `app/api/chat/route.ts` following the canonical handler skeleton (audit §1) +
    `lib/validation/api/chat.ts`.
-4. Add a reusable access helper mirroring the playback-token gate (consider extracting the gate so
-   chat and playback share one source of truth — coordinate with the `sectional-invariants` skill).
+4. ~~Add a reusable access helper mirroring the playback-token gate~~ **DONE 2026-07-04**
+   (Phase 3 slice 3): `evaluateVideoAccess()` in `lib/courses/videoAccess.ts` — playback and
+   study already share it; chat calls the same helper.
 5. Author the first dental Q&A set in Firestore.
 6. Update `docs/MOBILE_API_MIGRATION.md` with the new endpoint **in the same commit** (CLAUDE.md rule).

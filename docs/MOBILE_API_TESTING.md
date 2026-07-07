@@ -292,20 +292,18 @@ Everything else has `playbackId: null` — mobile must call
 Returns a short-lived Mux JWT scoped to a single `playbackId`. The mobile
 app must call this every time it starts a video.
 
-> ⚠️ **Status: endpoint shipped (commit `f8acbb5`), end-to-end playback
-> blocked until Step 3.5 lands.** Step 3.5 flips `createMuxUpload` to
-> `playback_policy: ["signed"]` and migrates the three web Mux player
-> surfaces (`components/video_uploader.tsx`, `components/CoursePreview.tsx`,
-> `components/ui/CoursePlayer.tsx`) onto a `SignedMuxPlayer` wrapper. Until
-> then, every existing Mux asset is public-policy, and Mux refuses to issue
-> signed JWTs against public-policy assets — so a request that hits this
-> endpoint returns a JWT, but that JWT will not play against
-> `stream.mux.com` for any current course video.
->
-> You **can** still verify routing, auth, validation, error codes, the
-> course-visibility filter, the free-preview bypass, and the enrollment gate
-> against the recipes below. Only the final "stream the bytes" step in (i)
-> is gated on Step 3.5.
+> **Status (verified 2026-07-04): end-to-end signed playback WORKS.** A
+> 15-case matrix against this endpoint (enrolled, sectional
+> owned/unowned/bundle/legacy scopes, pending enrollment, free-preview,
+> not-found/invisible variants) returned the correct code on every branch,
+> and the issued JWTs streamed real HLS manifests from `stream.mux.com`
+> (HTTP 200) on both pilot courses — recipe (i) below is fully usable.
+> The gate predicate itself now lives in `evaluateVideoAccess()`
+> (`lib/courses/videoAccess.ts`); this route wraps it with auth, rate
+> limiting, and token signing. Remaining Step 3.5 work is player-surface
+> migration only (`CoursePreview.tsx` 3.5.E and `CoursePlayer.tsx` 3.5.F
+> still handle tokens their own way; `video_uploader.tsx` 3.5.D is DONE) —
+> see `MOBILE_API_MIGRATION.md`.
 
 Set a couple of variables for the recipes below:
 

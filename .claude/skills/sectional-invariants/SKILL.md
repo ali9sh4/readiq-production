@@ -20,6 +20,7 @@ charges them wrongly, or strands a paying user.
 
 Read this before touching: anything in `app/actions/sectional_*`,
 `lib/sectional/*`, `lib/courses/assertCourseMutationAllowed.ts`,
+`lib/courses/videoAccess.ts` (the shared per-video access predicate),
 `app/api/mux/playback-token/route.ts`, enrollment creation/reading, or any
 video lock / access predicate on web or mobile.
 
@@ -55,12 +56,15 @@ video lock / access predicate on web or mobile.
    helper `lib/courses/assertCourseMutationAllowed.ts` enforces this — route
    mutations through it; do not bypass it.
 
-7. **The Mux playback-token route is the real access gate.** The server-side
-   token route is what actually decides whether a video plays. Any client-side
-   lock (web or mobile) is UX only — it exists to *predict* what the server
-   will allow. A client lock that is more restrictive than the server strands
-   the user; one that is more permissive lies to them. Client locks must mirror
-   the server gate, not diverge from it.
+7. **The server-side gate is the real access gate — its predicate is
+   `evaluateVideoAccess()` in `lib/courses/videoAccess.ts`.** The Mux
+   playback-token route wraps it for playback (`allowFreePreview: true`);
+   study surfaces call it directly (`allowFreePreview: false`). Editing "the
+   gate" means editing the helper, not the route. Any client-side lock (web
+   or mobile) is UX only — it exists to *predict* what the server will allow.
+   A client lock that is more restrictive than the server strands the user;
+   one that is more permissive lies to them. Client locks must mirror the
+   server gate, not diverge from it.
 
 ## Practical consequences
 

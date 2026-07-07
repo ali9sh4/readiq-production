@@ -586,7 +586,7 @@ snapshotted question text).
 | Firestore Q&A + transcript schema (§7 here) | **This doc** (supersedes the §3 sketch there; closes its §9.2) |
 | Review/approval lifecycle + publishing model | **This doc** (closes its §9.5 review-step half; the storage half is §7) |
 | Study surfaces, SRS, MCQ transform, analytics, certification | **This doc** |
-| Access gate semantics | The playback-token route + `sectional-invariants` skill (both docs defer to it; shared helper in Phase 3) |
+| Access gate semantics | `evaluateVideoAccess()` (`lib/courses/videoAccess.ts`, shipped 2026-07-04) + the `sectional-invariants` skill; the playback-token route wraps the helper |
 
 Chat's retrieval reads the same approved pairs (§7.1) — the "80% pre-generated
 Q&A" tier of its design becomes real the day Phase 2 approves a course.
