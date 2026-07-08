@@ -122,6 +122,13 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-3">
               <Link
+                href="/support"
+                className="hover:text-gray-300 transition"
+              >
+                الدعم
+              </Link>
+              <span>•</span>
+              <Link
                 href="/privacy-policy"
                 className="hover:text-gray-300 transition"
               >
