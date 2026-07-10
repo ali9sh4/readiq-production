@@ -12,7 +12,13 @@
 import type { SectionalConfigErrorCode } from "@/app/actions/sectional_config_actions";
 import type { PurchaseErrorCode } from "@/app/actions/sectional_wallet_actions";
 
-type AnyErrorCode = SectionalConfigErrorCode | PurchaseErrorCode;
+// ACCESS_EXPIRED comes from the shared video/study gate
+// (lib/courses/videoAccess.ts), not a sectional action — included here so
+// every surface localizes it the same way.
+type AnyErrorCode =
+  | SectionalConfigErrorCode
+  | PurchaseErrorCode
+  | "ACCESS_EXPIRED";
 
 type LocalizableFailure = {
   success: false;
@@ -58,6 +64,10 @@ export function localizeSectionalError(result: LocalizableFailure): string {
       return "هذه الدورة ليست في وضع البيع بالأقسام";
     case "ALREADY_FULL_ACCESS":
       return "أنت تملك كامل الدورة بالفعل";
+    case "ACCESS_EXPIRED":
+      return "انتهت صلاحية وصولك لهذه الدورة";
+    case "COURSE_TIME_LIMITED":
+      return "هذه الدورة محددة مدة الوصول — لا تُباع بالأقسام";
     case "ALL_SECTIONS_ALREADY_OWNED":
       return "أنت تملك كل الأقسام المطلوبة بالفعل";
     case "SECTION_NOT_PRICEABLE":

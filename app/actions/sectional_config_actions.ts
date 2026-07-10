@@ -42,6 +42,7 @@ export type SectionalConfigErrorCode =
   | "VIDEO_NOT_FOUND"
   | "SECTION_LOCKED"
   | "COURSE_PURCHASE_MODE_LOCKED"
+  | "COURSE_TIME_LIMITED"
   | "INTERNAL_ERROR";
 
 export type SectionalConfigSuccess = {
@@ -150,6 +151,24 @@ export async function updateCourseSectionalConfig(
   const isOwner = courseData?.createdBy === userId;
   if (!isOwner && !isAdmin) {
     return fail("FORBIDDEN", "You do not have permission to edit this course");
+  }
+
+  // 3.5. Time-limited × sectional mutual exclusivity (locked decision):
+  // a course carrying `accessDurationDays` cannot be flipped to sectional
+  // mode or given sections. The reverse direction (setting a duration on
+  // a sectional course) is rejected in updateCoursePricing.
+  if (
+    courseData?.accessDurationDays !== undefined &&
+    (parsed.data.purchaseMode === "sectional" ||
+      (parsed.data.sections !== undefined && parsed.data.sections.length > 0))
+  ) {
+    console.log(
+      `sectional-config REJECTED courseId=${courseId} by=${userId} reason=COURSE_TIME_LIMITED`
+    );
+    return fail(
+      "COURSE_TIME_LIMITED",
+      "A time-limited course cannot be sold by section"
+    );
   }
 
   // 4. Compose the proposed update.

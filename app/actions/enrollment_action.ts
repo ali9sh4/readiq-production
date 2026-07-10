@@ -1,6 +1,12 @@
 "use server";
 import { adminAuth, db } from "@/firebase/service";
+import { FieldValue } from "firebase-admin/firestore";
 import type { Enrollment } from "@/types/types";
+import {
+  computeAccessExpiresAt,
+  isAccessExpired,
+  readAccessDurationDays,
+} from "@/lib/courses/accessDuration";
 
 // Sibling of `checkUserEnrollments` introduced in Phase 2 of the sectional
 // purchasing rollout. Returns the full enrollment doc (or null) per courseId
@@ -95,7 +101,33 @@ export async function enrollInFreeCourse(courseId: string, token: string) {
       .doc(`${userId}_${courseId}`);
     const existingEnrollment = await enrollmentRef.get();
 
+    // Time-limited access: courses may carry `accessDurationDays`; free
+    // enrollments get the same `accessExpiresAt` snapshot as paid ones.
+    const durationDays = readAccessDurationDays(courseData);
+
     if (existingEnrollment.exists) {
+      const existingData = existingEnrollment.data() ?? {};
+
+      // Renewal carve-out: a completed enrollment whose access has
+      // expired is re-enrollable. Re-stamp the SAME doc — never create a
+      // duplicate. Course now lifetime (duration cleared since they
+      // enrolled) → clear the stamp instead.
+      if (
+        existingData.status === "completed" &&
+        isAccessExpired(existingData.accessExpiresAt)
+      ) {
+        await enrollmentRef.update({
+          accessExpiresAt: durationDays
+            ? computeAccessExpiresAt(durationDays, existingData.accessExpiresAt)
+            : FieldValue.delete(),
+          updatedAt: new Date().toISOString(),
+        });
+        return {
+          success: true,
+          message: "Enrollment renewed successfully",
+        };
+      }
+
       return {
         success: true,
         message: "User already enrolled in this course",
@@ -115,6 +147,9 @@ export async function enrollInFreeCourse(courseId: string, token: string) {
       status: "completed",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
+      ...(durationDays
+        ? { accessExpiresAt: computeAccessExpiresAt(durationDays) }
+        : {}),
     });
 
     // ✅ Increment enrollment count directly

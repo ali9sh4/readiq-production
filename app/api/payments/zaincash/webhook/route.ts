@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { zaincash } from "@/lib/payments/zaincash";
 import { db } from "@/firebase/service";
 import { recordEarningInTransaction } from "@/lib/earnings/recordEarning";
+import {
+  computeAccessExpiresAt,
+  readAccessDurationDays,
+} from "@/lib/courses/accessDuration";
 
 export async function GET(req: NextRequest) {
   try {
@@ -106,11 +110,19 @@ export async function GET(req: NextRequest) {
           ? await transaction.get(db.collection("users").doc(instructorId!))
           : null;
 
+        // Time-limited access: snapshot the course's duration onto the
+        // enrollment as it completes. Access starts now — the moment the
+        // payment lands, not when the pending doc was created.
+        const durationDays = readAccessDurationDays(courseData);
+
         transaction.update(enrollmentRef, {
           status: "completed",
           enrolledAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           transactionId: transactionId,
+          ...(durationDays
+            ? { accessExpiresAt: computeAccessExpiresAt(durationDays) }
+            : {}),
         });
 
         transaction.update(courseRef, {

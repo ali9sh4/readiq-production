@@ -14,6 +14,7 @@
 
 import { db } from "@/firebase/service";
 import { isCoursePubliclyVisible } from "@/lib/courses/visibility";
+import { isAccessExpired } from "@/lib/courses/accessDuration";
 
 // Grant reasons string-match the playback route's historical log values —
 // do not rename casually.
@@ -38,6 +39,7 @@ export type VideoAccessDenialCode =
   | "VIDEO_NOT_FOUND"
   | "VIDEO_NOT_READY"
   | "NOT_ENROLLED"
+  | "ACCESS_EXPIRED"
   | "SECTION_NOT_OWNED";
 
 export interface VideoAccessDenial {
@@ -175,6 +177,28 @@ export async function evaluateVideoAccess(
       403,
       "You must be enrolled in this course to play this video",
       { logReason }
+    );
+  }
+
+  // Time-limited access: a purchase on a course with `accessDurationDays`
+  // snapshots `accessExpiresAt` onto the enrollment. Unset = lifetime
+  // (every pre-feature enrollment — mirrors the unset-accessScope
+  // convention). Enforcement is lazy: compare here at read time; nothing
+  // ever mutates the enrollment at expiry, and a renewal purchase
+  // re-stamps the same doc. Checked after the enrollment gate and before
+  // the sectional branch (sectional × time-limited are mutually
+  // exclusive, so an expired stamp can only exist on a full-mode course).
+  //
+  // NOTE for future exam surfaces: final-exam eligibility is "a completed
+  // enrollment exists — ever", deliberately NOT gated on expiry (owner
+  // decision 2026-07-10). Exam code must not reuse this predicate's
+  // ACCESS_EXPIRED denial; it needs its own was-ever-enrolled check.
+  if (isAccessExpired(enrollment?.accessExpiresAt)) {
+    return deny(
+      "ACCESS_EXPIRED",
+      403,
+      "Your access to this course has expired",
+      { logReason: "access_expired" }
     );
   }
 

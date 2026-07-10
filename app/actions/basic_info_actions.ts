@@ -1,11 +1,13 @@
 "use server";
 
 import { adminAuth, db } from "@/firebase/service";
+import { FieldValue } from "firebase-admin/firestore";
 import { revalidatePath } from "next/cache";
 import {
   assertCourseMutationAllowed,
   CourseMutationLockedError,
 } from "@/lib/courses/assertCourseMutationAllowed";
+import { AccessDurationDaysSchema } from "@/validation/courseSchema";
 
 // ===== UPDATE COURSE BASIC INFO =====
 export async function updateCourseBasicInfo(
@@ -77,7 +79,16 @@ export async function updateCourseBasicInfo(
 // ===== UPDATE COURSE PRICING =====
 export async function updateCoursePricing(
   courseId: string,
-  pricing: { price?: number; salePrice?: number; currency?: string },
+  pricing: {
+    price?: number;
+    salePrice?: number;
+    currency?: string;
+    // Time-limited access: 90 | 180 | 365, or null to clear back to
+    // lifetime. Omit to leave unchanged. Snapshot semantics: changing this
+    // only affects FUTURE purchases — existing enrollments keep the
+    // `accessExpiresAt` stamped when they bought.
+    accessDurationDays?: number | null;
+  },
   token: string
 ) {
   try {
@@ -98,8 +109,9 @@ export async function updateCoursePricing(
       return { success: false, error: "Permission denied" };
     }
 
+    const { accessDurationDays, ...restPricing } = pricing;
     const cleanPricing = Object.fromEntries(
-      Object.entries(pricing).filter(([_, v]) => v !== undefined)
+      Object.entries(restPricing).filter(([_, v]) => v !== undefined)
     );
 
     // ✅ Single atomic update
@@ -107,6 +119,54 @@ export async function updateCoursePricing(
       ...cleanPricing,
       updatedAt: new Date().toISOString(),
     };
+
+    if (accessDurationDays !== undefined) {
+      const parsedDuration = AccessDurationDaysSchema.safeParse(
+        accessDurationDays
+      );
+      if (!parsedDuration.success) {
+        return {
+          success: false,
+          error: "مدة الوصول يجب أن تكون ٩٠ أو ١٨٠ أو ٣٦٥ يومًا",
+        };
+      }
+
+      if (parsedDuration.data !== null) {
+        // Mutual exclusivity with sectional purchasing (locked decision):
+        // a course that sells by sections cannot be time-limited.
+        const isSectional =
+          courseData?.purchaseMode === "sectional" ||
+          (Array.isArray(courseData?.sections) &&
+            courseData.sections.length > 0);
+        if (isSectional) {
+          return {
+            success: false,
+            error: "لا يمكن تحديد مدة وصول لدورة تُباع بالأقسام",
+          };
+        }
+
+        // Packages may not contain time-limited courses. The package
+        // editor rejects adding one; this closes the reverse direction —
+        // a course already inside a package cannot become time-limited.
+        const packageSnap = await db
+          .collection("packages")
+          .where("courseIds", "array-contains", courseId)
+          .limit(1)
+          .get();
+        if (!packageSnap.empty) {
+          return {
+            success: false,
+            error:
+              "هذه الدورة ضمن حزمة — لا يمكن تحديد مدة وصول لدورة داخل حزمة",
+          };
+        }
+
+        updates.accessDurationDays = parsedDuration.data;
+      } else {
+        // null = clear back to lifetime for future buyers.
+        updates.accessDurationDays = FieldValue.delete();
+      }
+    }
 
     try {
       await assertCourseMutationAllowed(

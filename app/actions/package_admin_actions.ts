@@ -140,6 +140,16 @@ async function deriveInstructors(
         message: `الدورة «${c.title ?? courseIds[i]}» بلا مدرب`,
       };
     }
+    // Packages may not contain time-limited courses (locked decision):
+    // a package grants lifetime `accessScope: 'full'` enrollments, which
+    // would contradict the course's own duration. The pricing action
+    // enforces the reverse (a packaged course cannot become time-limited).
+    if (c.accessDurationDays !== undefined) {
+      return {
+        ok: false,
+        message: `الدورة «${c.title ?? courseIds[i]}» محددة مدة الوصول — لا يمكن إضافتها إلى حزمة`,
+      };
+    }
     names[c.createdBy] = c.instructorName ?? "مدرب";
   }
   return { ok: true, names };

@@ -43,6 +43,7 @@ export type QaStudyErrorCode =
   | "VIDEO_NOT_FOUND"
   | "VIDEO_NOT_READY"
   | "NOT_ENROLLED"
+  | "ACCESS_EXPIRED"
   | "SECTION_NOT_OWNED"
   | "RATE_LIMITED"
   | "INTERNAL_ERROR";

@@ -85,6 +85,15 @@ export interface Course {
   fullCoursePrice?: number;
   sections?: CourseSection[];
 
+  // ===== Time-Limited Access =====
+  // Days of access a purchase grants, snapshotted onto the enrollment as
+  // `accessExpiresAt` at purchase time. Allowed values: 90 | 180 | 365
+  // (enforced at the form/action boundary). Unset = lifetime access.
+  // Mutually exclusive with sectional purchasing AND with package
+  // membership — validated at the pricing action, the sectional config
+  // action, and package creation/edit.
+  accessDurationDays?: number;
+
   // ===== Status & Approval =====
   status?: CourseStatus;
   isApproved?: boolean;
@@ -146,6 +155,14 @@ export interface Enrollment {
   // Set when this enrollment was granted by a course-package purchase
   // (traceability only — access is still decided by `accessScope`).
   sourcePackageId?: string;
+  // Time-limited access: ISO timestamp after which the video/study gate
+  // denies with ACCESS_EXPIRED. Stamped at purchase from the course's
+  // `accessDurationDays` — a SNAPSHOT; later course edits never touch it.
+  // Unset = lifetime (every enrollment that predates the feature).
+  // Enforcement is lazy (compared at read time in evaluateVideoAccess);
+  // nothing ever mutates the enrollment at expiry. A renewal purchase
+  // re-stamps this on the SAME doc: max(now, current expiry) + duration.
+  accessExpiresAt?: string;
 }
 
 // ===== COURSE PACKAGES =====

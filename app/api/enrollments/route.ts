@@ -56,14 +56,18 @@ export async function POST(req: NextRequest) {
     const enrollmentId = `${auth.userId}_${courseId}`;
 
     // 2. Already enrolled? Return the existing enrollment shape so mobile
-    //    can navigate to the player without re-purchasing.
+    //    can navigate to the player without re-purchasing. Time-limited
+    //    enrollments (accessExpiresAt set) fall through instead — they are
+    //    renewable, and the underlying actions re-stamp the same doc
+    //    (mirrors the wallet action's carve-out).
     const existingEnrollment = await db
       .collection("enrollments")
       .doc(enrollmentId)
       .get();
     if (
       existingEnrollment.exists &&
-      existingEnrollment.data()?.status === "completed"
+      existingEnrollment.data()?.status === "completed" &&
+      typeof existingEnrollment.data()?.accessExpiresAt !== "string"
     ) {
       console.error(
         `enrollment-purchase userId=${auth.userId} courseId=${courseId} ALREADY_ENROLLED`

@@ -87,11 +87,22 @@ export const BasicInfoSchema = z.object({
   language: z.enum(["arabic", "english", "french", "spanish"]),
 });
 
+// Time-limited access duration: 90 | 180 | 365 days, or null/absent for
+// lifetime. Server boundary re-validates in updateCoursePricing, which
+// also rejects the field on sectional courses and on courses inside a
+// package (mutual exclusivity).
+export const AccessDurationDaysSchema = z
+  .union([z.literal(90), z.literal(180), z.literal(365)], {
+    message: "مدة الوصول يجب أن تكون ٩٠ أو ١٨٠ أو ٣٦٥ يومًا",
+  })
+  .nullable();
+
 // Pricing Schema
 export const PricingSchema = z
   .object({
     price: z.coerce.number().min(0, "السعر يجب أن يكون صفر أو أكثر"),
     salePrice: z.coerce.number().min(0).optional(),
+    accessDurationDays: AccessDurationDaysSchema.optional(),
   })
   .refine(
     (data) => {

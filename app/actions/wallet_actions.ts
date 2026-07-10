@@ -5,6 +5,10 @@ import { adminAuth, db } from "@/firebase/service";
 import { FieldValue } from "firebase-admin/firestore";
 import type { TopupRequest, Wallet, WalletTransaction } from "@/types/wallets";
 import { recordEarningInTransaction } from "@/lib/earnings/recordEarning";
+import {
+  computeAccessExpiresAt,
+  readAccessDurationDays,
+} from "@/lib/courses/accessDuration";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
@@ -152,7 +156,11 @@ export async function purchaseCourseWithWallet(
       return { success: false, error: "هذه دورة مجانية" };
     }
 
-    // Check existing enrollment
+    // Check existing enrollment. Time-limited enrollments (accessExpiresAt
+    // set) are re-purchasable — a renewal re-stamps the SAME doc inside the
+    // transaction below (expired → now + duration; before expiry →
+    // max(now, current expiry) + duration). Lifetime enrollments reject as
+    // before: there is nothing to sell.
     const enrollmentId = `${userId}_${courseId}`;
     const existingEnrollment = await db
       .collection("enrollments")
@@ -161,7 +169,8 @@ export async function purchaseCourseWithWallet(
 
     if (
       existingEnrollment.exists &&
-      existingEnrollment.data()?.status === "completed"
+      existingEnrollment.data()?.status === "completed" &&
+      typeof existingEnrollment.data()?.accessExpiresAt !== "string"
     ) {
       return { success: false, error: "أنت مسجل بالفعل في هذه الدورة" };
     }
@@ -188,6 +197,27 @@ export async function purchaseCourseWithWallet(
       // reads-before-writes rule.
       const instructorUserRef = db.collection("users").doc(instructorId);
       const instructorUserDoc = await transaction.get(instructorUserRef);
+
+      // Re-read the enrollment inside the transaction so the renewal
+      // branch (time-limited access) is decided against current state,
+      // not the pre-check read.
+      const enrollmentRef = db.collection("enrollments").doc(enrollmentId);
+      const enrollmentTxnDoc = await transaction.get(enrollmentRef);
+      const enrollmentTxnData = enrollmentTxnDoc.exists
+        ? enrollmentTxnDoc.data()
+        : null;
+      const currentExpiresAt =
+        typeof enrollmentTxnData?.accessExpiresAt === "string"
+          ? (enrollmentTxnData.accessExpiresAt as string)
+          : null;
+      const isRenewal =
+        enrollmentTxnData?.status === "completed" && currentExpiresAt !== null;
+
+      if (enrollmentTxnData?.status === "completed" && !isRenewal) {
+        // Race: a lifetime enrollment completed between the pre-check and
+        // this transaction. Nothing to sell.
+        throw new Error("أنت مسجل بالفعل في هذه الدورة");
+      }
 
       // ===== STEP 2: VALIDATE DATA =====
       if (!walletDoc.exists) {
@@ -230,20 +260,41 @@ export async function purchaseCourseWithWallet(
         source: "wallet",
       });
 
-      // Create enrollment
-      const enrollmentRef = db.collection("enrollments").doc(enrollmentId);
-      transaction.set(enrollmentRef, {
-        userId,
-        courseId,
-        paymentMethod: "wallet",
-        enrollmentType: "paid",
-        amount: coursePrice,
-        status: "completed",
-        enrolledAt: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        transactionId: protectionKey,
-      });
+      // Time-limited access stamp, snapshotted from the course at THIS
+      // purchase (instructor edits never touch existing stamps).
+      const durationDays = readAccessDurationDays(courseData);
+
+      if (isRenewal) {
+        // Renewal: re-stamp the SAME enrollment doc — never a duplicate,
+        // never a full overwrite (keeps enrolledAt/createdAt history).
+        // Course cleared back to lifetime since they bought → remove the
+        // stamp; otherwise extend from max(now, current expiry).
+        transaction.update(enrollmentRef, {
+          accessExpiresAt: durationDays
+            ? computeAccessExpiresAt(durationDays, currentExpiresAt)
+            : FieldValue.delete(),
+          totalSpent: FieldValue.increment(coursePrice),
+          transactionId: protectionKey,
+          updatedAt: new Date().toISOString(),
+        });
+      } else {
+        // Create enrollment
+        transaction.set(enrollmentRef, {
+          userId,
+          courseId,
+          paymentMethod: "wallet",
+          enrollmentType: "paid",
+          amount: coursePrice,
+          status: "completed",
+          enrolledAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          transactionId: protectionKey,
+          ...(durationDays
+            ? { accessExpiresAt: computeAccessExpiresAt(durationDays) }
+            : {}),
+        });
+      }
 
       // Log buyer's transaction
       const txnRef = db.collection("wallet_transactions").doc();
@@ -263,12 +314,15 @@ export async function purchaseCourseWithWallet(
         createdAt: new Date().toISOString(),
       });
 
-      // Update course enrollment count
-      const courseRef = db.collection("courses").doc(courseId);
-      transaction.update(courseRef, {
-        enrollmentCount: FieldValue.increment(1),
-        updatedAt: new Date().toISOString(),
-      });
+      // Update course enrollment count — a renewal is the same student,
+      // not a new enrollment; don't double-count.
+      if (!isRenewal) {
+        const courseRef = db.collection("courses").doc(courseId);
+        transaction.update(courseRef, {
+          enrollmentCount: FieldValue.increment(1),
+          updatedAt: new Date().toISOString(),
+        });
+      }
 
       return { newBalance, enrollmentId };
     });

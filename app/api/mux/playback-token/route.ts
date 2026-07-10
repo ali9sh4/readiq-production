@@ -78,6 +78,10 @@ export async function POST(req: NextRequest) {
         console.log(
           `mux-playback DENIED userId=${auth.userId} courseId=${body.courseId} videoId=${body.videoId} sectionId=${access.sectionId} reason=${access.logReason}`
         );
+      } else if (access.code === "ACCESS_EXPIRED") {
+        console.log(
+          `mux-playback DENIED userId=${auth.userId} courseId=${body.courseId} videoId=${body.videoId} reason=${access.logReason}`
+        );
       }
       return fail(access.code, access.message, access.httpStatus);
     }

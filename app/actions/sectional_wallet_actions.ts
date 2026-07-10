@@ -53,6 +53,7 @@ export type PurchaseErrorCode =
   | "INVALID_INPUT"
   | "COURSE_NOT_FOUND"
   | "COURSE_NOT_SECTIONAL"
+  | "COURSE_TIME_LIMITED"
   | "INVALID_SECTION_ID"
   | "ALREADY_FULL_ACCESS"
   | "ALL_SECTIONS_ALREADY_OWNED"
@@ -164,6 +165,19 @@ export async function purchaseSectionsWithWallet(
     return fail(
       "COURSE_NOT_SECTIONAL",
       "This course is not in sectional purchase mode"
+    );
+  }
+
+  // Sectional × time-limited are mutually exclusive (both write
+  // boundaries enforce it). If drifted data ever presents both, refuse to
+  // sell rather than sell ambiguous access.
+  if (courseData.accessDurationDays !== undefined) {
+    console.log(
+      `wallet-purchase-sections REJECTED userId=${userId} courseId=${courseId} reason=COURSE_TIME_LIMITED`
+    );
+    return fail(
+      "COURSE_TIME_LIMITED",
+      "Time-limited courses cannot be sold by section"
     );
   }
 
@@ -467,6 +481,18 @@ export async function purchaseBundleWithWallet(
     return fail(
       "COURSE_NOT_SECTIONAL",
       "Bundle purchase is only for sectional courses; use purchaseCourseWithWallet for full-mode courses"
+    );
+  }
+
+  // Sectional × time-limited are mutually exclusive — same defensive
+  // rejection as the per-section purchase.
+  if (courseData.accessDurationDays !== undefined) {
+    console.log(
+      `wallet-purchase-bundle REJECTED userId=${userId} courseId=${courseId} reason=COURSE_TIME_LIMITED`
+    );
+    return fail(
+      "COURSE_TIME_LIMITED",
+      "Time-limited courses cannot be sold by section"
     );
   }
 
