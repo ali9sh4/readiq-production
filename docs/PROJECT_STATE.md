@@ -5,6 +5,66 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-07-11 — Login resilience, app-wide loading feedback; Checkpoint 1 deployed
+
+Pushed to `origin/main` as `0f5711d..930d4fb` (Vercel deploy includes all of
+the below).
+
+### Time-limited course access — Checkpoint 1 (`a7cb9b3`, authored 2026-07-10)
+Schema, write paths, and gate; the full design is in the commit message.
+Helpers: `lib/courses/accessDuration.ts`; enforcement:
+`evaluateVideoAccess()` in `lib/courses/videoAccess.ts` (`ACCESS_EXPIRED`).
+Sectional × time-limited are mutually exclusive; packages reject time-limited
+member courses; final-exam eligibility is deliberately NOT expiry-gated
+(owner decision 2026-07-10). Mobile contract rows updated in
+`MOBILE_API_MIGRATION.md`; renewal UX lands with Checkpoint 3.
+
+### Login fallback chain (`e908026`)
+`signInWithPopup` races a 15s timeout; popup-blocked / network failure /
+timeout auto-falls back to `signInWithRedirect` (user-cancel never does);
+`getRedirectResult` resolves behind a "completing sign-in" state; terminal
+failure shows an Arabic error + "حاول مرة أخرى" retry (see
+`handleGoogleSignIn` in `context/authContext.tsx`). Destination preserved end
+to end: `ProtectedLink` and `middleware.ts` redirect to
+`/login?redirect=<path>` (middleware previously dumped users on `/`), the
+signed-in `/login` branch honors it, post-login push happens after the cookie
+is set. **Supersedes** the nav-entry detail below (2026-06 era): a logged-out
+**إنشاء دورة** click now lands on `/login?redirect=%2Fcourse-upload`, and
+during auth hydration ProtectedLink navigates natively (middleware
+arbitrates) instead of client-blocking.
+Recorded caveat: `signInWithRedirect` on the cross-origin authDomain
+(`readiq-1f109.firebaseapp.com`) is unreliable under third-party storage
+partitioning (Safari/Firefox/incognito) — acceptable as a fallback; the
+bulletproof fix is serving the auth handler from our own domain (backlog).
+
+### Loading feedback everywhere (`930d4fb`)
+Primitives: `components/ui/loading-button.tsx` (LoadingButton +
+ButtonSpinner), `components/ui/skeleton.tsx`; `nextjs-toploader` (brand
+yellow) in the root layout. Route skeletons matching real layouts: `/`,
+`/course/[courseId]`, both course editors (shared `CourseEditorSkeleton`),
+`/user_dashboard` (+ myFavorites, earnings), `/wallet/transactions`,
+`/wallet/topup`, `/delete-account`. Pending states added to: profile
+save/logout, navbar dropdown logout, all admin approve/reject/restore/delete
+actions, topup-approvals approve. Wallet transactions load-more had a dead
+`loading` flag (never set on the load-more path) — fixed, plus skeleton rows
+and an error + retry state. Firebase Storage `<img>` sites gained `onError`
+placeholder fallbacks (CoursePreview hero, editor cover preview, package
+thumbs/checkout — all still plain `<img>` per the cover-rendering rule).
+WalletBalance shows a pulse while loading and "—" on listener errors instead
+of a fake 0.
+
+### Also shipped
+`/support` page for App Store submission (`0f5711d`, 2026-07-08) and the
+homepage Google Play badge (`2e06f61`, owner).
+
+Verification: tsc/lint at parity with baseline (same 6 pre-existing
+`.next/types` errors); Playwright + system Chrome against the dev server —
+popup-blocked auto-navigates to the redirect flow, blackholed Google
+endpoints end in the retry UI, `/course-upload` logged out 307s to
+`/login?redirect=%2Fcourse-upload`.
+
+---
+
 ## 2026-07-07 — Files tab conditional (lesson player)
 
 - CoursePlayer's الملفات tab now renders only when the lesson's panel would

@@ -108,6 +108,7 @@ client-side work in the separate `readiq-production-mobile` repo. See
 - `ed43dab`–`e1db961` — Step 3.5 signed playback, substeps A–H, merged to `main`. `SignedMuxPlayer` / `SignedMuxThumbnail`, thumbnail token signing, all three web player surfaces migrated, free-preview removed (3.5.E), upload policy flipped to signed-only. `KeyLike` import error fixed in `6c4cb1d`.
 - `2c85e6a` / `4a99c0b` — `POST /api/me`: bootstraps `users/{uid}` for mobile first-login. Merged.
 - `e526aa6`–`0d4dc9f` — Sectional purchasing: Phases 2–6 on web (access gate, server-side purchase, section editor, section-aware player, buyer CTAs / checkout / bundle upsell) + Phase 7a sectional read parity on the mobile API. Phase 4 (ZainCash) deferred. Hotfix `3d56b24` rejects sectional courses from legacy `POST /api/enrollments`.
+- `a7cb9b3` — Time-limited course access Checkpoint 1 (live 2026-07-11): courses may carry `accessDurationDays`; enrollments get an `accessExpiresAt` snapshot at purchase; the shared gate lazily denies `403 ACCESS_EXPIRED` on `POST /api/mux/playback-token`, and the `POST /api/enrollments` already-enrolled pre-check skips time-limited enrollments so renewals fall through. Contract rows updated in `MOBILE_API_MIGRATION.md`; mobile renewal UX guidance lands with Checkpoint 3.
 
 ## In progress
 
