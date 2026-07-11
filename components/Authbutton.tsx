@@ -12,12 +12,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { User } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import NavigationButton from "./NavigationButton";
+import { useState } from "react";
 
 export const AuthButton = () => {
   const router = useRouter();
   const auth = useAuth();
+  const [loggingOut, setLoggingOut] = useState(false);
   // Keep the skeleton until Firebase Auth has actually fired
   // onAuthStateChanged — otherwise logged-in users briefly see the
   // login/register buttons before the avatar replaces them.
@@ -75,12 +77,22 @@ export const AuthButton = () => {
             </DropdownMenuItem>
 
             <DropdownMenuItem
+              disabled={loggingOut}
+              // Keep the menu open while signing out so the spinner is visible
+              onSelect={(e) => e.preventDefault()}
               onClick={async () => {
-                await auth.logOut();
-                router.refresh();
+                if (loggingOut) return;
+                setLoggingOut(true);
+                try {
+                  await auth.logOut();
+                  router.refresh();
+                } finally {
+                  setLoggingOut(false);
+                }
               }}
             >
-              تسجيل الخروج
+              {loggingOut && <Loader2 className="h-4 w-4 animate-spin" />}
+              {loggingOut ? "جاري تسجيل الخروج..." : "تسجيل الخروج"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

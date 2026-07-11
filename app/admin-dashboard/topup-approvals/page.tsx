@@ -11,6 +11,7 @@ import {
 import { useAuth } from "@/context/authContext";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -203,15 +204,16 @@ export default function AdminTopupApprovalPage() {
                         </p>
                       </div>
                       <div className="flex flex-col gap-2 ml-4">
-                        <Button
+                        <LoadingButton
                           size="sm"
+                          loading={processingId === request.id}
+                          loadingText="جاري الموافقة..."
                           onClick={() => handleApprove(request.id)}
-                          disabled={processingId === request.id}
                           className="gap-2 bg-green-600 hover:bg-green-700"
                         >
                           <CheckCircle2 className="w-4 h-4" />
                           موافقة
-                        </Button>
+                        </LoadingButton>
 
                         <Button
                           size="sm"

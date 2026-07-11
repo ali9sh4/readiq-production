@@ -16,6 +16,8 @@ import {
   getPendingTopupRequestsUSER,
   getWalletTransactions,
 } from "@/app/actions/wallet_actions";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
@@ -24,10 +26,14 @@ export default function TransactionsPage() {
   >([]);
   const [lastDocId, setLastDocId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
   const auth = useAuth();
   const previousTransactions = async (isLoadMore = false) => {
+    if (isLoadMore) setLoadingMore(true);
+    setLoadError(false);
     try {
       const token = await auth.user?.getIdToken();
       if (!token) {
@@ -48,11 +54,22 @@ export default function TransactionsPage() {
         return;
       }
       setTransactions(result.transactions);
-      setLoading(false);
     } catch (error) {
       console.error("خطأ في جلب المعاملات:", error);
-      setLoading(false);
+      setLoadError(true);
+    } finally {
+      if (isLoadMore) {
+        setLoadingMore(false);
+      } else {
+        setLoading(false);
+      }
     }
+  };
+
+  const retryLoad = () => {
+    setLoading(true);
+    previousTransactions();
+    pendingRequests();
   };
 
   const pendingRequests = async () => {
@@ -131,8 +148,32 @@ export default function TransactionsPage() {
 
           <CardContent>
             {loading ? (
+              // Skeleton rows matching the real transaction row layout
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between p-4 border rounded-lg"
+                  >
+                    <div className="flex items-center gap-4">
+                      <Skeleton className="w-9 h-9 rounded-lg" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-40" />
+                        <Skeleton className="h-3 w-28" />
+                      </div>
+                    </div>
+                    <Skeleton className="h-5 w-20" />
+                  </div>
+                ))}
+              </div>
+            ) : loadError && transactions.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-500">جاري التحميل...</p>
+                <p className="text-red-600 mb-3">
+                  تعذّر تحميل العمليات. تحقق من اتصالك بالإنترنت.
+                </p>
+                <LoadingButton variant="outline" onClick={retryLoad}>
+                  حاول مرة أخرى
+                </LoadingButton>
               </div>
             ) : transactions.length === 0 &&
               pendingTransactions.length === 0 ? (
@@ -217,13 +258,25 @@ export default function TransactionsPage() {
                     </div>
                   </div>
                 ))}
+                {loadError && (
+                  <div className="text-center py-2">
+                    <p className="text-sm text-red-600 mb-2">
+                      تعذّر تحميل المزيد من العمليات.
+                    </p>
+                  </div>
+                )}
                 {hasMore && (
-                  <button
-                    onClick={() => previousTransactions(true)}
-                    disabled={loading}
-                  >
-                    {loading ? "جاري التحميل..." : "تحميل المزيد"}
-                  </button>
+                  <div className="text-center pt-2">
+                    <LoadingButton
+                      variant="outline"
+                      className="w-full sm:w-auto"
+                      loading={loadingMore}
+                      loadingText="جاري التحميل..."
+                      onClick={() => previousTransactions(true)}
+                    >
+                      {loadError ? "حاول مرة أخرى" : "تحميل المزيد"}
+                    </LoadingButton>
+                  </div>
                 )}
               </div>
             )}

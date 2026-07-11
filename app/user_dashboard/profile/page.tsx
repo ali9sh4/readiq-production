@@ -60,6 +60,8 @@ export default function DashboardProfile() {
   const [consent, setConsent] = useState(false);
   const [savedConsent, setSavedConsent] = useState(false);
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -90,6 +92,7 @@ export default function DashboardProfile() {
       alert(`⚠️ ${phoneCheck.error}`);
       return;
     }
+    setIsSaving(true);
     try {
       await updateProfile(auth.user, { displayName });
       await updateUserProfile(auth.user?.uid, {
@@ -110,6 +113,8 @@ export default function DashboardProfile() {
     } catch (error) {
       console.error("Error updating profile:", error);
       alert("Failed to update profile. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -187,14 +192,22 @@ export default function DashboardProfile() {
               <div className="flex gap-2">
                 <button
                   onClick={handleSave}
-                  className="bg-green-600 hover:bg-green-700 text-white rounded-xl px-4 py-2.5 flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95"
+                  disabled={isSaving}
+                  className="bg-green-600 hover:bg-green-700 text-white rounded-xl px-4 py-2.5 flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 disabled:opacity-60 disabled:pointer-events-none"
                 >
-                  <Save className="w-4 h-4" />
-                  <span className="text-sm font-semibold">حفظ</span>
+                  {isSaving ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  <span className="text-sm font-semibold">
+                    {isSaving ? "جاري الحفظ..." : "حفظ"}
+                  </span>
                 </button>
                 <button
                   onClick={handleCancel}
-                  className="bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 text-gray-700 rounded-xl px-4 py-2.5 flex items-center gap-2 transition-all duration-200 active:scale-95"
+                  disabled={isSaving}
+                  className="bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 text-gray-700 rounded-xl px-4 py-2.5 flex items-center gap-2 transition-all duration-200 active:scale-95 disabled:opacity-60 disabled:pointer-events-none"
                 >
                   <X className="w-4 h-4" />
                   <span className="text-sm font-semibold">إلغاء</span>
@@ -490,18 +503,28 @@ export default function DashboardProfile() {
             <button
               onClick={async () => {
                 if (confirm("هل أنت متأكد من تسجيل الخروج؟")) {
-                  await auth.logOut();
-                  router.push("/");
+                  setIsLoggingOut(true);
+                  try {
+                    await auth.logOut();
+                    router.push("/");
+                  } finally {
+                    setIsLoggingOut(false);
+                  }
                 }
               }}
-              className="group bg-red-50 border-2 border-red-100 hover:border-red-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg active:scale-95 cursor-pointer"
+              disabled={isLoggingOut}
+              className="group bg-red-50 border-2 border-red-100 hover:border-red-400 rounded-2xl p-5 transition-all duration-300 hover:shadow-lg active:scale-95 cursor-pointer disabled:opacity-60 disabled:pointer-events-none"
             >
               <div className="flex flex-col items-center text-center gap-3">
                 <div className="w-12 h-12 bg-red-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <LogOut className="w-6 h-6 text-white" />
+                  {isLoggingOut ? (
+                    <Loader2 className="w-6 h-6 text-white animate-spin" />
+                  ) : (
+                    <LogOut className="w-6 h-6 text-white" />
+                  )}
                 </div>
                 <span className="font-semibold text-gray-800 text-sm sm:text-base">
-                  تسجيل الخروج
+                  {isLoggingOut ? "جاري تسجيل الخروج..." : "تسجيل الخروج"}
                 </span>
               </div>
             </button>

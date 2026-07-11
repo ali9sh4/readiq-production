@@ -413,6 +413,13 @@ export default function CoursePreview({
                         alt={course.title}
                         loading="lazy"
                         className="absolute inset-0 h-full w-full object-cover"
+                        onError={(e) => {
+                          // Broken storage URL / offline: show the shared
+                          // placeholder instead of the browser broken-image icon.
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src =
+                            "/images/course-placeholder.jpg";
+                        }}
                       />
                       {/* <Image
                         src={

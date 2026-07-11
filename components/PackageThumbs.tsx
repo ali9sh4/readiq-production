@@ -1,3 +1,5 @@
+"use client";
+
 // Stacked / overlapping course thumbnails — the at-a-glance "this is several
 // courses, not one" signal shared by the package banner and checkout modal.
 //
@@ -40,6 +42,10 @@ export function StackedThumbs({
           className={`${dim} ${
             i > 0 ? "-mr-3" : ""
           } rounded-lg border-2 border-white object-cover shadow-sm`}
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = "/images/course-placeholder.jpg";
+          }}
         />
       ))}
       {extra > 0 && (

@@ -276,6 +276,11 @@ export default function PackageCheckoutDialog({
                         src={thumbSrc(c.thumbnailUrl)}
                         alt=""
                         className="h-12 w-16 shrink-0 rounded-md object-cover"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src =
+                            "/images/course-placeholder.jpg";
+                        }}
                       />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-gray-900">

@@ -11,6 +11,7 @@ import {
 import { db } from "@/firebase/client";
 import { useAuth } from "@/context/authContext";
 import { Button } from "@/components/ui/button";
+import { LoadingButton } from "@/components/ui/loading-button";
 import {
   CheckCircle,
   XCircle,
@@ -441,7 +442,9 @@ export default function AdminDashboard() {
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
-                  <Button
+                  <LoadingButton
+                    loading={actionLoading === topupRequest.id}
+                    loadingText="جاري الموافقة..."
                     onClick={async () => {
                       if (!confirm("هل تريد الموافقة على هذا الطلب؟")) return;
                       setActionLoading(topupRequest.id);
@@ -465,14 +468,15 @@ export default function AdminDashboard() {
                         setActionLoading(null);
                       }
                     }}
-                    disabled={actionLoading === topupRequest.id}
                     className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
                   >
                     <CheckCircle className="h-4 w-4 ml-2" />
                     موافقة
-                  </Button>
+                  </LoadingButton>
 
-                  <Button
+                  <LoadingButton
+                    loading={actionLoading === topupRequest.id}
+                    loadingText="جاري الرفض..."
                     onClick={async () => {
                       const reason = prompt("سبب الرفض:");
                       if (!reason) return;
@@ -498,13 +502,12 @@ export default function AdminDashboard() {
                         setActionLoading(null);
                       }
                     }}
-                    disabled={actionLoading === topupRequest.id}
                     variant="destructive"
                     className="disabled:opacity-50"
                   >
                     <XCircle className="h-4 w-4 ml-2" />
                     رفض
-                  </Button>
+                  </LoadingButton>
                 </div>
               </div>
             ))
@@ -592,7 +595,9 @@ export default function AdminDashboard() {
 
                 {/* Action Buttons */}
                 <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
-                  <Button
+                  <LoadingButton
+                    loading={actionLoading === course.id}
+                    loadingText="جاري الاستعادة..."
                     onClick={async () => {
                       if (
                         !confirm(
@@ -621,14 +626,15 @@ export default function AdminDashboard() {
                         setActionLoading(null);
                       }
                     }}
-                    disabled={actionLoading === course.id}
                     className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
                   >
                     <CheckCircle className="h-4 w-4 ml-2" />
                     استعادة الدورة
-                  </Button>
+                  </LoadingButton>
                   {/* After the Restore button */}
-                  <Button
+                  <LoadingButton
+                    loading={actionLoading === course.id}
+                    loadingText="جاري الحذف النهائي..."
                     onClick={async () => {
                       if (
                         !confirm(
@@ -671,13 +677,12 @@ export default function AdminDashboard() {
                         setActionLoading(null);
                       }
                     }}
-                    disabled={actionLoading === course.id}
                     variant="destructive"
                     className="bg-red-700 hover:bg-red-800 disabled:opacity-50"
                   >
                     <Trash2 className="h-4 w-4 ml-2" />
                     حذف نهائي
-                  </Button>
+                  </LoadingButton>
 
                   <Button variant="outline" asChild>
                     <Link href={`/course/${course.id}`}>
@@ -823,7 +828,9 @@ export default function AdminDashboard() {
               {/* Action Buttons */}
               {activeTab === "pending" && (
                 <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
-                  <Button
+                  <LoadingButton
+                    loading={actionLoading === course.id}
+                    loadingText="جاري الاعتماد..."
                     onClick={async () => {
                       if (!confirm("هل أنت متأكد من اعتماد هذه الدورة؟"))
                         return;
@@ -848,14 +855,15 @@ export default function AdminDashboard() {
                         setActionLoading(null);
                       }
                     }}
-                    disabled={actionLoading === course.id}
                     className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
                   >
                     <CheckCircle className="h-4 w-4 ml-2" />
                     اعتماد الدورة
-                  </Button>
+                  </LoadingButton>
 
-                  <Button
+                  <LoadingButton
+                    loading={actionLoading === course.id}
+                    loadingText="جاري الرفض..."
                     onClick={async () => {
                       if (!confirm("هل أنت متأكد من رفض هذه الدورة؟")) return;
                       const reason = prompt("سبب الرفض (اختياري):");
@@ -882,13 +890,12 @@ export default function AdminDashboard() {
                         setActionLoading(null);
                       }
                     }}
-                    disabled={actionLoading === course.id}
                     variant="destructive"
                     className="disabled:opacity-50"
                   >
                     <XCircle className="h-4 w-4 ml-2" />
                     رفض الدورة
-                  </Button>
+                  </LoadingButton>
 
                   <Button variant="outline" asChild>
                     <Link href={`/course/${course.id}`}>
@@ -907,7 +914,9 @@ export default function AdminDashboard() {
 
               {activeTab === "approved" && (
                 <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
-                  <Button
+                  <LoadingButton
+                    loading={actionLoading === course.id}
+                    loadingText="جاري الرفض..."
                     onClick={async () => {
                       if (!confirm("هل أنت متأكد من رفض هذه الدورة؟")) return;
                       const reason = prompt("سبب الرفض (اختياري):");
@@ -935,13 +944,12 @@ export default function AdminDashboard() {
                         setActionLoading(null);
                       }
                     }}
-                    disabled={actionLoading === course.id}
                     variant="destructive"
                     className="disabled:opacity-50"
                   >
                     <XCircle className="h-4 w-4 ml-2" />
                     رفض الدورة
-                  </Button>
+                  </LoadingButton>
 
                   <Button variant="outline" asChild>
                     <Link href={`/course/${course.id}`}>
@@ -960,7 +968,9 @@ export default function AdminDashboard() {
 
               {activeTab === "rejected" && (
                 <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200">
-                  <Button
+                  <LoadingButton
+                    loading={actionLoading === course.id}
+                    loadingText="جاري الاعتماد..."
                     onClick={async () => {
                       if (!confirm("هل أنت متأكد من اعتماد هذه الدورة؟"))
                         return;
@@ -985,12 +995,11 @@ export default function AdminDashboard() {
                         setActionLoading(null);
                       }
                     }}
-                    disabled={actionLoading === course.id}
                     className="bg-green-600 hover:bg-green-700 text-white disabled:opacity-50"
                   >
                     <CheckCircle className="h-4 w-4 ml-2" />
                     اعتماد الدورة
-                  </Button>
+                  </LoadingButton>
 
                   <Button variant="outline" asChild>
                     <Link href={`/course/${course.id}`}>

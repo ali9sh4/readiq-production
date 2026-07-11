@@ -230,6 +230,13 @@ export default function ThumbNailUploader({
                             alt=""
                             loading="lazy"
                             className="absolute inset-0 h-full w-full object-cover hover:scale-105 transition-transform duration-300"
+                            onError={(e) => {
+                              // Broken storage URL / offline: placeholder
+                              // instead of the raw broken-image icon.
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src =
+                                "/images/course-placeholder.jpg";
+                            }}
                           />
                           {/* <Image
                             src={urlFormatter ? urlFormatter(image) : image.url}

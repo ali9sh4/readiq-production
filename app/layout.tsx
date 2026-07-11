@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import localFont from "next/font/local";
 import Navbar from "@/components/navbar";
 import Footer from "@/components/Footer";
+import NextTopLoader from "nextjs-toploader";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -134,6 +135,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
       >
         <AuthProvider>
+          {/* Instant visual feedback for every route transition — critical on
+              slow connections where navigation otherwise looks frozen. Brand
+              yellow so it reads over the sky-900 navbar. */}
+          <NextTopLoader
+            color="#FDD835"
+            height={3}
+            showSpinner={false}
+            shadow="0 0 10px #FDD835,0 0 5px #FDD835"
+          />
           <Navbar />
           <main className="min-h-screen">
             {children}
