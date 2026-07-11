@@ -29,6 +29,7 @@ import { useSearchParams } from "next/navigation";
 import FavoriteButton from "./favoritesButton";
 import { groupVideosBySection } from "@/lib/sectional/grouping";
 import { getCourseDisplayPrice } from "@/lib/sectional/displayPrice";
+import { formatAccessDurationArabic } from "@/lib/courses/accessDuration";
 import SectionalCoursePurchase from "@/components/sectional/SectionalCoursePurchase";
 import SectionalBuyButtons from "@/components/sectional/SectionalBuyButtons";
 
@@ -309,6 +310,25 @@ export default function CoursePreview({
                 )}
               </div>
 
+              {/* Access-duration badge — what the purchase grants, visible
+                  BEFORE buying. Amber = time-limited, emerald = lifetime. */}
+              <div
+                className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs sm:text-sm font-semibold border ${
+                  course.accessDurationDays
+                    ? "bg-amber-500/15 text-amber-300 border-amber-300/40"
+                    : "bg-emerald-500/15 text-emerald-300 border-emerald-300/40"
+                }`}
+              >
+                <Clock className="w-4 h-4 flex-shrink-0" />
+                <span>
+                  {course.accessDurationDays
+                    ? `الوصول لمدة ${formatAccessDurationArabic(
+                        course.accessDurationDays
+                      )} من تاريخ الشراء`
+                    : "وصول دائم"}
+                </span>
+              </div>
+
               {/* ========================================
                   ENROLLMENT CARD - MOBILE/TABLET ONLY
                   Shown on screens smaller than lg (< 1024px)
@@ -355,6 +375,7 @@ export default function CoursePreview({
                           price={actualPrice}
                           courseId={course.id}
                           isFree={course.price === 0}
+                          accessDurationDays={course.accessDurationDays ?? null}
                           fullWidth
                         />
                       </div>
@@ -501,6 +522,7 @@ export default function CoursePreview({
                             price={actualPrice}
                             courseId={course.id}
                             isFree={course.price === 0}
+                            accessDurationDays={course.accessDurationDays ?? null}
                             fullWidth
                           />
                         </div>
@@ -809,6 +831,25 @@ export default function CoursePreview({
                       {(course.studentsCount || 0).toLocaleString("en-US")}
                     </span>
                   </div>
+
+                  {/* Access Duration */}
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-gray-600 flex items-center gap-2 text-sm">
+                      <Clock className="w-4 h-4" />
+                      مدة الوصول
+                    </span>
+                    <span
+                      className={`font-semibold text-sm ${
+                        course.accessDurationDays
+                          ? "text-amber-700"
+                          : "text-emerald-700"
+                      }`}
+                    >
+                      {course.accessDurationDays
+                        ? formatAccessDurationArabic(course.accessDurationDays)
+                        : "دائم"}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Enroll Button */}
@@ -828,6 +869,7 @@ export default function CoursePreview({
                       price={actualPrice}
                       courseId={course.id}
                       isFree={course.price === 0}
+                      accessDurationDays={course.accessDurationDays ?? null}
                       fullWidth
                     />
                   )}

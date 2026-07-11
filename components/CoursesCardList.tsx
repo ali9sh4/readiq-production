@@ -6,8 +6,13 @@ import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Edit, Trash2, BookOpen, AlertCircle, Users } from "lucide-react";
+import { Edit, Trash2, BookOpen, AlertCircle, Users, Clock } from "lucide-react";
 import { Course, CourseResponse } from "@/types/types";
+import {
+  isAccessExpired,
+  remainingAccessDays,
+  formatRemainingDaysArabic,
+} from "@/lib/courses/accessDuration";
 import { checkUserEnrollments } from "@/app/actions/enrollment_action";
 import { useAuth } from "@/context/authContext";
 import FavoriteButton from "./favoritesButton";
@@ -21,6 +26,10 @@ interface CoursesCardListProps {
   data: CourseResponse;
   isAdminView?: boolean;
   onDeleteCourse?: (courseId: string) => void;
+  // Time-limited access: courseId -> the viewer's enrollment
+  // accessExpiresAt stamp. Provided by the دوراتي dashboard only; when
+  // present for a course, its card shows a remaining-days / expired chip.
+  accessExpiresAtByCourseId?: Record<string, string>;
 }
 
 // ===== UTILITY FUNCTIONS =====
@@ -87,6 +96,7 @@ const CourseCard = memo(
     isEnrolled = false,
     isFavorited = false,
     onFavoriteChange,
+    accessExpiresAt,
   }: {
     course: Course;
     isAdminView: boolean;
@@ -94,6 +104,8 @@ const CourseCard = memo(
     isEnrolled?: boolean;
     isFavorited?: boolean;
     onFavoriteChange?: (courseId: string, isFavorited: boolean) => void; // ✅ ADD THIS LINE
+    // Time-limited access: the viewer's enrollment stamp for this course.
+    accessExpiresAt?: string;
   }) => {
     const auth = useAuth();
     const [imageError, setImageError] = useState(false);
@@ -340,6 +352,25 @@ const CourseCard = memo(
             {instructor}
           </p>
 
+          {/* Time-limited access: remaining-days / expired chip (دوراتي) */}
+          {accessExpiresAt &&
+            (isAccessExpired(accessExpiresAt) ? (
+              <div className="flex items-center gap-1 md:gap-1.5 lg:gap-1 text-xs md:text-sm lg:text-xs font-semibold text-red-600">
+                <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-4 lg:h-4" />
+                <span>انتهت صلاحية الوصول — اضغط للتجديد</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1 md:gap-1.5 lg:gap-1 text-xs md:text-sm lg:text-xs font-semibold text-amber-700">
+                <Clock className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-4 lg:h-4" />
+                <span>
+                  تنتهي صلاحية الوصول خلال{" "}
+                  {formatRemainingDaysArabic(
+                    remainingAccessDays(accessExpiresAt)
+                  )}
+                </span>
+              </div>
+            ))}
+
           {/* Enrollment Count */}
           {course.enrollmentCount !== undefined &&
             course.enrollmentCount > 0 && (
@@ -386,6 +417,7 @@ export default function CoursesCardList({
   data,
   isAdminView = false,
   onDeleteCourse,
+  accessExpiresAtByCourseId,
 }: CoursesCardListProps) {
   const auth = useAuth();
   const [enrollmentStatus, setEnrollmentStatus] = useState<
@@ -465,6 +497,7 @@ export default function CoursesCardList({
             isEnrolled={enrollmentStatus[course.id]}
             isFavorited={favoriteStatus[course.id]}
             onFavoriteChange={handleFavoriteChange}
+            accessExpiresAt={accessExpiresAtByCourseId?.[course.id]}
           />
         ))}
       </div>

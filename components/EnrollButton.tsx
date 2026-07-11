@@ -6,7 +6,15 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { enrollInFreeCourse } from "@/app/actions/enrollment_action";
-import { Loader2, CheckCircle, ShoppingCart, LogIn } from "lucide-react";
+import {
+  Loader2,
+  CheckCircle,
+  ShoppingCart,
+  LogIn,
+  Clock,
+  RefreshCw,
+} from "lucide-react";
+import { formatAccessDurationArabic } from "@/lib/courses/accessDuration";
 import { useAuth } from "@/context/authContext";
 import PaymentSelector from "@/components/paymentSelector";
 import { generateProtectionKey } from "@/lib/purchaseProtection/protectionKey";
@@ -22,6 +30,14 @@ interface EnrollButtonProps {
   isFree: boolean;
   fullWidth?: boolean;
   price?: number;
+  // Time-limited access: the course's accessDurationDays. Drives the
+  // consent badge shown at the moment of purchase (button caption + the
+  // payment dialog). Unset/null = lifetime.
+  accessDurationDays?: number | null;
+  // Renewal mode: same purchase flow, but the enrollment is an expired
+  // (or expiring) time-limited one — the server re-stamps the same doc.
+  // Changes the label to تجديد الوصول and the success copy.
+  renewal?: boolean;
 }
 
 export default function EnrollButton({
@@ -30,6 +46,8 @@ export default function EnrollButton({
   isFree,
   fullWidth = false,
   price,
+  accessDurationDays = null,
+  renewal = false,
 }: EnrollButtonProps) {
   const [loading, setLoading] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -52,7 +70,7 @@ export default function EnrollButton({
         const result = await enrollInFreeCourse(courseId, token);
 
         if (result.success) {
-          toast.success("تم الاشتراك بنجاح!", {
+          toast.success(renewal ? "تم تجديد وصولك بنجاح!" : "تم الاشتراك بنجاح!", {
             description: "يمكنك الآن الوصول إلى جميع دروس الدورة",
           });
           router.refresh();
@@ -108,7 +126,9 @@ export default function EnrollButton({
           if (result.isDuplicate) {
             toast.info("لقد قمت بشراء هذه الدورة مسبقاً");
           } else {
-            toast.success("تم شراء الدورة بنجاح!");
+            toast.success(
+              renewal ? "تم تجديد وصولك بنجاح!" : "تم شراء الدورة بنجاح!"
+            );
           }
 
           setShowPaymentDialog(false);
@@ -196,6 +216,15 @@ export default function EnrollButton({
     }
   };
 
+  // Consent copy: what access this purchase grants. Shown next to the
+  // button AND inside the payment dialog — the page badge alone is not
+  // enough at the moment of payment.
+  const accessBadgeText = accessDurationDays
+    ? `الوصول لمدة ${formatAccessDurationArabic(
+        accessDurationDays
+      )} من تاريخ الشراء`
+    : "وصول دائم";
+
   return (
     <>
       <Button
@@ -214,7 +243,14 @@ export default function EnrollButton({
             جاري المعالجة...
           </>
         ) : auth?.user ? (
-          isFree ? (
+          renewal ? (
+            <>
+              <RefreshCw className="w-5 h-5 ml-2" />
+              {!isFree && price
+                ? `تجديد الوصول - ${price.toLocaleString("en-US")} IQD`
+                : "تجديد الوصول"}
+            </>
+          ) : isFree ? (
             <>
               <CheckCircle className="w-5 h-5 ml-2" />
               اشترك مجاناً
@@ -235,8 +271,29 @@ export default function EnrollButton({
         )}
       </Button>
 
+      {/* Consent line at the button (free enrollments have no dialog, so
+          this is their moment of informed consent). */}
+      {accessDurationDays ? (
+        <p className="mt-2 flex items-center justify-center gap-1.5 text-xs text-amber-700 font-medium text-center">
+          <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+          {accessBadgeText}
+        </p>
+      ) : null}
+
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
         <DialogContent className="sm:max-w-[425px]">
+          {/* Access-duration badge at the payment-confirm moment. */}
+          <div
+            dir="rtl"
+            className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold ${
+              accessDurationDays
+                ? "bg-amber-50 border-amber-200 text-amber-800"
+                : "bg-emerald-50 border-emerald-200 text-emerald-800"
+            }`}
+          >
+            <Clock className="w-4 h-4 flex-shrink-0" />
+            <span>{accessBadgeText}</span>
+          </div>
           <PaymentSelector
             price={price || 0}
             onSelect={handlePaymentSelect}

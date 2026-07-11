@@ -6,6 +6,10 @@ import { Course } from "@/types/types";
 export type EnrolledCoursesResult = {
   success: boolean;
   courses?: Course[];
+  // Time-limited access: courseId -> the enrollment's accessExpiresAt
+  // stamp. Only time-limited enrollments appear here; lifetime ones are
+  // absent. Drives the remaining-days counter on the دوراتي cards.
+  accessExpiresAtByCourseId?: Record<string, string>;
   stats?: {
     enrolledCoursesCount: number;
     createdCoursesCount: number;
@@ -42,6 +46,16 @@ export async function getEnrolledCoursesAndStatsByUid(
     const courseIds = enrollmentsSnapshot.docs.map(
       (doc) => doc.data().courseId
     );
+
+    // Time-limited access stamps, keyed by courseId (same snapshot — no
+    // extra reads).
+    const accessExpiresAtByCourseId: Record<string, string> = {};
+    enrollmentsSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      if (typeof data.accessExpiresAt === "string" && data.courseId) {
+        accessExpiresAtByCourseId[data.courseId] = data.accessExpiresAt;
+      }
+    });
 
     if (courseIds.length === 0) {
       return {
@@ -82,6 +96,7 @@ export async function getEnrolledCoursesAndStatsByUid(
     return {
       success: true,
       courses,
+      accessExpiresAtByCourseId,
       stats: {
         enrolledCoursesCount: enrollmentsSnapshot.size,
         createdCoursesCount: createdCoursesSnapshot.size,

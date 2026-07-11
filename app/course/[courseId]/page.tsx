@@ -8,8 +8,13 @@ import { getCurrentUser } from "@/data/auth-server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, BookOpen } from "lucide-react";
+import { AlertCircle, BookOpen, Clock, CheckCircle } from "lucide-react";
 import Link from "next/link";
+import EnrollButton from "@/components/EnrollButton";
+import {
+  isAccessExpired,
+  readAccessDurationDays,
+} from "@/lib/courses/accessDuration";
 import { Metadata } from "next";
 import { getCourseProgress } from "@/app/actions/progress_actions";
 import { getApprovedQaCounts } from "@/lib/qa/approvedCounts";
@@ -228,6 +233,15 @@ export default async function WatchCoursePage({
     );
   }
 
+  // Time-limited access: an expired enrollment still has status
+  // "completed", but the server gate (evaluateVideoAccess) now denies
+  // every video with ACCESS_EXPIRED. Render the renewal lock screen
+  // instead of a player full of raw 403s — this page-level check mirrors
+  // the server gate via the same isAccessExpired helper.
+  if (isEnrolled && isAccessExpired(enrollment?.accessExpiresAt)) {
+    return <AccessExpiredScreen course={cleanedCourse} />;
+  }
+
   if (isEnrolled) {
     return (
       <CoursePlayer
@@ -257,6 +271,54 @@ export default async function WatchCoursePage({
         enrollment={enrollment ?? null}
       />
     </>
+  );
+}
+
+// Time-limited access: renewal lock screen for an enrolled student whose
+// accessExpiresAt has passed. NOT a raw 403 — progress/cards/results are
+// intact on the same enrollment doc; renewing re-stamps it (wallet action
+// carve-out). EnrollButton in renewal mode drives the same purchase flow.
+function AccessExpiredScreen({ course }: { course: any }) {
+  const rawPrice = Number(course.price ?? 0);
+  const rawSale = Number(course.salePrice ?? 0);
+  const effectivePrice =
+    rawSale > 0 && rawSale < rawPrice ? rawSale : rawPrice;
+  const isFree = course.isFree === true || effectivePrice === 0;
+  const durationDays = readAccessDurationDays(course);
+
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center bg-gray-50"
+      dir="rtl"
+    >
+      <div className="text-center p-8 max-w-md w-full">
+        <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <Clock className="w-10 h-10 text-amber-600" />
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 mb-3">
+          انتهت صلاحية وصولك لهذه الدورة
+        </h1>
+        <p className="text-gray-600 mb-2">{course.title}</p>
+        <div className="flex items-center justify-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg p-3 mb-6 text-sm text-emerald-800">
+          <CheckCircle className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+          <span>تقدمك محفوظ — كل بطاقاتك ونتائجك تبقى كما هي</span>
+        </div>
+        <div className="mb-4">
+          <EnrollButton
+            courseId={course.id}
+            courseTitle={course.title}
+            isFree={isFree}
+            price={effectivePrice}
+            accessDurationDays={durationDays}
+            renewal
+            fullWidth
+          />
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/user_dashboard">العودة إلى دوراتي</Link>
+        </Button>
+      </div>
+    </div>
   );
 }
 

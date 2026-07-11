@@ -187,9 +187,9 @@ export default async function Home() {
                       </div>
                       <div className="rounded-2xl bg-sky-900/60 border border-sky-700/70 px-3 py-4 flex flex-col items-center gap-1.5">
                         <Clock className="h-6 w-6 text-emerald-300" />
-                        <p className="text-sm font-bold text-white">وصول دائم</p>
+                        <p className="text-sm font-bold text-white">وصول مرن</p>
                         <p className="text-[11px] text-sky-300">
-                          تعلّم في أي وقت يناسبك
+                          مدة الوصول موضحة لكل دورة
                         </p>
                       </div>
                     </div>

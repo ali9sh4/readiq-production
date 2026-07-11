@@ -250,11 +250,14 @@ export default function PackageCheckoutDialog({
               )}
             </div>
 
-            {/* Reassurance */}
-            <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-3 text-sm text-gray-700">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600" />
+            {/* Reassurance — the access-duration consent badge. Packages
+                may not contain time-limited courses (validated at package
+                creation/edit), so this is always lifetime access. */}
+            <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
               <span>
-                بشراء واحد تحصل على وصول كامل ودائم لكل دورات الحزمة.
+                <span className="font-bold">وصول دائم</span> — بشراء واحد
+                تحصل على وصول كامل ودائم لكل دورات الحزمة.
               </span>
             </div>
 

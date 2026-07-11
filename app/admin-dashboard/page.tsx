@@ -28,6 +28,7 @@ import {
 } from "@/app/actions/wallet_actions";
 import { Course, FirestoreTimestamp } from "@/types/types";
 import { getCourseDisplayPrice } from "@/lib/sectional/displayPrice";
+import { formatAccessDurationArabic } from "@/lib/courses/accessDuration";
 import type { TopupRequest } from "@/types/wallets";
 import Link from "next/link";
 import {
@@ -751,6 +752,24 @@ export default function AdminDashboard() {
                     <div>
                       <span className="font-medium text-gray-500">المدة:</span>
                       <p className="text-gray-900">{course.duration} ساعة</p>
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-500">
+                        مدة الوصول:
+                      </span>
+                      <p
+                        className={
+                          course.accessDurationDays
+                            ? "text-amber-700 font-semibold"
+                            : "text-gray-900"
+                        }
+                      >
+                        {course.accessDurationDays
+                          ? formatAccessDurationArabic(
+                              course.accessDurationDays
+                            )
+                          : "دائم"}
+                      </p>
                     </div>
                     <div>
                       <span className="font-medium text-gray-500">

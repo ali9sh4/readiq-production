@@ -90,12 +90,19 @@ export const BasicInfoSchema = z.object({
 // Time-limited access duration: 90 | 180 | 365 days, or null/absent for
 // lifetime. Server boundary re-validates in updateCoursePricing, which
 // also rejects the field on sectional courses and on courses inside a
-// package (mutual exclusivity).
+// package (mutual exclusivity). Kept as number().refine() rather than a
+// literal union so the inferred form type stays `number | null` — the
+// literal union breaks react-hook-form's resolver generics and mismatches
+// Course.accessDurationDays (a plain number).
 export const AccessDurationDaysSchema = z
-  .union([z.literal(90), z.literal(180), z.literal(365)], {
+  .number()
+  .nullable()
+  // `: boolean` matters: without it TS 5.5+ infers a type predicate from
+  // this expression and zod narrows the output type back to the literal
+  // union, breaking the form generics.
+  .refine((v): boolean => v === null || v === 90 || v === 180 || v === 365, {
     message: "مدة الوصول يجب أن تكون ٩٠ أو ١٨٠ أو ٣٦٥ يومًا",
-  })
-  .nullable();
+  });
 
 // Pricing Schema
 export const PricingSchema = z

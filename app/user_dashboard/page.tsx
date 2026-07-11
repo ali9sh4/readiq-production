@@ -26,6 +26,9 @@ export default async function DashboardPage() {
   let enrolledCourses: Course[] = [];
   let favorites: Course[] = [];
   let stats: DashboardStats | null = null;
+  // Time-limited access: courseId -> accessExpiresAt for the remaining-days
+  // counter on دوراتي cards.
+  let accessExpiresAtByCourseId: Record<string, string> = {};
   // Instructor phone nudge: an instructor (course creator) with no phone on
   // file should be prompted to add one. Both signals come from this same
   // verified read so the client banner needs no extra round-trip.
@@ -48,6 +51,7 @@ export default async function DashboardPage() {
     if (enrolledData.success && enrolledData.courses) {
       enrolledCourses = enrolledData.courses;
       stats = enrolledData.stats ?? null;
+      accessExpiresAtByCourseId = enrolledData.accessExpiresAtByCourseId ?? {};
     }
 
     if (favoritesResult.success && favoritesResult.favorites) {
@@ -74,6 +78,7 @@ export default async function DashboardPage() {
       initialEnrolledCourses={enrolledCourses}
       initialFavorites={favorites}
       initialStats={stats}
+      accessExpiresAtByCourseId={accessExpiresAtByCourseId}
       needsPhone={needsPhone}
       showPhonePrompt={showPhonePrompt}
     />

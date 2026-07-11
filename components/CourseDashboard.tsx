@@ -164,6 +164,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
     defaultValues: {
       price: defaultValues.price || 0,
       salePrice: defaultValues.salePrice || undefined,
+      accessDurationDays: defaultValues.accessDurationDays ?? null,
     },
   });
 
@@ -183,6 +184,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
     pricingForm.reset({
       price: defaultValues.price || 0,
       salePrice: defaultValues.salePrice || undefined,
+      accessDurationDays: defaultValues.accessDurationDays ?? null,
     });
     setCourse(defaultValues);
     form.reset({
@@ -256,6 +258,7 @@ export default function CourseDashboard({ defaultValues }: Props) {
           ...prev,
           price: data.price,
           salePrice: data.salePrice,
+          accessDurationDays: data.accessDurationDays ?? undefined,
         }));
         toast.success("تم الحفظ  السعر بنجاح");
       } else {
@@ -1093,6 +1096,63 @@ export default function CourseDashboard({ defaultValues }: Props) {
                               <FormMessage className="text-sm" />
                             </FormItem>
                           )}
+                        />
+                        <FormField
+                          control={pricingForm.control}
+                          name="accessDurationDays"
+                          render={({ field }) => {
+                            // Time-limited × sectional are mutually
+                            // exclusive — the server rejects it; don't
+                            // offer it in the UI either.
+                            const isSectionalCourse =
+                              course.purchaseMode === "sectional" ||
+                              (course.sections?.length ?? 0) > 0;
+                            return (
+                              <FormItem>
+                                <FormLabel className="text-right block text-base">
+                                  مدة الوصول
+                                </FormLabel>
+                                <Select
+                                  dir="rtl"
+                                  disabled={isSectionalCourse}
+                                  value={
+                                    field.value == null
+                                      ? "lifetime"
+                                      : String(field.value)
+                                  }
+                                  onValueChange={(v) =>
+                                    field.onChange(
+                                      v === "lifetime" ? null : Number(v)
+                                    )
+                                  }
+                                >
+                                  <FormControl>
+                                    <SelectTrigger className="h-11 md:h-12 text-base">
+                                      <SelectValue placeholder="دائم" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="lifetime">
+                                      دائم
+                                    </SelectItem>
+                                    <SelectItem value="90">٩٠ يوم</SelectItem>
+                                    <SelectItem value="180">
+                                      ١٨٠ يوم
+                                    </SelectItem>
+                                    <SelectItem value="365">
+                                      ٣٦٥ يوم
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormDescription className="text-right text-sm">
+                                  {isSectionalCourse
+                                    ? "غير متاح للدورات المُباعة بالأقسام"
+                                    : "اختر مدة أطول بـ ٣–٦ مرات من الوقت المتوقع لإكمال الدورة. التغيير يسري على المشتريات الجديدة فقط — من اشترى سابقًا يحتفظ بمدته."}
+                                </FormDescription>
+                                <FormMessage className="text-sm" />
+                              </FormItem>
+                            );
+                          }}
                         />
                         <Button
                           type="submit"

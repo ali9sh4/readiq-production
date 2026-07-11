@@ -28,6 +28,9 @@ interface DashboardHomeProps {
   initialEnrolledCourses: Course[];
   initialFavorites: any[];
   initialStats: DashboardStats | null;
+  // Time-limited access: courseId -> accessExpiresAt stamp for the
+  // remaining-days counter on the enrolled-courses cards.
+  accessExpiresAtByCourseId?: Record<string, string>;
   // True when the logged-in user is a course creator with no phone on file.
   needsPhone?: boolean;
   // True when the post-login phone+consent capture card should be shown (user
@@ -39,6 +42,7 @@ export default function DashboardHome({
   initialEnrolledCourses,
   initialFavorites,
   initialStats,
+  accessExpiresAtByCourseId,
   needsPhone = false,
   showPhonePrompt = false,
 }: DashboardHomeProps) {
@@ -103,6 +107,7 @@ export default function DashboardHome({
                 hasMore: false,
                 nextCursor: null,
               }}
+              accessExpiresAtByCourseId={accessExpiresAtByCourseId}
             />
           </div>
         </div>
