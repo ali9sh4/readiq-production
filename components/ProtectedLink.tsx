@@ -19,16 +19,19 @@ export default function ProtectedLink({
   className,
   onClick,
 }: ProtectedLinkProps) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const router = useRouter();
 
   const handleClick = (e: React.MouseEvent) => {
-    if (!user) {
+    // While Firebase Auth is still resolving, don't flash a false "please
+    // log in" — let the navigation proceed and middleware arbitrate.
+    if (!user && !isLoading) {
       e.preventDefault();
       toast.error("يرجى تسجيل الدخول أولاً", {
         description: "سيتم توجيهك لصفحة تسجيل الدخول",
       });
-      router.push("/login");
+      // Preserve the intended destination so sign-in returns the user here.
+      router.push(`/login?redirect=${encodeURIComponent(href)}`);
       return;
     }
     

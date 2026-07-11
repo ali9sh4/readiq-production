@@ -9,6 +9,15 @@ const JWKS = createRemoteJWKSet(
   )
 );
 
+// Only same-site absolute paths may be used as post-login destinations
+// (mirrors sanitizeRedirectPath in context/authContext.tsx).
+function safeRedirectPath(raw: string | null): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/api"))
+    return null;
+  return raw;
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -26,7 +35,12 @@ export async function middleware(request: NextRequest) {
           issuer: `https://securetoken.google.com/readiq-1f109`,
           audience: "readiq-1f109",
         });
-        return NextResponse.redirect(new URL("/", request.url));
+        // Already signed in — honor the intended destination instead of
+        // dumping the user on the homepage.
+        const destination =
+          safeRedirectPath(request.nextUrl.searchParams.get("redirect")) ??
+          "/";
+        return NextResponse.redirect(new URL(destination, request.url));
       } catch (error) {
         console.log(error);
         return NextResponse.next();
@@ -40,7 +54,11 @@ export async function middleware(request: NextRequest) {
     const token = cookie.get("firebaseAuthToken")?.value;
 
     if (!token) {
-      return NextResponse.redirect(new URL("/", request.url));
+      // Send to login with the destination preserved, so completing sign-in
+      // returns the user to the page they actually asked for.
+      return NextResponse.redirect(
+        new URL(`/login?redirect=${encodeURIComponent(pathname)}`, request.url)
+      );
     }
     const decodedToken = decodeJwt(token);
 
@@ -75,7 +93,11 @@ export async function middleware(request: NextRequest) {
     return response;
   } catch (error) {
     console.log(error);
-    return NextResponse.redirect(new URL("/", request.url));
+    // Invalid/expired token on a protected page — same as no token: go to
+    // login and keep the destination.
+    return NextResponse.redirect(
+      new URL(`/login?redirect=${encodeURIComponent(pathname)}`, request.url)
+    );
   }
 }
 

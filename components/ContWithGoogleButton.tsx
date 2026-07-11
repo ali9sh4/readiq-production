@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react"; // ✅ Add this
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -37,8 +35,8 @@ const GoogleIcon = () => (
 );
 
 export default function ContWithGoogleButton() {
-  const router = useRouter();
-  const { handleGoogleSignIn, error } = useAuth();
+  const { handleGoogleSignIn, error, signInPhase, redirectResolving } =
+    useAuth();
   const [isButtonLoading, setIsButtonLoading] = useState(false); // ✅ Local state
 
   const handleLogin = async () => {
@@ -50,11 +48,7 @@ export default function ContWithGoogleButton() {
         toast.success("مرحباً بك! 👋", {
           description: "تم تسجيل الدخول بنجاح",
         });
-        router.push("/");
-      } else if (error) {
-        toast.error("فشل تسجيل الدخول", {
-          description: error,
-        });
+        // Navigation happens in authContext (honors ?redirect= destination).
       }
     } catch (error) {
     } finally {
@@ -62,18 +56,26 @@ export default function ContWithGoogleButton() {
     }
   };
 
+  // Phase-specific label so a slow network never looks frozen.
+  const pendingLabel = redirectResolving
+    ? "جاري إكمال تسجيل الدخول..."
+    : signInPhase === "redirect-fallback"
+    ? "النافذة المنبثقة لا تستجيب، جاري التحويل لطريقة بديلة..."
+    : "جاري تسجيل الدخول...";
+  const isPending = isButtonLoading || redirectResolving;
+
   return (
     <div>
       <Button
         onClick={handleLogin}
-        disabled={isButtonLoading} // ✅ Use local state
+        disabled={isPending}
         variant="outline"
         className="w-full h-12 text-base font-medium gap-3 hover:bg-muted/50 transition-colors"
       >
-        {isButtonLoading ? ( // ✅ Use local state
+        {isPending ? (
           <>
             <Loader2 className="h-5 w-5 animate-spin" />
-            <span>جاري تسجيل الدخول...</span>
+            <span>{pendingLabel}</span>
           </>
         ) : (
           <>
@@ -82,6 +84,25 @@ export default function ContWithGoogleButton() {
           </>
         )}
       </Button>
+
+      {/* Failed sign-in must never be a silent dead end: show the error and
+          offer a retry, which restarts the popup→redirect fallback chain. */}
+      {error && !isPending && (
+        <div
+          className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-center"
+          role="alert"
+        >
+          <p className="text-sm text-red-700 mb-2">{error}</p>
+          <Button
+            onClick={handleLogin}
+            variant="outline"
+            size="sm"
+            className="border-red-300 text-red-700 hover:bg-red-100"
+          >
+            حاول مرة أخرى
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
