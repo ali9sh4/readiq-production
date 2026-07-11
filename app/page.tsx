@@ -111,6 +111,33 @@ export default async function Home() {
                   </NavigationButton>
                 </div>
 
+                {/* Get the app */}
+                <div className="flex justify-center md:justify-start pt-1">
+                  <a
+                    href="https://play.google.com/store/apps/details?id=com.readiq.app"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-3 rounded-xl bg-gray-950 hover:bg-black border border-white/25 px-5 h-12 shadow-lg hover:shadow-xl transition-all"
+                  >
+                    <svg
+                      viewBox="0 0 512 512"
+                      className="h-6 w-6 text-white"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1zM47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0zm425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8zM104.6 499l280.8-161.2-60.1-60.1L104.6 499z" />
+                    </svg>
+                    <span className="flex flex-col text-right leading-tight">
+                      <span className="text-[11px] text-gray-300">
+                        حمّل التطبيق الآن من
+                      </span>
+                      <span className="text-base font-bold text-white" dir="ltr">
+                        Google Play
+                      </span>
+                    </span>
+                  </a>
+                </div>
+
                 {/* Trust row */}
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 md:gap-6 pt-4 text-sm text-white drop-shadow-md md:drop-shadow-xl">
                   <div className="flex items-center gap-1.5">
