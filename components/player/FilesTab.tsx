@@ -9,7 +9,7 @@ import {
   viewCourseFile,
 } from "@/app/actions/upload_File_actions";
 import { CourseFile } from "@/components/fileUplaodtoR2";
-import { formatFileSize, getFileIcon } from "./shared";
+import { formatFileSize } from "./shared";
 
 export default function FilesTab({
   currentVideoFiles,
@@ -24,9 +24,9 @@ export default function FilesTab({
     <div className="p-4 lg:p-8">
       <div className="max-w-5xl mx-auto">
         {currentVideoFiles.length === 0 && generalFiles.length === 0 ? (
-          <div className="text-center py-12 lg:py-16 bg-white rounded-xl lg:rounded-2xl shadow-md border border-gray-100">
-            <div className="bg-gray-50 rounded-full w-16 h-16 lg:w-24 lg:h-24 flex items-center justify-center mx-auto mb-3 lg:mb-4">
-              <FileText className="w-8 h-8 lg:w-12 lg:h-12 text-gray-400" />
+          <div className="text-center py-12 lg:py-16 bg-white rounded-md border border-gray-200">
+            <div className="bg-navy-100 rounded-full w-16 h-16 lg:w-24 lg:h-24 flex items-center justify-center mx-auto mb-3 lg:mb-4">
+              <FileText className="w-8 h-8 lg:w-12 lg:h-12 text-navy-900" />
             </div>
             <p className="text-gray-500 text-base lg:text-lg font-medium">
               لا توجد ملفات متاحة لهذا الدرس
@@ -39,8 +39,8 @@ export default function FilesTab({
           <div className="space-y-4 lg:space-y-6">
             {currentVideoFiles.length > 0 && (
               <div>
-                <h4 className="text-xs lg:text-sm font-semibold text-gray-700 mb-3 lg:mb-4 flex items-center gap-2">
-                  <div className="w-1 h-4 lg:h-5 bg-gradient-to-b from-blue-600 to-indigo-600 rounded-full"></div>
+                <h4 className="text-xs lg:text-sm font-bold text-navy-950 mb-3 lg:mb-4 flex items-center gap-2">
+                  <span className="w-1 h-4 lg:h-5 bg-brand-accent rounded-full"></span>
                   ملفات هذا الدرس
                 </h4>
                 <div className="space-y-2 lg:space-y-3">
@@ -53,8 +53,8 @@ export default function FilesTab({
 
             {generalFiles.length > 0 && (
               <div>
-                <h4 className="text-xs lg:text-sm font-semibold text-gray-700 mb-3 lg:mb-4 flex items-center gap-2">
-                  <div className="w-1 h-4 lg:h-5 bg-gradient-to-b from-purple-600 to-pink-600 rounded-full"></div>
+                <h4 className="text-xs lg:text-sm font-bold text-navy-950 mb-3 lg:mb-4 flex items-center gap-2">
+                  <span className="w-1 h-4 lg:h-5 bg-brand-accent rounded-full"></span>
                   ملفات عامة للدورة
                 </h4>
                 <div className="space-y-2 lg:space-y-3">
@@ -155,14 +155,16 @@ function FileCard({ file, courseId }: { file: CourseFile; courseId: string }) {
 
   return (
     <>
-      <div className="flex items-center justify-between p-3 lg:p-4 bg-white rounded-lg hover:bg-gray-50 transition-colors border border-gray-200">
+      <div className="flex items-center justify-between p-3 lg:p-4 bg-white rounded-md hover:bg-surface transition-colors border border-gray-200">
         <div className="flex items-center gap-2 lg:gap-3 min-w-0 flex-1">
-          {getFileIcon(file.originalName)}
+          <span className="flex-shrink-0 w-10 h-10 rounded-md bg-navy-100 flex items-center justify-center">
+            <FileText className="w-5 h-5 text-navy-900" />
+          </span>
           <div className="min-w-0">
             <p className="font-medium text-sm lg:text-base truncate">
               {file.originalName}
             </p>
-            <p className="text-xs lg:text-sm text-gray-500">
+            <p dir="ltr" className="text-xs lg:text-sm font-mono text-gray-500 text-start">
               {formatFileSize(file.size)}
             </p>
           </div>
@@ -171,7 +173,7 @@ function FileCard({ file, courseId }: { file: CourseFile; courseId: string }) {
           <button
             onClick={() => viewFile(file.filename, file.originalName)}
             disabled={isViewing || isDownloading}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition disabled:opacity-50 touch-manipulation"
+            className="p-2 text-navy-800 hover:bg-navy-100 rounded-md transition disabled:opacity-50 touch-manipulation"
             title="عرض"
           >
             {isViewing ? (
@@ -183,7 +185,7 @@ function FileCard({ file, courseId }: { file: CourseFile; courseId: string }) {
           <button
             onClick={() => downloadFile(file.filename, file.originalName)}
             disabled={isViewing || isDownloading}
-            className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition disabled:opacity-50 touch-manipulation"
+            className="p-2 text-navy-800 hover:bg-navy-100 rounded-md transition disabled:opacity-50 touch-manipulation"
             title="تحميل"
           >
             {isDownloading ? (
@@ -196,8 +198,8 @@ function FileCard({ file, courseId }: { file: CourseFile; courseId: string }) {
       </div>
 
       {error && (
-        <div className="mt-2 p-2 lg:p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-xs lg:text-sm text-red-600">{error}</p>
+        <div className="mt-2 p-2 lg:p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+          <p className="text-xs lg:text-sm text-destructive">{error}</p>
         </div>
       )}
     </>

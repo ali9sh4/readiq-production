@@ -70,27 +70,29 @@ export default function SectionalLock({
             )?.title ?? "هذا القسم";
 
           return (
-            <div className="aspect-video flex flex-col items-center justify-center text-center p-4 lg:p-6 bg-gradient-to-br from-gray-100 to-gray-200">
-              <Lock className="w-12 h-12 lg:w-16 lg:h-16 mb-4 text-gray-400" />
-              <h3 className="text-lg lg:text-xl font-semibold mb-2 text-gray-900">
+            <div className="aspect-video w-full flex flex-col items-center justify-center text-center p-4 lg:p-6 bg-surface">
+              <span className="mb-4 flex items-center justify-center w-14 h-14 rounded-full bg-brand-yellow-50 border border-brand-yellow-200">
+                <Lock className="w-6 h-6 text-navy-900" />
+              </span>
+              <h3 className="text-lg lg:text-xl font-extrabold mb-2 text-navy-950">
                 {headline}
               </h3>
               {reason === "sectional-not-owned" && (
-                <p className="text-sm text-gray-500 mb-1">{sectionTitle}</p>
+                <p className="text-sm font-bold text-navy-900 mb-1">
+                  {sectionTitle}
+                </p>
               )}
               <p className="text-sm lg:text-base text-gray-600 mb-4">{body}</p>
               {reason === "not-enrolled" && (
                 <Link href={`/courses/${course.id}`}>
-                  <Button className="bg-blue-600 hover:bg-blue-700" size="sm">
-                    التسجيل في الدورة
-                  </Button>
+                  <Button size="sm">التسجيل في الدورة</Button>
                 </Link>
               )}
               {reason === "sectional-not-owned" && currentVideo.sectionId && (
                 <div className="flex flex-col sm:flex-row gap-2 items-center">
                   <Button
                     onClick={() => setLockedDialogMode("single")}
-                    className="bg-blue-600 hover:bg-blue-700 gap-2"
+                    className="gap-2"
                     size="sm"
                   >
                     <ShoppingCart className="w-4 h-4" />
@@ -99,7 +101,7 @@ export default function SectionalLock({
                   <button
                     type="button"
                     onClick={() => setLockedDialogMode("cumulative")}
-                    className="text-xs text-blue-700 hover:text-blue-900 underline"
+                    className="text-xs text-navy-800 hover:text-navy-950 underline"
                   >
                     أو اشترِ حتى هنا
                   </button>

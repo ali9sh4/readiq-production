@@ -82,13 +82,26 @@ export default function CoursePlayer({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(),
   );
-  const [activeTab, setActiveTab] = useState<PlayerTab>("sections");
+  // Desktop default is the overview panel; the mount effect below flips
+  // mobile to the "الدروس" tab (SSR renders desktop markup, so the initial
+  // state must match it — a breakpoint check in the initializer would
+  // hydrate-mismatch on phones).
+  const [activeTab, setActiveTab] = useState<PlayerTab>("overview");
+  useEffect(() => {
+    if (window.innerWidth < 1024) {
+      setActiveTab("lessons");
+    }
+  }, []);
   const [completedVideos, setCompletedVideos] = useState<Set<string>>(
     new Set(),
   );
 
   const [videoError, setVideoError] = useState<string | null>(null);
   const [markingComplete, setMarkingComplete] = useState(false);
+
+  // Focus mode: collapsing the sidebar gives the stage the full width.
+  // Deliberately session-only state — nothing is persisted.
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // Phase 3 slice 4: lets the practice deck pause the main lesson player
   // when a clip jump starts, so two audio streams never overlap. The
@@ -119,7 +132,7 @@ export default function CoursePlayer({
 
   const currentVideo = allVideos[currentVideoIndex];
 
-  // Section label for the lesson-title bar above the player. The synthetic
+  // Section label for the header crumb + lesson meta line. The synthetic
   // unassigned bucket carries a real display title too ("دروس الدورة").
   const currentSectionTitle = useMemo(() => {
     if (!currentVideo) return null;
@@ -163,13 +176,19 @@ export default function CoursePlayer({
     ownedSectionIds,
   ]);
 
+  // Fallback target when a conditional tab disappears: the lessons tab on
+  // mobile (its default), the overview panel on desktop.
+  const fallbackTab = useCallback((): PlayerTab => {
+    return window.innerWidth < 1024 ? "lessons" : "overview";
+  }, []);
+
   // Leaving a practice-eligible lesson while its tab is active would strand
   // the tab content — fall back to the default tab.
   useEffect(() => {
     if (activeTab === "practice" && !canPractice) {
-      setActiveTab("sections");
+      setActiveTab(fallbackTab());
     }
-  }, [activeTab, canPractice]);
+  }, [activeTab, canPractice, fallbackTab]);
 
   // Phase 3 slice 4: the deck mounts on first practice-tab activation for
   // the current lesson and then stays mounted (hidden) across tab switches,
@@ -214,24 +233,26 @@ export default function CoursePlayer({
   // Files-tab conditional (mirrors the التدريب pattern): render the tab
   // only when this lesson's panel would show something — its own files or
   // course-general files (the same sum the tab label displays). Where
-  // files load is unchanged; empty lessons keep التدريب as the focus.
+  // files load is unchanged; empty lessons keep the other tabs as focus.
   const hasLessonFiles = currentVideoFiles.length + generalFiles.length > 0;
 
   // Same fallback as the practice tab: landing on a lesson where the
   // active tab no longer exists bounces to the default tab.
   useEffect(() => {
     if (activeTab === "resources" && !hasLessonFiles) {
-      setActiveTab("sections");
+      setActiveTab(fallbackTab());
     }
-  }, [activeTab, hasLessonFiles]);
+  }, [activeTab, hasLessonFiles, fallbackTab]);
+
+  const completedCount = useMemo(
+    () => allVideos.filter((v) => completedVideos.has(v.videoId)).length,
+    [completedVideos, allVideos],
+  );
 
   const progress = useMemo(() => {
     if (!allVideos.length) return 0;
-    const completed = allVideos.filter((v) =>
-      completedVideos.has(v.videoId),
-    ).length;
-    return Math.round((completed / allVideos.length) * 100);
-  }, [completedVideos, allVideos]);
+    return Math.round((completedCount / allVideos.length) * 100);
+  }, [completedCount, allVideos]);
 
   useEffect(() => {
     if (!currentVideo) return;
@@ -317,15 +338,15 @@ export default function CoursePlayer({
   const handleSelectVideo = useCallback((videoIndex: number) => {
     setCurrentVideoIndex(videoIndex);
     setVideoError(null);
-    // Switch to sections tab on mobile when video is selected
+    // Keep the lessons tab active on mobile when a video is selected
     if (window.innerWidth < 1024) {
-      setActiveTab("sections");
+      setActiveTab("lessons");
     }
   }, []);
 
   const isSectionalCourse = course.purchaseMode === "sectional";
 
-  // Sections list (reusable for both sidebar and mobile tab)
+  // Sections list (reusable for both the sidebar and the mobile tab)
   const sectionsList = (
     <SectionsContent
       groupedSections={groupedSections}
@@ -345,54 +366,78 @@ export default function CoursePlayer({
   );
 
   return (
-    <div className="flex min-h-screen bg-gray-50 text-gray-900" dir="rtl">
-      {/* Desktop Sidebar - Hidden on mobile/tablet */}
-      <LessonSidebar progress={progress}>{sectionsList}</LessonSidebar>
+    <div className="min-h-screen flex flex-col bg-navy-950" dir="rtl">
+      <PlayerHeader
+        course={course}
+        currentSectionTitle={currentSectionTitle}
+        progress={progress}
+        completedCount={completedCount}
+        totalVideos={allVideos.length}
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={() => setSidebarOpen((open) => !open)}
+      />
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar */}
-        <PlayerHeader course={course} />
+      {/* Theater grid: the stage is the inline-start column, the sidebar the
+          350px inline-end column. Collapsing the sidebar (focus mode) drops
+          the grid to one column. */}
+      <div
+        className={`flex-1 lg:grid lg:items-stretch ${
+          sidebarOpen ? "lg:grid-cols-[minmax(0,1fr)_350px]" : ""
+        }`}
+      >
+        {/* Main Content */}
+        <main className="flex flex-col min-w-0 bg-surface min-h-[calc(100vh-3.5rem)]">
+          <VideoStage
+            course={course}
+            currentVideo={currentVideo}
+            currentVideoIndex={currentVideoIndex}
+            totalVideos={allVideos.length}
+            currentSectionTitle={currentSectionTitle}
+            canAccessVideo={canAccessVideo}
+            isEnrolled={isEnrolled}
+            accessScope={accessScope}
+            ownedSectionIds={ownedSectionIds}
+            enrollment={enrollment}
+            completedVideos={completedVideos}
+            videoError={videoError}
+            setVideoError={setVideoError}
+            markingComplete={markingComplete}
+            onMarkComplete={handleMarkComplete}
+            handleVideoComplete={handleVideoComplete}
+            goToNextVideo={goToNextVideo}
+            goToPreviousVideo={goToPreviousVideo}
+            mainPlayerRef={mainPlayerRef}
+            onMainPlay={() => setMainPlaySignal((n) => n + 1)}
+          />
 
-        <VideoStage
-          course={course}
-          currentVideo={currentVideo}
-          currentVideoIndex={currentVideoIndex}
-          totalVideos={allVideos.length}
-          currentSectionTitle={currentSectionTitle}
-          canAccessVideo={canAccessVideo}
-          isEnrolled={isEnrolled}
-          accessScope={accessScope}
-          ownedSectionIds={ownedSectionIds}
-          enrollment={enrollment}
-          completedVideos={completedVideos}
-          videoError={videoError}
-          setVideoError={setVideoError}
-          markingComplete={markingComplete}
-          onMarkComplete={handleMarkComplete}
-          handleVideoComplete={handleVideoComplete}
-          goToNextVideo={goToNextVideo}
-          goToPreviousVideo={goToPreviousVideo}
-          mainPlayerRef={mainPlayerRef}
-          onMainPlay={() => setMainPlaySignal((n) => n + 1)}
-        />
+          <PlayerTabs
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            hasLessonFiles={hasLessonFiles}
+            currentVideoFiles={currentVideoFiles}
+            generalFiles={generalFiles}
+            canPractice={canPractice}
+            approvedQaCount={approvedQaCount}
+            practiceSessionVideoId={practiceSessionVideoId}
+            currentVideo={currentVideo}
+            course={course}
+            mainPlayerRef={mainPlayerRef}
+            mainPlaySignal={mainPlaySignal}
+            sectionsList={sectionsList}
+          />
+        </main>
 
-        <PlayerTabs
-          activeTab={activeTab}
-          setActiveTab={setActiveTab}
-          hasLessonFiles={hasLessonFiles}
-          currentVideoFiles={currentVideoFiles}
-          generalFiles={generalFiles}
-          canPractice={canPractice}
-          approvedQaCount={approvedQaCount}
-          practiceSessionVideoId={practiceSessionVideoId}
-          currentVideo={currentVideo}
-          course={course}
-          mainPlayerRef={mainPlayerRef}
-          mainPlaySignal={mainPlaySignal}
-          sectionsList={sectionsList}
-        />
-      </main>
+        {/* Sidebar — desktop only; mobile reads the lessons tab instead. */}
+        {sidebarOpen && (
+          <LessonSidebar
+            progress={progress}
+            totalVideos={allVideos.length}
+            totalDuration={totalDuration}
+          >
+            {sectionsList}
+          </LessonSidebar>
+        )}
+      </div>
     </div>
   );
 }

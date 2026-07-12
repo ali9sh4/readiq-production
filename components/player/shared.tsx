@@ -1,6 +1,5 @@
 import type { ComponentRef } from "react";
 import type MuxPlayer from "@mux/mux-player-react";
-import { FileText } from "lucide-react";
 
 // Sentinel React key used for the synthetic "unassigned" bucket, since
 // GroupedSection.sectionId is `null` there.
@@ -29,15 +28,20 @@ export function formatFileSize(bytes: number) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
-export function getFileIcon(filename: string) {
-  const ext = filename.toLowerCase().split(".").pop() || "";
-  const colors: Record<string, string> = {
-    pdf: "text-red-400",
-    doc: "text-blue-400",
-    docx: "text-blue-400",
-    zip: "text-purple-400",
-    mp4: "text-green-400",
-    mp3: "text-orange-400",
-  };
-  return <FileText className={`w-5 h-5 ${colors[ext] || "text-gray-600"}`} />;
+// Arabic-Indic digits for UI counters (e.g. "٣/٧" in the sidebar).
+export function toArabicIndic(n: number) {
+  return n.toString().replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[Number(d)]);
+}
+
+// "N ساعات" / "N دقيقة" label for the sidebar header meta line.
+export function formatTotalDuration(totalSeconds: number) {
+  if (!totalSeconds) return "٠ دقيقة";
+  const hours = totalSeconds / 3600;
+  if (hours >= 1) {
+    const rounded = Math.round(hours * 10) / 10;
+    return `${toArabicIndic(Math.floor(rounded))}${
+      rounded % 1 ? "٫٥" : ""
+    } ساعات`;
+  }
+  return `${toArabicIndic(Math.max(1, Math.round(totalSeconds / 60)))} دقيقة`;
 }

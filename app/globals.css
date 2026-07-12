@@ -77,6 +77,8 @@
   --color-success-light: var(--success-light);
   --color-warning: var(--warning);
   --color-brand-accent: var(--brand-accent);
+  --color-brand-yellow-50: var(--brand-yellow-50);
+  --color-brand-yellow-200: var(--brand-yellow-200);
   --color-zaincash: var(--zaincash);
   --color-navy-950: var(--navy-950);
   --color-navy-900: var(--navy-900);
@@ -93,6 +95,8 @@
   --navy-900: #0c4a6e;
   --navy-800: #155e82;
   --navy-100: #dfeef7;
+  --brand-yellow-50: #fffbe8;
+  --brand-yellow-200: #f3e29a;
   --brand-yellow-400: #fdd835;
   --brand-yellow-500: #f5c400;
   --success-600: #059669;

@@ -5,11 +5,10 @@ import React, { useState, useEffect, type RefObject } from "react";
 import MuxPlayer from "@mux/mux-player-react";
 import {
   AlertCircle,
+  Check,
   CheckCircle,
   ChevronLeft,
   ChevronRight,
-  Clock,
-  List,
   Loader2,
   PlayCircle,
 } from "lucide-react";
@@ -225,60 +224,23 @@ export default function VideoStage({
 
   return (
     <>
-      {/* Current Lesson Title — above the player on all breakpoints. The
-          full title wraps freely (no truncation); the in-player Mux title
-          overlay is disabled below so this is the single source. */}
-      {currentVideo && (
-        <div className="bg-white px-3 lg:px-6 py-2.5 lg:py-3 border-b border-gray-200">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h2 className="text-sm lg:text-lg font-bold text-gray-900 leading-snug break-words">
-                {currentVideo.title}
-              </h2>
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
-                <span>
-                  الدرس {currentVideoIndex + 1} من {totalVideos}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {formatDuration(currentVideo.duration)}
-                </span>
-                {currentSectionTitle && (
-                  <span className="flex items-center gap-1 min-w-0">
-                    <List className="w-3 h-3 flex-shrink-0" />
-                    <span className="truncate max-w-[240px]">
-                      {currentSectionTitle}
-                    </span>
-                  </span>
-                )}
-              </div>
-            </div>
-            {completedVideos.has(currentVideo.videoId) && (
-              <span className="flex-shrink-0 inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
-                <CheckCircle className="w-3.5 h-3.5" />
-                مكتمل
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Video Player */}
+      {/* Video zone — dark theater surface. Mux element and watermark are
+          untouched; only the shell around them is styled. */}
       <div
-        className="relative bg-black flex justify-center items-center min-h-[250px] sm:min-h-[400px]"
+        className="relative bg-navy-950 flex justify-center items-center min-h-[250px] sm:min-h-[400px]"
         {...videoContainerProps}
       >
         {/* Loading State */}
         {isLoadingVideo && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-            <Loader2 className="w-8 h-8 lg:w-12 lg:h-12 text-blue-500 animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center bg-navy-950/60 z-10">
+            <Loader2 className="w-8 h-8 lg:w-12 lg:h-12 text-brand-accent animate-spin" />
           </div>
         )}
 
         {/* Error State */}
         {videoError && (
           <div className="aspect-video flex flex-col items-center justify-center text-center p-4 lg:p-6">
-            <AlertCircle className="w-12 h-12 lg:w-16 lg:h-16 text-red-500 mb-4" />
+            <AlertCircle className="w-12 h-12 lg:w-16 lg:h-16 text-destructive mb-4" />
             <p className="text-white mb-4 text-sm lg:text-base">{videoError}</p>
             <Button
               onClick={() => {
@@ -287,7 +249,7 @@ export default function VideoStage({
               }}
               variant="outline"
               size="sm"
-              className="text-white border-white hover:bg-white/10"
+              className="bg-transparent text-white border-white/40 hover:bg-white/10 hover:text-white"
             >
               إعادة المحاولة
             </Button>
@@ -300,7 +262,7 @@ export default function VideoStage({
             {/* playbackId is the canonical Mux asset reference for this file. */}
             {!currentVideo.playbackId ? (
               <div className="aspect-video flex flex-col items-center justify-center text-center p-4 lg:p-6">
-                <AlertCircle className="w-12 h-12 lg:w-16 lg:h-16 text-yellow-500 mb-4" />
+                <AlertCircle className="w-12 h-12 lg:w-16 lg:h-16 text-warning mb-4" />
                 <h3 className="text-lg lg:text-xl font-semibold text-white mb-2">
                   معرف الفيديو مفقود
                 </h3>
@@ -311,14 +273,14 @@ export default function VideoStage({
             ) : (
               <div className="relative w-full aspect-video video-container">
                 {tokenLoading && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
-                    <Loader2 className="w-8 h-8 lg:w-12 lg:h-12 text-blue-500 animate-spin" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-navy-950 z-10">
+                    <Loader2 className="w-8 h-8 lg:w-12 lg:h-12 text-brand-accent animate-spin" />
                   </div>
                 )}
 
                 {tokenError && !tokenLoading && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 lg:p-6 bg-black z-10">
-                    <AlertCircle className="w-12 h-12 lg:w-16 lg:h-16 text-red-500 mb-4" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 lg:p-6 bg-navy-950 z-10">
+                    <AlertCircle className="w-12 h-12 lg:w-16 lg:h-16 text-destructive mb-4" />
                     <p className="text-white mb-4 text-sm lg:text-base">
                       {tokenError}
                     </p>
@@ -326,7 +288,7 @@ export default function VideoStage({
                       onClick={() => setTokenRetryCount((n) => n + 1)}
                       variant="outline"
                       size="sm"
-                      className="text-white border-white hover:bg-white/10"
+                      className="bg-transparent text-white border-white/40 hover:bg-white/10 hover:text-white"
                     >
                       إعادة المحاولة
                     </Button>
@@ -348,7 +310,7 @@ export default function VideoStage({
                       video_title: currentVideo.title,
                     }}
                     // Hide the player's built-in title overlay — it clips
-                    // long titles to one line. The lesson-title bar above
+                    // long titles to one line. The lesson-title bar below
                     // the player is the visible title; metadata keeps
                     // feeding Mux Data.
                     style={{ "--title-display": "none" }}
@@ -384,65 +346,89 @@ export default function VideoStage({
         {/* No Video Selected */}
         {!currentVideo && (
           <div className="aspect-video flex flex-col items-center justify-center text-center p-4 lg:p-6">
-            <PlayCircle className="w-12 h-12 lg:w-16 lg:h-16 mb-4 text-gray-400" />
-            <p className="text-sm lg:text-base text-gray-400">
+            <PlayCircle className="w-12 h-12 lg:w-16 lg:h-16 mb-4 text-navy-100/50" />
+            <p className="text-sm lg:text-base text-navy-100/70">
               اختر درساً من القائمة لبدء المشاهدة
             </p>
           </div>
         )}
       </div>
 
-      {/* Video Controls */}
-      {currentVideo && canAccessVideo && (
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0 px-3 lg:px-6 py-3 lg:py-4 bg-white/80 backdrop-blur-xl border-b border-gray-200/50">
-          <div className="flex items-center justify-center gap-2">
-            <Button
-              onClick={goToPreviousVideo}
-              disabled={currentVideoIndex === 0}
-              variant="outline"
-              size="sm"
-              className="hover:bg-blue-50 hover:border-blue-300 transition-all flex-1 sm:flex-none"
-            >
-              <ChevronRight className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
-              <span className="text-xs lg:text-sm">السابق</span>
-            </Button>
-            <Button
-              onClick={goToNextVideo}
-              disabled={currentVideoIndex === totalVideos - 1}
-              variant="outline"
-              size="sm"
-              className="hover:bg-blue-50 hover:border-blue-300 transition-all flex-1 sm:flex-none"
-            >
-              <span className="text-xs lg:text-sm">التالي</span>
-              <ChevronLeft className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
-            </Button>
+      {/* Lesson header row — title, meta, and the actions row, on the light
+          stage surface below the video. */}
+      {currentVideo && (
+        <div className="bg-surface border-b border-gray-200 px-3 lg:px-6 py-3 lg:py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-base lg:text-2xl font-extrabold text-navy-950 leading-snug break-words">
+                {currentVideo.title}
+              </h2>
+              <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs lg:text-sm text-gray-500">
+                <span>
+                  الدرس {currentVideoIndex + 1} من {totalVideos}
+                </span>
+                {currentSectionTitle && (
+                  <>
+                    <span aria-hidden="true">·</span>
+                    <span className="truncate max-w-[240px]">
+                      {currentSectionTitle}
+                    </span>
+                  </>
+                )}
+                <span aria-hidden="true">·</span>
+                <span dir="ltr" className="font-mono">
+                  {formatDuration(currentVideo.duration)}
+                </span>
+              </p>
+            </div>
+            {completedVideos.has(currentVideo.videoId) && (
+              <span className="flex-shrink-0 inline-flex items-center gap-1 rounded-full bg-success/10 px-2 py-1 text-xs font-medium text-success">
+                <CheckCircle className="w-3.5 h-3.5" />
+                مكتمل
+              </span>
+            )}
           </div>
-          {!completedVideos.has(currentVideo.videoId) && (
-            <Button
-              onClick={onMarkComplete}
-              disabled={markingComplete}
-              size="sm"
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-md hover:shadow-lg transition-all w-full sm:w-auto"
-            >
-              {markingComplete ? (
-                <Loader2 className="w-3.5 h-3.5 lg:w-4 lg:h-4 animate-spin ml-2" />
-              ) : (
-                <CheckCircle className="w-3.5 h-3.5 lg:w-4 lg:h-4 ml-2" />
-              )}
-              <span className="text-xs lg:text-sm">تحديد كمكتمل</span>
-            </Button>
-          )}
-        </div>
-      )}
 
-      {/* Lesson description — the title itself now lives in the bar above
-          the player (all breakpoints), so this only renders when there is
-          a description to show. */}
-      {currentVideo?.description && (
-        <div className="bg-white border-b border-gray-200 p-4 lg:px-6">
-          <p className="text-sm text-gray-600 leading-relaxed break-words">
-            {currentVideo.description}
-          </p>
+          {/* Actions row */}
+          {canAccessVideo && (
+            <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <Button
+                onClick={goToPreviousVideo}
+                disabled={currentVideoIndex === 0}
+                variant="outline"
+                size="sm"
+                className="gap-1 bg-white border-gray-200 text-navy-950 hover:bg-navy-100/50"
+              >
+                <ChevronRight className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+                <span className="text-xs lg:text-sm">السابق</span>
+              </Button>
+              {!completedVideos.has(currentVideo.videoId) && (
+                <Button
+                  onClick={onMarkComplete}
+                  disabled={markingComplete}
+                  size="sm"
+                  className="gap-2 bg-success hover:bg-success/90 text-white sm:flex-none flex-1"
+                >
+                  {markingComplete ? (
+                    <Loader2 className="w-3.5 h-3.5 lg:w-4 lg:h-4 animate-spin" />
+                  ) : (
+                    <Check className="w-3.5 h-3.5 lg:w-4 lg:h-4" strokeWidth={3} />
+                  )}
+                  <span className="text-xs lg:text-sm">أكملتُ الدرس</span>
+                </Button>
+              )}
+              <Button
+                onClick={goToNextVideo}
+                disabled={currentVideoIndex === totalVideos - 1}
+                variant="outline"
+                size="sm"
+                className="gap-1 bg-white border-gray-200 text-navy-950 hover:bg-navy-100/50"
+              >
+                <span className="text-xs lg:text-sm">التالي</span>
+                <ChevronLeft className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
