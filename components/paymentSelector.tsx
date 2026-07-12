@@ -63,7 +63,7 @@ export default function PaymentSelector({
 
   return (
     <div
-      className="font-zain space-y-3 sm:space-y-4 p-2 sm:p-0  rounded-lg"
+      className="space-y-3 sm:space-y-4 p-2 sm:p-0 rounded-lg"
       dir="rtl"
     >
       {" "}

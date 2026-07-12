@@ -78,32 +78,14 @@ export const metadata: Metadata = {
   },
 };
 
+// Q2c/Q9 verdict: register only the weights the UI uses (400/700/800/900).
+// Files stay on disk in public/fonts/ — registration trim only.
 const zainFont = localFont({
   src: [
-    {
-      path: "../public/fonts/Zain_ExtraLight.otf",
-      weight: "200",
-      style: "normal",
-    },
-    {
-      path: "../public/fonts/Zain_Light.otf",
-      weight: "300",
-      style: "normal",
-    },
-    {
-      path: "../public/fonts/Zain_LightItalic.otf",
-      weight: "300",
-      style: "italic",
-    },
     {
       path: "../public/fonts/Zain_Regular.otf",
       weight: "400",
       style: "normal",
-    },
-    {
-      path: "../public/fonts/Zain_Italic.otf",
-      weight: "400",
-      style: "italic",
     },
     {
       path: "../public/fonts/Zain_Bold.otf",
@@ -121,8 +103,13 @@ const zainFont = localFont({
       style: "normal",
     },
   ],
-  variable: "--font-zain",
+  // Runtime var is deliberately NOT named --font-zain: the @theme key in
+  // globals.css uses that name, and matching names create a self-referential
+  // CSS variable cycle that silently disables the font.
+  variable: "--font-zain-local",
 });
+
+const BRAND_YELLOW = "#FDD835"; /* = --brand-yellow-400 in app/globals.css */
 
 export default function RootLayout({
   children,
@@ -130,19 +117,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ar" dir="rtl" className={zainFont.variable}>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
-      >
+    <html
+      lang="ar"
+      dir="rtl"
+      className={`${zainFont.variable} ${geistSans.variable} ${geistMono.variable}`}
+    >
+      <body className="antialiased bg-gray-50">
         <AuthProvider>
           {/* Instant visual feedback for every route transition — critical on
               slow connections where navigation otherwise looks frozen. Brand
               yellow so it reads over the sky-900 navbar. */}
           <NextTopLoader
-            color="#FDD835"
+            color={BRAND_YELLOW}
             height={3}
             showSpinner={false}
-            shadow="0 0 10px #FDD835,0 0 5px #FDD835"
+            shadow={`0 0 10px ${BRAND_YELLOW},0 0 5px ${BRAND_YELLOW}`}
           />
           <Navbar />
           <main className="min-h-screen">
