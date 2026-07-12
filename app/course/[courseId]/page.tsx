@@ -3,7 +3,7 @@ import { getEnrollmentDetails } from "@/app/actions/enrollment_action";
 import { checkIfFavorited } from "@/app/actions/favorites_actions";
 import { getCourseById } from "@/app/course-upload/action";
 import CoursePreview from "@/components/CoursePreview";
-import CoursePlayer from "@/components/ui/CoursePlayer";
+import CoursePlayer from "@/components/player/CoursePlayer";
 import { getCurrentUser } from "@/data/auth-server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
