@@ -5,6 +5,40 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-07-12 — Time-limited access complete (Checkpoints 2–3); flashcard AI disclosure
+
+### Time-limited access — Checkpoint 2, web UI (`69540bf`)
+Every student-facing surface shows what access a purchase grants
+(Arabic-Indic numerals): CoursePreview hero badge + sidebar row, consent
+badge in the payment dialog AND under the enroll button (free courses have
+no dialog), دوراتي remaining-days/expired chips, expired-player renewal lock
+screen (`AccessExpiredScreen` in `app/course/[courseId]/page.tsx`, wired to
+the wallet renewal carve-out), instructor مدة الوصول dropdown in the pricing
+tab (disabled for sectional), admin review card cell, homepage "وصول دائم"
+claim reworded. Formatters live with the stamp helpers in
+`lib/courses/accessDuration.ts`. Gotcha recorded in
+`validation/courseSchema.ts`: TS 5.5 infers a type predicate from a zod
+`.refine()` callback and narrows the form type — the explicit `: boolean`
+return annotation is load-bearing.
+
+### Time-limited access — Checkpoint 3, mobile contract (`1da21be`)
+`GET /api/me/enrollments` items carry `accessExpiresAt` (always present,
+`null` = lifetime); `GET /api/courses/:id` carries `accessDurationDays`.
+Lock-recipe step 3 (expired → whole course locked, `ACCESS_EXPIRED`) and the
+in-app renewal matrix on `POST /api/enrollments` documented in
+`MOBILE_API_MIGRATION.md` (same commit). ZainCash direct-purchase renewal
+deliberately unsupported — the init route's pending-overwrite flow would
+downgrade a completed enrollment (renewal is wallet/free only).
+
+### Flashcard AI-generated disclosure note (`3d80087`)
+`components/study/QaStudyDeck.tsx` shows a disclosure that deck content is
+AI-generated (owner-authored).
+
+### MCQ transform audit (`38bc04a`, docs-only)
+`docs/AUDIT_MCQ_TRANSFORM.md` + owner decisions; E1 spec closed. Pipeline
+implementation in progress (uncommitted `scripts/pipeline/mcq.mts` at the
+time of this entry).
+
 ## 2026-07-11 — Login resilience, app-wide loading feedback; Checkpoint 1 deployed
 
 Pushed to `origin/main` as `0f5711d..930d4fb` (Vercel deploy includes all of

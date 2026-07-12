@@ -72,6 +72,12 @@ video lock / access predicate on web or mobile.
 
   ```
   if video.isFreePreview            -> UNLOCKED   # checked first, before any sectional logic
+  if enrollment.accessExpiresAt has passed
+                                    -> LOCKED     # time-limited access (2026-07): ACCESS_EXPIRED.
+                                                  # Unset = lifetime. Only occurs on full-mode
+                                                  # courses (sectional × time-limited are mutually
+                                                  # exclusive). Helper: isAccessExpired() in
+                                                  # lib/courses/accessDuration.ts
   if course.purchaseMode !== 'sectional'
       if userEnrolled               -> UNLOCKED
       else                          -> LOCKED
