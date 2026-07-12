@@ -89,6 +89,14 @@ export async function GET(req: NextRequest) {
             ? (e.ownedSectionIds as string[])
             : [],
           totalSpent: typeof e.totalSpent === "number" ? e.totalSpent : 0,
+          // Time-limited access: ISO timestamp after which the playback /
+          // study gate denies with ACCESS_EXPIRED. `null` (not omitted) =
+          // lifetime access — the key is always present, matching the
+          // sourcePackage convention. The mobile client lock must mirror
+          // the server gate: expired stamp -> treat the course as locked
+          // with a renew affordance, exactly like the web lock screen.
+          accessExpiresAt:
+            typeof e.accessExpiresAt === "string" ? e.accessExpiresAt : null,
           // `null` (not omitted) for non-package enrollments so mobile can
           // rely on the key always being present.
           sourcePackage: e.sourcePackageId

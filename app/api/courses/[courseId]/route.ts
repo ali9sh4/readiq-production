@@ -73,6 +73,13 @@ export async function GET(
       fullCoursePrice:
         typeof c.fullCoursePrice === "number" ? c.fullCoursePrice : null,
       sections: Array.isArray(c.sections) ? c.sections : [],
+      // Time-limited access: days of access a purchase grants (90|180|365).
+      // `null` = lifetime. Mutually exclusive with purchaseMode "sectional".
+      // Purchases snapshot this onto the enrollment as `accessExpiresAt`
+      // (see GET /api/me/enrollments) — later edits to this field never
+      // affect existing enrollments.
+      accessDurationDays:
+        typeof c.accessDurationDays === "number" ? c.accessDurationDays : null,
       rating: c.rating ?? null,
       ratingCount: c.ratingCount ?? null,
       enrollmentCount: c.enrollmentCount ?? 0,
