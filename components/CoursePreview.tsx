@@ -687,7 +687,10 @@ export default function CoursePreview({
                                     </div>
                                     <div className="flex-1 text-right min-w-0">
                                       <div className="flex items-center gap-2">
-                                        <p className="font-medium text-gray-900 text-xs sm:text-sm truncate">
+                                        <p
+                                          title={video.title}
+                                          className="font-medium text-gray-900 text-xs sm:text-sm leading-snug line-clamp-2 break-words"
+                                        >
                                           {video.title}
                                         </p>
                                         {isPreview && (

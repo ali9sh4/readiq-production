@@ -219,6 +219,16 @@ export default function CoursePlayer({
 
   const currentVideo = allVideos[currentVideoIndex];
 
+  // Section label for the lesson-title bar above the player. The synthetic
+  // unassigned bucket carries a real display title too ("دروس الدورة").
+  const currentSectionTitle = useMemo(() => {
+    if (!currentVideo) return null;
+    const group = groupedSections.find((g) =>
+      g.videos.some((v) => v.videoId === currentVideo.videoId),
+    );
+    return group?.title ?? null;
+  }, [currentVideo, groupedSections]);
+
   const canAccessVideo = useMemo(() => {
     if (!currentVideo) return false;
     return !isVideoLockedForUser(currentVideo, course, {
@@ -567,9 +577,9 @@ export default function CoursePlayer({
               onClick={() => toggleSection(sectionKey)}
               className="w-full p-3 lg:p-4 flex items-center justify-between bg-white hover:bg-gray-50 transition-colors"
             >
-              <div className="flex items-center gap-2 lg:gap-3">
+              <div className="flex items-center gap-2 lg:gap-3 min-w-0 flex-1">
                 <div
-                  className={`p-1.5 lg:p-2 rounded-lg ${
+                  className={`flex-shrink-0 p-1.5 lg:p-2 rounded-lg ${
                     isExpanded ? "bg-blue-100" : "bg-gray-100"
                   } transition-colors`}
                 >
@@ -579,8 +589,11 @@ export default function CoursePlayer({
                     <ChevronLeft className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-gray-600" />
                   )}
                 </div>
-                <div className="text-right">
-                  <h3 className="font-semibold text-sm lg:text-base text-gray-900">
+                <div className="text-right min-w-0">
+                  <h3
+                    title={group.title}
+                    className="font-semibold text-sm lg:text-base text-gray-900 leading-snug line-clamp-2 break-words"
+                  >
                     {group.title}
                   </h3>
                   <p className="text-xs text-gray-500">
@@ -589,7 +602,7 @@ export default function CoursePlayer({
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 <div className="w-10 h-10 lg:w-12 lg:h-12 relative">
                   <svg className="w-10 h-10 lg:w-12 lg:h-12 transform -rotate-90">
                     <circle
@@ -710,7 +723,8 @@ export default function CoursePlayer({
 
                       <div className="flex-1 text-right min-w-0">
                         <p
-                          className={`font-medium text-sm lg:text-base truncate ${
+                          title={video.title}
+                          className={`font-medium text-sm lg:text-base leading-snug line-clamp-2 break-words ${
                             isActive ? "text-blue-900" : "text-gray-900"
                           }`}
                         >
@@ -785,7 +799,10 @@ export default function CoursePlayer({
         <header className="flex items-center justify-between px-3 lg:px-4 py-2 lg:py-3 bg-white border-b border-gray-200">
           <div className="flex items-center gap-2 lg:gap-3 min-w-0 flex-1">
             <div className="min-w-0">
-              <h1 className="text-sm lg:text-lg font-semibold truncate">
+              <h1
+                title={course.title}
+                className="text-sm lg:text-lg font-semibold truncate"
+              >
                 {course.title}
               </h1>
               <p className="hidden sm:inline-flex mt-1 items-center gap-1.5 px-2 py-1 rounded-full bg-gradient-to-r from-slate-100 to-gray-100 border border-slate-200 text-slate-700 text-xs font-medium max-w-fit">
@@ -807,6 +824,44 @@ export default function CoursePlayer({
             </Button>
           </Link>
         </header>
+
+        {/* Current Lesson Title — above the player on all breakpoints. The
+            full title wraps freely (no truncation); the in-player Mux title
+            overlay is disabled below so this is the single source. */}
+        {currentVideo && (
+          <div className="bg-white px-3 lg:px-6 py-2.5 lg:py-3 border-b border-gray-200">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <h2 className="text-sm lg:text-lg font-bold text-gray-900 leading-snug break-words">
+                  {currentVideo.title}
+                </h2>
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                  <span>
+                    الدرس {currentVideoIndex + 1} من {allVideos.length}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {formatDuration(currentVideo.duration)}
+                  </span>
+                  {currentSectionTitle && (
+                    <span className="flex items-center gap-1 min-w-0">
+                      <List className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate max-w-[240px]">
+                        {currentSectionTitle}
+                      </span>
+                    </span>
+                  )}
+                </div>
+              </div>
+              {completedVideos.has(currentVideo.videoId) && (
+                <span className="flex-shrink-0 inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  مكتمل
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Video Player */}
         <div
@@ -894,6 +949,11 @@ export default function CoursePlayer({
                         video_id: currentVideo.videoId,
                         video_title: currentVideo.title,
                       }}
+                      // Hide the player's built-in title overlay — it clips
+                      // long titles to one line. The lesson-title bar above
+                      // the player is the visible title; metadata keeps
+                      // feeding Mux Data.
+                      style={{ "--title-display": "none" }}
                       className="w-full h-full aspect-video bg-black"
                       onPlay={() => setMainPlaySignal((n) => n + 1)}
                       onEnded={() => {
@@ -1049,17 +1109,16 @@ export default function CoursePlayer({
           </div>
         )}
 
-        {/* Video Title & Description - Mobile/Tablet Only */}
-        <div className="lg:hidden bg-white border-b border-gray-200 p-4">
-          <h3 className="text-base font-bold mb-2 text-gray-900">
-            {currentVideo?.title || "عنوان الدرس"}
-          </h3>
-          {currentVideo?.description && (
-            <p className="text-sm text-gray-600 leading-relaxed">
+        {/* Lesson description — the title itself now lives in the bar above
+            the player (all breakpoints), so this only renders when there is
+            a description to show. */}
+        {currentVideo?.description && (
+          <div className="bg-white border-b border-gray-200 p-4 lg:px-6">
+            <p className="text-sm text-gray-600 leading-relaxed break-words">
               {currentVideo.description}
             </p>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Tabs - Different layout for mobile vs desktop */}
         <div className="bg-white/80 backdrop-blur-xl flex border-b border-gray-200/50">
