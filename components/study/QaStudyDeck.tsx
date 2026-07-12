@@ -34,6 +34,7 @@ import {
   Loader2,
   Play,
   RefreshCw,
+  Sparkles,
   X,
 } from "lucide-react";
 import { useAuth } from "@/context/authContext";
@@ -469,6 +470,12 @@ export default function QaStudyDeck({
           </Button>
         </div>
       )}
+
+      {/* AI-content disclosure — always visible under the deck. */}
+      <p className="flex items-center justify-center gap-1.5 text-center text-xs text-gray-400">
+        <Sparkles className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        هذه البطاقات مولّدة بالذكاء الاصطناعي وقد تحتوي على أخطاء — عند الشك ارجع إلى شرح المحاضرة.
+      </p>
     </div>
   );
 }
