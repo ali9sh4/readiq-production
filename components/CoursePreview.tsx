@@ -260,16 +260,19 @@ export default function CoursePreview({
                 </p>
               )}
 
-              {/* Stats Row */}
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 lg:gap-6 text-xs sm:text-sm">
-                {/* Students */}
-                <div className="flex items-center gap-1.5 sm:gap-2 text-gray-300">
-                  <Users className="w-4 h-4 sm:w-5 sm:h-5" />
-                  <span>
-                    {(course.studentsCount || 0).toLocaleString("en-US")} طالب
-                  </span>
+              {/* Stats Row — student count hidden below 100 so small
+                  courses don't look unpopular */}
+              {(course.studentsCount || 0) >= 100 && (
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 lg:gap-6 text-xs sm:text-sm">
+                  {/* Students */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-gray-300">
+                    <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span>
+                      {(course.studentsCount || 0).toLocaleString("en-US")} طالب
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Instructor */}
               {course.instructorName && (
@@ -824,16 +827,19 @@ export default function CoursePreview({
                     </span>
                   </div>
 
-                  {/* Students Count */}
-                  <div className="flex items-center justify-between py-1">
-                    <span className="text-gray-600 flex items-center gap-2 text-sm">
-                      <Users className="w-4 h-4" />
-                      الطلاب
-                    </span>
-                    <span className="font-semibold text-gray-900 text-sm">
-                      {(course.studentsCount || 0).toLocaleString("en-US")}
-                    </span>
-                  </div>
+                  {/* Students Count — hidden below 100 so small courses
+                      don't look unpopular */}
+                  {(course.studentsCount || 0) >= 100 && (
+                    <div className="flex items-center justify-between py-1">
+                      <span className="text-gray-600 flex items-center gap-2 text-sm">
+                        <Users className="w-4 h-4" />
+                        الطلاب
+                      </span>
+                      <span className="font-semibold text-gray-900 text-sm">
+                        {(course.studentsCount || 0).toLocaleString("en-US")}
+                      </span>
+                    </div>
+                  )}
 
                   {/* Access Duration */}
                   <div className="flex items-center justify-between py-1">

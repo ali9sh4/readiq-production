@@ -371,9 +371,10 @@ const CourseCard = memo(
               </div>
             ))}
 
-          {/* Enrollment Count */}
+          {/* Enrollment Count — hidden below 100 so small courses don't
+              look unpopular (admin card above keeps the real number) */}
           {course.enrollmentCount !== undefined &&
-            course.enrollmentCount > 0 && (
+            course.enrollmentCount >= 100 && (
               <div className="flex items-center gap-1 md:gap-1.5 lg:gap-1 text-xs md:text-sm lg:text-xs text-gray-600">
                 <Users className="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-4 lg:h-4" />
                 <span>{course.enrollmentCount} طالب مسجل</span>
