@@ -5,7 +5,18 @@ import { initializeFirestore, getFirestore } from "firebase/firestore"; // Impor
 
 const firebaseConfig = {
   apiKey: "AIzaSyCmjn2Enchkf-BH3-dBuBfCJPKPDnqfeT8",
-  authDomain: "readiq-1f109.firebaseapp.com",
+  // Production authDomain is the app's own origin so the Google sign-in
+  // round-trip stays first-party — Safari ITP (and Chrome's storage
+  // partitioning) drops cross-site auth state on the default firebaseapp.com
+  // domain, which broke sign-in on iOS. The /__/auth/* and /__/firebase/*
+  // helper pages only exist on Firebase Hosting, so next.config.ts proxies
+  // them through; this line and those rewrites must ship in the same deploy.
+  // Dev keeps the Firebase domain: localhost signs in via the popup path
+  // (see authContext), which works cross-origin.
+  authDomain:
+    process.env.NODE_ENV === "production"
+      ? "www.rubiktech.org"
+      : "readiq-1f109.firebaseapp.com",
   projectId: "readiq-1f109",
   storageBucket: "readiq-1f109.firebasestorage.app",
   messagingSenderId: "338348007207",

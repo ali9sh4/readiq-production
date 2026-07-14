@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react"; // ✅ Add this
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -39,6 +39,18 @@ export default function ContWithGoogleButton() {
     useAuth();
   const [isButtonLoading, setIsButtonLoading] = useState(false); // ✅ Local state
 
+  // bfcache: hitting Back from the Google page restores this page with
+  // isButtonLoading frozen true (stuck spinner) and no effects re-run —
+  // pageshow(persisted) is the only signal. The context's own listener
+  // resets its phase/stamp; this one covers the local button state.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) setIsButtonLoading(false);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
   const handleLogin = async () => {
     setIsButtonLoading(true); // ✅ Set local loading
     try {
@@ -59,8 +71,8 @@ export default function ContWithGoogleButton() {
   // Phase-specific label so a slow network never looks frozen.
   const pendingLabel = redirectResolving
     ? "جاري إكمال تسجيل الدخول..."
-    : signInPhase === "redirect-fallback"
-    ? "النافذة المنبثقة لا تستجيب، جاري التحويل لطريقة بديلة..."
+    : signInPhase === "redirect"
+    ? "جاري التحويل إلى صفحة جوجل..."
     : "جاري تسجيل الدخول...";
   const isPending = isButtonLoading || redirectResolving;
 
@@ -86,7 +98,7 @@ export default function ContWithGoogleButton() {
       </Button>
 
       {/* Failed sign-in must never be a silent dead end: show the error and
-          offer a retry, which restarts the popup→redirect fallback chain. */}
+          offer a retry (redirect flow in prod, popup in dev). */}
       {error && !isPending && (
         <div
           className="mt-4 rounded-lg border border-red-200 bg-red-50 p-3 text-center"

@@ -15,10 +15,16 @@ import { removeToken, setToken } from "./actions";
 import { createOrUpdateUser } from "@/lib/services/userService";
 import { useRouter } from "next/navigation"; // ✅ Changed from "next/router"
 
-// Sign-in resilience for flaky networks: if the popup makes no progress within
-// this window we assume it's dead (blocked popup, blackholed Google endpoints)
-// and fall back to the full-page redirect flow. Users actively typing in a
-// healthy popup normally finish the account-chooser step well under this.
+// Dev-only popup path: on localhost the redirect round-trip is cross-site
+// (authDomain stays readiq-1f109.firebaseapp.com in dev — see
+// firebase/client.ts), so storage-partitioning browsers drop the auth state
+// mid-flight. The popup works fine on localhost. Production goes straight to
+// the redirect flow, which with the same-origin authDomain + /__/auth
+// rewrites is fully first-party. Compiled out of prod builds.
+const USE_DEV_POPUP = process.env.NODE_ENV === "development";
+// Dev popup liveness: if the popup makes no progress within this window we
+// assume it's dead (blocked popup, blackholed Google endpoints) and surface
+// an error instead of hanging the button forever.
 const POPUP_TIMEOUT_MS = 15000;
 // Set before signInWithRedirect so that, on return, we know a redirect flow is
 // pending and can show a "completing sign-in" state while getRedirectResult runs.
@@ -39,7 +45,7 @@ export const sanitizeRedirectPath = (
   return raw;
 };
 
-export type SignInPhase = "idle" | "popup" | "redirect-fallback";
+export type SignInPhase = "idle" | "popup" | "redirect";
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -74,10 +80,28 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setIsClient(true);
   }, []);
 
-  // Returning from the signInWithRedirect fallback: resolve the redirect
-  // result so errors surface instead of leaving the user on a silent login
-  // page. Only runs when we initiated a redirect (flag set below), so normal
-  // page loads pay nothing.
+  // bfcache: hitting Back from the Google page restores this page from the
+  // back/forward cache with React state FROZEN (redirect phase → stuck
+  // spinner) and no effects re-run — pageshow(persisted) is the only signal.
+  // Reset the busy states and drop the abandoned pending stamp: a real return
+  // trip is always a fresh navigation, never a bfcache restore, so a stamp
+  // seen during a persisted restore can only fund a pointless
+  // getRedirectResult on the next load.
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      sessionStorage.removeItem(REDIRECT_PENDING_KEY);
+      setSignInPhase("idle");
+      setRedirectResolving(false);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
+
+  // Returning from the signInWithRedirect flow (the production sign-in
+  // path): resolve the redirect result so errors surface instead of leaving
+  // the user on a silent login page. Only runs when we initiated a redirect
+  // (flag set below), so normal page loads pay nothing.
   useEffect(() => {
     if (!isClient) return;
     if (sessionStorage.getItem(REDIRECT_PENDING_KEY) !== "1") return;
@@ -157,7 +181,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         // ✅ Leave the auth pages after sign-in. Honor the intended
         // destination (?redirect= from ProtectedLink/middleware, or the
-        // sessionStorage copy that survives the signInWithRedirect fallback).
+        // sessionStorage copy that survives the signInWithRedirect flow).
         // This runs after setToken above, so the cookie middleware checks is
         // already in place when we land on a protected route.
         const pathname = window.location.pathname;
@@ -182,17 +206,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => unsubscribe();
   }, [isClient, router]);
 
-  // Fallback for when the popup flow is unusable (blocked popup, blackholed
-  // Google endpoints, timeout): full-page signInWithRedirect. Stashes the
+  // Full-page signInWithRedirect — the production sign-in path. Stashes the
   // intended destination first because the round-trip replaces the page.
-  const fallbackToRedirect = async (
+  const startRedirectSignIn = async (
     provider: GoogleAuthProvider
   ): Promise<boolean> => {
-    // The timed-out popup may still have completed in the background —
-    // don't yank the page away from an already-signed-in user.
+    // Don't yank the page away from an already-signed-in user.
     if (auth.currentUser) return true;
 
-    setSignInPhase("redirect-fallback");
+    setSignInPhase("redirect");
     try {
       const params = new URLSearchParams(window.location.search);
       const destination = sanitizeRedirectPath(params.get("redirect"));
@@ -219,6 +241,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       prompt: "select_account",
     });
 
+    if (!USE_DEV_POPUP) {
+      // Production: redirect-only. The popup is structurally broken for a
+      // chunk of real traffic — Safari ITP blocks the cross-origin popup
+      // handshake and Chrome's COOP breaks popup-close detection — so don't
+      // even try it. On success the browser navigates away and this promise
+      // never resolves; false means starting the redirect failed (error set).
+      setError(null);
+      return await startRedirectSignIn(provider);
+    }
+
+    // Dev popup. No redirect fallback here: the redirect round-trip is
+    // cross-site on localhost and drops the auth state, so falling back
+    // would trade a visible failure for a silent one.
     try {
       setIsLoading(true);
       setError(null);
@@ -234,27 +269,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         ),
       ]);
 
-      console.log("Sign-in successful:", result.user.email);
-      setSignInPhase("idle");
-      return true; // ✅ Return success
+      console.info("Sign-in successful:", result.user.email);
+      return true;
     } catch (error: any) {
       console.error("Full error object:", error);
       const errorCode = error?.code;
       if (
-        errorCode === "auth/popup-closed-by-user" ||
-        errorCode === "auth/cancelled-popup-request"
+        errorCode !== "auth/popup-closed-by-user" &&
+        errorCode !== "auth/cancelled-popup-request"
       ) {
-        // User cancelled — back to idle, no error and no redirect fallback.
-        console.log("User closed the popup");
-        setSignInPhase("idle");
-        return false;
+        // Real failure (blocked popup, network, timeout) — not a user cancel.
+        setError(
+          "تعذّر تسجيل الدخول. تحقق من اتصالك بالإنترنت ثم حاول مرة أخرى."
+        );
       }
-
-      // Anything else means the popup path is broken for this session
-      // (auth/popup-blocked, auth/network-request-failed, our own timeout,
-      // internal errors) → automatically fall back to the redirect flow.
-      return await fallbackToRedirect(provider);
+      return false;
     } finally {
+      setSignInPhase("idle");
       setIsLoading(false);
     }
   };
