@@ -38,6 +38,14 @@ export function SectionsContent({
   accessScope?: "full" | "sectional";
   ownedSectionIds?: string[];
 }) {
+  // Buy affordances and free-preview badges are for sectional buyers only.
+  // Admin, the instructor, full-bundle, and grandfathered (unset-scope)
+  // viewers all arrive here without accessScope === "sectional" — see the
+  // render branches in app/course/[courseId]/page.tsx and invariant 3.
+  const viewerIsSectional = accessScope === "sectional";
+  const owns = (sectionId: string) =>
+    (ownedSectionIds ?? []).includes(sectionId);
+
   return (
     <div className="divide-y divide-gray-200">
       {groupedSections.map((group, idx) => {
@@ -103,44 +111,11 @@ export function SectionsContent({
               </span>
             </button>
 
-            {/* Per-section purchase (sectional courses only). The buy
-                components hide themselves for owned sections / non-sectional
-                access; the yellow chip shell only wraps fully locked
-                sections so it never renders empty. Purchase logic and
-                handlers are the existing SectionalBuyButtons, unmodified. */}
-            {isSectionalCourse &&
-              realSection &&
-              (sectionFullyLocked ? (
-                <div className="mx-3 mb-2 rounded-md border border-brand-yellow-200 bg-brand-yellow-50 p-3">
-                  <p className="text-sm font-bold text-navy-950 leading-snug">
-                    {realSection.title}
-                  </p>
-                  <p className="text-xs text-gray-500 mb-2">
-                    {videos.length} دروس مقفلة
-                  </p>
-                  <SectionalBuyButtons
-                    course={course}
-                    section={realSection}
-                    enrollment={enrollment}
-                    positionInOrder={idx}
-                  />
-                </div>
-              ) : (
-                <div className="px-3 py-2 bg-white border-t border-gray-100">
-                  <SectionalBuyButtons
-                    course={course}
-                    section={realSection}
-                    enrollment={enrollment}
-                    positionInOrder={idx}
-                  />
-                </div>
-              ))}
-
             {/* Videos on the progress spine */}
             {isExpanded && (
               <div className="relative border-t border-gray-100">
                 {/* The rail: a 2px line running along the lesson dots. */}
-                <span className="absolute inset-y-0 start-[25px] w-0.5 bg-gray-200" />
+                <span className="absolute inset-y-0 start-[22px] w-0.5 bg-gray-200" />
                 {videos.map((video, idx) => {
                   const videoIndex = allVideos.indexOf(video);
                   const isActive = videoIndex === currentVideoIndex;
@@ -151,16 +126,43 @@ export function SectionsContent({
                     <LessonRow
                       key={video.videoId}
                       video={video}
-                      idx={idx}
                       isActive={isActive}
                       isCompleted={isCompleted}
                       isLocked={isLocked}
+                      showFreePreviewBadge={
+                        viewerIsSectional &&
+                        !!video.sectionId &&
+                        !owns(video.sectionId)
+                      }
                       onSelect={() => onSelectVideo(videoIndex)}
                     />
                   );
                 })}
               </div>
             )}
+
+            {/* In-context purchase chip — sectional buyers only, and only
+                beneath a section they don't own yet. Purchase logic and
+                handlers are the existing SectionalBuyButtons, unmodified. */}
+            {isSectionalCourse &&
+              realSection &&
+              viewerIsSectional &&
+              !owns(realSection.sectionId) && (
+                <div className="mx-3 my-2 rounded-md border border-brand-yellow-200 bg-brand-yellow-50 p-3">
+                  <p className="text-sm font-bold text-navy-950 leading-snug">
+                    {realSection.title}
+                  </p>
+                  <p className="text-xs text-gray-500 mb-2">
+                    {lockStates.filter(Boolean).length} دروس مقفلة
+                  </p>
+                  <SectionalBuyButtons
+                    course={course}
+                    section={realSection}
+                    enrollment={enrollment}
+                    positionInOrder={idx}
+                  />
+                </div>
+              )}
           </div>
         );
       })}

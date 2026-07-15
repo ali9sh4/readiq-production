@@ -29,10 +29,11 @@ export default function SectionalLock({
 }) {
   // Phase 6b: open state for the sectional buy dialog invoked from the
   // locked-content placeholder. Mode is fixed to 'single' here — the
-  // dialog's break-even row lets the user upgrade to bundle in place.
-  const [lockedDialogMode, setLockedDialogMode] = useState<
-    "single" | "cumulative" | null
-  >(null);
+  // dialog's break-even row lets the user upgrade to bundle in place, and
+  // the bulk buy-up-to-here affordance lives in the sidebar section chip.
+  const [lockedDialogMode, setLockedDialogMode] = useState<"single" | null>(
+    null,
+  );
 
   return (
     <>
@@ -89,23 +90,14 @@ export default function SectionalLock({
                 </Link>
               )}
               {reason === "sectional-not-owned" && currentVideo.sectionId && (
-                <div className="flex flex-col sm:flex-row gap-2 items-center">
-                  <Button
-                    onClick={() => setLockedDialogMode("single")}
-                    className="gap-2"
-                    size="sm"
-                  >
-                    <ShoppingCart className="w-4 h-4" />
-                    شراء هذا القسم
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={() => setLockedDialogMode("cumulative")}
-                    className="text-xs text-navy-800 hover:text-navy-950 underline"
-                  >
-                    أو اشترِ حتى هنا
-                  </button>
-                </div>
+                <Button
+                  onClick={() => setLockedDialogMode("single")}
+                  className="gap-2"
+                  size="sm"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  شراء هذا القسم
+                </Button>
               )}
             </div>
           );

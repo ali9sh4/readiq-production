@@ -198,6 +198,34 @@ attribute, debug-log guard). tsc byte-identical to the run baseline;
 Still owed next session: `docs/PROJECT_STATE.md` board update (plus the
 Phase 2C deferred list above).
 
+## PHASE 2E addendum — sidebar refinement (unattended)
+
+Scope: `components/player/**` only. tsc byte-identical to the run baseline;
+`next build` green; grep confirms no `idx`/number rendering remains in
+`LessonRow.tsx` and no buy-up-to-here string remains under
+`components/player/`.
+
+1. **Dots are state-only.** Lesson numbers removed; dots shrank to 14px on
+   a realigned rail (`start-[22px]`): hollow 2px gray-300 = not started,
+   success fill + white check = done, brand-accent fill + play = active,
+   dashed border + gray lock = locked. Glyphs sized 8–10px to fit.
+2. **Buy chip correctness.** The chip now renders only when
+   `accessScope === "sectional"` AND the section is not in
+   `ownedSectionIds` — admin and the instructor reach the player with no
+   enrollment props (verified in `app/course/[courseId]/page.tsx` render
+   branches) and full/grandfathered scopes fail the check, so none of them
+   ever see purchase UI. The chip sits BELOW the section's lesson rows;
+   the always-rendered plain `SectionalBuyButtons` wrapper is gone; its
+   locked-lesson count now counts actually-locked rows (free previews
+   excluded). The floating "أو اشترِ حتى هنا" button was removed from the
+   locked-video placeholder (`SectionalLock`); bulk buy-up-to-here remains
+   reachable via the chip's `SectionalBuyButtons` and the dialog's own
+   break-even flow. No sectional component was modified.
+3. **Free-preview badges** ("معاينة مجانية") render only for sectional
+   viewers on lessons in sections they don't own — hidden for
+   admin/instructor/full/grandfathered viewers and for owned sections,
+   same predicate as the chip.
+
 ## Run note
 
 One `Edit` tool call mid-run arrived with a spurious instruction appended

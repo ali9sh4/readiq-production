@@ -4,22 +4,22 @@ import { Check, Lock, Play } from "lucide-react";
 import { CourseVideo } from "@/types/types";
 import { formatDuration } from "./shared";
 
-// One lesson row on the yellow progress spine. The 20px dot sits centered on
-// the section rail (see LessonSidebar); the row's inline-start bar marks the
-// active lesson.
+// One lesson row on the progress spine. The 14px dot is a pure state
+// indicator (no numbering): hollow = not started, success check = done,
+// brand-accent play = active, dashed lock = locked.
 export default function LessonRow({
   video,
-  idx,
   isActive,
   isCompleted,
   isLocked,
+  showFreePreviewBadge,
   onSelect,
 }: {
   video: CourseVideo;
-  idx: number;
   isActive: boolean;
   isCompleted: boolean;
   isLocked: boolean;
+  showFreePreviewBadge: boolean;
   onSelect: () => void;
 }) {
   return (
@@ -39,27 +39,25 @@ export default function LessonRow({
         <span className="absolute inset-y-0 start-0 w-[3.5px] bg-brand-accent" />
       )}
 
-      {/* Spine dot */}
+      {/* Spine dot — state only */}
       <span
-        className={`relative z-[1] flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs leading-none transition-colors ${
+        className={`relative z-[1] flex-shrink-0 w-3.5 h-3.5 rounded-full flex items-center justify-center transition-colors ${
           isCompleted
             ? "bg-success text-white"
             : isActive
               ? "bg-brand-accent text-navy-950"
               : isLocked
                 ? "bg-white border-2 border-dashed border-gray-300 text-gray-400"
-                : "bg-white border-2 border-gray-300 text-gray-500 font-mono"
+                : "bg-white border-2 border-gray-300"
         }`}
       >
         {isCompleted ? (
-          <Check className="w-3 h-3" strokeWidth={3} />
+          <Check className="w-2.5 h-2.5" strokeWidth={3.5} />
         ) : isActive ? (
-          <Play className="w-2.5 h-2.5 fill-current" />
+          <Play className="w-2 h-2 fill-current" />
         ) : isLocked ? (
-          <Lock className="w-2.5 h-2.5" />
-        ) : (
-          idx + 1
-        )}
+          <Lock className="w-2 h-2" />
+        ) : null}
       </span>
 
       <span className="flex-1 text-start min-w-0">
@@ -77,7 +75,7 @@ export default function LessonRow({
         >
           {video.title}
         </span>
-        {video.isFreePreview && (
+        {video.isFreePreview && showFreePreviewBadge && (
           <span className="mt-0.5 inline-block text-xs bg-success/10 text-success px-1.5 py-0.5 rounded-full font-medium">
             معاينة مجانية
           </span>
