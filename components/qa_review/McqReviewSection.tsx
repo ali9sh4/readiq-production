@@ -49,6 +49,7 @@ import {
   type McqReviewItem,
 } from "@/app/actions/mcq_review_actions";
 import { localizeMcqReviewError } from "@/lib/qa/localizeError";
+import { withStableHeader } from "@/components/qa_review/keepHeaderStable";
 import type { CourseVideo } from "@/types/types";
 
 type MuxPlayerRef = ComponentRef<typeof MuxPlayer>;
@@ -344,7 +345,7 @@ export default function McqReviewSection({ courseId, videos, disabled }: Props) 
   if (!items?.length) {
     return (
       <div dir="rtl" className="rounded-xl border bg-white p-10 text-center text-gray-600">
-        لا توجد أسئلة امتحان محوّلة لهذا الكورس بعد — تُولَّد من الأسئلة المعتمدة عبر أداة التحويل.
+        لا توجد أسئلة امتحان لهذا الكورس بعد — راجِع أسئلة التدريب واعتمدها أولاً، ثم تُولَّد أسئلة الامتحان (MCQ) من الأسئلة المعتمدة.
       </div>
     );
   }
@@ -379,10 +380,13 @@ export default function McqReviewSection({ courseId, videos, disabled }: Props) 
             <button
               type="button"
               className="flex w-full flex-wrap items-center justify-between gap-3 bg-gray-50 px-4 py-3 text-right hover:bg-gray-100"
-              onClick={() => {
-                setExpandedVideoId(expanded ? null : video.videoId);
-                clearActiveItem();
-              }}
+              onClick={(e) =>
+                // Expansion must not move the viewport (see keepHeaderStable).
+                withStableHeader(e.currentTarget, () => {
+                  setExpandedVideoId(expanded ? null : video.videoId);
+                  clearActiveItem();
+                })
+              }
             >
               <span className="font-semibold text-gray-800">
                 {video.title}{" "}

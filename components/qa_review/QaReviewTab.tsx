@@ -52,6 +52,7 @@ import {
 } from "@/app/actions/qa_review_actions";
 import { localizeQaReviewError } from "@/lib/qa/localizeError";
 import McqReviewSection from "@/components/qa_review/McqReviewSection";
+import { withStableHeader } from "@/components/qa_review/keepHeaderStable";
 import type { CourseVideo } from "@/types/types";
 
 type MuxPlayerRef = ComponentRef<typeof MuxPlayer>;
@@ -439,11 +440,14 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
             <button
               type="button"
               className="flex w-full flex-wrap items-center justify-between gap-3 bg-gray-50 px-4 py-3 text-right hover:bg-gray-100"
-              onClick={() => {
-                setExpandedVideoId(expanded ? null : video.videoId);
-                setActivePairId(null);
-                activePairRef.current = null;
-              }}
+              onClick={(e) =>
+                // Expansion must not move the viewport (see keepHeaderStable).
+                withStableHeader(e.currentTarget, () => {
+                  setExpandedVideoId(expanded ? null : video.videoId);
+                  setActivePairId(null);
+                  activePairRef.current = null;
+                })
+              }
             >
               <span className="font-semibold text-gray-800">
                 {video.title}{" "}
