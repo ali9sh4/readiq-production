@@ -82,11 +82,12 @@ export default function CoursePlayer({
   const [expandedSections, setExpandedSections] = useState<Set<string>>(
     new Set(),
   );
-  // Desktop default is the overview panel; the mount effect below flips
-  // mobile to the "الدروس" tab (SSR renders desktop markup, so the initial
-  // state must match it — a breakpoint check in the initializer would
+  // Desktop default is the files tab (the fallback effect below bounces to
+  // flashcards when the lesson has no files); the mount effect flips mobile
+  // to the "الدروس" tab (SSR renders desktop markup, so the initial state
+  // must match it — a breakpoint check in the initializer would
   // hydrate-mismatch on phones).
-  const [activeTab, setActiveTab] = useState<PlayerTab>("overview");
+  const [activeTab, setActiveTab] = useState<PlayerTab>("resources");
   useEffect(() => {
     if (window.innerWidth < 1024) {
       setActiveTab("lessons");
@@ -185,19 +186,15 @@ export default function CoursePlayer({
     ownedSectionIds,
   ]);
 
-  // Fallback target when a conditional tab disappears: the lessons tab on
-  // mobile (its default), the overview panel on desktop.
-  const fallbackTab = useCallback((): PlayerTab => {
-    return window.innerWidth < 1024 ? "lessons" : "overview";
-  }, []);
-
   // Leaving a practice-eligible lesson while its tab is active would strand
-  // the tab content — fall back to the default tab.
+  // the tab content — fall back to the lessons tab on mobile, the files
+  // slot on desktop (renders nothing if this lesson has no files, which is
+  // exactly the no-tab-bar state).
   useEffect(() => {
     if (activeTab === "practice" && !canPractice) {
-      setActiveTab(fallbackTab());
+      setActiveTab(window.innerWidth < 1024 ? "lessons" : "resources");
     }
-  }, [activeTab, canPractice, fallbackTab]);
+  }, [activeTab, canPractice]);
 
   // Phase 3 slice 4: the deck mounts on first practice-tab activation for
   // the current lesson and then stays mounted (hidden) across tab switches,
@@ -258,13 +255,19 @@ export default function CoursePlayer({
   // files load is unchanged; empty lessons keep the other tabs as focus.
   const hasLessonFiles = currentVideoFiles.length + generalFiles.length > 0;
 
-  // Same fallback as the practice tab: landing on a lesson where the
-  // active tab no longer exists bounces to the default tab.
+  // Landing on a lesson with no files while the files tab is active:
+  // mobile bounces to the lessons tab, desktop to flashcards when they
+  // exist. With neither files nor cards the value stays "resources" —
+  // harmless, since the desktop bar and every panel are hidden then.
   useEffect(() => {
     if (activeTab === "resources" && !hasLessonFiles) {
-      setActiveTab(fallbackTab());
+      if (window.innerWidth < 1024) {
+        setActiveTab("lessons");
+      } else if (canPractice) {
+        setActiveTab("practice");
+      }
     }
-  }, [activeTab, hasLessonFiles, fallbackTab]);
+  }, [activeTab, hasLessonFiles, canPractice]);
 
   const completedCount = useMemo(
     () => allVideos.filter((v) => completedVideos.has(v.videoId)).length,

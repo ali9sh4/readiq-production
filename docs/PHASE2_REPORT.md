@@ -226,6 +226,19 @@ Scope: `components/player/**` only. tsc byte-identical to the run baseline;
    admin/instructor/full/grandfathered viewers and for owned sections,
    same predicate as the chip.
 
+## PHASE 2F addendum — overview tab removed (unattended)
+
+Scope: `components/player/**`. The نظرة عامة tab, its panel, and the 2D
+description-fallback logic are deleted. Tab model now: desktop = الملفات
+(only when the lesson has files) + بطاقات المراجعة (only when cards exist;
+completion gate unchanged) — with neither, no desktop tab bar renders and
+the stage ends at the lesson header. Desktop default = files when present,
+else flashcards (fallback effect); mobile keeps الدروس as default plus the
+same conditional tabs. Dead code removed (`overview` union member, User
+icon import, fallbackTab helper). tsc identical to baseline (modulo a
+drive-letter-casing artifact in a pre-existing generated-types error);
+build green; grep shows no overview remnants under `components/player/`.
+
 ## Run note
 
 One `Edit` tool call mid-run arrived with a spurious instruction appended

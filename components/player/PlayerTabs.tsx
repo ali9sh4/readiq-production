@@ -1,14 +1,14 @@
 "use client";
 
 import React, { type RefObject } from "react";
-import { Brain, FileText, List, Lock, User } from "lucide-react";
+import { Brain, FileText, List, Lock } from "lucide-react";
 import { Course, CourseVideo } from "@/types/types";
 import { CourseFile } from "@/components/fileUplaodtoR2";
 import QaStudyDeck from "@/components/study/QaStudyDeck";
 import FilesTab from "./FilesTab";
 import { type MainPlayerHandle } from "./shared";
 
-export type PlayerTab = "lessons" | "overview" | "resources" | "practice";
+export type PlayerTab = "lessons" | "resources" | "practice";
 
 const ACTIVE_TAB_CLASSES = "text-navy-950 font-bold border-brand-accent";
 const INACTIVE_TAB_CLASSES =
@@ -52,9 +52,15 @@ export default function PlayerTabs({
 
   return (
     <>
-      {/* Tab bar — on mobile a fourth first tab "الدروس" carries the lesson
-          list; on desktop the sidebar owns it. */}
-      <div className="bg-surface border-b border-gray-200 overflow-x-auto">
+      {/* Tab bar — on mobile the first tab "الدروس" carries the lesson
+          list; on desktop the sidebar owns it, and with neither files nor
+          cards there is no desktop bar at all (the stage ends at the
+          lesson header). */}
+      <div
+        className={`bg-surface border-b border-gray-200 overflow-x-auto ${
+          hasLessonFiles || canPractice ? "" : "lg:hidden"
+        }`}
+      >
         <div className="max-w-[800px] mx-auto flex">
         <button
           onClick={() => setActiveTab("lessons")}
@@ -63,15 +69,6 @@ export default function PlayerTabs({
           <span className="flex items-center justify-center gap-1.5">
             <List className="w-3.5 h-3.5" />
             الدروس
-          </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab("overview")}
-          className={tabButtonClasses("overview")}
-        >
-          <span className="flex items-center justify-center gap-1.5">
-            نظرة عامة
           </span>
         </button>
 
@@ -122,37 +119,6 @@ export default function PlayerTabs({
         {/* Lessons Tab - Mobile/Tablet Only */}
         {activeTab === "lessons" && (
           <div className="lg:hidden bg-white">{sectionsList}</div>
-        )}
-
-        {/* Overview Tab — lesson description, falling back to the course
-            description so the panel never renders empty. */}
-        {activeTab === "overview" && (
-          <div className="p-4 lg:p-8">
-            <div className="max-w-[800px] mx-auto bg-white rounded-md border border-gray-200 p-4 lg:p-6">
-              <h3 className="text-sm lg:text-base font-bold text-navy-950 mb-2">
-                عن هذا الدرس
-              </h3>
-              {currentVideo?.description ? (
-                <p className="text-sm text-gray-600 leading-relaxed break-words">
-                  {currentVideo.description}
-                </p>
-              ) : course.description ? (
-                <p className="text-sm text-gray-600 leading-relaxed break-words">
-                  {course.description}
-                </p>
-              ) : (
-                <p className="text-sm text-gray-400">
-                  لا توجد نظرة عامة لهذا الدرس
-                </p>
-              )}
-              <p className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-1.5 text-xs text-gray-500">
-                <User className="w-3.5 h-3.5 text-navy-800" />
-                <span className="truncate">
-                  {course.instructorName || "مدرب غير معروف"}
-                </span>
-              </p>
-            </div>
-          </div>
         )}
 
         {/* Practice Tab — UI-only completion gate: until the current lesson
