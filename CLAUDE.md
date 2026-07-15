@@ -46,8 +46,8 @@ npm run pipeline # transcription pipeline — usage/env in scripts/pipeline/run.
 
 ## Layout
 
-- `app/` — App Router. Server actions in `app/actions/*`, REST API in `app/api/*`.
-- `components/` — UI. `ui/` is shadcn primitives. Mux wrappers `SignedMuxPlayer.tsx` / `SignedMuxThumbnail.tsx`. Sectional UI under `components/sectional/`; student study deck `components/study/`; instructor Q&A review `components/qa_review/`.
+- `app/` — App Router. Server actions in `app/actions/*`, REST API in `app/api/*`. Design tokens (colors/radius/fonts) are CSS vars + `@theme` in `app/globals.css` — style with semantic utilities (`bg-primary`, `bg-success`, `text-brand-accent`, `bg-navy-*`), not raw palette classes, on migrated surfaces; see `docs/AUDIT_DESIGN_TOKENS.md` §6 + `docs/PHASE2_REPORT.md`.
+- `components/` — UI. `ui/` is shadcn primitives. Mux wrappers `SignedMuxPlayer.tsx` / `SignedMuxThumbnail.tsx`. Sectional UI under `components/sectional/`; student study deck `components/study/`; instructor Q&A review `components/qa_review/`; enrolled course player `components/player/` (old `ui/CoursePlayer.tsx` path is a re-export shim).
 - `lib/` — server-side + shared helpers. Notable: `mux/` (signing), `auth/verifyBearerToken.ts`, `api/response.ts`, `sectional/`, `courses/videoAccess.ts` (shared per-video access gate), `courses/assertCourseMutationAllowed.ts`, `qa/` (Q&A hashing/quarantine/counts), `packages/`, `earnings/`, `legal/`, `R2/`, `services/`, `purchaseProtection/`, `payments/zaincash.ts`.
 - `firebase/client.ts` + `firebase/service.ts` — client + admin SDK init.
 - `scripts/pipeline/` — standalone transcription pipeline (course video → transcript + Q&A files under gitignored `output/`; reads Firestore/Mux, writes disk only). Usage, env, resume semantics: `run.mts` header.

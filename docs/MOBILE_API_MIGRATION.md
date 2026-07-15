@@ -290,7 +290,7 @@ Smallest, lowest-risk first. Each step is independently shippable.
 3. **Mux signed playback** — split into 3B, 3.5-prep, and 3.5 after the web-side audit.
    - **Step 3B (DONE).** `POST /api/mux/playback-token` endpoint with auth, course-visibility check, video lookup, free-preview bypass, enrollment gate (`enrollments/{uid}_{courseId}` with `status === "completed"`). Real Mux JWT signing (RS256) using `MUX_SIGNING_KEY_ID` / `MUX_SIGNING_PRIVATE_KEY`. Endpoint is dormant on web until 3.5 ships and becomes mobile-ready when needed.
    - **Step 3.5-prep (DONE — Path D).** Added owner + admin branches to the route. Owner (`course.createdBy === auth.userId`) and admin (`auth.isAdmin === true`) both bypass the visibility gate AND the enrollment check. Route is now structurally complete; Step 3.5 itself no longer needs to touch it.
-   - **Step 3.5 (ACTIVE — next milestone).** Flip `createMuxUpload` to `playback_policy: ["signed"]` AND migrate the three web player surfaces that currently consume raw `playbackId` (`components/video_uploader.tsx`, `components/CoursePreview.tsx`, `components/ui/CoursePlayer.tsx`). The flip cannot land standalone — every new instructor upload would silently break those three surfaces. Scope below in **Step 3.5 scope** (note: section 1 "Server owner branch" is now done as part of 3.5-prep).
+   - **Step 3.5 (DONE — verified in code 2026-07-15).** `createMuxUpload` ships `playback_policy: ["signed"]` (`app/actions/upload_video_actions.ts:102`) and all three web player surfaces consume signed tokens: `components/video_uploader.tsx`, `components/CoursePreview.tsx` (via `SignedMuxPlayer`), and the enrolled viewer — since extracted to `components/player/` (token minting lives in `components/player/VideoStage.tsx`; `components/ui/CoursePlayer.tsx` remains only as a re-export shim).
 
 4. **Profile and favorites writes.**
    - `PATCH /api/me`
@@ -319,7 +319,7 @@ Three things that make this clean:
 2. The signed-playback API already exists (/api/mux/playback-token); it just needs an instructor branch added.
 3. /course/[courseId]/page.tsx already routes the owner to CoursePlayer (line 199, if (isInstructor)), so the natural surface for instructor preview is the existing viewer — not a new instructor-only player.
 
-### Substep status (current as of 3.5.D shipping to the branch)
+### Substep status (ALL DONE — E–H verified against code 2026-07-15)
 
 | Substep | Scope | Status | Commit |
 |---|---|---|---|
@@ -327,10 +327,10 @@ Three things that make this clean:
 | 3.5.B | `SignedMuxPlayer` wrapper | DONE | `1e63f36` + `784d360` (post-fix gate) |
 | 3.5.C | Thumbnail token signing (`lib/mux/thumbnailToken.ts` + extended route response) | DONE | `f80ff3a` |
 | 3.5.D | `components/video_uploader.tsx` (instructor preview, lines 740 + 857) | DONE | `a20b5ed` |
-| 3.5.E | `components/CoursePreview.tsx` (free-preview, line ~326) | TODO | — |
-| 3.5.F | `components/ui/CoursePlayer.tsx` (enrolled viewer, line ~644). Highest risk — watermark DOM-walking + `:fullscreen` selectors + `onEnded` chain + auto-advance (mid-video-swap flash needs hook fix). | TODO | — |
-| 3.5.G | Grep `image.mux.com` across `components/`, `app/`, `lib/`. Replace each with `<SignedMuxThumbnail>`. | TODO | — |
-| 3.5.H | Flip `app/actions/upload_video_actions.ts` `playback_policy` from `["public"]` to `["signed"]`. **Separate one-line commit on `main` after the wrapper PR merges — NOT on the feature branch.** | TODO | — |
+| 3.5.E | `components/CoursePreview.tsx` (free-preview) | DONE | uses `SignedMuxPlayer` (line 407) |
+| 3.5.F | Enrolled viewer (now `components/player/VideoStage.tsx` after the Phase 2B extraction; watermark DOM-walking, `:fullscreen`, `onEnded` chain all live there) | DONE | signed-token minting effect in `VideoStage.tsx` |
+| 3.5.G | Grep `image.mux.com` across `components/`, `app/`, `lib/` | DONE | only remaining ref is inside `SignedMuxThumbnail.tsx` itself |
+| 3.5.H | `app/actions/upload_video_actions.ts` `playback_policy` → `["signed"]` | DONE | live at line 102 |
 
 ### 1. Server owner branch — DONE (Path D / Step 3.5-prep)
 
