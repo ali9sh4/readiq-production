@@ -22,7 +22,7 @@ export default function FilesTab({
 }) {
   return (
     <div className="p-4 lg:p-8">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-[800px] mx-auto">
         {currentVideoFiles.length === 0 && generalFiles.length === 0 ? (
           <div className="text-center py-12 lg:py-16 bg-white rounded-md border border-gray-200">
             <div className="bg-navy-100 rounded-full w-16 h-16 lg:w-24 lg:h-24 flex items-center justify-center mx-auto mb-3 lg:mb-4">

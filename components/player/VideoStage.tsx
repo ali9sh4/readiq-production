@@ -358,6 +358,7 @@ export default function VideoStage({
           stage surface below the video. */}
       {currentVideo && (
         <div className="bg-surface border-b border-gray-200 px-3 lg:px-6 py-3 lg:py-4">
+          <div className="max-w-[800px] mx-auto">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <h2 className="text-base lg:text-2xl font-extrabold text-navy-950 leading-snug break-words">
@@ -429,6 +430,7 @@ export default function VideoStage({
               </Button>
             </div>
           )}
+          </div>
         </div>
       )}
 

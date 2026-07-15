@@ -180,6 +180,12 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+/* Theater mode: the enrolled course player hides the global navbar while
+   mounted — components/player/CoursePlayer.tsx toggles the body class. */
+body.player-theater #global-navbar {
+  display: none;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

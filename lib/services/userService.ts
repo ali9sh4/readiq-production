@@ -65,7 +65,9 @@ export async function createOrUpdateUser(user: User): Promise<void> {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
-      console.log("✅ New user created in Firestore:", user.uid);
+      if (process.env.NODE_ENV !== "production") {
+        console.log("✅ New user created in Firestore:", user.uid);
+      }
     } else {
       // Existing user - only update auth-related fields
       await updateDoc(userRef, {
@@ -74,7 +76,9 @@ export async function createOrUpdateUser(user: User): Promise<void> {
         photoURL: user.photoURL || null,
         updatedAt: serverTimestamp(),
       });
-      console.log("✅ User updated in Firestore:", user.uid);
+      if (process.env.NODE_ENV !== "production") {
+        console.log("✅ User updated in Firestore:", user.uid);
+      }
     }
   } catch (error) {
     console.error("❌ Error creating/updating user:", error);

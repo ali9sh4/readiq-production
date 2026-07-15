@@ -92,6 +92,15 @@ export default function CoursePlayer({
       setActiveTab("lessons");
     }
   }, []);
+
+  // Theater mode: hide the global navbar while the enrolled player is
+  // mounted (globals.css rule on body.player-theater).
+  useEffect(() => {
+    document.body.classList.add("player-theater");
+    return () => {
+      document.body.classList.remove("player-theater");
+    };
+  }, []);
   const [completedVideos, setCompletedVideos] = useState<Set<string>>(
     new Set(),
   );
@@ -198,7 +207,14 @@ export default function CoursePlayer({
     string | null
   >(null);
   useEffect(() => {
-    if (activeTab === "practice" && canPractice && currentVideo) {
+    if (
+      activeTab === "practice" &&
+      canPractice &&
+      currentVideo &&
+      // 2D completion gate: the deck must not mount (and mint tokens)
+      // behind the locked placeholder.
+      completedVideos.has(currentVideo.videoId)
+    ) {
       setPracticeSessionVideoId(currentVideo.videoId);
     } else if (
       practiceSessionVideoId !== null &&
@@ -211,7 +227,13 @@ export default function CoursePlayer({
       // within the SAME lesson only.
       setPracticeSessionVideoId(null);
     }
-  }, [activeTab, canPractice, currentVideo, practiceSessionVideoId]);
+  }, [
+    activeTab,
+    canPractice,
+    currentVideo,
+    practiceSessionVideoId,
+    completedVideos,
+  ]);
 
   // Fail-soft on malformed data: a non-array `files` field must hide the
   // tab, never crash the player.
@@ -303,6 +325,12 @@ export default function CoursePlayer({
     setMarkingComplete(true);
     await handleVideoComplete();
     setMarkingComplete(false);
+    // Reward moment: completing via the button jumps straight to the
+    // flashcards it just unlocked. Never fires for an already-complete
+    // lesson — the button is hidden then — and not from onEnded.
+    if (auth?.user && canPractice) {
+      setActiveTab("practice");
+    }
   };
 
   const goToNextVideo = useCallback(() => {
@@ -418,6 +446,9 @@ export default function CoursePlayer({
             generalFiles={generalFiles}
             canPractice={canPractice}
             approvedQaCount={approvedQaCount}
+            currentLessonCompleted={
+              currentVideo ? completedVideos.has(currentVideo.videoId) : false
+            }
             practiceSessionVideoId={practiceSessionVideoId}
             currentVideo={currentVideo}
             course={course}

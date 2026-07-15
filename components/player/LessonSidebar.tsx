@@ -7,11 +7,7 @@ import { GroupedSection } from "@/lib/sectional/grouping";
 import { isVideoLockedForUser } from "@/lib/sectional/access";
 import SectionalBuyButtons from "@/components/sectional/SectionalBuyButtons";
 import LessonRow from "./LessonRow";
-import {
-  UNASSIGNED_KEY,
-  formatTotalDuration,
-  toArabicIndic,
-} from "./shared";
+import { UNASSIGNED_KEY, formatTotalDuration } from "./shared";
 
 export function SectionsContent({
   groupedSections,
@@ -91,7 +87,7 @@ export function SectionsContent({
                     {group.title}
                   </span>
                   <span className="block text-xs text-gray-500">
-                    {toArabicIndic(videos.length)} دروس
+                    {videos.length} دروس
                   </span>
                 </span>
               </div>
@@ -101,8 +97,7 @@ export function SectionsContent({
                   <Lock className="w-3.5 h-3.5 text-gray-400" />
                 ) : (
                   <span dir="ltr">
-                    {toArabicIndic(sectionCompleted)}/
-                    {toArabicIndic(videos.length)}
+                    {sectionCompleted}/{videos.length}
                   </span>
                 )}
               </span>
@@ -121,7 +116,7 @@ export function SectionsContent({
                     {realSection.title}
                   </p>
                   <p className="text-xs text-gray-500 mb-2">
-                    {toArabicIndic(videos.length)} دروس مقفلة
+                    {videos.length} دروس مقفلة
                   </p>
                   <SectionalBuyButtons
                     course={course}
@@ -195,7 +190,7 @@ export default function LessonSidebar({
               محتوى الدورة
             </h2>
             <span className="text-xs text-gray-500 whitespace-nowrap">
-              {toArabicIndic(totalVideos)} درسًا · {formatTotalDuration(totalDuration)}
+              {totalVideos} درسًا · {formatTotalDuration(totalDuration)}
             </span>
           </div>
           <div className="mt-3 h-[7px] rounded-full bg-gray-100 overflow-hidden">

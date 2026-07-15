@@ -69,8 +69,11 @@ export default function PlayerHeader({
           }}
         >
           <div className="absolute inset-[3px] rounded-full bg-navy-950 flex items-center justify-center">
-            <span className="text-xs font-mono font-bold text-white leading-none">
-              {progress}
+            <span
+              dir="ltr"
+              className="text-[10px] font-mono font-bold text-white leading-none"
+            >
+              {progress}%
             </span>
           </div>
         </div>

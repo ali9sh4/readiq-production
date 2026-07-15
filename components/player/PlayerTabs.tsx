@@ -1,12 +1,12 @@
 "use client";
 
 import React, { type RefObject } from "react";
-import { Brain, FileText, List, User } from "lucide-react";
+import { Brain, FileText, List, Lock, User } from "lucide-react";
 import { Course, CourseVideo } from "@/types/types";
 import { CourseFile } from "@/components/fileUplaodtoR2";
 import QaStudyDeck from "@/components/study/QaStudyDeck";
 import FilesTab from "./FilesTab";
-import { toArabicIndic, type MainPlayerHandle } from "./shared";
+import { type MainPlayerHandle } from "./shared";
 
 export type PlayerTab = "lessons" | "overview" | "resources" | "practice";
 
@@ -22,6 +22,7 @@ export default function PlayerTabs({
   generalFiles,
   canPractice,
   approvedQaCount,
+  currentLessonCompleted,
   practiceSessionVideoId,
   currentVideo,
   course,
@@ -36,6 +37,7 @@ export default function PlayerTabs({
   generalFiles: CourseFile[];
   canPractice: boolean;
   approvedQaCount: number;
+  currentLessonCompleted: boolean;
   practiceSessionVideoId: string | null;
   currentVideo: CourseVideo | undefined;
   course: Course;
@@ -52,7 +54,8 @@ export default function PlayerTabs({
     <>
       {/* Tab bar — on mobile a fourth first tab "الدروس" carries the lesson
           list; on desktop the sidebar owns it. */}
-      <div className="bg-surface flex border-b border-gray-200 overflow-x-auto">
+      <div className="bg-surface border-b border-gray-200 overflow-x-auto">
+        <div className="max-w-[800px] mx-auto flex">
         <button
           onClick={() => setActiveTab("lessons")}
           className={`lg:hidden ${tabButtonClasses("lessons")}`}
@@ -111,6 +114,7 @@ export default function PlayerTabs({
             </span>
           </button>
         )}
+        </div>
       </div>
 
       {/* Tab Content */}
@@ -120,10 +124,11 @@ export default function PlayerTabs({
           <div className="lg:hidden bg-white">{sectionsList}</div>
         )}
 
-        {/* Overview Tab — lesson description + course facts. */}
+        {/* Overview Tab — lesson description, falling back to the course
+            description so the panel never renders empty. */}
         {activeTab === "overview" && (
           <div className="p-4 lg:p-8">
-            <div className="max-w-3xl mx-auto bg-white rounded-md border border-gray-200 p-4 lg:p-6">
+            <div className="max-w-[800px] mx-auto bg-white rounded-md border border-gray-200 p-4 lg:p-6">
               <h3 className="text-sm lg:text-base font-bold text-navy-950 mb-2">
                 عن هذا الدرس
               </h3>
@@ -131,9 +136,13 @@ export default function PlayerTabs({
                 <p className="text-sm text-gray-600 leading-relaxed break-words">
                   {currentVideo.description}
                 </p>
+              ) : course.description ? (
+                <p className="text-sm text-gray-600 leading-relaxed break-words">
+                  {course.description}
+                </p>
               ) : (
                 <p className="text-sm text-gray-400">
-                  لا يوجد وصف لهذا الدرس.
+                  لا توجد نظرة عامة لهذا الدرس
                 </p>
               )}
               <p className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-1.5 text-xs text-gray-500">
@@ -146,14 +155,41 @@ export default function PlayerTabs({
           </div>
         )}
 
-        {/* Practice Tab — QaStudyDeck (Phase 3 slice 4). Keyed by videoId
-            so switching lessons starts a fresh deck; hidden (not
-            unmounted) on tab switches within the same lesson. */}
+        {/* Practice Tab — UI-only completion gate: until the current lesson
+            carries the same completed flag the sidebar checkmarks read, the
+            deck must not mount (its server action re-enforces access; this
+            gate is a pedagogical nudge, not security). */}
+        {activeTab === "practice" &&
+          canPractice &&
+          currentVideo &&
+          !currentLessonCompleted && (
+            <div className="p-4 lg:p-8">
+              <div className="max-w-[800px] mx-auto bg-white rounded-md border border-gray-200 p-6 lg:p-10 flex flex-col items-center text-center">
+                <span className="mb-3 flex items-center justify-center w-12 h-12 rounded-full bg-brand-yellow-50 border border-brand-yellow-200">
+                  <Lock className="w-5 h-5 text-navy-900" />
+                </span>
+                <p className="text-sm lg:text-base font-bold text-navy-950">
+                  أكمل الدرس لفتح بطاقات المراجعة
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  <span dir="ltr" className="font-mono">
+                    {approvedQaCount}
+                  </span>{" "}
+                  بطاقة مراجعة بانتظارك
+                </p>
+              </div>
+            </div>
+          )}
+
+        {/* QaStudyDeck (Phase 3 slice 4). Keyed by videoId so switching
+            lessons starts a fresh deck; hidden (not unmounted) on tab
+            switches within the same lesson. */}
         {canPractice &&
           currentVideo &&
+          currentLessonCompleted &&
           practiceSessionVideoId === currentVideo.videoId && (
             <div className={activeTab === "practice" ? "p-4 lg:p-8" : "hidden"}>
-              <div className="max-w-3xl mx-auto">
+              <div className="max-w-[800px] mx-auto">
                 <QaStudyDeck
                   key={currentVideo.videoId}
                   courseId={course.id}

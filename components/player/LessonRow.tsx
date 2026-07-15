@@ -2,7 +2,7 @@
 
 import { Check, Lock, Play } from "lucide-react";
 import { CourseVideo } from "@/types/types";
-import { formatDuration, toArabicIndic } from "./shared";
+import { formatDuration } from "./shared";
 
 // One lesson row on the yellow progress spine. The 20px dot sits centered on
 // the section rail (see LessonSidebar); the row's inline-start bar marks the
@@ -58,7 +58,7 @@ export default function LessonRow({
         ) : isLocked ? (
           <Lock className="w-2.5 h-2.5" />
         ) : (
-          toArabicIndic(idx + 1)
+          idx + 1
         )}
       </span>
 

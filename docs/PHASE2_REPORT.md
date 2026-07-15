@@ -157,6 +157,47 @@ Files: `components/player/*` + two chip primitives added to `globals.css`
    Q1/Q4 outcomes, but scan the wallet + checkout dialogs for anything that
    looks off.
 
+## PHASE 2D addendum — player polish (combined, unattended)
+
+Scope: `components/player/**` + the two permitted exceptions (navbar id
+attribute, debug-log guard). tsc byte-identical to the run baseline;
+`next build` green.
+
+1. **Latin numerals everywhere.** `toArabicIndic` deleted; sidebar counters
+   ("3/7"), lesson-number dots, section/lesson counts, hours label
+   ("1.5 ساعات" via `toLocaleString("en-US")`), and the ring percent are all
+   Western digits. Grep: zero `[٠-٩]` literals and zero locale-less
+   `toLocaleString` under `components/player/`.
+2. **Tabs.** Desktop default stays نظرة عامة (mobile stacked layout keeps
+   الدروس). The overview panel never renders empty: lesson description →
+   course description → muted "لا توجد نظرة عامة لهذا الدرس".
+3. **Flashcards gated behind lesson completion (UI-only).** The بطاقات
+   المراجعة tab keeps its count badge, but until the current lesson carries
+   the same `completedVideos` flag the sidebar checkmarks read, the panel
+   shows a locked placeholder ("أكمل الدرس لفتح بطاقات المراجعة" + card
+   count) and QaStudyDeck does not mount (the keep-alive effect is gated
+   too, so no hidden token minting). A successful أكملتُ الدرس press
+   auto-switches to the flashcards tab; `onEnded` auto-complete does not,
+   and an already-complete lesson never shows the button. Zero-card lessons
+   hide the tab (unchanged `canPractice`).
+4. **Navbar hidden in theater.** `components/navbar.tsx` got exactly one
+   attribute (`id="global-navbar"`); `CoursePlayer` toggles
+   `body.player-theater` in a mount effect (cleanup on unmount); one
+   `globals.css` rule hides the navbar under that class. `CoursePreview`
+   (non-enrolled) keeps the navbar.
+5. **Ring + stage.** Ring label is "NN%" Latin `font-mono`; all content
+   below the video (lesson header, tab bar, panels) is wrapped at
+   `max-w-[800px]` centered; the video keeps full stage width.
+6. **Debug logging.** The "User updated in Firestore: <uid>" log lives in
+   `lib/services/userService.ts:77` (not a protected file). It — and its
+   twin "New user created in Firestore: <uid>" two lines up, same function,
+   same UID-leak pattern — are now wrapped in
+   `process.env.NODE_ENV !== "production"` guards. Logic untouched;
+   `console.error` calls left intact.
+
+Still owed next session: `docs/PROJECT_STATE.md` board update (plus the
+Phase 2C deferred list above).
+
 ## Run note
 
 One `Edit` tool call mid-run arrived with a spurious instruction appended

@@ -28,20 +28,14 @@ export function formatFileSize(bytes: number) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 }
 
-// Arabic-Indic digits for UI counters (e.g. "٣/٧" in the sidebar).
-export function toArabicIndic(n: number) {
-  return n.toString().replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[Number(d)]);
-}
-
-// "N ساعات" / "N دقيقة" label for the sidebar header meta line.
+// "N ساعات" / "N دقيقة" label for the sidebar header meta line. Numerals
+// are Western digits ('en-US') by platform rule — e.g. "1.5 ساعات".
 export function formatTotalDuration(totalSeconds: number) {
-  if (!totalSeconds) return "٠ دقيقة";
+  if (!totalSeconds) return "0 دقيقة";
   const hours = totalSeconds / 3600;
   if (hours >= 1) {
     const rounded = Math.round(hours * 10) / 10;
-    return `${toArabicIndic(Math.floor(rounded))}${
-      rounded % 1 ? "٫٥" : ""
-    } ساعات`;
+    return `${rounded.toLocaleString("en-US")} ساعات`;
   }
-  return `${toArabicIndic(Math.max(1, Math.round(totalSeconds / 60)))} دقيقة`;
+  return `${Math.max(1, Math.round(totalSeconds / 60))} دقيقة`;
 }
