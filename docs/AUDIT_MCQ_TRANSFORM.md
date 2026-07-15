@@ -246,6 +246,11 @@ record per-skip-reason counts so the yield conversation is data, not vibes.
 >    accept lower yield. Per-skip-reason counts recorded. Condensed keys
 >    deferred — revisit only on yield data.
 > 4. **Options:** 4 (3 distractors), fixed.
+>    *(تعديل 2026-07-14: بوابة الأرقام أصبحت تصنيفاً وشارة فقط — الاعتماد
+>    بضغطة واحدة دون شروط، بقرار المالك. القرار الأصلي أعلاه محفوظ كسجل.
+>    يشمل التعديل إزالة `numericConfirmed` وبوابة معاينة المقطع من واجهتي
+>    المراجعة وإجراءَي الاعتماد؛ فحوصات السلامة البنيوية — الهاش، مطابقة
+>    المصدر، حظر sentinel — باقية كما هي.)*
 > 5. **Review surface:** segmented toggle inside the existing
 >    مراجعة الأسئلة tab.
 > 6. **Dual use:** exam-only in v1. Schema remains compatible with future
@@ -253,6 +258,9 @@ record per-skip-reason counts so the yield conversation is data, not vibes.
 > 7. **Trigger:** script idempotent (keyed `sourceQaDocId` +
 >    `sourceContentHash`); operated as deliberate runs after full course
 >    review.
+> 8. **Exam availability:** per-course manual switch, flipped by
+>    admin/instructor only after full course review is complete. Never
+>    automatic.
 
 1. **Storage:** confirm `mcqItems` separate subcollection (§2.1,
    recommended) over a `format` field on `qa`.
@@ -298,3 +306,62 @@ record per-skip-reason counts so the yield conversation is data, not vibes.
 `qa_review_actions.ts` gains no changes (finding §2.3); `CLEANUP_PROMPT`
 and `run.mts` semantics are untouched; the deck/counts/study actions are
 untouched because `mcqItems` is structurally separate.*
+
+---
+
+## Addendum — build & verification (2026-07-12)
+
+**Built (all eight قرارات honored):** `mcqContentHash()` in
+`lib/qa/contentHash.ts` (sorted normalized distractors — the only hashing
+site); `lib/qa/mcqLint.ts` (shared transform/action lint — no drift);
+`scripts/pipeline/mcq.mts` (`npm run mcq -- transform|import`; transform
+reads the approved triple predicate from Firestore, import is dry-run
+default, idempotent on `sourceQaDocId` + `sourceContentHash`, per-skip-
+reason accounting); `validation/mcqReview.ts` (no correctAnswer field, no
+bulk schema — structural); `app/actions/mcq_review_actions.ts`
+(list/approve/reject/edit/revoke, all transactional; approve re-verifies
+`mcqContentHash` AND the source pair in-transaction per finding §2.3c);
+`components/qa_review/McqReviewSection.tsx` + segmented toggle in
+`QaReviewTab.tsx` (no CourseDashboard change). `localizeMcqReviewError`
+added to `lib/qa/localizeError.ts`.
+
+**Course correction:** a third pipeline course exists —
+`JQTvM6EmKkT8MJvaZV2b` "Chairside 3D Printing in Dentistry" (9 videos, 129
+pairs, 2 flagged), postdating the two-course docs snapshot. E1's first
+production run happened here.
+
+**Verified (real behavior, prod Firestore):**
+- Transform on the Chairside course: **73 MCQs from 74 approved pairs
+  (99% yield)**, skips `no-clean-distractors=1`; Q:num=4. Earlier
+  Exocad runs (24–27 approved pairs) demonstrated the thin-corpus failure
+  mode: yield 88–92%, and video_10's numeric pair skipped
+  `no-clean-distractors` twice — numeric stems need topically-adjacent
+  corpus material, which validates decision 7's full-review-first rule.
+- `--write`: 73 items imported. **Idempotence proven:** deleted
+  `video_6/mcq.json`, re-transformed (20 fresh MCQs), re-import dry-run →
+  **73/73 identical-source, 0 writes** — review state survives re-runs.
+- **Rules smoke test 10/10 PASS:** `mcqItems` doc + list reads
+  permission-denied (SDK) / HTTP 403 PERMISSION_DENIED (REST) for both
+  unauthenticated and signed-in non-admin (marker-tagged throwaway user,
+  deleted after), with control course-doc reads succeeding in all four
+  contexts.
+- **§6.5 server walkthrough 17/17 PASS** with a real owner ID token
+  (custom-token exchange): numeric approve refused without confirmation
+  (`MCQ_NUMERIC_CONFIRM_REQUIRED`) then approved with it — audit fields
+  `reviewerUid/approvalMode:"individual"/numericConfirmed/quarantine/
+  reviewedAt` verified on the raw doc, stored hash matches recompute;
+  approved item edit-locked (`MCQ_APPROVED_LOCKED`); reject-with-reason +
+  resurrect-by-edit (`rejection-superseded-by-edit` in `reviewHistory`);
+  distractor edit re-hashes with the key byte-identical; duplicate-option
+  lint blocks a distractor equal to the key; approve→revoke appends
+  `approval-revoked` and resets attribution. One numeric MCQ
+  (`JzUsAizVIrCUUENdXTDO`) left approved as the walkthrough deliverable.
+- `tsc`/eslint at baseline parity (pre-existing `.next/types` errors only;
+  operator-script `no-console` warnings only).
+
+**Remaining before broad use (owner):** the browser-side visual pass on
+both dashboard mounts — the clip-attestation half of the numeric hard gate
+(approve disabled until an in-window `timeupdate`) is client UX the server
+walkthrough cannot see; and the Chairside course still has 55 pending
+pairs (full review incomplete → decision 8's exam switch not yet
+flippable).

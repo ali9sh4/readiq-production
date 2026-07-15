@@ -6,13 +6,13 @@
 // server action), mirrors every mutation into local state, and NEVER calls
 // router.refresh() (the 2026-06-30 middleware-bounce rule).
 //
-// Clip attestation (invariant 4): the in-window timeupdate check binds to
-// the SINGLE active pair only — overlapping windows must not attest each
-// other. Attestation is session-scoped React state, never persisted.
-// Sentinel pairs (0/0/null citation failure) get no preview and cannot be
-// approved — edit or reject only. Numeric pairs additionally require the
-// explicit "الرقم مطابق" checkbox. Edits clear attestation client-side and
-// bar the pair from bulk server-side.
+// 2026-07-14 (owner decision): approval is ONE-TAP — the clip-attestation
+// gate and the numeric "الرقم مطابق" checkbox were removed from this UI and
+// from the server action. The numeric quarantine class remains as a visible
+// badge (and still bars bulk approval server-side); معاينة المقطع stays as
+// an optional preview. Sentinel pairs (0/0/null citation failure) still get
+// no preview and cannot be approved — edit or reject only. Edits still bar
+// the pair from bulk server-side.
 
 import {
   useCallback,
@@ -51,6 +51,7 @@ import {
   type QaReviewPair,
 } from "@/app/actions/qa_review_actions";
 import { localizeQaReviewError } from "@/lib/qa/localizeError";
+import McqReviewSection from "@/components/qa_review/McqReviewSection";
 import type { CourseVideo } from "@/types/types";
 
 type MuxPlayerRef = ComponentRef<typeof MuxPlayer>;
@@ -114,15 +115,17 @@ function statusBadge(p: QaReviewPair) {
 export default function QaReviewTab({ courseId, videos, disabled }: Props) {
   const auth = useAuth();
 
+  // E1: this tab hosts BOTH reviews behind a segmented toggle (قرارات
+  // المالك decision 5 — no fourth CourseDashboard tab). "pairs" = the
+  // Phase 2 practice-pair review below; "mcq" = McqReviewSection.
+  const [view, setView] = useState<"pairs" | "mcq">("pairs");
+
   const [pairs, setPairs] = useState<QaReviewPair[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [expandedVideoId, setExpandedVideoId] = useState<string | null>(null);
-  // Attestation is per review session (invariant 4) — component state only.
-  const [attested, setAttested] = useState<Set<string>>(new Set());
   const [activePairId, setActivePairId] = useState<string | null>(null);
-  const [numericChecks, setNumericChecks] = useState<Record<string, boolean>>({});
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
   const [bulkBusyVideoId, setBulkBusyVideoId] = useState<string | null>(null);
 
@@ -132,9 +135,7 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
   const [rejectReason, setRejectReason] = useState("");
 
   const playerRef = useRef<MuxPlayerRef>(null);
-  // Mirror of the active pair for the timeupdate closure — binding the
-  // in-window check to THIS pair only prevents overlapping-window
-  // false attestation.
+  // Mirror of the active pair for the timeupdate closure (fake-stop UX).
   const activePairRef = useRef<QaReviewPair | null>(null);
 
   const getToken = useCallback(async (): Promise<string | null> => {
@@ -253,14 +254,6 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
     if (!active || !player) return;
     const t = player.currentTime;
     if (typeof t !== "number") return;
-    if (t >= active.sourceStartSec && t <= active.sourceEndSec) {
-      setAttested((prev) => {
-        if (prev.has(active.id)) return prev;
-        const next = new Set(prev);
-        next.add(active.id);
-        return next;
-      });
-    }
     if (t >= active.sourceEndSec) {
       // Client-side fake-stop (§8.3 — UX, not enforcement). One-shot: clear
       // the active pair so the reviewer can free-play past the window
@@ -308,11 +301,7 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
   const handleApprove = (p: QaReviewPair) =>
     withBusy(p.id, () =>
       runAction(
-        (token) =>
-          approvePair(token, courseId, {
-            qaDocId: p.id,
-            numericConfirmed: numericChecks[p.id] === true,
-          }),
+        (token) => approvePair(token, courseId, { qaDocId: p.id }),
         (res) => {
           patchPair(res.pair);
           toast.success("تم اعتماد السؤال");
@@ -357,9 +346,7 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
     );
 
   const startEdit = (p: QaReviewPair) => {
-    // Editing invalidates attestation (§5.2a) — also stop the clip NOW so a
-    // still-playing in-window player can't instantly re-attest the pair on
-    // the next timeupdate after the save lands.
+    // Stop the clip while editing — keeps the preview state coherent.
     if (activePairRef.current?.id === p.id) {
       playerRef.current?.pause();
       clearActivePair();
@@ -381,20 +368,12 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
           patchPair(res.pair);
           setEditingId(null);
           // Belt to startEdit's suspenders: never leave the edited pair
-          // active or attested after the save.
+          // active after the save.
           if (activePairRef.current?.id === p.id) {
             playerRef.current?.pause();
             clearActivePair();
           }
-          // The edit invalidated the attested claim — fresh clip attestation
-          // is required before this pair can be approved again.
-          setAttested((prev) => {
-            const next = new Set(prev);
-            next.delete(p.id);
-            return next;
-          });
-          setNumericChecks((prev) => ({ ...prev, [p.id]: false }));
-          toast.success("تم حفظ التعديل — يتطلب الاعتماد الآن معاينة المقطع من جديد");
+          toast.success("تم حفظ التعديل");
         }
       )
     );
@@ -411,33 +390,25 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
     );
 
   // ----- render ---------------------------------------------------------------
-  if (loading) {
-    return (
-      <div dir="rtl" className="flex items-center justify-center gap-3 rounded-xl border bg-white p-10 text-gray-600">
-        <Loader2 className="h-5 w-5 animate-spin" />
-        جارٍ تحميل الأسئلة…
-      </div>
-    );
-  }
-  if (loadError) {
-    return (
-      <div dir="rtl" role="alert" className="flex flex-col items-center gap-4 rounded-xl border border-red-200 bg-red-50 p-8 text-red-800">
-        <span>{loadError}</span>
-        <Button variant="outline" onClick={load}>
-          <RefreshCw className="ml-2 h-4 w-4" /> إعادة المحاولة
-        </Button>
-      </div>
-    );
-  }
-  if (!pairs?.length) {
-    return (
-      <div dir="rtl" className="rounded-xl border bg-white p-10 text-center text-gray-600">
-        لا توجد أسئلة مولّدة لهذا الكورس بعد.
-      </div>
-    );
-  }
-
-  return (
+  // The pairs view keeps its loading/error/empty states, expressed as one
+  // value so the E1 view toggle below stays visible in every state.
+  const pairsView = loading ? (
+    <div dir="rtl" className="flex items-center justify-center gap-3 rounded-xl border bg-white p-10 text-gray-600">
+      <Loader2 className="h-5 w-5 animate-spin" />
+      جارٍ تحميل الأسئلة…
+    </div>
+  ) : loadError ? (
+    <div dir="rtl" role="alert" className="flex flex-col items-center gap-4 rounded-xl border border-red-200 bg-red-50 p-8 text-red-800">
+      <span>{loadError}</span>
+      <Button variant="outline" onClick={load}>
+        <RefreshCw className="ml-2 h-4 w-4" /> إعادة المحاولة
+      </Button>
+    </div>
+  ) : !pairs?.length ? (
+    <div dir="rtl" className="rounded-xl border bg-white p-10 text-center text-gray-600">
+      لا توجد أسئلة مولّدة لهذا الكورس بعد.
+    </div>
+  ) : (
     <div dir="rtl" className="space-y-4">
       {/* Course-level summary */}
       <Card>
@@ -524,23 +495,11 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
                   const qBadge = quarantineBadge(p.quarantine);
                   const sentinel = isSentinel(p);
                   const wideSpan = !sentinel && p.sourceEndSec - p.sourceStartSec > WIDE_SPAN_SEC;
-                  const isAttested = attested.has(p.id);
                   const busy = busyIds.has(p.id);
-                  // Attestation scope (owner decision, 2026-07-03): the HARD
-                  // clip-attestation gate applies only to numeric pairs —
-                  // wrong timestamp + wrong number is the clinically
-                  // dangerous combo. Sentinel stays blocked entirely (no
-                  // valid window exists). For flagged/clean pairs attestation
-                  // is recommended-but-skippable; skipping shows the note.
-                  const attestationRequired = p.quarantine === "numeric";
-                  const canApprove =
-                    p.status === "pending" &&
-                    !p.stale &&
-                    !sentinel &&
-                    (!attestationRequired || isAttested) &&
-                    (p.quarantine !== "numeric" || numericChecks[p.id] === true);
-                  const skippingAttestation =
-                    p.status === "pending" && !sentinel && !isAttested && !attestationRequired;
+                  // 2026-07-14 (owner decision): one-tap approval — no
+                  // attestation or numeric-confirmation gating. Sentinel
+                  // stays blocked (no valid citation; server-refused too).
+                  const canApprove = p.status === "pending" && !p.stale && !sentinel;
 
                   return (
                     <div
@@ -561,11 +520,6 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
                         {!sentinel && (
                           <span className="text-gray-500" dir="ltr">
                             {fmtTime(p.sourceStartSec)} – {fmtTime(p.sourceEndSec)}
-                          </span>
-                        )}
-                        {isAttested && p.status === "pending" && (
-                          <span className="flex items-center gap-1 text-green-700">
-                            <Check className="h-3.5 w-3.5" /> تم التحقق من المقطع
                           </span>
                         )}
                       </div>
@@ -615,21 +569,6 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
                         <p className="mt-2 text-sm text-red-700">سبب الرفض: {p.rejectReason}</p>
                       )}
 
-                      {/* Numeric confirmation (invariant 3) */}
-                      {p.status === "pending" && p.quarantine === "numeric" && editingId !== p.id && (
-                        <label className="mt-3 flex items-center gap-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4"
-                            checked={numericChecks[p.id] === true}
-                            onChange={(e) =>
-                              setNumericChecks((prev) => ({ ...prev, [p.id]: e.target.checked }))
-                            }
-                          />
-                          الرقم مطابق لما قيل في المحاضرة
-                        </label>
-                      )}
-
                       {/* Reject reason input */}
                       {rejectingId === p.id && (
                         <div className="mt-3 space-y-2">
@@ -676,20 +615,13 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
                                     ? "بدون اقتباس زمني — عدّل أو ارفض"
                                     : p.stale
                                       ? "سؤال قديم — لا يمكن اعتماده"
-                                      : attestationRequired && !isAttested
-                                        ? "شاهد المقطع أولاً لتفعيل الاعتماد"
-                                        : undefined
+                                      : undefined
                                 }
                                 onClick={() => handleApprove(p)}
                               >
                                 {busy ? <Loader2 className="ml-1 h-4 w-4 animate-spin" /> : <Check className="ml-1 h-4 w-4" />}
                                 اعتماد
                               </Button>
-                              {skippingAttestation && (
-                                <span className="self-center text-xs text-gray-400">
-                                  لم تتم معاينة المقطع
-                                </span>
-                              )}
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -736,6 +668,37 @@ export default function QaReviewTab({ courseId, videos, disabled }: Props) {
           </Card>
         );
       })}
+    </div>
+  );
+
+  return (
+    <div dir="rtl" className="space-y-4">
+      {/* E1 segmented view toggle — practice pairs vs exam MCQs. */}
+      <div className="flex w-fit gap-1 rounded-lg bg-gray-100 p-1 text-sm font-medium">
+        <button
+          type="button"
+          onClick={() => setView("pairs")}
+          className={`rounded-md px-4 py-1.5 transition ${
+            view === "pairs" ? "bg-white text-gray-900 shadow" : "text-gray-500 hover:text-gray-800"
+          }`}
+        >
+          أسئلة التدريب
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("mcq")}
+          className={`rounded-md px-4 py-1.5 transition ${
+            view === "mcq" ? "bg-white text-gray-900 shadow" : "text-gray-500 hover:text-gray-800"
+          }`}
+        >
+          أسئلة الامتحان (MCQ)
+        </button>
+      </div>
+      {view === "pairs" ? (
+        pairsView
+      ) : (
+        <McqReviewSection courseId={courseId} videos={videos} disabled={disabled} />
+      )}
     </div>
   );
 }

@@ -5,6 +5,55 @@ Running log of notable web-app (this repo) changes. The mobile board lives in
 
 ---
 
+## 2026-07-12 — E1: MCQ transform + exam-item review (final-exam track)
+
+First build rung of the exam → job-market track
+(`docs/BRAINSTORM_EXAM_JOB_MARKET.md` decision block governs; build spec +
+verification record: `docs/AUDIT_MCQ_TRANSFORM.md` قرارات المالك 1–8 +
+addendum).
+
+- **Shared modules:** `mcqContentHash()` added to `lib/qa/contentHash.ts`
+  (only hashing site, sorted normalized distractors); new `lib/qa/mcqLint.ts`
+  shared by the transform script and the review actions.
+- **Operator script** `scripts/pipeline/mcq.mts` (`npm run mcq`):
+  `transform` reads approved pairs from Firestore (edits live only there),
+  one Sonnet call per video with the course-wide approved corpus as
+  distractor material, verbatim-key enforcement in code, writes
+  `output/{c}/{v}/mcq.json` (resume-by-file-exists); `import` is dry-run
+  default → `courses/{id}/mcqItems` (separate subcollection — structurally
+  invisible to every `qa` consumer), idempotent on
+  `sourceQaDocId + sourceContentHash`.
+- **Review:** `app/actions/mcq_review_actions.ts` (individual-only; key
+  never editable; numeric hard gate carried over; source-pair re-check
+  inside the approve transaction) + `McqReviewSection` behind a segmented
+  toggle inside the existing مراجعة الأسئلة tab (`QaReviewTab.tsx`;
+  `CourseDashboard.tsx` untouched). `qa_review_actions.ts` untouched.
+- **Third pipeline course recorded:** `JQTvM6EmKkT8MJvaZV2b` "Chairside 3D
+  Printing in Dentistry" (9 videos / 129 pairs) — §3 snapshot table in
+  `RUBIK_STUDY_FEATURES.md` corrected (totals now 34 videos / 555 pairs
+  across 3 courses).
+- **Verified (real behavior, prod):** Chairside transform 73 MCQs / 74
+  approved pairs (99% yield, Q:num=4), `--write` imported; idempotent
+  re-run proven (73/73 identical-source, 0 writes); `mcqItems` deny-all
+  proven 10/10 (SDK+REST × unauth+non-admin, control reads succeed); §6.5
+  server walkthrough 17/17 with a real owner token (hard-gate refusal,
+  audit fields, edit-lock, history preservation, shared lint). tsc/eslint
+  at baseline parity.
+- **Still owner-side:** visual pass of the new toggle on both dashboard
+  mounts; Chairside has 55 pairs pending (decision 8's exam-availability
+  switch needs full review).
+- **2026-07-14 amendment (owner decision, same commit):** approval is now
+  ONE-TAP on both review surfaces — the clip-attestation gate and the
+  `numericConfirmed` checkbox/requirement were removed from both UIs and
+  both approve actions (`QA_/MCQ_NUMERIC_CONFIRM_REQUIRED` codes deleted).
+  Numeric quarantine remains as classification + رقم/قياس badge (and still
+  bars pair bulk-approval); معاينة المقطع remains as optional preview; all
+  integrity re-checks (hash, source-pair, sentinel) unchanged. Dated
+  amendment notes in `RUBIK_STUDY_FEATURES.md` §4 inv. 3–4 + ledger,
+  `AUDIT_MCQ_TRANSFORM.md` قرارات d4, `BRAINSTORM_EXAM_JOB_MARKET.md` d4.
+
+---
+
 ## 2026-07-12 — Time-limited access complete (Checkpoints 2–3); flashcard AI disclosure
 
 ### Time-limited access — Checkpoint 2, web UI (`69540bf`)

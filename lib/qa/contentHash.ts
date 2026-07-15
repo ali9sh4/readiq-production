@@ -27,6 +27,26 @@ export function contentHash(videoId: string, question: string, answer: string): 
     .digest("hex");
 }
 
+// MCQ identity — E1 (docs/AUDIT_MCQ_TRANSFORM.md §2.2). Same normalization,
+// same NUL-delimiter rationale as contentHash. Distractors are normalized
+// then SORTED before hashing: option order is meaningless (shuffled at serve
+// time), so reordering must not change identity. This module is the ONLY
+// hashing site for MCQs, exactly as it is for pairs.
+export function mcqContentHash(
+  videoId: string,
+  stem: string,
+  correctAnswer: string,
+  distractors: string[]
+): string {
+  const parts = [
+    videoId,
+    normalizeQaText(stem),
+    normalizeQaText(correctAnswer),
+    ...distractors.map(normalizeQaText).sort(),
+  ];
+  return createHash("sha256").update(parts.join("\0"), "utf8").digest("hex");
+}
+
 // ---------------------------------------------------------------------------
 // Numeric tripwire (invariant 3): any answer containing a numeral adjacent to
 // a unit — or any decimal number at all — quarantines for individual

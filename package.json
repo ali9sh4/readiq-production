@@ -9,7 +9,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "pipeline": "tsx --env-file=.env.local scripts/pipeline/run.mts",
-    "import": "tsx --env-file=.env.local scripts/pipeline/import.mts"
+    "import": "tsx --env-file=.env.local scripts/pipeline/import.mts",
+    "mcq": "tsx --env-file=.env.local scripts/pipeline/mcq.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.109.1",

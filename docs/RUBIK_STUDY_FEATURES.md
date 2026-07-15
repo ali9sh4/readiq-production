@@ -56,7 +56,7 @@ Two facts shape everything:
 
 ---
 
-## 3. Snapshot (as of 2026-07-03)
+## 3. Snapshot (as of 2026-07-12)
 
 The only volatile numbers in this doc. Source of truth: the `output/`
 directory on the pipeline machine + `docs/PROJECT_STATE.md`. Refresh this
@@ -66,7 +66,8 @@ table whenever the pipeline runs (docs/maintenance/update.md loop).
 |---|---|---|---|---|
 | `ViNmx1xEiVma4BlxDNcl` | 10 (2h08m audio) | 216 | 22 | 17 of 22 flags from `video_9` alone — flags cluster by audio quality. |
 | `DDL9xpIvN9ejWJKhROIV` | 15 | 210 | 2 (both `video_20`) | 4 videos (`video_25`, `video_14`, `video_28`, `video_29`) were newly pulled + transcribed in the 2026-07-03 regeneration run. |
-| **Total** | **25** | **426** | **24** | Imported to Firestore 2026-07-03 (Phase 1); pilot review underway — first 15 pairs approved 2026-07-04. |
+| `JQTvM6EmKkT8MJvaZV2b` | 9 | 129 | 2 | **Third pipeline course** ("Chairside 3D Printing in Dentistry"), processed + imported after the 2026-07-03 snapshot; docs caught up 2026-07-12. Review well underway (74 approved / 55 pending as of 2026-07-12); E1's first MCQ transform ran here (73 exam MCQs in `mcqItems`). |
+| **Total** | **34** | **555** | **26** | First two courses imported 2026-07-03 (Phase 1); pilot review ongoing on all three. |
 
 > **Evidence chain complete:** the whole corpus was regenerated on 2026-07-03
 > *after* the evidence-fields pipeline change — all 426 pairs carry
@@ -99,7 +100,12 @@ audit trail that proves we didn't.
    `sourceStartSec === 0 && sourceEndSec === 0 && avgLogprob === null`;
    (c) numeric-tripwire matches. Quarantined pairs offer only
    *edit-then-approve* (with clip attestation) or *reject*.
-3. **Numeric tripwire:** any answer containing a numeral adjacent to a unit
+3. *(تعديل 2026-07-14: بوابة الأرقام أصبحت تصنيفاً وشارة فقط — الاعتماد
+   بضغطة واحدة دون شروط، بقرار المالك. ينطبق على هذا البند والبند 4 أدناه:
+   شرط التأكيد الصريح `numericConfirmed` وبوابة المعاينة أُزيلا من واجهتي
+   المراجعة (أزواج + MCQ) ومن إجراءَي الاعتماد. التصنيف `numeric` وشارة
+   رقم/قياس ومنع الاعتماد الجماعي للمعزولات باقية. النص الأصلي أدناه محفوظ
+   كسجل.)* **Numeric tripwire:** any answer containing a numeral adjacent to a unit
    (`ملم`, `مل`, `مليمتر`, `mm`, `mg`, `ملغ`, `MPa`, `%`, `درجة`, degrees
    Celsius, etc.) is quarantined **even when `needsReview === false`**, and
    approving it requires an explicit reviewer confirmation ("الرقم مطابق لما
@@ -482,6 +488,16 @@ deliver most of the win; don't let scheduler debates delay Phase 3.
 
 ### Phase 6 — MCQ transform, lesson checkpoints, LLM grading
 
+- **Status update (2026-07-12): the MCQ-transform half SHIPPED as E1** of
+  the final-exam track — `scripts/pipeline/mcq.mts` (Firestore-read of
+  approved pairs → Sonnet → `mcqItems` via dry-run-default import) plus
+  individual-only instructor MCQ review inside the Phase 2 tab. Direction
+  differs from this phase's original framing per the owner's exam decisions
+  (`docs/BRAINSTORM_EXAM_JOB_MARKET.md` decision block): MCQs are
+  **exam-only in v1** — checkpoint reuse is schema-compatible but
+  deliberately unwired (قرارات decision 6). Canonical build/verification
+  record: `docs/AUDIT_MCQ_TRANSFORM.md`. Checkpoints, keyPoints, and LLM
+  grading below remain unbuilt.
 - Offline Sonnet pass (new prompt + schema via `PIPELINE_ANTHROPIC_API_KEY`;
   the validated `CLEANUP_PROMPT` grounding wording stays untouched) that
   converts **approved** pairs into MCQs whose distractors come from *inside*
@@ -628,6 +644,9 @@ Q&A" tier of its design becomes real the day Phase 2 approves a course.
 | Phase 3 surface: web-first — standalone deck component in CoursePlayer's التدريب tab | DECIDED 2026-07-04 | §13 q2; `docs/AUDIT_STUDY_DECK.md` §1 |
 | One shared per-video access gate for playback + study (+ future chat): `evaluateVideoAccess()` | DECIDED, shipped 2026-07-04 (route refactor verified behavior-identical) | §8.1 |
 | Format A event logging ships day one: append-only server action, separate events collection, keyed on qa doc IDs | DECIDED 2026-07-04 | `docs/AUDIT_STUDY_DECK.md` §5 |
+| Final exam + job market (2026-07-07): timed MCQ-only exam generated from approved practice pairs (no separate bank), free, one attempt (admin-only reset), opt-in job-market directory with no scores/"certificate" wording, leakage accepted for now, per-course manual exam-availability switch after full review | DECIDED | `docs/BRAINSTORM_EXAM_JOB_MARKET.md` decision block |
+| E1 MCQ transform + `mcqItems` + individual-only MCQ review (key never editable; numeric hard gate carried over; shared hash/lint modules) | DECIDED, shipped 2026-07-12 | `docs/AUDIT_MCQ_TRANSFORM.md` (قرارات المالك 1–8 + addendum) |
+| بوابة الأرقام أصبحت تصنيفاً وشارة فقط — الاعتماد بضغطة واحدة دون شروط (pairs + MCQs; `numericConfirmed` + clip-attestation gating removed from both UIs and both approve actions; integrity re-checks + sentinel block + quarantine-bars-bulk retained) | DECIDED 2026-07-14 (owner) | §4 inv. 3–4 dated notes; `docs/AUDIT_MCQ_TRANSFORM.md` قرارات d4 amendment; `docs/BRAINSTORM_EXAM_JOB_MARKET.md` d4 amendment |
 | Mobile SRS state: device-local vs `/api/study/*` writes | **OPEN** (§13 q3) | — |
 | Instructor IP/consent instrument before third-party courses are processed | **OPEN** (§13 q4) | — |
 

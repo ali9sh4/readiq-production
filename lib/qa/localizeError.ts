@@ -1,6 +1,7 @@
 // Arabic localization for Q&A review + study action failures — parallel to
 // lib/sectional/localizeError.ts (that one is type-bound to the sectional
 // unions; widening it would couple unrelated features).
+import type { McqReviewFailure } from "@/app/actions/mcq_review_actions";
 import type { QaReviewFailure } from "@/app/actions/qa_review_actions";
 import type { QaStudyFailure } from "@/app/actions/qa_study_actions";
 
@@ -41,10 +42,41 @@ export function localizeQaReviewError(failure: QaReviewFailure): string {
       return "هذا السؤال لم يعد موجوداً في آخر توليد — لا يمكن اعتماده قبل المزامنة.";
     case "QA_HASH_MISMATCH":
       return "تغيّر محتوى السؤال أثناء المراجعة — حدّث القائمة وأعد المحاولة.";
-    case "QA_NUMERIC_CONFIRM_REQUIRED":
-      return "هذا الجواب يحتوي رقماً/قياساً — أكّد مطابقة الرقم لما قيل في المحاضرة أولاً.";
     case "QA_QUARANTINED":
       return "سؤال بدون اقتباس زمني صالح — عدّله أو ارفضه؛ لا يمكن اعتماده كما هو.";
+    case "INTERNAL_ERROR":
+    default:
+      return "حدث خطأ غير متوقع. حاول مرة أخرى.";
+  }
+}
+
+// MCQ review failures (E1 step 4) — same convention as the pair review.
+export function localizeMcqReviewError(failure: McqReviewFailure): string {
+  switch (failure.error) {
+    case "AUTH_FAILED":
+      return "انتهت الجلسة — يرجى تسجيل الدخول من جديد.";
+    case "FORBIDDEN":
+      return "لا تملك صلاحية مراجعة أسئلة هذا الكورس.";
+    case "COURSE_NOT_FOUND":
+      return "الكورس غير موجود.";
+    case "COURSE_DELETED":
+      return "لا يمكن مراجعة أسئلة كورس محذوف.";
+    case "INVALID_INPUT":
+      return firstZodIssueMessage(failure.details) ?? "المدخلات غير صالحة.";
+    case "MCQ_NOT_FOUND":
+      return "السؤال غير موجود — حدّث القائمة.";
+    case "MCQ_NOT_PENDING":
+      return "هذا السؤال ليس بانتظار المراجعة — حدّث القائمة.";
+    case "MCQ_APPROVED_LOCKED":
+      return "السؤال معتمد — يجب إلغاء الاعتماد قبل التعديل.";
+    case "MCQ_NOT_APPROVED":
+      return "السؤال غير معتمد أصلاً.";
+    case "MCQ_STALE":
+      return "تغيّر مصدر هذا السؤال — أعد تشغيل التحويل قبل اعتماده.";
+    case "MCQ_HASH_MISMATCH":
+      return "تغيّر محتوى السؤال أثناء المراجعة — حدّث القائمة وأعد المحاولة.";
+    case "MCQ_SOURCE_DIVERGED":
+      return "السؤال المصدر تغيّر أو أُلغي اعتماده — أعد تشغيل التحويل لهذا الدرس.";
     case "INTERNAL_ERROR":
     default:
       return "حدث خطأ غير متوقع. حاول مرة أخرى.";

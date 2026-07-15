@@ -14,7 +14,10 @@
 //     with per-doc re-checks inside the transaction (invariant 2).
 //   - classifyQuarantine is re-run at write time via lib/qa/contentHash.ts;
 //     the recomputed result is authoritative, the stored field is a cache.
-//   - numeric pairs require explicit numericConfirmed (invariant 3).
+//   - 2026-07-14 (owner decision): the numericConfirmed requirement was
+//     REMOVED — approval is one-tap. Numeric quarantine remains as
+//     classification/badge only (still bars bulk, invariant 2). See the
+//     dated amendments in docs/AUDIT_MCQ_TRANSFORM.md قرارات decision 4.
 //   - Edited pairs (editedAt set) are permanently excluded from bulk —
 //     edits invalidate attestation, so they re-enter individual review.
 //   - Rejection is never deletion (invariant 5) — no delete API exists here.
@@ -53,7 +56,6 @@ export type QaReviewErrorCode =
   | "QA_NOT_APPROVED"
   | "QA_STALE"
   | "QA_HASH_MISMATCH"
-  | "QA_NUMERIC_CONFIRM_REQUIRED"
   | "QA_QUARANTINED"
   | "INTERNAL_ERROR";
 
@@ -198,7 +200,7 @@ export async function listQaForReview(
 export async function approvePair(
   token: string,
   courseId: string,
-  input: { qaDocId: string; numericConfirmed: boolean }
+  input: { qaDocId: string }
 ): Promise<{ success: true; pair: QaReviewPair } | QaReviewFailure> {
   try {
     const parsed = ApprovePairSchema.safeParse(input);
@@ -236,16 +238,16 @@ export async function approvePair(
       if (q === "sentinel" || citationSentinel) {
         return fail("QA_QUARANTINED", "Sentinel pair (no resolvable citation) cannot be approved");
       }
-      if (q === "numeric" && parsed.data.numericConfirmed !== true) {
-        return fail("QA_NUMERIC_CONFIRM_REQUIRED", "Numeric pair requires explicit confirmation");
-      }
+      // 2026-07-14: no numeric confirmation required — one-tap approval.
 
       const update = {
         status: "approved" as const,
         reviewerUid: ctx.uid,
         reviewedAt: new Date().toISOString(),
         approvalMode: "individual" as const,
-        numericConfirmed: q === "numeric", // explicit boolean, never undefined
+        // Truthful audit value post-2026-07-14: no explicit confirmation is
+        // collected anymore. Explicit boolean, never undefined.
+        numericConfirmed: false,
         quarantine: q, // refresh the cache alongside the decision it fed
         contentHash: h,
         contentHashVersion: CONTENT_HASH_VERSION,

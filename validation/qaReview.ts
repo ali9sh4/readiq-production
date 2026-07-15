@@ -6,9 +6,9 @@ import { z } from "zod";
 
 export const ApprovePairSchema = z.object({
   qaDocId: z.string().min(1, "معرّف السؤال مفقود"),
-  // Explicit boolean, never optional: firebase/service.ts does not set
-  // ignoreUndefinedProperties, and the numeric invariant needs a stated value.
-  numericConfirmed: z.boolean(),
+  // 2026-07-14 (owner decision): numericConfirmed removed — approval is
+  // one-tap; the numeric quarantine class remains as classification/badge
+  // only. See docs/AUDIT_MCQ_TRANSFORM.md قرارات decision 4 amendment.
 });
 
 export const BulkApproveSchema = z.object({
