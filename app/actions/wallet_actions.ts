@@ -145,6 +145,18 @@ export async function purchaseCourseWithWallet(
 
     const courseData = courseDoc.data();
 
+    // M1 (docs/AUDIT_SYSTEM_HEALTH.md): sectional courses must never sell
+    // through this legacy full-course path — `course.price` is not their
+    // price, and the enrollment written below carries no `accessScope`,
+    // which the video gate treats as full access. Same refusal code as
+    // POST /api/enrollments.
+    if (courseData?.purchaseMode === "sectional") {
+      console.log(
+        `wallet-purchase REJECTED userId=${userId} courseId=${courseId} reason=COURSE_NOT_SECTIONAL`
+      );
+      return { success: false, error: "هذه الدورة تُباع بالأقسام" };
+    }
+
     // ✅ FIX: Check for sale price first, then regular price
     let coursePrice = courseData?.price || 0;
     const salePrice = courseData?.salePrice ?? 0;
@@ -154,6 +166,16 @@ export async function purchaseCourseWithWallet(
 
     if (courseData?.isFree) {
       return { success: false, error: "هذه دورة مجانية" };
+    }
+
+    // M1 (docs/AUDIT_SYSTEM_HEALTH.md): a course with no usable price must
+    // never be purchasable for 0 IQD — the write boundary validates price
+    // as min(0) and optional, so unpriced docs can exist.
+    if (coursePrice <= 0) {
+      console.log(
+        `wallet-purchase REJECTED userId=${userId} courseId=${courseId} reason=COURSE_PRICE_NOT_SET`
+      );
+      return { success: false, error: "سعر الدورة غير محدد" };
     }
 
     // Check existing enrollment. Time-limited enrollments (accessExpiresAt
