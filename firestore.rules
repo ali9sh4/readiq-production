@@ -1,0 +1,181 @@
+rules_version = '2';
+
+// Hardened 2026-07-16 — closes AUDIT_SYSTEM_HEALTH exec #2 (see
+// docs/AUDIT_SYSTEM_HEALTH.md). Pre-hardening console rules preserved at
+// docs/firestore.rules.pre-hardening/ for one-paste rollback.
+// Server code (firebase-admin) bypasses these rules entirely — every rule
+// here governs the BROWSER client SDK only.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===== Helpers =====
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.admin == true;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Money/ledger fields on users/{uid}. NEVER client-writable with
+    // non-default values. Server reads revenueSharePercent (recordEarning)
+    // and earningsTotal/payoutsTotal (payout outstanding) from this doc —
+    // a client write here is a direct money exploit. Defaults must match
+    // lib/services/userDoc.ts::buildNewUserDocFields exactly.
+    function moneyFieldsAreDefaultOrAbsent() {
+      let d = request.resource.data;
+      return (!('walletBalance' in d)       || d.walletBalance == 0)
+          && (!('revenueSharePercent' in d) || d.revenueSharePercent == 70)
+          && (!('earningsTotal' in d)       || d.earningsTotal == 0)
+          && (!('payoutsTotal' in d)        || d.payoutsTotal == 0)
+          && (!('enrolledCourses' in d)     || d.enrolledCourses == [])
+          && (!('createdCourses' in d)      || d.createdCourses == []);
+    }
+
+    // Fields the client may touch on UPDATE of its own user doc.
+    // Reconciled against the code 2026-07-16 (rules session Phase 1):
+    // the union of every client update call site — createOrUpdateUser's
+    // update branch (email/displayName/photoURL/updatedAt), the profile
+    // page and PhoneConsentCard (phone/marketingConsent/marketingConsentAt/
+    // phonePromptDismissed) — plus the draft's forward-looking profile
+    // fields and the userDoc preference fields (language/notifications).
+    // Union, not narrow (owner decision): the security boundary is money +
+    // authorization, not the profile surface. Never add a money field.
+    function updateTouchesOnlyProfileFields() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly([
+          'displayName', 'photoURL', 'email',
+          'firstName', 'lastName', 'bio', 'speciality', 'title',
+          'phone', 'phoneVerified',
+          'phoneConsent', 'marketingConsent', 'marketingConsentAt',
+          'phonePromptDismissed',
+          'language', 'notifications',
+          'lastLogin', 'updatedAt'
+        ]);
+    }
+
+    // ===== Users =====
+    // P0 #2 fix: read is own-doc + admin only. The old
+    // `read: if isAuthenticated()` allowed ANY signed-in user to LIST the
+    // whole collection (emails, phones, earnings of everyone). GATE 1
+    // verified (2026-07-16): no client code reads another user's doc.
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+
+      // Sign-in flow: client setDoc creates the doc with the full
+      // new-user shape. Allowed only with money fields at safe defaults.
+      allow create: if isOwner(userId) && moneyFieldsAreDefaultOrAbsent();
+
+      // P0 #1 fix: self-update restricted to the profile-field allowlist.
+      // walletBalance / revenueSharePercent / earningsTotal / payoutsTotal /
+      // enrolledCourses / createdCourses become admin-SDK-only.
+      allow update: if isOwner(userId) && updateTouchesOnlyProfileFields();
+
+      allow write: if isAdmin();
+    }
+
+    // ===== Courses =====
+    // P1 fix: ALL client writes removed. Every course mutation goes through
+    // server actions with the admin SDK (verified: zero client-side course
+    // writes). The old `create` rule let any signed-in user inject a doc
+    // with status:'published', isApproved:true straight into the public
+    // catalog. Note: old rules gated on `instructorId`, but documents use
+    // `createdBy` — that owner branch was dead. Corrected here.
+    match /courses/{courseId} {
+      allow read: if resource.data.status == 'published'
+                  || (isAuthenticated() && resource.data.createdBy == request.auth.uid)
+                  || isAdmin();
+      allow write: if false;
+    }
+
+    // ===== Deleted Courses =====
+    // softDeleteCourse is a server action (admin SDK) — no client writes.
+    match /deletedCourses/{courseId} {
+      allow read: if isAdmin()
+                  || (isAuthenticated() && resource.data.createdBy == request.auth.uid);
+      allow write: if false;
+    }
+
+    // ===== Enrollments =====
+    match /enrollments/{enrollmentId} {
+      allow read: if isAdmin()
+                  || (isAuthenticated()
+                      && enrollmentId.matches('^' + request.auth.uid + '_.*'));
+      allow write: if false;
+    }
+
+    // ===== Favorites =====
+    // Client writes removed (was create/delete-own in the draft): GATE 2
+    // verified zero client-SDK favorites writes — all mutations go through
+    // /api/me/favorites (admin SDK). Dead permission, not a live dependency.
+    match /favorites/{favoriteId} {
+      allow read: if isAdmin()
+                  || (isAuthenticated()
+                      && favoriteId.matches('^' + request.auth.uid + '_.*'));
+      allow write: if false;
+    }
+
+    // ===== Wallets =====
+    // Read-own feeds the onSnapshot balance in WalletBalance.tsx and
+    // SectionalBuyDialog.tsx. All writes are admin SDK.
+    match /wallets/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if false;
+    }
+
+    // ===== Topup Requests =====
+    // Client create removed: receipt top-ups go through
+    // /api/wallet/topup/request (server route), which enforces the daily
+    // limit and single-pending policy. The old client-create rule was a
+    // bypass of both. Admin dashboard reads these via client-SDK listeners
+    // — isAdmin() (token claim verified present, rules session Phase 2).
+    match /topup_requests/{requestId} {
+      allow read: if isAdmin()
+                  || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // ===== Wallet Transactions (append-only, server-written) =====
+    match /wallet_transactions/{transactionId} {
+      allow read: if isAdmin()
+                  || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // ===== Payment Transactions =====
+    match /payment_transactions/{transactionId} {
+      allow read: if isAdmin()
+                  || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow write: if false;
+    }
+
+    // ===== System Events =====
+    // Client create removed (was open to any authenticated user = spam
+    // vector). logStudyEvent writes via server action.
+    match /system_events/{eventId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // ===== Earnings Ledger (subcollection) =====
+    // Explicit deny for clarity — the default deny already covers it, but
+    // this documents that the ledger is admin-SDK-only, append-only.
+    match /users/{userId}/earningsLedger/{entryId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if false;
+    }
+
+    // ===== Default Deny =====
+    // Covers: qa subcollections, mcqItems, packages, package_sales,
+    // platform-wallet, topups (ZainCash docs), and anything future.
+    // All of those are served through gated server actions / API routes.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
