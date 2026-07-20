@@ -205,6 +205,14 @@ export const SaveThumbnail = async (
     }
     const courseData = courseSnap.data();
 
+    // Ownership guard — only the course owner or an admin may write; closes a
+    // cross-tenant write hole (matches updateCourseThumbnail / sibling actions).
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    if (!isOwner && !isAdmin) {
+      return { error: true, message: "ليس لديك صلاحية لتعديل صورة هذه الدورة" };
+    }
+
     try {
       await assertCourseMutationAllowed(
         {
@@ -291,6 +299,19 @@ export async function saveCourseFilesToFirebase({
     }
 
     const courseData = courseDoc.data();
+
+    // Ownership guard — only the course owner or an admin may write; closes a
+    // cross-tenant write hole (matches updateCourseThumbnail / sibling actions).
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    if (!isOwner && !isAdmin) {
+      return {
+        success: false,
+        error: true,
+        message: "ليس لديك صلاحية لتعديل ملفات هذه الدورة",
+      };
+    }
+
     const existingFiles = courseData?.files || [];
 
     // ✅ Find the next available order number
@@ -578,6 +599,18 @@ export async function updateCourseStatus(
     }
     const courseData = courseSnap.data();
 
+    // Ownership guard — only the course owner or an admin may write; closes a
+    // cross-tenant write hole (matches updateCourseThumbnail / sibling actions).
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    if (!isOwner && !isAdmin) {
+      return {
+        success: false,
+        error: true,
+        message: "ليس لديك صلاحية لتعديل هذه الدورة",
+      };
+    }
+
     try {
       await assertCourseMutationAllowed(
         {
@@ -655,6 +688,18 @@ export async function deleteCourseMetaDataFile(
 
     const courseSnap = await db.collection("courses").doc(courseId).get();
     const courseData = courseSnap.data();
+
+    // Ownership guard — only the course owner or an admin may write; closes a
+    // cross-tenant write hole (matches updateCourseThumbnail / sibling actions).
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    if (!isOwner && !isAdmin) {
+      return {
+        success: false,
+        error: true,
+        message: "ليس لديك صلاحية لحذف ملفات هذه الدورة",
+      };
+    }
 
     try {
       await assertCourseMutationAllowed(

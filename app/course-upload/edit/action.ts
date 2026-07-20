@@ -483,6 +483,18 @@ export async function updateCourseStatus(
     }
     const courseData = courseSnap.data();
 
+    // Ownership guard — only the course owner or an admin may write; closes a
+    // cross-tenant write hole (matches updateCourseThumbnail / sibling actions).
+    const isOwner = courseData?.createdBy === verifiedToken.uid;
+    const isAdmin = verifiedToken.admin === true;
+    if (!isOwner && !isAdmin) {
+      return {
+        success: false,
+        error: true,
+        message: "ليس لديك صلاحية لتعديل هذه الدورة",
+      };
+    }
+
     try {
       await assertCourseMutationAllowed(
         {
