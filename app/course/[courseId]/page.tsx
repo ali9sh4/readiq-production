@@ -166,13 +166,18 @@ export default async function WatchCoursePage({
     if (cleanedCourse.isDeleted === true) {
       return <CourseDeleted />;
     }
-    return (
-      <CoursePreview
-        course={cleanedCourse}
-        initialIsFavorited={false}
-        enrollment={null}
-      />
-    );
+    // S1 item 5: a token cookie is present but no longer verifies — typically
+    // it expired while the tab slept. /course/* is NOT in the middleware
+    // matcher, so nothing repairs the session before this server render;
+    // without this branch a paying student would be shown the logged-out buy
+    // UI. Repair via the refresh cookie, or send to login — never render buy
+    // buttons to a lapsed session. Anonymous visitors (no token) are handled by
+    // the !token branch above and still see the public preview.
+    const refreshToken = cookieStore.get("firebaseAuthRefreshToken")?.value;
+    if (refreshToken) {
+      redirect(`/api/refresh-token?redirect=/course/${courseId}`);
+    }
+    redirect(`/login?redirect=/course/${courseId}`);
   }
 
   const favResult = await checkIfFavorited(token, courseId);

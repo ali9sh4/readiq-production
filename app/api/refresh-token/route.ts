@@ -1,16 +1,48 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
+// S1c: keep both cookie lifetimes in one place, matching context/actions.ts.
+const TOKEN_MAX_AGE = 60 * 60 * 24 * 7; // 7d — outlives the ~1h token inside it.
+const REFRESH_MAX_AGE = 60 * 60 * 24 * 30; // 30d.
+
+// S3: only same-site absolute paths may be a post-refresh destination
+// (mirrors safeRedirectPath in middleware.ts). Blocks off-site / //host / /api.
+function safeRedirectPath(raw: string | null): string | null {
+  if (!raw) return null;
+  if (!raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/api"))
+    return null;
+  return raw;
+}
+
+// S1a loop-termination: clear BOTH session cookies on a redirect *response*
+// object (not the ambient store), so the Set-Cookie reliably attaches to the
+// 307. A refresh failure must leave no stale access cookie behind, or the next
+// protected hit would bounce back here forever instead of landing on /login.
+function clearedRedirect(url: URL): NextResponse {
+  const res = NextResponse.redirect(url);
+  res.cookies.delete("firebaseAuthToken");
+  res.cookies.delete("firebaseAuthRefreshToken");
+  return res;
+}
+
 export const GET = async (request: NextRequest) => {
-  const path = request.nextUrl.searchParams.get("redirect");
-  if (!path) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
+  const safePath = safeRedirectPath(
+    request.nextUrl.searchParams.get("redirect")
+  );
+
   const cookieStore = await cookies();
   const refreshToken = cookieStore.get("firebaseAuthRefreshToken")?.value;
+
+  // No refresh token → the session is unrecoverable. Clear any stale access
+  // cookie and go to /login, preserving the destination when it's safe.
   if (!refreshToken) {
-    return NextResponse.redirect(new URL("/", request.url));
+    const loginUrl = new URL(
+      `/login${safePath ? `?redirect=${encodeURIComponent(safePath)}` : ""}`,
+      request.url
+    );
+    return clearedRedirect(loginUrl);
   }
+
   try {
     const response = await fetch(
       `https://securetoken.googleapis.com/v1/token?key=AIzaSyCmjn2Enchkf-BH3-dBuBfCJPKPDnqfeT8`,
@@ -26,41 +58,45 @@ export const GET = async (request: NextRequest) => {
       }
     );
     if (!response.ok) {
-      console.error(
-        "❌ Firebase refresh failed:",
-        response.status,
-        await response.text()
-      );
+      // H2: log the status only — never the body, which can echo credentials.
+      console.error("❌ Firebase refresh failed:", response.status);
       throw new Error("Failed to refresh token");
     }
 
     const json = await response.json();
 
     if (!json.id_token || !json.refresh_token) {
-      console.error("❌ Invalid response from Firebase:", json);
+      // H2: log the shape, not the payload — it can contain a live token.
+      console.error("❌ Invalid response from Firebase:", Object.keys(json));
       throw new Error("Invalid token response");
     }
-    console.log("🔄 Token refresh triggered for path:", path);
-    const newToken = json.id_token;
-    const newRefreshToken = json.refresh_token;
-    cookieStore.set("firebaseAuthToken", newToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60,
-      path: "/",
-    });
-    cookieStore.set("firebaseAuthRefreshToken", newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 30, // 30 days
-      path: "/",
-    });
 
-    return NextResponse.redirect(new URL(path, request.url));
+    const destination = new URL(safePath ?? "/", request.url);
+    const res = NextResponse.redirect(destination);
+    res.cookies.set("firebaseAuthToken", json.id_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: TOKEN_MAX_AGE,
+      path: "/",
+    });
+    res.cookies.set("firebaseAuthRefreshToken", json.refresh_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: REFRESH_MAX_AGE,
+      path: "/",
+    });
+    return res;
   } catch (error) {
     console.log("Failed to refresh token", error);
-    return NextResponse.redirect(new URL("/", request.url));
+    // Refresh failed → clear both cookies and land on /login (NOT "/"), so the
+    // next protected hit has no refresh cookie and terminates at login instead
+    // of looping back into this route.
+    const loginUrl = new URL(
+      `/login${safePath ? `?redirect=${encodeURIComponent(safePath)}` : ""}`,
+      request.url
+    );
+    return clearedRedirect(loginUrl);
   }
 };

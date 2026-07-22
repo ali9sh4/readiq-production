@@ -154,6 +154,68 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => clearInterval(interval);
   }, [user]);
 
+  // OWNER-ONLY (S1b): re-stamp the cookie on Firebase's own token rotation.
+  // onIdTokenChanged fires on sign-in, sign-out, and every ~hourly rotation —
+  // the interval above only catches rotations while the tab is foregrounded and
+  // its timer isn't throttled. Subscribe once (keyed on isClient) and setToken
+  // ONLY (never setUser), so a rotation can't re-run the auth effects.
+  useEffect(() => {
+    if (!isClient) return;
+    const unsubscribe = auth.onIdTokenChanged(async (currentUser) => {
+      // Sign-out is handled by onAuthStateChanged's removeToken; skip the null
+      // fire so we don't resurrect the cookie it just cleared.
+      if (!currentUser) return;
+      try {
+        const tokenResult = await currentUser.getIdTokenResult();
+        setCustomClaims(tokenResult.claims);
+        setIsAdmin(tokenResult.claims.admin === true);
+        await setToken({
+          token: tokenResult.token,
+          refreshToken: currentUser.refreshToken,
+        });
+      } catch (error) {
+        console.error("Token re-stamp on rotation failed:", error);
+      }
+    });
+    return () => unsubscribe();
+  }, [isClient]);
+
+  // OWNER-ONLY (S1b): a slept/backgrounded tab has its SDK refresh timer
+  // throttled, so on wake the cookie can still carry an expired token. Force a
+  // refresh when the tab foregrounds — but only if the token is near expiry, to
+  // avoid a network round-trip on every focus. The forced refresh fires
+  // onIdTokenChanged above, which does the actual re-stamp. Correct event
+  // targets: visibilitychange on document, focus on window.
+  useEffect(() => {
+    if (!user) return;
+    let running = false;
+    const maybeRefresh = async () => {
+      if (document.visibilityState !== "visible") return;
+      if (running) return;
+      running = true;
+      try {
+        const tokenResult = await user.getIdTokenResult();
+        const expiryMs = new Date(tokenResult.expirationTime).getTime();
+        if (expiryMs - Date.now() < 10 * 60 * 1000) {
+          // Forces a network refresh → onIdTokenChanged re-stamps the cookie.
+          await user.getIdToken(true);
+        }
+      } catch (error) {
+        // Offline wake rejects with auth/network-request-failed; the existing
+        // session survives and the next foreground retries. Swallow it.
+        console.error("Wake refresh failed:", error);
+      } finally {
+        running = false;
+      }
+    };
+    document.addEventListener("visibilitychange", maybeRefresh);
+    window.addEventListener("focus", maybeRefresh);
+    return () => {
+      document.removeEventListener("visibilitychange", maybeRefresh);
+      window.removeEventListener("focus", maybeRefresh);
+    };
+  }, [user]);
+
   // ✅ Consolidated auth state change handler with redirect logic
   useEffect(() => {
     if (!isClient) return;

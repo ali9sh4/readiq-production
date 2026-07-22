@@ -18,6 +18,21 @@ function safeRedirectPath(raw: string | null): string | null {
   return raw;
 }
 
+// OWNER-ONLY (S1a): repair a stale session via the refresh cookie, else fall
+// back to /login. Redirecting to /api/refresh-token when a refresh cookie is
+// present lets a slept-tab session self-heal; that route clears BOTH cookies
+// and lands on /login on failure, so this can never loop.
+function repairOrLogin(
+  request: NextRequest,
+  pathname: string,
+  refreshToken: string | undefined
+) {
+  const target = refreshToken
+    ? `/api/refresh-token?redirect=${encodeURIComponent(pathname)}`
+    : `/login?redirect=${encodeURIComponent(pathname)}`;
+  return NextResponse.redirect(new URL(target, request.url));
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -52,23 +67,30 @@ export async function middleware(request: NextRequest) {
   try {
     const cookie = await cookies();
     const token = cookie.get("firebaseAuthToken")?.value;
+    // OWNER-ONLY (S1a): middleware now also reads the refresh cookie so a
+    // stale/absent access token can be repaired via /api/refresh-token instead
+    // of bouncing straight to /login.
+    const refreshToken = cookie.get("firebaseAuthRefreshToken")?.value;
 
     if (!token) {
-      // Send to login with the destination preserved, so completing sign-in
-      // returns the user to the page they actually asked for.
-      return NextResponse.redirect(
-        new URL(`/login?redirect=${encodeURIComponent(pathname)}`, request.url)
-      );
+      // Repair via the refresh cookie when present; else /login, destination
+      // preserved so completing sign-in returns the user to their page.
+      return repairOrLogin(request, pathname, refreshToken);
     }
     const decodedToken = decodeJwt(token);
 
-    if (decodedToken.exp && (decodedToken.exp - 300) * 1000 < Date.now()) {
-      console.log("⏰ Token expiring, redirecting to refresh"); // ADD THIS
+    // Proactively refresh only when we actually can (refresh cookie present).
+    // Without one, fall through: a still-valid token renders its remaining
+    // life; a truly-expired token fails jwtVerify below and hits the catch.
+    if (
+      refreshToken &&
+      decodedToken.exp &&
+      (decodedToken.exp - 300) * 1000 < Date.now()
+    ) {
+      console.log("⏰ Token expiring, redirecting to refresh");
       return NextResponse.redirect(
         new URL(
-          `/api/refresh-token?redirect=${encodeURIComponent(
-            request.nextUrl.pathname
-          )}`,
+          `/api/refresh-token?redirect=${encodeURIComponent(pathname)}`,
           request.url
         )
       );
@@ -93,11 +115,12 @@ export async function middleware(request: NextRequest) {
     return response;
   } catch (error) {
     console.log(error);
-    // Invalid/expired token on a protected page — same as no token: go to
-    // login and keep the destination.
-    return NextResponse.redirect(
-      new URL(`/login?redirect=${encodeURIComponent(pathname)}`, request.url)
-    );
+    // OWNER-ONLY (S1a): a corrupt/invalid access token is still recoverable if
+    // a refresh cookie exists — repair via /api/refresh-token; else /login.
+    const refreshToken = (await cookies()).get(
+      "firebaseAuthRefreshToken"
+    )?.value;
+    return repairOrLogin(request, pathname, refreshToken);
   }
 }
 

@@ -28,11 +28,15 @@ export const setToken = async ({
     await adminAuth.setCustomUserClaims(verifyAuthToken.uid, { admin: true });
   }
   const cookieStore = await cookies();
+  // S1c: the cookie deliberately outlives the ~1h ID token it carries. Every
+  // consumer re-verifies the token's signature + exp, so a longer-lived cookie
+  // grants no extra access — it just survives sleep so middleware / the refresh
+  // route can repair the session instead of the cookie simply being gone.
   cookieStore.set("firebaseAuthToken", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax", 
-    maxAge: 60 * 60, 
+    maxAge: 60 * 60 * 24 * 7, 
     path: "/", 
   });
   cookieStore.set("firebaseAuthRefreshToken", refreshToken, {
