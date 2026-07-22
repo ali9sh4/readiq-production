@@ -68,6 +68,19 @@ video lock / access predicate on web or mobile.
 
 ## Practical consequences
 
+- **Full-course purchase actions must reject sectional courses (invariant 1, the
+  money side).** `purchaseMode === 'sectional'` gates the *access* logic — it
+  must ALSO gate the *sale*. The legacy full-course path
+  (`purchaseCourseWithWallet` in `app/actions/wallet_actions.ts`, and
+  `POST /api/enrollments`) charges `course.price` / `salePrice` and writes an
+  enrollment with **no `accessScope`** — which invariant 3 grants as full
+  access. On a sectional course `course.price` is typically unset, so without a
+  guard the buyer gets the whole course for **0 IQD** (audit finding M1, a P0).
+  Both paths now reject with `COURSE_NOT_SECTIONAL`; keep it that way and add the
+  same guard to any new full-course purchase/enrollment entry point. (Also reject
+  `coursePrice <= 0` on a non-free full course — an unpriced course must never be
+  purchasable.)
+
 - **Deciding if a video is locked** — evaluate top to bottom, first match wins:
 
   ```
