@@ -2,6 +2,7 @@
 
 Running log of notable web-app (this repo) changes. The mobile board lives in
 `docs/MOBILE_PROJECT_STATE.md`; this file is for the Next.js web app.
+Strategy & priorities: `docs/STRATEGY.md` (added 2026-07-23) is the source of truth for priorities.
 
 ---
 
